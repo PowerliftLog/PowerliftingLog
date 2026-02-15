@@ -984,6 +984,10 @@ function parseASheet(sn,rows){
   // Pre-populate logs from sheet data
   // For Format A: if tracking column has any value, mark done at prescribed weight
   // If value is a number, use it as logged weight
+  if(sn==='Cycle 2'){
+    console.log('[rawDays] Cycle 2:');
+    rawDays.forEach(d=>console.log(`  ${d.name}:`, d.exercises.map(e=>e.name+' W1note='+( e.weeks.find(w=>w.week===1)?.note||'none'))));
+  }
   for(let w=1;w<=nw;w++){
     const weekLabel=`W${w}`;
     for(const d of rawDays){
@@ -994,7 +998,8 @@ function parseASheet(sn,rows){
         if(!noteStr) continue;
 
         const key=[sn,weekLabel,d.name,ex.name].join('||');
-        console.log('[prepop] key=',key,'note=',noteStr);
+        if(sn==='Cycle 2'&&d.name==='Friday') console.log('[prepop-fri] key=',key,'note=',noteStr);
+        else console.log('[prepop] key=',key,'note=',noteStr);
 
         // Always set exercise-level done if not already set
         if(!state.logs[key]){
@@ -1304,7 +1309,7 @@ function renderWorkout(){
   } else {
     day.exercises.forEach(ex=>{
       const key=lk(block.id,week.label,day.name,ex.name);
-      if(day.exercises.indexOf(ex)===0&&week.label==='W1') console.log('[render] key=',key,'log=',state.logs[key]);
+      if(week.label==='W1'&&(ex.name.includes('Deadlift')||ex.name.includes('Bench')||ex.name.includes('Squat'))) console.log('[render] key=',key,'log=',state.logs[key]);
       const log=state.logs[key]||{};
       const isDone=log.done||false;
       const isSkipped=log.skipped||false;
