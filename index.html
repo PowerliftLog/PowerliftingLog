@@ -932,7 +932,7 @@ function parseASheet(sn,rows){
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur) cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:note?String(note).trim():null}); }
+      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 1'&&cur.name==='Incline Bench Press') console.log(`[wm] W${wm[1]} note=`,JSON.stringify(wNote),'raw note=',note); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
