@@ -1594,12 +1594,14 @@ function completeWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
+  // Write force-complete flag
+  const dayKey=lk(block.id,week.label,day.name,'__complete__');
+  state.logs[dayKey]={done:true};
   // Mark all exercises and their sets as done
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
     const log=state.logs[key]||{};
     if(!log.done) state.logs[key]={...log,done:true,skipped:false};
-    // Mark individual sets done with prescribed weight if not already logged
     const pres=ex.prescription;
     if(pres){
       const sets=parseSets(pres);
@@ -1625,6 +1627,8 @@ function clearWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
+  // Delete force-complete flag
+  delete state.logs[lk(block.id,week.label,day.name,'__complete__')];
   // Delete all log keys for this day
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
@@ -1646,16 +1650,38 @@ function toggleSkip(key){
 }
 
 // A day is complete if:
-// 1. All exercises are done or skipped, OR
-// 2. ≥70% are done/skipped (covers accessories with no notes in sheet)
+// Imported day (has any pre-populated done entries): all comp lifts done, OR no comp lifts → 70% threshold
+// Manual day (no pre-populated entries): all exercises done/skipped, OR user hit Complete Workout
 function isDayComplete(block, week, day){
   if(!day||day.exercises.length===0) return false;
+
+  // Check if day was manually force-completed
+  const dayKey=lk(block.id,week.label,day.name,'__complete__');
+  if(state.logs[dayKey]?.done) return true;
+
   const total=day.exercises.length;
-  const resolved=day.exercises.filter(ex=>{
-    const log=state.logs[lk(block.id,week.label,day.name,ex.name)]||{};
-    return log.done||log.skipped;
-  }).length;
-  return resolved===total||(resolved/total)>=0.7;
+  const logs=day.exercises.map(ex=>state.logs[lk(block.id,week.label,day.name,ex.name)]||{});
+
+  // Detect imported day: any exercise has done:true from pre-pop
+  const hasImportedData=logs.some(l=>l.done);
+
+  if(hasImportedData){
+    // Comp lifts drive completion for imported days
+    const compExs=day.exercises.filter(ex=>isCompLift(ex.name));
+    if(compExs.length>0){
+      return compExs.every(ex=>{
+        const l=state.logs[lk(block.id,week.label,day.name,ex.name)]||{};
+        return l.done||l.skipped;
+      });
+    }
+    // No comp lifts on this day — use 70% threshold
+    const resolved=logs.filter(l=>l.done||l.skipped).length;
+    return (resolved/total)>=0.7;
+  }
+
+  // Manual day: all done/skipped
+  const resolved=logs.filter(l=>l.done||l.skipped).length;
+  return resolved===total;
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
 function setActual(key,v){ state.logs[key]={...(state.logs[key]||{}),actual:v}; saveLogs(); }
