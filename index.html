@@ -882,10 +882,10 @@ function parseA(wb){
       return c;
     }):r);
     // Debug: show first few rows after cleaning
-    console.log(`[parseA] Sheet "${sn}" — first 4 rows after clean:`);
+    
     clean.slice(0,4).forEach((r,i)=>console.log(`  row${i}:`,r?r.slice(0,4).map(c=>c!==null?String(c).substring(0,20):null):null));
     const b=parseASheet(sn,clean,wb.Sheets[sn]);
-    console.log('[liftlog] parseA sheet:', sn, '→', b?`block "${b.name}" with ${b.weeks.length} weeks, ${b.weeks[0]?.days?.reduce((a,d)=>a+d.exercises.length,0)||0} exercises/day`:'null (skipped)');
+    
     if(b) blocks.push(b);
   }
   return blocks;
@@ -893,7 +893,7 @@ function parseA(wb){
 
 function parseASheet(sn,rows,ws){
   // Helper: read a cell directly from worksheet by row/col (0-indexed)
-  console.log('[VERSION] liftlog build v42-getCellVal');
+  
   function getCellVal(r,c){
     const addr=XLSX.utils.encode_cell({r,c});
     const cell=ws&&ws[addr];
@@ -910,8 +910,8 @@ function parseASheet(sn,rows,ws){
     const r=rows[i]; if(!r) continue;
     if(r.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d))).length>=2){hdr=i;break;}
   }
-  if(hdr===-1){ console.log(`[parseASheet] "${sn}": no day header found`); return null; }
-  console.log(`[parseASheet] "${sn}": hdr at row ${hdr}`);
+  if(hdr===-1){ return null; }
+  
 
   const athleteName=rows[0]?.[0]?String(rows[0][0]).trim():'Athlete';
   // Use row 1 as name only if it looks like a cycle/program name, not a date range
@@ -941,7 +941,7 @@ function parseASheet(sn,rows,ws){
         if(h&&/track|rpe|weight|log/i.test(String(h))){ noteCol=nc; break; }
       }
       dayCols.push({col,name:String(c).trim(),noteCol});
-      if(sn==='Cycle 2') console.log(`[dayCols] "${String(c).trim()}" col=${col} noteCol=${noteCol} header="${hrRow[noteCol]}"`);
+      
     }
   }
   const rawDays=dayCols.map(({col,name,noteCol})=>{
@@ -952,7 +952,7 @@ function parseASheet(sn,rows,ws){
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note}); if(sn==='Cycle 2') console.log(`[wm-c2] col=${col} ex="${cur.name}" W${wm[1]} note=`,note,'getCellVal=',getCellVal(r,noteCol)); } }
+      if(wm){ if(cur){ cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note}); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
@@ -1004,15 +1004,6 @@ function parseASheet(sn,rows,ws){
   // Pre-populate logs from sheet data
   // For Format A: if tracking column has any value, mark done at prescribed weight
   // If value is a number, use it as logged weight
-  if(sn==='Cycle 2'){
-    const fri=rawDays.find(d=>d.name==='Friday');
-    if(fri){
-      console.log('[fri-debug] Friday exercises:');
-      fri.exercises.forEach(ex=>console.log(' ',ex.name,'weeks:',JSON.stringify(ex.weeks.map(w=>({wk:w.week,note:w.note})))));
-    } else {
-      console.log('[fri-debug] Friday NOT in rawDays. Got:',rawDays.map(d=>d.name));
-    }
-  }
   for(let w=1;w<=nw;w++){
     const weekLabel=`W${w}`;
     for(const d of rawDays){
@@ -1023,8 +1014,6 @@ function parseASheet(sn,rows,ws){
         if(!noteStr) continue;
 
         const key=[sn,weekLabel,d.name,ex.name].join('||');
-        if(sn==='Cycle 2'&&d.name==='Friday') console.log('[prepop-fri] key=',key,'note=',noteStr);
-        else console.log('[prepop] key=',key,'note=',noteStr);
 
         // Always set exercise-level done if not already set
         if(!state.logs[key]){
@@ -1334,7 +1323,6 @@ function renderWorkout(){
   } else {
     day.exercises.forEach(ex=>{
       const key=lk(block.id,week.label,day.name,ex.name);
-      if(week.label==='W1'&&(ex.name.includes('Deadlift')||ex.name.includes('Bench')||ex.name.includes('Squat'))) console.log('[render] key=',key,'log=',state.logs[key]);
       const log=state.logs[key]||{};
       const isDone=log.done||false;
       const isSkipped=log.skipped||false;
@@ -1770,18 +1758,12 @@ async function pickerCallback(data){
     );
     if(!resp.ok) throw new Error('Download failed: '+resp.status);
     const wb=XLSX.read(await resp.arrayBuffer());
-    const ws2=wb.Sheets['Cycle 2'];
-    if(ws2){
-      const h6=ws2[XLSX.utils.encode_cell({r:5,c:7})];
-      console.log('[DRIVE-H6] Cycle 2 H6:',JSON.stringify(h6));
-      console.log('[DRIVE-H6] sheetNames:',wb.SheetNames);
-      console.log('[DRIVE-H6] row6[7]:',XLSX.utils.sheet_to_json(ws2,{header:1,defval:null})[5]?.[7]);
-    }
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    const merged=mergeBlocks(blocks);
+    state.blocks=merged; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
     autoRegisterCompLifts(blocks);
     saveBlocks();
     document.getElementById('nav-workout').classList.add('active');
@@ -1793,27 +1775,30 @@ async function pickerCallback(data){
 // Start preloading immediately
 window.addEventListener('load', preloadDriveApis);
 
+// Merge newly parsed blocks into existing state — replace by ID, append new
+function mergeBlocks(newBlocks){
+  const merged=[...state.blocks];
+  for(const nb of newBlocks){
+    const idx=merged.findIndex(b=>b.id===nb.id);
+    if(idx>=0) merged[idx]=nb;
+    else merged.push(nb);
+  }
+  return merged;
+}
+
 document.getElementById('file-input').addEventListener('change',async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
   try{
     const data=await file.arrayBuffer();
     const wb=XLSX.read(data);
-    window._lastWb=wb; // expose for console debugging
-    const ws2=wb.Sheets['Cycle 2'];
-    if(ws2){
-      const h6=ws2[XLSX.utils.encode_cell({r:5,c:7})];
-      console.log('[H6 direct] Cycle 2 H6 cell:',JSON.stringify(h6));
-      console.log('[H6 direct] row6 via sheet_to_json:',XLSX.utils.sheet_to_json(ws2,{header:1,defval:null})[5]?.[7]);
-    }
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file. See console for details."); return; }
-    // Pull athlete name from filename
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    const merged=mergeBlocks(blocks);
+    state.blocks=merged; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
     autoRegisterCompLifts(blocks);
     saveBlocks();
-    console.log('[post-parse] Cycle 2 log keys:', Object.keys(state.logs).filter(k=>k.startsWith('Cycle 2')));
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
     render();
