@@ -1275,7 +1275,7 @@ function renderWorkout(){
     </div>`;
     if(state.blocks.length>1){
       h+=`<select class="cycle-select" onchange="switchBlock(this.value)">`;
-      state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${b.id}</option>`);
+      state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${b.name}</option>`);
       h+=`</select>`;
     }
     h+=`</div>`;
@@ -1294,8 +1294,9 @@ function renderWorkout(){
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
     const weekDone=w.days.every(d=>{
-      if(!d.exercises.length) return true;
-      return d.exercises.every(ex=>{
+      const trackable=d.exercises.filter(ex=>ex.prescription||ex.staticPrescription);
+      if(!trackable.length) return true;
+      return trackable.every(ex=>{
         const l=state.logs[lk(block.id,w.label,d.name,ex.name)]||{};
         return l.done||l.skipped;
       });
