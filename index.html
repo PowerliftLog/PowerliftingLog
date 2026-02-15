@@ -921,8 +921,16 @@ function parseASheet(sn,rows){
   const dayCols=[];
   for(let col=0;col<hrRow.length;col++){
     const c=hrRow[col];
-    if(c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)))
-      dayCols.push({col,name:String(c).trim(),noteCol:col+1});
+    if(c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d))){
+      // Find note col: look for 'weight tracking' or 'tracking' or 'rpe' in next 3 cols
+      let noteCol=col+1;
+      for(let nc=col+1;nc<=col+3;nc++){
+        const h=hrRow[nc];
+        if(h&&/track|rpe|weight|log/i.test(String(h))){ noteCol=nc; break; }
+      }
+      dayCols.push({col,name:String(c).trim(),noteCol});
+      if(sn==='Cycle 2') console.log(`[dayCols] "${String(c).trim()}" col=${col} noteCol=${noteCol} header="${hrRow[noteCol]}"`);
+    }
   }
   const rawDays=dayCols.map(({col,name,noteCol})=>{
     const exs=[]; let cur=null;
