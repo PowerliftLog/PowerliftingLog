@@ -1293,14 +1293,7 @@ function renderWorkout(){
   // Week pills
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
-    const weekDone=w.days.every(d=>{
-      const trackable=d.exercises.filter(ex=>ex.prescription||ex.staticPrescription);
-      if(!trackable.length) return true;
-      return trackable.every(ex=>{
-        const l=state.logs[lk(block.id,w.label,d.name,ex.name)]||{};
-        return l.done||l.skipped;
-      });
-    });
+    const weekDone=w.days.every(d=>isDayComplete(block,w,d));
     const dot=weekDone?`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-left:5px;vertical-align:middle;margin-bottom:1px"></span>`:'';
     h+=`<button class="week-pill ${state.activeWeek===wi?'active':''}" onclick="setWeek(${wi})">${w.label}${dot}</button>`;
   });
