@@ -985,8 +985,13 @@ function parseASheet(sn,rows){
   // For Format A: if tracking column has any value, mark done at prescribed weight
   // If value is a number, use it as logged weight
   if(sn==='Cycle 2'){
-    console.log('[rawDays] Cycle 2:');
-    rawDays.forEach(d=>console.log(`  ${d.name}:`, d.exercises.map(e=>e.name+' W1note='+( e.weeks.find(w=>w.week===1)?.note||'none'))));
+    const fri=rawDays.find(d=>d.name==='Friday');
+    if(fri){
+      console.log('[fri-debug] Friday exercises:');
+      fri.exercises.forEach(ex=>console.log(' ',ex.name,'weeks:',JSON.stringify(ex.weeks.map(w=>({wk:w.week,note:w.note})))));
+    } else {
+      console.log('[fri-debug] Friday NOT in rawDays. Got:',rawDays.map(d=>d.name));
+    }
   }
   for(let w=1;w<=nw;w++){
     const weekLabel=`W${w}`;
@@ -1774,6 +1779,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
     autoRegisterCompLifts(blocks);
     saveBlocks();
+    console.log('[post-parse] Cycle 2 log keys:', Object.keys(state.logs).filter(k=>k.startsWith('Cycle 2')));
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
     render();
