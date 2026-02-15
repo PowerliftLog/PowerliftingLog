@@ -884,14 +884,25 @@ function parseA(wb){
     // Debug: show first few rows after cleaning
     console.log(`[parseA] Sheet "${sn}" — first 4 rows after clean:`);
     clean.slice(0,4).forEach((r,i)=>console.log(`  row${i}:`,r?r.slice(0,4).map(c=>c!==null?String(c).substring(0,20):null):null));
-    const b=parseASheet(sn,clean);
+    const b=parseASheet(sn,clean,wb.Sheets[sn]);
     console.log('[liftlog] parseA sheet:', sn, '→', b?`block "${b.name}" with ${b.weeks.length} weeks, ${b.weeks[0]?.days?.reduce((a,d)=>a+d.exercises.length,0)||0} exercises/day`:'null (skipped)');
     if(b) blocks.push(b);
   }
   return blocks;
 }
 
-function parseASheet(sn,rows){
+function parseASheet(sn,rows,ws){
+  // Helper: read a cell directly from worksheet by row/col (0-indexed)
+  function getCellVal(r,c){
+    const addr=XLSX.utils.encode_cell({r,c});
+    const cell=ws&&ws[addr];
+    if(!cell) return null;
+    const v=cell.v;
+    if(v===null||v===undefined||v==='') return null;
+    const s=String(v).trim();
+    if(s.startsWith("'")) return s.slice(1)||null;
+    return s||null;
+  }
   if(rows.length<4) return null;
   let hdr=-1;
   for(let i=0;i<Math.min(10,rows.length);i++){
@@ -936,11 +947,11 @@ function parseASheet(sn,rows){
     const exs=[]; let cur=null;
     for(let r=hdr+1;r<rows.length;r++){
       const row=rows[r]; if(!row) continue;
-      const cell=row[col]; const note=(row[noteCol]!=null&&row[noteCol]!=='')?String(row[noteCol]).trim():null;
+      const cell=row[col]; const note=getCellVal(r,noteCol);
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const rawNote=row[noteCol]; const wNote=(rawNote!=null&&rawNote!=='')?String(rawNote).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 2') console.log(`[wm-c2] col=${col} ex="${cur.name}" W${wm[1]} note=`,wNote,'rowLen=',row.length,'row[noteCol]=',row[noteCol],'noteCol=',noteCol); } }
+      if(wm){ if(cur){ cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note}); if(sn==='Cycle 2') console.log(`[wm-c2] col=${col} ex="${cur.name}" W${wm[1]} note=`,note,'getCellVal=',getCellVal(r,noteCol)); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
