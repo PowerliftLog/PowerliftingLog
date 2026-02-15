@@ -893,6 +893,7 @@ function parseA(wb){
 
 function parseASheet(sn,rows,ws){
   // Helper: read a cell directly from worksheet by row/col (0-indexed)
+  console.log('[VERSION] liftlog build v42-getCellVal');
   function getCellVal(r,c){
     const addr=XLSX.utils.encode_cell({r,c});
     const cell=ws&&ws[addr];
