@@ -1791,6 +1791,13 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
   try{
     const data=await file.arrayBuffer();
     const wb=XLSX.read(data);
+    window._lastWb=wb; // expose for console debugging
+    const ws2=wb.Sheets['Cycle 2'];
+    if(ws2){
+      const h6=ws2[XLSX.utils.encode_cell({r:5,c:7})];
+      console.log('[H6 direct] Cycle 2 H6 cell:',JSON.stringify(h6));
+      console.log('[H6 direct] row6 via sheet_to_json:',XLSX.utils.sheet_to_json(ws2,{header:1,defval:null})[5]?.[7]);
+    }
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file. See console for details."); return; }
     // Pull athlete name from filename
