@@ -932,7 +932,7 @@ function parseASheet(sn,rows){
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const rawNote=row[noteCol]; const wNote=(rawNote!=null&&rawNote!=='')?String(rawNote).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 2') console.log(`[wm-c2] col=${col} ex="${cur.name}" W${wm[1]} note=`,wNote); } }
+      if(wm){ if(cur){ const rawNote=row[noteCol]; const wNote=(rawNote!=null&&rawNote!=='')?String(rawNote).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 2') console.log(`[wm-c2] col=${col} ex="${cur.name}" W${wm[1]} note=`,wNote,'rowLen=',row.length,'row[noteCol]=',row[noteCol],'noteCol=',noteCol); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
