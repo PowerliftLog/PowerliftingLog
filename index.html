@@ -1770,6 +1770,13 @@ async function pickerCallback(data){
     );
     if(!resp.ok) throw new Error('Download failed: '+resp.status);
     const wb=XLSX.read(await resp.arrayBuffer());
+    const ws2=wb.Sheets['Cycle 2'];
+    if(ws2){
+      const h6=ws2[XLSX.utils.encode_cell({r:5,c:7})];
+      console.log('[DRIVE-H6] Cycle 2 H6:',JSON.stringify(h6));
+      console.log('[DRIVE-H6] sheetNames:',wb.SheetNames);
+      console.log('[DRIVE-H6] row6[7]:',XLSX.utils.sheet_to_json(ws2,{header:1,defval:null})[5]?.[7]);
+    }
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
