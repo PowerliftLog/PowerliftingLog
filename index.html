@@ -279,7 +279,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <script>
 const _savedBlocks=loadBlocks()||[];
 console.log('[liftlog] startup: restored', _savedBlocks.length, 'blocks');
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsVariation:{}, metricsBlock:null, metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), extraSets:loadExtraSets(), editingExKey:null, editingBlockName:false, expandedEx:null };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsVariation:{}, metricsBlock:null, metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null };
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
@@ -313,29 +313,10 @@ function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||
 function saveLogs(){ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }
 function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); console.log('[liftlog] loadBlocks:', d?`${d.length} chars`:'null'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); return null; } }
 function saveBlocks(){ try{ const s=JSON.stringify(state.blocks); localStorage.setItem('liftlog_blocks',s); console.log('[liftlog] saveBlocks OK:', s.length,'chars'); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
-function mergeBlocks(incoming){
-  // For each incoming block, if a block with the same ID already exists,
-  // update its structure (weeks, exercises) but preserve existing logs.
-  // New blocks are appended.
-  const existing=state.blocks;
-  const merged=[...existing];
-  incoming.forEach(newBlock=>{
-    const idx=merged.findIndex(b=>b.id===newBlock.id);
-    if(idx>=0){
-      // Replace structure but keep identity — logs are keyed by block.id so they survive
-      merged[idx]=newBlock;
-    } else {
-      merged.push(newBlock);
-    }
-  });
-  return merged;
-}
 function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
 function saveCustomLifts(){ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }
 function loadTrackedLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
 function saveTrackedLifts(){ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }
-function loadExtraSets(){ try{ return JSON.parse(localStorage.getItem('liftlog_extrasets')||'{}'); }catch{ return {}; } }
-function saveExtraSets(){ localStorage.setItem('liftlog_extrasets', JSON.stringify(state.extraSets)); }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
@@ -951,7 +932,7 @@ function parseASheet(sn,rows){
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); } }
+      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 1'&&cur.name==='Incline Bench Press') console.log(`[wm] W${wm[1]} note=`,JSON.stringify(wNote),'raw note=',note); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
@@ -996,9 +977,67 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[]};
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||null};
     })}))});
   }
+
+  // Pre-populate logs from sheet data
+  // For Format A: if tracking column has any value, mark done at prescribed weight
+  // If value is a number, use it as logged weight
+  if(sn==='Cycle 2'){
+    console.log('[rawDays] Cycle 2:');
+    rawDays.forEach(d=>console.log(`  ${d.name}:`, d.exercises.map(e=>e.name+' W1note='+( e.weeks.find(w=>w.week===1)?.note||'none'))));
+  }
+  for(let w=1;w<=nw;w++){
+    const weekLabel=`W${w}`;
+    for(const d of rawDays){
+      for(const ex of d.exercises){
+        const wd=ex.weeks.find(x=>x.week===w);
+        if(!wd?.note) continue;
+        const noteStr=String(wd.note).trim();
+        if(!noteStr) continue;
+
+        const key=[sn,weekLabel,d.name,ex.name].join('||');
+        if(sn==='Cycle 2'&&d.name==='Friday') console.log('[prepop-fri] key=',key,'note=',noteStr);
+        else console.log('[prepop] key=',key,'note=',noteStr);
+
+        // Always set exercise-level done if not already set
+        if(!state.logs[key]){
+          const logEntry={done:true};
+          const numMatch=noteStr.match(/^(\d+\.?\d*)/);
+          if(numMatch) logEntry.actual=numMatch[1];
+          state.logs[key]=logEntry;
+        }
+
+        const numMatch=String(wd.note).trim().match(/^(\d+\.?\d*)/);
+
+        // Mark individual sets done — check each set key individually
+        const pres=wd?.prescription||ex.staticPrescription||null;
+        if(pres){
+          const sets=parseSets(pres);
+          sets.forEach((s,si)=>{
+            const sk=key+`||s${si}`;
+            if(state.logs[sk]) return;
+            const setEntry={done:true};
+            if(numMatch) setEntry.actual=numMatch[1];
+            else if(!s.isRpe) setEntry.actual=String(s.weight);
+            state.logs[sk]=setEntry;
+          });
+          const simple=parseSimple(pres);
+          if(simple&&sets.length===0){
+            for(let si=0;si<simple.sets;si++){
+              const sk=key+`||s${si}`;
+              if(state.logs[sk]) continue;
+              const setEntry={done:true};
+              if(numMatch) setEntry.actual=numMatch[1];
+              state.logs[sk]=setEntry;
+            }
+          }
+        }
+      }
+    }
+  }
+  saveLogs();
 
   return{id:sn,name,dateRange,athleteName,maxes,weeks,format:'A'};
 }
@@ -1240,7 +1279,13 @@ function renderWorkout(){
   // Week pills
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
-    const weekDone=w.days.every(d=>isDayComplete(block,w,d));
+    const weekDone=w.days.every(d=>{
+      if(!d.exercises.length) return true;
+      return d.exercises.every(ex=>{
+        const l=state.logs[lk(block.id,w.label,d.name,ex.name)]||{};
+        return l.done||l.skipped;
+      });
+    });
     const dot=weekDone?`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-left:5px;vertical-align:middle;margin-bottom:1px"></span>`:'';
     h+=`<button class="week-pill ${state.activeWeek===wi?'active':''}" onclick="setWeek(${wi})">${w.label}${dot}</button>`;
   });
@@ -1257,15 +1302,6 @@ function renderWorkout(){
   }
 
   h+=`<div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
-
-  // Next workout banner — shown when user is not already on next incomplete workout
-  const _nxt=findNextWorkout(block);
-  if(_nxt && (_nxt.wi!==state.activeWeek || _nxt.di!==state.activeDay)){
-    h+=`<div onclick="goToNextWorkout()" style="margin:0 0 2px;padding:10px 16px;background:#1a1a0e;border-bottom:1px solid #2a2200;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:#888">Next workout</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#C9A84C;letter-spacing:0.5px">${_nxt.label} →</div>
-    </div>`;
-  }
 
   h+=`<div class="exercises">`;
   if(!day||day.exercises.length===0){
@@ -1296,13 +1332,7 @@ function renderWorkout(){
       // ── Prescription summary for collapsed view ───────────────────────────
       function presShortSummary(sets,simple,ranged,pres){
         if(sets.length>0){
-          const INTENSITY_LABELS=['L','M','MH','H','0'];
-          const isIntensityScale=sets.every(s=>s.isRpe&&INTENSITY_LABELS.includes(s.weight.toUpperCase()));
-          if(isIntensityScale){
-            // e.g. "4×5 · L→H"
-            const reps=sets.every(s=>s.reps===sets[0].reps)?`${sets[0].reps}`:`${sets[0].reps}–${sets[sets.length-1].reps}`;
-            return `${sets.length}×${reps} · ${sets[0].weight}→${sets[sets.length-1].weight}`;
-          }
+          // e.g. "3×5 @ 235lb" or "3×5 @ RPE 8"
           const firstWeight=sets[0].isRpe?`@ ${sets[0].weight}`:`@ ${sets[0].weight}lb`;
           const allSame=sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight);
           if(allSame) return `${sets.length}×${sets[0].reps} ${firstWeight}`;
@@ -1316,10 +1346,8 @@ function renderWorkout(){
 
       const isExpanded=state.expandedEx===key;
       const presSum=presShortSummary(sets,simple,ranged,pres);
-      const extraSets=state.extraSets[key]||0;
-      const baseSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0);
-      const totalSetsCount=Math.max(1,baseSetsCount+extraSets);
-      const setsCompletedCount=[...Array(totalSetsCount)].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
+      const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||1))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
+      const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0);
 
       h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}">`;
 
@@ -1357,54 +1385,37 @@ function renderWorkout(){
         if(showTrackBtn&&!isComp&&!tracked) h+=`<div class="track-hint">📊 Tap to track in metrics</div>`;
 
         if(hasSets){
-          // Detect intensity scale prescription: all sets use L/M/MH/H labels
-          const INTENSITY_LABELS=['L','M','MH','H','0'];
-          const isIntensityScale=sets.length>0&&sets.every(s=>s.isRpe&&INTENSITY_LABELS.includes(s.weight.toUpperCase()));
           h+=`<div class="sets-grid">`;
-          for(let si=0;si<totalSetsCount;si++){
-            const s=sets[si];
+          sets.forEach((s,si)=>{
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-            const isRpe=s?s.isRpe:false;
-            const repsLabel=s?s.reps:'—';
-            if(isIntensityScale&&s){
-              // Go-by-feel: show intensity label as the set descriptor, weight input for all sets
-              const isTopSet=si===sets.length-1;
-              h+=`<div class="set-row">
-                <div class="set-num">S${si+1}</div>
-                <div class="set-reps">${repsLabel}</div>
-                <div class="set-weight rpe">${s.weight}</div>
-                <div class="set-inputs-wrap">
-                  <div class="set-input-group"><div class="set-input-label">Weight</div>
-                    <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
-                  </div>
-                  ${isTopSet?`<div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                    <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
-                  </div>`:''}
-                </div>
-                <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
-              </div>`;
-            } else {
-              const weightLabel=s?(s.isRpe?s.weight:s.weight+'lb'):'open';
-              h+=`<div class="set-row">
-                <div class="set-num">S${si+1}</div>
-                <div class="set-reps">${repsLabel}</div>
-                <div class="set-weight ${isRpe?'rpe':''}">${weightLabel}</div>
-                <div class="set-inputs-wrap">
-                  <div class="set-input-group"><div class="set-input-label">Weight</div>
-                    <input class="set-input" placeholder="${s&&!s.isRpe?s.weight+'lb':'lbs'}" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
-                  </div>
-                  <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                    <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
-                  </div>
-                </div>
-                <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
-              </div>`;
-            }
-          }
+            h+=`<div class="set-row">
+              <div class="set-num">S${si+1}</div>
+              <div class="set-reps">${s.reps}</div>
+              <div class="set-weight ${s.isRpe?'rpe':''}">${s.isRpe?s.weight:s.weight+'lb'}</div>
+              ${s.isRpe
+                ?`<div class="set-inputs-wrap">
+                    <div class="set-input-group"><div class="set-input-label">Weight</div>
+                      <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                    </div>
+                    <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                    </div>
+                  </div>`
+                :`<div class="set-inputs-wrap">
+                    <div class="set-input-group"><div class="set-input-label">Weight</div>
+                      <input class="set-input" placeholder="${s.weight}lb" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                    </div>
+                    <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                    </div>
+                  </div>`}
+              <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+            </div>`;
+          });
           h+=`</div>`;
         } else if(pres&&simple){
           h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
-          for(let si=0;si<totalSetsCount;si++){
+          for(let si=0;si<simple.sets;si++){
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
             h+=`<div class="set-row">
               <div class="set-num">S${si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
@@ -1422,7 +1433,7 @@ function renderWorkout(){
           h+=`</div>`;
         } else if(pres&&ranged){
           h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
-          for(let si=0;si<totalSetsCount;si++){
+          for(let si=0;si<ranged.sets;si++){
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
             h+=`<div class="set-row">
               <div class="set-num">S${si+1}</div><div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>
@@ -1439,30 +1450,22 @@ function renderWorkout(){
           }
           h+=`</div>`;
         } else if(pres){
+          const sk=key+`||s0`; const sl=state.logs[sk]||{};
           h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
-          for(let si=0;si<totalSetsCount;si++){
-            const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-            h+=`<div class="set-row">
-              <div class="set-num">S${si+1}</div><div class="set-reps">—</div><div class="set-weight rpe">open</div>
-              <div class="set-inputs-wrap">
-                <div class="set-input-group"><div class="set-input-label">Weight</div>
-                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
-                </div>
-                <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
-                </div>
+          h+=`<div class="set-row">
+            <div class="set-num">S1</div><div class="set-reps">—</div><div class="set-weight rpe">open</div>
+            <div class="set-inputs-wrap">
+              <div class="set-input-group"><div class="set-input-label">Weight</div>
+                <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
               </div>
-              <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
-            </div>`;
-          }
+              <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+              </div>
+            </div>
+            <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+          </div>`;
           h+=`</div>`;
         }
-
-        // Add / Remove set buttons (only shown in expanded view)
-        h+=`<div style="display:flex;gap:8px;padding:0 16px 12px">
-          <button onclick="adjustSets('${esc(key)}',-1)" style="flex:1;padding:7px;background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif">− Set</button>
-          <button onclick="adjustSets('${esc(key)}',1)" style="flex:1;padding:7px;background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif">+ Set</button>
-        </div>`;
 
         // Coach notes (from sheet)
         const allCoachNotes=[...(ex.coachNotes||[])];
@@ -1577,14 +1580,12 @@ function completeWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
-  // Write force-complete flag
-  const forceKey=lk(block.id,week.label,day.name,'__complete__');
-  state.logs[forceKey]={done:true};
-  // Also mark all exercises and their logged sets as done
+  // Mark all exercises and their sets as done
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
     const log=state.logs[key]||{};
     if(!log.done) state.logs[key]={...log,done:true,skipped:false};
+    // Mark individual sets done with prescribed weight if not already logged
     const pres=ex.prescription;
     if(pres){
       const sets=parseSets(pres);
@@ -1610,9 +1611,6 @@ function clearWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
-  // Remove force-complete flag
-  const forceKey=lk(block.id,week.label,day.name,'__complete__');
-  delete state.logs[forceKey];
   // Delete all log keys for this day
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
@@ -1634,111 +1632,20 @@ function toggleSkip(key){
 }
 
 // A day is complete if:
-// - Force-complete flag set (user tapped "Complete Workout")
-// - All exercises done/skipped manually
+// 1. All exercises are done or skipped, OR
+// 2. ≥70% are done/skipped (covers accessories with no notes in sheet)
 function isDayComplete(block, week, day){
   if(!day||day.exercises.length===0) return false;
-  // Check force-complete flag
-  const forceKey=lk(block.id,week.label,day.name,'__complete__');
-  if(state.logs[forceKey]?.done) return true;
-  // Require all exercises resolved
   const total=day.exercises.length;
   const resolved=day.exercises.filter(ex=>{
     const log=state.logs[lk(block.id,week.label,day.name,ex.name)]||{};
     return log.done||log.skipped;
   }).length;
-  return resolved===total;
-}
-function findNextWorkout(block){
-  if(!block) return null;
-  for(let wi=0;wi<block.weeks.length;wi++){
-    const week=block.weeks[wi];
-    for(let di=0;di<week.days.length;di++){
-      const day=week.days[di];
-      if(!isDayComplete(block,week,day)) return {wi,di,label:`${week.label} · ${abbrev(day.name)}`};
-    }
-  }
-  return null; // all done
+  return resolved===total||(resolved/total)>=0.7;
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
-function adjustSets(key, delta){
-  const base=(() => {
-    // Recalculate base set count from the exercise prescription
-    const block=state.activeBlock;
-    const week=block?.weeks[state.activeWeek];
-    const day=week?.days[state.activeDay];
-    if(!day) return 1;
-    const ex=day.exercises.find(e=>lk(block.id,week.label,day.name,e.name)===key);
-    if(!ex) return 1;
-    const pres=ex.prescription;
-    const sets=pres?parseSets(pres):[];
-    const simple=parseSimple(pres);
-    const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
-    return sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
-  })();
-  const cur=state.extraSets[key]||0;
-  const next=cur+delta;
-  if(base+next<1) return; // can't go below 1 set total
-  state.extraSets[key]=next;
-  saveExtraSets();
-  render();
-}
-function setActual(key,v){
-  state.logs[key]={...(state.logs[key]||{}),actual:v};
-  // Auto-complete set when weight is entered (RPE is optional)
-  if(v&&v.trim()!==''){
-    state.logs[key].done=true;
-  }
-  saveLogs();
-  checkExerciseAutoComplete(key);
-}
-function setRpe(key,v){
-  state.logs[key]={...(state.logs[key]||{}),rpe:v};
-  saveLogs();
-  checkExerciseAutoComplete(key);
-}
-function checkExerciseAutoComplete(setKey){
-  // Extract exercise key from set key (format: blockId||week||day||exercise||sN)
-  const parts=setKey.split('||');
-  if(parts.length<5) return; // Not a set key
-  const exKey=parts.slice(0,4).join('||'); // blockId||week||day||exercise
-  
-  // Find the exercise and count total sets
-  const block=state.activeBlock;
-  if(!block) return;
-  const week=block.weeks[state.activeWeek];
-  if(!week) return;
-  const day=week.days[state.activeDay];
-  if(!day) return;
-  const ex=day.exercises.find(e=>lk(block.id,week.label,day.name,e.name)===exKey);
-  if(!ex) return;
-  
-  // Count how many sets exist for this exercise
-  const pres=ex.prescription;
-  const sets=pres?parseSets(pres):[];
-  const simple=parseSimple(pres);
-  const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
-  const extraSets=state.extraSets?.[exKey]||0;
-  const baseSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
-  const totalSets=Math.max(1,baseSetsCount+extraSets);
-  
-  // Check if all sets are done
-  let allSetsDone=true;
-  for(let si=0;si<totalSets;si++){
-    const sk=exKey+`||s${si}`;
-    if(!state.logs[sk]||!state.logs[sk].done){
-      allSetsDone=false;
-      break;
-    }
-  }
-  
-  // If all sets done, mark exercise done
-  if(allSetsDone){
-    state.logs[exKey]={...(state.logs[exKey]||{}),done:true};
-    saveLogs();
-    render();
-  }
-}
+function setActual(key,v){ state.logs[key]={...(state.logs[key]||{}),actual:v}; saveLogs(); }
+function setRpe(key,v){ state.logs[key]={...(state.logs[key]||{}),rpe:v}; saveLogs(); }
 function setNote(key,v){ state.logs[key]={...(state.logs[key]||{}),notes:v}; saveLogs(); }
 function getPrevWeekNote(blockId,weekLabel,dayName,exName){
   // Find the most recent previous week that has a lifter note for this exercise
@@ -1842,9 +1749,8 @@ async function pickerCallback(data){
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    const merged=mergeBlocks(blocks);
-    state.blocks=merged; state.activeBlock=merged[merged.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
-    autoRegisterCompLifts(merged);
+    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    autoRegisterCompLifts(blocks);
     saveBlocks();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
@@ -1865,9 +1771,8 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     // Pull athlete name from filename
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    const merged=mergeBlocks(blocks);
-    state.blocks=merged; state.activeBlock=merged[merged.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
-    autoRegisterCompLifts(merged);
+    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    autoRegisterCompLifts(blocks);
     saveBlocks();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
@@ -1943,16 +1848,6 @@ function confirmDeleteBlock(){
 }
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
-function goToNextWorkout(){
-  const next=findNextWorkout(state.activeBlock);
-  if(!next) return;
-  state.activeWeek=next.wi;
-  state.activeDay=next.di;
-  render();
-}
-// Auto-navigate to next incomplete workout on load
-const _next=findNextWorkout(state.activeBlock);
-if(_next){ state.activeWeek=_next.wi; state.activeDay=_next.di; }
 render();
 </script>
 </body>
