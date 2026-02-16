@@ -1281,13 +1281,7 @@ function renderWorkout(){
   // Week pills
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
-    const weekDone=w.days.every(d=>{
-      if(!d.exercises.length) return true;
-      return d.exercises.every(ex=>{
-        const l=state.logs[lk(block.id,w.label,d.name,ex.name)]||{};
-        return l.done||l.skipped;
-      });
-    });
+    const weekDone=w.days.every(d=>isDayComplete(block,w,d));
     const dot=weekDone?`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-left:5px;vertical-align:middle;margin-bottom:1px"></span>`:'';
     h+=`<button class="week-pill ${state.activeWeek===wi?'active':''}" onclick="setWeek(${wi})">${w.label}${dot}</button>`;
   });
@@ -1596,12 +1590,14 @@ function completeWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
-  // Mark all exercises and their sets as done
+  // Write force-complete flag
+  const forceKey=lk(block.id,week.label,day.name,'__complete__');
+  state.logs[forceKey]={done:true};
+  // Also mark all exercises and their logged sets as done
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
     const log=state.logs[key]||{};
     if(!log.done) state.logs[key]={...log,done:true,skipped:false};
-    // Mark individual sets done with prescribed weight if not already logged
     const pres=ex.prescription;
     if(pres){
       const sets=parseSets(pres);
@@ -1627,6 +1623,9 @@ function clearWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
+  // Remove force-complete flag
+  const forceKey=lk(block.id,week.label,day.name,'__complete__');
+  delete state.logs[forceKey];
   // Delete all log keys for this day
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
@@ -1648,16 +1647,23 @@ function toggleSkip(key){
 }
 
 // A day is complete if:
-// 1. All exercises are done or skipped, OR
-// 2. ≥70% are done/skipped (covers accessories with no notes in sheet)
+// - Imported: any exercise has a trackingNote from the sheet → historical data, treat as done
+// - Manual: all exercises done/skipped, OR explicit "Complete Workout" tap (force flag)
 function isDayComplete(block, week, day){
   if(!day||day.exercises.length===0) return false;
+  // Check force-complete flag (set by "Complete Workout" button)
+  const forceKey=lk(block.id,week.label,day.name,'__complete__');
+  if(state.logs[forceKey]?.done) return true;
+  // Check if any exercise was pre-populated from sheet tracking notes
+  const hasImportedData=day.exercises.some(ex=>ex.trackingNote);
+  if(hasImportedData) return true;
+  // Manual: require all exercises resolved
   const total=day.exercises.length;
   const resolved=day.exercises.filter(ex=>{
     const log=state.logs[lk(block.id,week.label,day.name,ex.name)]||{};
     return log.done||log.skipped;
   }).length;
-  return resolved===total||(resolved/total)>=0.7;
+  return resolved===total;
 }
 function findNextWorkout(block){
   if(!block) return null;
