@@ -977,67 +977,9 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||null};
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[]};
     })}))});
   }
-
-  // Pre-populate logs from sheet data
-  // For Format A: if tracking column has any value, mark done at prescribed weight
-  // If value is a number, use it as logged weight
-  if(sn==='Cycle 2'){
-    console.log('[rawDays] Cycle 2:');
-    rawDays.forEach(d=>console.log(`  ${d.name}:`, d.exercises.map(e=>e.name+' W1note='+( e.weeks.find(w=>w.week===1)?.note||'none'))));
-  }
-  for(let w=1;w<=nw;w++){
-    const weekLabel=`W${w}`;
-    for(const d of rawDays){
-      for(const ex of d.exercises){
-        const wd=ex.weeks.find(x=>x.week===w);
-        if(!wd?.note) continue;
-        const noteStr=String(wd.note).trim();
-        if(!noteStr) continue;
-
-        const key=[sn,weekLabel,d.name,ex.name].join('||');
-        if(sn==='Cycle 2'&&d.name==='Friday') console.log('[prepop-fri] key=',key,'note=',noteStr);
-        else console.log('[prepop] key=',key,'note=',noteStr);
-
-        // Always set exercise-level done if not already set
-        if(!state.logs[key]){
-          const logEntry={done:true};
-          const numMatch=noteStr.match(/^(\d+\.?\d*)/);
-          if(numMatch) logEntry.actual=numMatch[1];
-          state.logs[key]=logEntry;
-        }
-
-        const numMatch=String(wd.note).trim().match(/^(\d+\.?\d*)/);
-
-        // Mark individual sets done — check each set key individually
-        const pres=wd?.prescription||ex.staticPrescription||null;
-        if(pres){
-          const sets=parseSets(pres);
-          sets.forEach((s,si)=>{
-            const sk=key+`||s${si}`;
-            if(state.logs[sk]) return;
-            const setEntry={done:true};
-            if(numMatch) setEntry.actual=numMatch[1];
-            else if(!s.isRpe) setEntry.actual=String(s.weight);
-            state.logs[sk]=setEntry;
-          });
-          const simple=parseSimple(pres);
-          if(simple&&sets.length===0){
-            for(let si=0;si<simple.sets;si++){
-              const sk=key+`||s${si}`;
-              if(state.logs[sk]) continue;
-              const setEntry={done:true};
-              if(numMatch) setEntry.actual=numMatch[1];
-              state.logs[sk]=setEntry;
-            }
-          }
-        }
-      }
-    }
-  }
-  saveLogs();
 
   return{id:sn,name,dateRange,athleteName,maxes,weeks,format:'A'};
 }
@@ -1053,7 +995,6 @@ function parseB(wb){
   }
   if(weeks.length===0) return [];
   const blocks=[{id:'program',name:'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
-  prePopulateFormatB(blocks);
   return blocks;
 }
 
@@ -1113,73 +1054,6 @@ function parseBSheet(sn,rows){
   }
   if(days.length===0) return null;
   return{label:sn,days};
-}
-
-// Pre-populate logs from Format B logged weight column (col C)
-// "165@6" -> weight=165, rpe=6 | plain number -> weight only | any value -> mark done
-function prePopulateFormatB(blocks){
-  for(const block of blocks){
-    for(const week of block.weeks){
-      for(const day of week.days){
-        for(const ex of day.exercises){
-          if(!ex.loggedWeight) continue;
-          const logged=String(ex.loggedWeight).trim();
-          const key=['program',week.label,day.name,ex.name].join('||');
-          if(state.logs[key]) continue;
-
-          const logEntry={done:true};
-
-          // Parse various formats:
-          // "165@6", "165 @6", "165lbs@7", "308 @6", "215@6"
-          const atMatch=logged.match(/^([\d.]+)\s*(?:lbs?)?\s*@\s*([\d.]+)/i);
-          // Plain number (could be float like 90.0)
-          const numMatch=logged.match(/^([\d.]+)/);
-          // "Seal row 55lbs + bar" — extract first number
-          const embeddedNum=logged.match(/(\d+\.?\d*)\s*(?:lbs?|kg)/i);
-
-          if(atMatch){
-            logEntry.actual=atMatch[1];
-            logEntry.rpe=atMatch[2];
-          } else if(numMatch){
-            logEntry.actual=numMatch[1];
-          } else if(embeddedNum){
-            logEntry.actual=embeddedNum[1];
-          }
-
-          state.logs[key]=logEntry;
-
-          // Pre-fill individual sets
-          const pres=ex.prescription;
-          if(pres){
-            const sets=parseSets(pres);
-            if(sets.length>0){
-              sets.forEach((_,si)=>{
-                const sk=key+`||s${si}`;
-                if(state.logs[sk]) return;
-                const se={done:true};
-                if(logEntry.actual) se.actual=logEntry.actual;
-                if(logEntry.rpe) se.rpe=logEntry.rpe;
-                state.logs[sk]=se;
-              });
-            } else {
-              const simple=parseSimple(pres);
-              if(simple){
-                for(let si=0;si<simple.sets;si++){
-                  const sk=key+`||s${si}`;
-                  if(state.logs[sk]) continue;
-                  const se={done:true};
-                  if(logEntry.actual) se.actual=logEntry.actual;
-                  if(logEntry.rpe) se.rpe=logEntry.rpe;
-                  state.logs[sk]=se;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  saveLogs();
 }
 
 // ── UNIFIED ───────────────────────────────────────────────────────────────────
@@ -1636,12 +1510,16 @@ function toggleSkip(key){
 // 2. ≥70% are done/skipped (covers accessories with no notes in sheet)
 function isDayComplete(block, week, day){
   if(!day||day.exercises.length===0) return false;
+  // Check force-complete flag
+  const forceKey=lk(block.id,week.label,day.name,'__complete__');
+  if(state.logs[forceKey]?.done) return true;
+  // Require all exercises resolved
   const total=day.exercises.length;
   const resolved=day.exercises.filter(ex=>{
     const log=state.logs[lk(block.id,week.label,day.name,ex.name)]||{};
     return log.done||log.skipped;
   }).length;
-  return resolved===total||(resolved/total)>=0.7;
+  return resolved===total;
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
 function setActual(key,v){ state.logs[key]={...(state.logs[key]||{}),actual:v}; saveLogs(); }
