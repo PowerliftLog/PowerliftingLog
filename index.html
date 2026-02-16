@@ -1269,18 +1269,18 @@ function renderWorkout(){
               ${s.isRpe
                 ?`<div class="set-inputs-wrap">
                     <div class="set-input-group"><div class="set-input-label">Weight</div>
-                      <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                      <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
                     </div>
                     <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
                     </div>
                   </div>`
                 :`<div class="set-inputs-wrap">
                     <div class="set-input-group"><div class="set-input-label">Weight</div>
-                      <input class="set-input" placeholder="${s.weight}lb" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                      <input class="set-input" placeholder="${s.weight}lb" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
                     </div>
                     <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
                     </div>
                   </div>`}
               <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
@@ -1295,10 +1295,10 @@ function renderWorkout(){
               <div class="set-num">S${si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
               <div class="set-inputs-wrap">
                 <div class="set-input-group"><div class="set-input-label">Weight</div>
-                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
                 </div>
                 <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
                 </div>
               </div>
               <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
@@ -1313,10 +1313,10 @@ function renderWorkout(){
               <div class="set-num">S${si+1}</div><div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>
               <div class="set-inputs-wrap">
                 <div class="set-input-group"><div class="set-input-label">Weight</div>
-                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
                 </div>
                 <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
                 </div>
               </div>
               <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
@@ -1330,10 +1330,10 @@ function renderWorkout(){
             <div class="set-num">S1</div><div class="set-reps">—</div><div class="set-weight rpe">open</div>
             <div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight</div>
-                <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
               <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
               </div>
             </div>
             <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
@@ -1356,7 +1356,7 @@ function renderWorkout(){
         h+=`<div class="notes-section">
           <div class="notes-label">✏️ My Notes</div>
           ${prevNote?`<div class="lifter-prev-note">Last time: "${prevNote}"</div>`:''}
-          <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." onchange="setNote('${esc(key)}',this.value)">${log.notes||''}</textarea></div>
+          <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." oninput="setNote('${esc(key)}',this.value)">${log.notes||''}</textarea></div>
         </div>`;
         h+=`</div>`; // ex-detail
       }
@@ -1522,19 +1522,25 @@ function isDayComplete(block, week, day){
   return resolved===total;
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
+let renderTimeout=null;
+function debouncedRender(){
+  if(renderTimeout) clearTimeout(renderTimeout);
+  renderTimeout=setTimeout(()=>render(),150); // 150ms debounce
+}
 function setActual(key,v){
   state.logs[key]={...(state.logs[key]||{}),actual:v};
   // Auto-complete set when weight is entered
   if(v&&v.trim()!=='') state.logs[key].done=true;
+  else state.logs[key].done=false; // Uncheck if cleared
   saveLogs();
-  render(); // Update UI immediately to show green checkmark
+  debouncedRender();
   // Check if all sets are now done → auto-complete exercise
   autoCompleteExercise(key);
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
   saveLogs();
-  render(); // Update UI immediately
+  debouncedRender();
   // Don't auto-complete on RPE alone, but check if exercise should complete
   autoCompleteExercise(key);
 }
