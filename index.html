@@ -1305,6 +1305,15 @@ function renderWorkout(){
 
   h+=`<div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
 
+  // Next workout banner — shown when user is not already on next incomplete workout
+  const _nxt=findNextWorkout(block);
+  if(_nxt && (_nxt.wi!==state.activeWeek || _nxt.di!==state.activeDay)){
+    h+=`<div onclick="goToNextWorkout()" style="margin:0 0 2px;padding:10px 16px;background:#1a1a0e;border-bottom:1px solid #2a2200;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:#888">Next workout</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#C9A84C;letter-spacing:0.5px">${_nxt.label} →</div>
+    </div>`;
+  }
+
   h+=`<div class="exercises">`;
   if(!day||day.exercises.length===0){
     h+=`<div class="rest-msg">Rest day. Eat enough protein.</div>`;
@@ -1650,6 +1659,17 @@ function isDayComplete(block, week, day){
   }).length;
   return resolved===total||(resolved/total)>=0.7;
 }
+function findNextWorkout(block){
+  if(!block) return null;
+  for(let wi=0;wi<block.weeks.length;wi++){
+    const week=block.weeks[wi];
+    for(let di=0;di<week.days.length;di++){
+      const day=week.days[di];
+      if(!isDayComplete(block,week,day)) return {wi,di,label:`${week.label} · ${abbrev(day.name)}`};
+    }
+  }
+  return null; // all done
+}
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
 function adjustSets(key, delta){
   const base=(() => {
@@ -1877,6 +1897,16 @@ function confirmDeleteBlock(){
 }
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
+function goToNextWorkout(){
+  const next=findNextWorkout(state.activeBlock);
+  if(!next) return;
+  state.activeWeek=next.wi;
+  state.activeDay=next.di;
+  render();
+}
+// Auto-navigate to next incomplete workout on load
+const _next=findNextWorkout(state.activeBlock);
+if(_next){ state.activeWeek=_next.wi; state.activeDay=_next.di; }
 render();
 </script>
 </body>
