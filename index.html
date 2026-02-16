@@ -1522,27 +1522,33 @@ function isDayComplete(block, week, day){
   return resolved===total;
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
-let renderTimeout=null;
-function debouncedRender(){
-  if(renderTimeout) clearTimeout(renderTimeout);
-  renderTimeout=setTimeout(()=>render(),150); // 150ms debounce
-}
 function setActual(key,v){
   state.logs[key]={...(state.logs[key]||{}),actual:v};
   // Auto-complete set when weight is entered
-  if(v&&v.trim()!=='') state.logs[key].done=true;
-  else state.logs[key].done=false; // Uncheck if cleared
+  const shouldCheck=v&&v.trim()!=='';
+  state.logs[key].done=shouldCheck;
   saveLogs();
-  debouncedRender();
+  
+  // Update set checkmark directly without full render
+  updateSetCheckmark(key,shouldCheck);
+  
   // Check if all sets are now done → auto-complete exercise
   autoCompleteExercise(key);
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
   saveLogs();
-  debouncedRender();
-  // Don't auto-complete on RPE alone, but check if exercise should complete
+  // RPE doesn't trigger checkmark, but might trigger exercise complete
   autoCompleteExercise(key);
+}
+function updateSetCheckmark(key,isDone){
+  // Find the button with onclick="toggleSet('KEY')" and update it
+  const escaped=key.replace(/'/g,"\\'");
+  const btn=document.querySelector(`button.set-check[onclick*="${escaped}"]`);
+  if(btn){
+    btn.className=isDone?'set-check done':'set-check';
+    btn.textContent=isDone?'✓':'○';
+  }
 }
 function autoCompleteExercise(setKey){
   // Extract exercise key from set key: blockId||week||day||exercise||sN → blockId||week||day||exercise
@@ -1575,11 +1581,26 @@ function autoCompleteExercise(setKey){
     if(!state.logs[sk]?.done){ allDone=false; break; }
   }
   
-  // If all sets done, mark exercise done and re-render
+  // If all sets done, mark exercise done and update checkmark directly
   if(allDone&&!state.logs[exKey]?.done){
     state.logs[exKey]={...(state.logs[exKey]||{}),done:true};
     saveLogs();
-    render();
+    // Update main exercise checkmark without full render
+    updateExerciseCheckmark(exKey,true);
+  } else if(!allDone&&state.logs[exKey]?.done){
+    // If sets were unchecked, uncheck exercise too
+    state.logs[exKey]={...(state.logs[exKey]||{}),done:false};
+    saveLogs();
+    updateExerciseCheckmark(exKey,false);
+  }
+}
+function updateExerciseCheckmark(exKey,isDone){
+  // Find the main exercise toggle button
+  const escaped=exKey.replace(/'/g,"\\'");
+  const btn=document.querySelector(`button[onclick*="toggleEx('${escaped}')"]`);
+  if(btn){
+    btn.className=isDone?'ex-check done':'ex-check';
+    btn.textContent=isDone?'✓':'○';
   }
 }
 function setNote(key,v){ state.logs[key]={...(state.logs[key]||{}),notes:v}; saveLogs(); }
