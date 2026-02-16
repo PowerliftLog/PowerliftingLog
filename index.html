@@ -1527,12 +1527,14 @@ function setActual(key,v){
   // Auto-complete set when weight is entered
   if(v&&v.trim()!=='') state.logs[key].done=true;
   saveLogs();
+  render(); // Update UI immediately to show green checkmark
   // Check if all sets are now done → auto-complete exercise
   autoCompleteExercise(key);
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
   saveLogs();
+  render(); // Update UI immediately
   // Don't auto-complete on RPE alone, but check if exercise should complete
   autoCompleteExercise(key);
 }
