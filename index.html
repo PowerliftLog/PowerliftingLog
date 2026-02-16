@@ -279,7 +279,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <script>
 const _savedBlocks=loadBlocks()||[];
 console.log('[liftlog] startup: restored', _savedBlocks.length, 'blocks');
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsVariation:{}, metricsBlock:null, metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null, extraSets:loadExtraSets() };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsVariation:{}, metricsBlock:null, metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), extraSets:loadExtraSets(), editingExKey:null, editingBlockName:false, expandedEx:null };
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
@@ -927,21 +927,26 @@ function parseASheet(sn,rows){
       dayCols.push({col,name:String(c).trim(),noteCol:col+1});
   }
   const rawDays=dayCols.map(({col,name,noteCol})=>{
-    const exs=[]; let cur=null; let pendingRounds=null;
+    const exs=[]; let cur=null;
     for(let r=hdr+1;r<rows.length;r++){
       const row=rows[r]; if(!row) continue;
-      const cell=row[col];
-      const rawNote=row[noteCol];
-      const note=rawNote!=null&&rawNote!==''?String(rawNote).trim():null;
+      const cell=row[col]; const note=row[noteCol];
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note}); } }
+      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 1'&&cur.name==='Incline Bench Press') console.log(`[wm] W${wm[1]} note=`,JSON.stringify(wNote),'raw note=',note); } }
       else{
+        // Prescription patterns:
+        // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
+        // lp2 = NxN format without parens: 4x15, 3x5, 4x12
         const lp=(/\(/.test(cs)&&(/\d/.test(cs)||/[LMH]/.test(cs)));
-        const lp2=/^\d+x\d+/i.test(cs);
+        const lp2=/^\d+x\d+/i.test(cs); // e.g. "4x15", "3x5"
         const ln=cs.startsWith('(')||cs.toLowerCase().includes('increase');
         const isSectionHeader=/^\d+\s*rounds?[\s:]/i.test(cs)||/^round\s*\d/i.test(cs)||/^superset/i.test(cs)||/^circuit/i.test(cs);
+        // Coach note patterns:
+        // - wrapped in dashes: -McGill Protocol-
+        // - starts with "goal", "continue", "protocol"
+        // - is a sentence (contains space, ends with period or has >4 words) but is NOT a known exercise format
         const wordCount=cs.split(/\s+/).length;
         const isCoachNoteLine=
           /^-.*-$/.test(cs) ||
@@ -950,24 +955,16 @@ function parseASheet(sn,rows){
           /^protocol\b/i.test(cs) ||
           (cs.endsWith('.')&&wordCount>=4&&!lp&&!lp2&&!ln);
 
-        if(isSectionHeader){
-          // "2 rounds:" → store round count, apply as set count to following exercises
-          const rm=cs.match(/^(\d+)\s*rounds?/i);
-          if(rm) pendingRounds=parseInt(rm[1]);
-        } else if(!lp&&!lp2&&!ln&&!isCoachNoteLine){
+        if(!lp&&!lp2&&!ln&&!isSectionHeader&&!isCoachNoteLine){
           const correctedName=spellCorrectExerciseName(cs);
-          cur={name:correctedName,weeks:[],staticPrescription:null,note,coachNotes:[],roundSets:pendingRounds||null};
+          cur={name:correctedName,weeks:[],staticPrescription:null,note:note?String(note).trim():null,coachNotes:[]};
           exs.push(cur);
         } else if(cur&&(isCoachNoteLine||ln)){
           const noteText=cs.replace(/^-|-$/g,'').trim();
           if(noteText&&!cur.coachNotes.includes(noteText)) cur.coachNotes.push(noteText);
-        } else if(cur&&(lp||lp2)){
-          if(!cur.staticPrescription){
-            cur.staticPrescription=cs;
-            if(note) cur.note=note;
-          }
-          // Clear pending rounds once we hit an exercise with its own explicit NxN set count
-          if(/^\d+x\d+/i.test(cs)) pendingRounds=null;
+        } else if(cur&&(lp||lp2)&&!cur.staticPrescription){
+          cur.staticPrescription=cs;
+          if(note) cur.note=String(note).trim();
         }
       }
     }
@@ -982,11 +979,17 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||null,roundSets:ex.roundSets||null};
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||null};
     })}))});
   }
 
   // Pre-populate logs from sheet data
+  // For Format A: if tracking column has any value, mark done at prescribed weight
+  // If value is a number, use it as logged weight
+  if(sn==='Cycle 2'){
+    console.log('[rawDays] Cycle 2:');
+    rawDays.forEach(d=>console.log(`  ${d.name}:`, d.exercises.map(e=>e.name+' W1note='+( e.weeks.find(w=>w.week===1)?.note||'none'))));
+  }
   for(let w=1;w<=nw;w++){
     const weekLabel=`W${w}`;
     for(const d of rawDays){
@@ -997,6 +1000,8 @@ function parseASheet(sn,rows){
         if(!noteStr) continue;
 
         const key=[sn,weekLabel,d.name,ex.name].join('||');
+        if(sn==='Cycle 2'&&d.name==='Friday') console.log('[prepop-fri] key=',key,'note=',noteStr);
+        else console.log('[prepop] key=',key,'note=',noteStr);
 
         // Always set exercise-level done if not already set
         if(!state.logs[key]){
@@ -1205,19 +1210,11 @@ function parseSimple(pres){
 // Handles "3-4x15 (M)", "3x12-15", range-set patterns with no specific weight
 function parseRangeSet(pres){
   if(!pres) return null;
-  // "3-4x15", "2x8-12" style
   const m=pres.match(/^(\d+)[\-–]?(\d*)x([\d\-]+)/i);
-  if(m){
-    const sets=parseInt(m[1]); // lower bound of set range
-    const reps=m[3];
-    return{sets,reps};
-  }
-  // "2-3 sets (pick reps)", "2-3 sets" style — no x
-  const s=pres.match(/^(\d+)[\-–](\d+)\s*sets?/i);
-  if(s){
-    return{sets:parseInt(s[1]),reps:'?'}; // lower bound, open reps
-  }
-  return null;
+  if(!m) return null;
+  const sets=parseInt(m[1]); // use lower bound of set range
+  const reps=m[3];
+  return{sets,reps};
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -1351,11 +1348,8 @@ function renderWorkout(){
 
       const isExpanded=state.expandedEx===key;
       const presSum=presShortSummary(sets,simple,ranged,pres);
-      // roundSets: set count from "N rounds:" section header
-      const roundSets=ex.roundSets||null;
-      const baseSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(roundSets||0)||(pres?1:0);
-      // User can add/delete sets via state.extraSets[key]
-      const extraSets=state.extraSets?.[key]||0;
+      const extraSets=state.extraSets[key]||0;
+      const baseSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0);
       const totalSetsCount=Math.max(1,baseSetsCount+extraSets);
       const setsCompletedCount=[...Array(totalSetsCount)].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
 
@@ -1396,13 +1390,12 @@ function renderWorkout(){
 
         if(hasSets){
           h+=`<div class="sets-grid">`;
-          // Render prescribed sets first, then any extra sets added by user
           for(let si=0;si<totalSetsCount;si++){
-            const s=sets[si]; // may be undefined for extra sets
+            const s=sets[si]; // undefined for extra sets beyond prescribed
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-            const repsLabel=s?s.reps:(ranged?.reps||simple?.reps||'—');
-            const weightLabel=s?(s.isRpe?s.weight:s.weight+'lb'):'—';
             const isRpe=s?s.isRpe:false;
+            const repsLabel=s?s.reps:'—';
+            const weightLabel=s?(s.isRpe?s.weight:s.weight+'lb'):'open';
             h+=`<div class="set-row">
               <div class="set-num">S${si+1}</div>
               <div class="set-reps">${repsLabel}</div>
@@ -1419,14 +1412,48 @@ function renderWorkout(){
             </div>`;
           }
           h+=`</div>`;
-        } else if(pres||roundSets){
-          if(pres) h+=`<div class="prescription purple">${pres}</div>`;
-          h+=`<div class="sets-grid">`;
+        } else if(pres&&simple){
+          h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
           for(let si=0;si<totalSetsCount;si++){
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-            const repsLabel=simple?.reps||ranged?.reps||'—';
             h+=`<div class="set-row">
-              <div class="set-num">S${si+1}</div><div class="set-reps">${repsLabel}</div><div class="set-weight rpe">reps</div>
+              <div class="set-num">S${si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
+              <div class="set-inputs-wrap">
+                <div class="set-input-group"><div class="set-input-label">Weight</div>
+                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                </div>
+                <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                </div>
+              </div>
+              <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+            </div>`;
+          }
+          h+=`</div>`;
+        } else if(pres&&ranged){
+          h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
+          for(let si=0;si<totalSetsCount;si++){
+            const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
+            h+=`<div class="set-row">
+              <div class="set-num">S${si+1}</div><div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>
+              <div class="set-inputs-wrap">
+                <div class="set-input-group"><div class="set-input-label">Weight</div>
+                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                </div>
+                <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                </div>
+              </div>
+              <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+            </div>`;
+          }
+          h+=`</div>`;
+        } else if(pres){
+          h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
+          for(let si=0;si<totalSetsCount;si++){
+            const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
+            h+=`<div class="set-row">
+              <div class="set-num">S${si+1}</div><div class="set-reps">—</div><div class="set-weight rpe">open</div>
               <div class="set-inputs-wrap">
                 <div class="set-input-group"><div class="set-input-label">Weight</div>
                   <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
@@ -1441,10 +1468,10 @@ function renderWorkout(){
           h+=`</div>`;
         }
 
-        // Add / Remove set buttons
+        // Add / Remove set buttons (only shown in expanded view)
         h+=`<div style="display:flex;gap:8px;padding:0 16px 12px">
-          <button onclick="adjustSets('${esc(key)}',-1)" style="flex:1;padding:7px;background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif">− Remove Set</button>
-          <button onclick="adjustSets('${esc(key)}',1)" style="flex:1;padding:7px;background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif">+ Add Set</button>
+          <button onclick="adjustSets('${esc(key)}',-1)" style="flex:1;padding:7px;background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif">− Set</button>
+          <button onclick="adjustSets('${esc(key)}',1)" style="flex:1;padding:7px;background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif">+ Set</button>
         </div>`;
 
         // Coach notes (from sheet)
@@ -1625,11 +1652,23 @@ function isDayComplete(block, week, day){
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
 function adjustSets(key, delta){
-  if(!state.extraSets) state.extraSets={};
+  const base=(() => {
+    // Recalculate base set count from the exercise prescription
+    const block=state.activeBlock;
+    const week=block?.weeks[state.activeWeek];
+    const day=week?.days[state.activeDay];
+    if(!day) return 1;
+    const ex=day.exercises.find(e=>lk(block.id,week.label,day.name,e.name)===key);
+    if(!ex) return 1;
+    const pres=ex.prescription;
+    const sets=pres?parseSets(pres):[];
+    const simple=parseSimple(pres);
+    const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
+    return sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
+  })();
   const cur=state.extraSets[key]||0;
   const next=cur+delta;
-  // Can't remove more sets than exist (minimum 1 total)
-  if(next<0) return;
+  if(base+next<1) return; // can't go below 1 set total
   state.extraSets[key]=next;
   saveExtraSets();
   render();
@@ -1838,24 +1877,6 @@ function confirmDeleteBlock(){
 }
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
-
-// Auto-navigate to next incomplete workout on load
-function autoNavigate(){
-  const block=state.activeBlock;
-  if(!block) return;
-  for(let wi=0;wi<block.weeks.length;wi++){
-    const week=block.weeks[wi];
-    for(let di=0;di<week.days.length;di++){
-      const day=week.days[di];
-      if(!isDayComplete(block,week,day)){
-        state.activeWeek=wi;
-        state.activeDay=di;
-        return;
-      }
-    }
-  }
-}
-if(_savedBlocks.length>0) autoNavigate();
 render();
 </script>
 </body>
