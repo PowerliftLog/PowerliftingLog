@@ -951,7 +951,7 @@ function parseASheet(sn,rows){
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 1'&&cur.name==='Incline Bench Press') console.log(`[wm] W${wm[1]} note=`,JSON.stringify(wNote),'raw note=',note); } }
+      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
@@ -996,59 +996,9 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||ex.note||null};
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[]};
     })}))});
   }
-
-  // Pre-populate logs from sheet data
-  for(let w=1;w<=nw;w++){
-    const weekLabel=`W${w}`;
-    for(const d of rawDays){
-      for(const ex of d.exercises){
-        const wd=ex.weeks.find(x=>x.week===w);
-        // Use week-specific note if present, fall back to static ex.note
-        const noteStr=wd?.note!=null?String(wd.note).trim():(ex.note&&!wd?String(ex.note).trim():null);
-        if(!noteStr) continue;
-
-        const key=[sn,weekLabel,d.name,ex.name].join('||');
-
-        // Always set exercise-level done if not already set
-        if(!state.logs[key]){
-          const logEntry={done:true};
-          const numMatch=noteStr.match(/^(\d+\.?\d*)/);
-          if(numMatch) logEntry.actual=numMatch[1];
-          state.logs[key]=logEntry;
-        }
-
-        const numMatch=noteStr.match(/^(\d+\.?\d*)/);
-
-        // Mark individual sets done — check each set key individually
-        const pres=wd?.prescription||ex.staticPrescription||null;
-        if(pres){
-          const sets=parseSets(pres);
-          sets.forEach((s,si)=>{
-            const sk=key+`||s${si}`;
-            if(state.logs[sk]) return;
-            const setEntry={done:true};
-            if(numMatch) setEntry.actual=numMatch[1];
-            else if(!s.isRpe) setEntry.actual=String(s.weight);
-            state.logs[sk]=setEntry;
-          });
-          const simple=parseSimple(pres);
-          if(simple&&sets.length===0){
-            for(let si=0;si<simple.sets;si++){
-              const sk=key+`||s${si}`;
-              if(state.logs[sk]) continue;
-              const setEntry={done:true};
-              if(numMatch) setEntry.actual=numMatch[1];
-              state.logs[sk]=setEntry;
-            }
-          }
-        }
-      }
-    }
-  }
-  saveLogs();
 
   return{id:sn,name,dateRange,athleteName,maxes,weeks,format:'A'};
 }
@@ -1684,17 +1634,14 @@ function toggleSkip(key){
 }
 
 // A day is complete if:
-// - Imported: any exercise has a trackingNote from the sheet → historical data, treat as done
-// - Manual: all exercises done/skipped, OR explicit "Complete Workout" tap (force flag)
+// - Force-complete flag set (user tapped "Complete Workout")
+// - All exercises done/skipped manually
 function isDayComplete(block, week, day){
   if(!day||day.exercises.length===0) return false;
-  // Check force-complete flag (set by "Complete Workout" button)
+  // Check force-complete flag
   const forceKey=lk(block.id,week.label,day.name,'__complete__');
   if(state.logs[forceKey]?.done) return true;
-  // Check if any exercise was pre-populated from sheet tracking notes
-  const hasImportedData=day.exercises.some(ex=>ex.trackingNote);
-  if(hasImportedData) return true;
-  // Manual: require all exercises resolved
+  // Require all exercises resolved
   const total=day.exercises.length;
   const resolved=day.exercises.filter(ex=>{
     const log=state.logs[lk(block.id,week.label,day.name,ex.name)]||{};
@@ -1736,8 +1683,62 @@ function adjustSets(key, delta){
   saveExtraSets();
   render();
 }
-function setActual(key,v){ state.logs[key]={...(state.logs[key]||{}),actual:v}; saveLogs(); }
-function setRpe(key,v){ state.logs[key]={...(state.logs[key]||{}),rpe:v}; saveLogs(); }
+function setActual(key,v){
+  state.logs[key]={...(state.logs[key]||{}),actual:v};
+  // Auto-complete set when weight is entered (RPE is optional)
+  if(v&&v.trim()!==''){
+    state.logs[key].done=true;
+  }
+  saveLogs();
+  checkExerciseAutoComplete(key);
+}
+function setRpe(key,v){
+  state.logs[key]={...(state.logs[key]||{}),rpe:v};
+  saveLogs();
+  checkExerciseAutoComplete(key);
+}
+function checkExerciseAutoComplete(setKey){
+  // Extract exercise key from set key (format: blockId||week||day||exercise||sN)
+  const parts=setKey.split('||');
+  if(parts.length<5) return; // Not a set key
+  const exKey=parts.slice(0,4).join('||'); // blockId||week||day||exercise
+  
+  // Find the exercise and count total sets
+  const block=state.activeBlock;
+  if(!block) return;
+  const week=block.weeks[state.activeWeek];
+  if(!week) return;
+  const day=week.days[state.activeDay];
+  if(!day) return;
+  const ex=day.exercises.find(e=>lk(block.id,week.label,day.name,e.name)===exKey);
+  if(!ex) return;
+  
+  // Count how many sets exist for this exercise
+  const pres=ex.prescription;
+  const sets=pres?parseSets(pres):[];
+  const simple=parseSimple(pres);
+  const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
+  const extraSets=state.extraSets?.[exKey]||0;
+  const baseSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
+  const totalSets=Math.max(1,baseSetsCount+extraSets);
+  
+  // Check if all sets are done
+  let allSetsDone=true;
+  for(let si=0;si<totalSets;si++){
+    const sk=exKey+`||s${si}`;
+    if(!state.logs[sk]||!state.logs[sk].done){
+      allSetsDone=false;
+      break;
+    }
+  }
+  
+  // If all sets done, mark exercise done
+  if(allSetsDone){
+    state.logs[exKey]={...(state.logs[exKey]||{}),done:true};
+    saveLogs();
+    render();
+  }
+}
 function setNote(key,v){ state.logs[key]={...(state.logs[key]||{}),notes:v}; saveLogs(); }
 function getPrevWeekNote(blockId,weekLabel,dayName,exName){
   // Find the most recent previous week that has a lifter note for this exercise
