@@ -313,6 +313,23 @@ function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||
 function saveLogs(){ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }
 function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); console.log('[liftlog] loadBlocks:', d?`${d.length} chars`:'null'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); return null; } }
 function saveBlocks(){ try{ const s=JSON.stringify(state.blocks); localStorage.setItem('liftlog_blocks',s); console.log('[liftlog] saveBlocks OK:', s.length,'chars'); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
+function mergeBlocks(incoming){
+  // For each incoming block, if a block with the same ID already exists,
+  // update its structure (weeks, exercises) but preserve existing logs.
+  // New blocks are appended.
+  const existing=state.blocks;
+  const merged=[...existing];
+  incoming.forEach(newBlock=>{
+    const idx=merged.findIndex(b=>b.id===newBlock.id);
+    if(idx>=0){
+      // Replace structure but keep identity — logs are keyed by block.id so they survive
+      merged[idx]=newBlock;
+    } else {
+      merged.push(newBlock);
+    }
+  });
+  return merged;
+}
 function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
 function saveCustomLifts(){ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }
 function loadTrackedLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
@@ -979,29 +996,21 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||null};
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],loggedWeight:null,trackingNote:wd?.note||ex.note||null};
     })}))});
   }
 
   // Pre-populate logs from sheet data
-  // For Format A: if tracking column has any value, mark done at prescribed weight
-  // If value is a number, use it as logged weight
-  if(sn==='Cycle 2'){
-    console.log('[rawDays] Cycle 2:');
-    rawDays.forEach(d=>console.log(`  ${d.name}:`, d.exercises.map(e=>e.name+' W1note='+( e.weeks.find(w=>w.week===1)?.note||'none'))));
-  }
   for(let w=1;w<=nw;w++){
     const weekLabel=`W${w}`;
     for(const d of rawDays){
       for(const ex of d.exercises){
         const wd=ex.weeks.find(x=>x.week===w);
-        if(!wd?.note) continue;
-        const noteStr=String(wd.note).trim();
+        // Use week-specific note if present, fall back to static ex.note
+        const noteStr=wd?.note!=null?String(wd.note).trim():(ex.note&&!wd?String(ex.note).trim():null);
         if(!noteStr) continue;
 
         const key=[sn,weekLabel,d.name,ex.name].join('||');
-        if(sn==='Cycle 2'&&d.name==='Friday') console.log('[prepop-fri] key=',key,'note=',noteStr);
-        else console.log('[prepop] key=',key,'note=',noteStr);
 
         // Always set exercise-level done if not already set
         if(!state.logs[key]){
@@ -1011,7 +1020,7 @@ function parseASheet(sn,rows){
           state.logs[key]=logEntry;
         }
 
-        const numMatch=String(wd.note).trim().match(/^(\d+\.?\d*)/);
+        const numMatch=noteStr.match(/^(\d+\.?\d*)/);
 
         // Mark individual sets done — check each set key individually
         const pres=wd?.prescription||ex.staticPrescription||null;
@@ -1337,7 +1346,13 @@ function renderWorkout(){
       // ── Prescription summary for collapsed view ───────────────────────────
       function presShortSummary(sets,simple,ranged,pres){
         if(sets.length>0){
-          // e.g. "3×5 @ 235lb" or "3×5 @ RPE 8"
+          const INTENSITY_LABELS=['L','M','MH','H','0'];
+          const isIntensityScale=sets.every(s=>s.isRpe&&INTENSITY_LABELS.includes(s.weight.toUpperCase()));
+          if(isIntensityScale){
+            // e.g. "4×5 · L→H"
+            const reps=sets.every(s=>s.reps===sets[0].reps)?`${sets[0].reps}`:`${sets[0].reps}–${sets[sets.length-1].reps}`;
+            return `${sets.length}×${reps} · ${sets[0].weight}→${sets[sets.length-1].weight}`;
+          }
           const firstWeight=sets[0].isRpe?`@ ${sets[0].weight}`:`@ ${sets[0].weight}lb`;
           const allSame=sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight);
           if(allSame) return `${sets.length}×${sets[0].reps} ${firstWeight}`;
@@ -1392,27 +1407,49 @@ function renderWorkout(){
         if(showTrackBtn&&!isComp&&!tracked) h+=`<div class="track-hint">📊 Tap to track in metrics</div>`;
 
         if(hasSets){
+          // Detect intensity scale prescription: all sets use L/M/MH/H labels
+          const INTENSITY_LABELS=['L','M','MH','H','0'];
+          const isIntensityScale=sets.length>0&&sets.every(s=>s.isRpe&&INTENSITY_LABELS.includes(s.weight.toUpperCase()));
           h+=`<div class="sets-grid">`;
           for(let si=0;si<totalSetsCount;si++){
-            const s=sets[si]; // undefined for extra sets beyond prescribed
+            const s=sets[si];
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
             const isRpe=s?s.isRpe:false;
             const repsLabel=s?s.reps:'—';
-            const weightLabel=s?(s.isRpe?s.weight:s.weight+'lb'):'open';
-            h+=`<div class="set-row">
-              <div class="set-num">S${si+1}</div>
-              <div class="set-reps">${repsLabel}</div>
-              <div class="set-weight ${isRpe?'rpe':''}">${weightLabel}</div>
-              <div class="set-inputs-wrap">
-                <div class="set-input-group"><div class="set-input-label">Weight</div>
-                  <input class="set-input" placeholder="${s&&!s.isRpe?s.weight+'lb':'lbs'}" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+            if(isIntensityScale&&s){
+              // Go-by-feel: show intensity label as the set descriptor, weight input for all sets
+              const isTopSet=si===sets.length-1;
+              h+=`<div class="set-row">
+                <div class="set-num">S${si+1}</div>
+                <div class="set-reps">${repsLabel}</div>
+                <div class="set-weight rpe">${s.weight}</div>
+                <div class="set-inputs-wrap">
+                  <div class="set-input-group"><div class="set-input-label">Weight</div>
+                    <input class="set-input" placeholder="lbs" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                  </div>
+                  ${isTopSet?`<div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                    <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                  </div>`:''}
                 </div>
-                <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+              </div>`;
+            } else {
+              const weightLabel=s?(s.isRpe?s.weight:s.weight+'lb'):'open';
+              h+=`<div class="set-row">
+                <div class="set-num">S${si+1}</div>
+                <div class="set-reps">${repsLabel}</div>
+                <div class="set-weight ${isRpe?'rpe':''}">${weightLabel}</div>
+                <div class="set-inputs-wrap">
+                  <div class="set-input-group"><div class="set-input-label">Weight</div>
+                    <input class="set-input" placeholder="${s&&!s.isRpe?s.weight+'lb':'lbs'}" value="${sl.actual||''}" onchange="setActual('${esc(sk)}',this.value)">
+                  </div>
+                  <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                    <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" onchange="setRpe('${esc(sk)}',this.value)">
+                  </div>
                 </div>
-              </div>
-              <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
-            </div>`;
+                <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+              </div>`;
+            }
           }
           h+=`</div>`;
         } else if(pres&&simple){
@@ -1804,8 +1841,9 @@ async function pickerCallback(data){
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
-    autoRegisterCompLifts(blocks);
+    const merged=mergeBlocks(blocks);
+    state.blocks=merged; state.activeBlock=merged[merged.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    autoRegisterCompLifts(merged);
     saveBlocks();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
@@ -1826,8 +1864,9 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     // Pull athlete name from filename
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
-    autoRegisterCompLifts(blocks);
+    const merged=mergeBlocks(blocks);
+    state.blocks=merged; state.activeBlock=merged[merged.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    autoRegisterCompLifts(merged);
     saveBlocks();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
