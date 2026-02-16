@@ -1597,10 +1597,10 @@ function autoCompleteExercise(setKey){
 function updateExerciseCheckmark(exKey,isDone){
   // Find the main exercise toggle button
   const escaped=exKey.replace(/'/g,"\\'");
-  const btn=document.querySelector(`button[onclick*="toggleEx('${escaped}')"]`);
+  const btn=document.querySelector(`button.exercise-check[onclick*="toggleEx('${escaped}')"]`);
   if(btn){
-    btn.className=isDone?'ex-check done':'ex-check';
-    btn.textContent=isDone?'✓':'○';
+    btn.className=isDone?'exercise-check done':'exercise-check';
+    btn.textContent=isDone?'✓':'';
   }
 }
 function setNote(key,v){ state.logs[key]={...(state.logs[key]||{}),notes:v}; saveLogs(); }
