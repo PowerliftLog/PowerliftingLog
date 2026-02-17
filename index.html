@@ -103,6 +103,10 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .notes-input:focus { border-color: #333; color: #f0f0f0; }
 .notes-input::placeholder { color: #333; }
 .lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: #4ade80; font-style: italic; opacity: 0.7; }
+.prev-performance { border-top: 1px solid #1a1a1a; padding: 8px 16px 10px; }
+.prev-performance-label { font-size: 10px; color: #333; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; }
+.prev-performance-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+.prev-performance-set { font-size: 12px; color: #4ade80; opacity: 0.7; background: rgba(74,222,128,0.06); padding: 3px 8px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; }
 .rest-msg { text-align: center; color: #333; padding-top: 60px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
 .complete-workout-btn { display: block; width: calc(100% - 32px); margin: 8px 16px 24px; padding: 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; color: #4ade80; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; }
 .complete-workout-btn:active { background: #222; border-color: #4ade80; }
@@ -1366,6 +1370,20 @@ function renderWorkout(){
           h+=`</div>`;
         }
 
+        // Previous week performance
+        const prevPerf=getPrevWeekPerformance(block.id,week.label,day.name,ex.name);
+        if(prevPerf){
+          const srcLabel=prevPerf.source
+            ?`📊 Last performed (${prevPerf.source} — ${prevPerf.label})`
+            :`📊 Last time (${prevPerf.label})`;
+          h+=`<div class="prev-performance">
+            <div class="prev-performance-label">${srcLabel}</div>
+            <div class="prev-performance-sets">
+              ${prevPerf.sets.map((s,i)=>`<span class="prev-performance-set">S${i+1}: ${s.actual}${s.rpe?' @'+s.rpe:''}</span>`).join('')}
+            </div>
+          </div>`;
+        }
+
         // Coach notes (from sheet)
         const allCoachNotes=[...(ex.coachNotes||[])];
         if(ex.note&&!allCoachNotes.includes(ex.note)) allCoachNotes.unshift(ex.note);
@@ -1648,6 +1666,49 @@ function getPrevWeekNote(blockId,weekLabel,dayName,exName){
     const key=[blockId,w.label,dayName,exName].join('||');
     const note=state.logs[key]?.notes;
     if(note&&note.trim()) return note.trim();
+  }
+  return null;
+}
+function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
+  function getSets(key){
+    const sets=[];
+    for(let si=0;si<20;si++){
+      const sl=state.logs[key+'||s'+si];
+      if(!sl) break;
+      sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',done:sl.done});
+    }
+    return sets;
+  }
+  // Phase 1: search current block backwards
+  const block=state.blocks.find(b=>b.id===blockId);
+  if(block){
+    const curIdx=block.weeks.findIndex(w=>w.label===weekLabel);
+    for(let i=(curIdx>0?curIdx-1:block.weeks.length-1);i>=0;i--){
+      if(i>=curIdx) break;
+      const w=block.weeks[i];
+      const day=w.days.find(d=>d.name===dayName);
+      if(!day) continue;
+      if(!day.exercises.find(e=>e.name===exName)) continue;
+      const key=[blockId,w.label,dayName,exName].join('||');
+      if(!state.logs[key]?.done) continue;
+      const sets=getSets(key);
+      if(sets.length>0) return {label:w.label,source:null,sets};
+    }
+  }
+  // Phase 2: search other blocks (most recent first)
+  for(let bi=state.blocks.length-1;bi>=0;bi--){
+    const b=state.blocks[bi];
+    if(b.id===blockId) continue;
+    for(let wi=b.weeks.length-1;wi>=0;wi--){
+      const w=b.weeks[wi];
+      for(const d of w.days){
+        if(!d.exercises.find(e=>e.name===exName)) continue;
+        const key=[b.id,w.label,d.name,exName].join('||');
+        if(!state.logs[key]?.done) continue;
+        const sets=getSets(key);
+        if(sets.length>0) return {label:w.label,source:b.name||b.id,sets};
+      }
+    }
   }
   return null;
 }
