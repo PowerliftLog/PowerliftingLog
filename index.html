@@ -109,6 +109,10 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .workout-complete-msg { text-align: center; color: #4ade80; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.08em; padding: 20px 16px 32px; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .clear-workout-btn { background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.5; padding: 2px 4px; transition: opacity 0.15s; line-height: 1; }
 .clear-workout-btn:hover { opacity: 1; }
+.next-workout-banner { display: flex; align-items: center; justify-content: space-between; margin: 0 16px 8px; padding: 10px 14px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: border-color 0.15s; }
+.next-workout-banner:active { border-color: #C9A84C; }
+.next-workout-banner-text { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: #C9A84C; }
+.next-workout-banner-arrow { color: #C9A84C; font-size: 14px; opacity: 0.7; }
 
 /* Tracking button */
 .track-btn { background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.25; padding: 2px; transition: opacity 0.15s, transform 0.1s; line-height: 1; }
@@ -278,45 +282,56 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <script>
 const _savedBlocks=loadBlocks()||[];
-console.log('[liftlog] startup: restored', _savedBlocks.length, 'blocks');
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsVariation:{}, metricsBlock:null, metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null };
+// Restore nav position from last session
+(function restoreNav(){
+  const nav=loadNav();
+  if(nav.blockId){ const b=state.blocks.find(b=>b.id===nav.blockId); if(b) state.activeBlock=b; }
+  if(typeof nav.week==='number') state.activeWeek=nav.week;
+  if(typeof nav.day==='number') state.activeDay=nav.day;
+})();
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
 function rePopulateSets(blocks){
-  for(const block of blocks){
-    if(block.format!=='A') continue;
-    for(const week of block.weeks){
-      for(const day of week.days){
-        for(const ex of day.exercises){
-          const key=[block.id,week.label,day.name,ex.name].join('||');
-          const exLog=state.logs[key];
-          if(!exLog?.done) continue; // only fill sets for completed exercises
-          if(!ex.prescription) continue;
-          const sets=parseSets(ex.prescription);
-          sets.forEach((s,si)=>{
-            const sk=key+`||s${si}`;
-            if(state.logs[sk]) return; // don't overwrite manual entries
-            const setEntry={done:true};
-            if(exLog.actual) setEntry.actual=exLog.actual;
-            else if(!s.isRpe) setEntry.actual=String(s.weight);
-            state.logs[sk]=setEntry;
-          });
+  try{
+    for(const block of blocks){
+      if(block.format!=='A') continue;
+      for(const week of block.weeks){
+        for(const day of week.days){
+          for(const ex of day.exercises){
+            const key=[block.id,week.label,day.name,ex.name].join('||');
+            const exLog=state.logs[key];
+            if(!exLog?.done) continue;
+            if(!ex.prescription) continue;
+            const sets=parseSets(ex.prescription);
+            sets.forEach((s,si)=>{
+              const sk=key+`||s${si}`;
+              if(state.logs[sk]) return;
+              const setEntry={done:true};
+              if(exLog.actual) setEntry.actual=exLog.actual;
+              else if(!s.isRpe) setEntry.actual=String(s.weight);
+              state.logs[sk]=setEntry;
+            });
+          }
         }
       }
     }
-  }
-  if(blocks.length>0) saveLogs();
+    if(blocks.length>0) saveLogs();
+  }catch(e){ console.error('[liftlog] rePopulateSets error:',e); }
 }
 if(_savedBlocks.length>0) rePopulateSets(_savedBlocks);
 function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch{ return {}; } }
-function saveLogs(){ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }
-function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); console.log('[liftlog] loadBlocks:', d?`${d.length} chars`:'null'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); return null; } }
-function saveBlocks(){ try{ const s=JSON.stringify(state.blocks); localStorage.setItem('liftlog_blocks',s); console.log('[liftlog] saveBlocks OK:', s.length,'chars'); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
+let _saveLogsTimer=null;
+function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(()=>{ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); } },300); }
+function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); return null; } }
+function saveBlocks(){ try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
 function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
-function saveCustomLifts(){ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }
+function saveCustomLifts(){ try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); } }
 function loadTrackedLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
-function saveTrackedLifts(){ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }
+function saveTrackedLifts(){ try{ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }catch(e){ console.error('[liftlog] saveTrackedLifts error:',e); } }
+function loadNav(){ try{ return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch{ return {}; } }
+function saveNav(){ try{ localStorage.setItem('liftlog_nav', JSON.stringify({blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay})); }catch(e){ console.error('[liftlog] saveNav error:',e); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
@@ -400,6 +415,26 @@ function classifyLift(name){
   const custom=state.customLifts.find(c=>c.name.toLowerCase()===n);
   if(custom) return custom.group;
   return null;
+}
+
+// ── EXERCISE INPUT MODE ───────────────────────────────────────────────────────
+const CARDIO_KEYWORDS = ['treadmill','bike','cycling','rowing machine','elliptical','stairmaster','stair master','cardio','walk','jog','run','sprint'];
+const BODYWEIGHT_KEYWORDS = [
+  'plank','sit up','situp','sit-up','crunch','leg raise','hanging leg','v-up','ab wheel','ab rollout',
+  'dead bug','bird dog','pallof','push up','pushup','push-up','pull up','pullup','pull-up',
+  'chin up','chinup','chin-up','dip','bodyweight','stretch','foam roll','mobility',
+  'yoga','jumping jack','burpee','mountain climber','glute bridge','hip thrust bodyweight',
+  'lunge bodyweight','pike','handstand','muscle up','muscle-up'
+];
+const TIMED_PATTERN=/\d+\s*(min|sec|s|m)\b/i;
+function getExerciseInputMode(name,pres){
+  const n=name.toLowerCase().trim();
+  if(n.includes('weighted')) return 'weighted';
+  if(CARDIO_KEYWORDS.some(k=>n.includes(k))) return 'cardio';
+  if(BODYWEIGHT_KEYWORDS.some(k=>n.includes(k))){
+    return (TIMED_PATTERN.test(n)||(pres&&TIMED_PATTERN.test(pres))) ? 'bw-timed' : 'bw';
+  }
+  return 'weighted';
 }
 
 // ── EPLEY 1RM ─────────────────────────────────────────────────────────────────
@@ -783,12 +818,6 @@ function drawOverlaidChart(canvasId, vars, drillMode){
   }
 }
 
-function setMetricsBlock(id){ state.metricsBlock=id; state.metricsVariation={}; renderMetrics(); }
-function setVariation(group,variation){
-  state.metricsVariation[group]=variation;
-  renderMetrics();
-}
-
 // ── ADD CUSTOM LIFT ───────────────────────────────────────────────────────────
 let selectedGroup='squat';
 function openAddLift(){ document.getElementById('add-lift-modal').style.display='flex'; document.getElementById('add-lift-name').value=''; }
@@ -860,14 +889,16 @@ function spellCorrectExerciseName(name){
 const DAYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
 function detectFormat(wb){
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rawRows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
-  const rows = rawRows.map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
-  for(let i=0;i<Math.min(10,rows.length);i++){
-    const row=rows[i]; if(!row) continue;
-    const hits=row.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)));
-    if(hits.length>=2) return 'A';
-  }
+  try{
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rawRows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+    const rows = rawRows.map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
+    for(let i=0;i<Math.min(10,rows.length);i++){
+      const row=rows[i]; if(!row) continue;
+      const hits=row.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)));
+      if(hits.length>=2) return 'A';
+    }
+  }catch(e){ console.error('[liftlog] detectFormat error:',e); }
   return 'B';
 }
 
@@ -875,18 +906,15 @@ function detectFormat(wb){
 function parseA(wb){
   const blocks=[];
   for(const sn of wb.SheetNames){
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
-    // Strip leading apostrophes Excel adds as text-prefix markers
-    const clean=rows.map(r=>r?r.map(c=>{
-      if(typeof c==='string'&&c.startsWith("'")) return c.slice(1);
-      return c;
-    }):r);
-    // Debug: show first few rows after cleaning
-    console.log(`[parseA] Sheet "${sn}" — first 4 rows after clean:`);
-    clean.slice(0,4).forEach((r,i)=>console.log(`  row${i}:`,r?r.slice(0,4).map(c=>c!==null?String(c).substring(0,20):null):null));
-    const b=parseASheet(sn,clean);
-    console.log('[liftlog] parseA sheet:', sn, '→', b?`block "${b.name}" with ${b.weeks.length} weeks, ${b.weeks[0]?.days?.reduce((a,d)=>a+d.exercises.length,0)||0} exercises/day`:'null (skipped)');
-    if(b) blocks.push(b);
+    try{
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
+      const clean=rows.map(r=>r?r.map(c=>{
+        if(typeof c==='string'&&c.startsWith("'")) return c.slice(1);
+        return c;
+      }):r);
+      const b=parseASheet(sn,clean);
+      if(b) blocks.push(b);
+    }catch(e){ console.error(`[parseA] Error parsing sheet "${sn}":`,e); }
   }
   return blocks;
 }
@@ -898,8 +926,7 @@ function parseASheet(sn,rows){
     const r=rows[i]; if(!r) continue;
     if(r.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d))).length>=2){hdr=i;break;}
   }
-  if(hdr===-1){ console.log(`[parseASheet] "${sn}": no day header found`); return null; }
-  console.log(`[parseASheet] "${sn}": hdr at row ${hdr}`);
+  if(hdr===-1) return null;
 
   const athleteName=rows[0]?.[0]?String(rows[0][0]).trim():'Athlete';
   // Use row 1 as name only if it looks like a cycle/program name, not a date range
@@ -932,7 +959,7 @@ function parseASheet(sn,rows){
       if(cell===null||cell===undefined||!String(cell).trim()) continue;
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); if(sn==='Cycle 1'&&cur.name==='Incline Bench Press') console.log(`[wm] W${wm[1]} note=`,JSON.stringify(wNote),'raw note=',note); } }
+      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
@@ -989,9 +1016,11 @@ function parseB(wb){
   const weeks=[];
   let athleteName='Athlete';
   for(const sn of wb.SheetNames){
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
-    const week=parseBSheet(sn,rows);
-    if(week) weeks.push(week);
+    try{
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
+      const week=parseBSheet(sn,rows);
+      if(week) weeks.push(week);
+    }catch(e){ console.error(`[parseB] Error parsing sheet "${sn}":`,e); }
   }
   if(weeks.length===0) return [];
   const blocks=[{id:'program',name:'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
@@ -1059,6 +1088,18 @@ function parseBSheet(sn,rows){
 // ── UNIFIED ───────────────────────────────────────────────────────────────────
 function parseWorkbook(wb){
   return detectFormat(wb)==='A' ? parseA(wb) : parseB(wb);
+}
+
+// ── BLOCK MERGE ───────────────────────────────────────────────────────────────
+function mergeBlocks(incoming){
+  const existing=state.blocks;
+  for(const inc of incoming){
+    const idx=existing.findIndex(b=>b.id===inc.id);
+    if(idx!==-1){ existing[idx]=inc; } // replace structure, logs survive (keyed separately)
+    else { existing.push(inc); }
+  }
+  state.blocks=existing;
+  state.activeBlock=incoming[incoming.length-1]||state.activeBlock;
 }
 
 // ── SET PARSER ────────────────────────────────────────────────────────────────
@@ -1153,13 +1194,7 @@ function renderWorkout(){
   // Week pills
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
-    const weekDone=w.days.every(d=>{
-      if(!d.exercises.length) return true;
-      return d.exercises.every(ex=>{
-        const l=state.logs[lk(block.id,w.label,d.name,ex.name)]||{};
-        return l.done||l.skipped;
-      });
-    });
+    const weekDone=w.days.every(d=>isDayComplete(block,w,d));
     const dot=weekDone?`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-left:5px;vertical-align:middle;margin-bottom:1px"></span>`:'';
     h+=`<button class="week-pill ${state.activeWeek===wi?'active':''}" onclick="setWeek(${wi})">${w.label}${dot}</button>`;
   });
@@ -1175,6 +1210,15 @@ function renderWorkout(){
     h+=`</div>`;
   }
 
+  // "Next workout" banner — show when viewing any day that isn't the next incomplete one
+  const _next=findNextWorkout(block);
+  if(_next.weekIdx!==state.activeWeek||_next.dayIdx!==state.activeDay){
+    const nw=block.weeks[_next.weekIdx]; const nd=nw?.days[_next.dayIdx];
+    if(nd) h+=`<div class="next-workout-banner" onclick="state.activeWeek=${_next.weekIdx};state.activeDay=${_next.dayIdx};state.expandedEx=null;saveNav();render()">
+      <span class="next-workout-banner-text">▶ Next workout: ${nw.label} — ${nd.name}</span><span class="next-workout-banner-arrow">→</span>
+    </div>`;
+  }
+
   h+=`<div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
 
   h+=`<div class="exercises">`;
@@ -1183,7 +1227,6 @@ function renderWorkout(){
   } else {
     day.exercises.forEach(ex=>{
       const key=lk(block.id,week.label,day.name,ex.name);
-      if(week.label==='W1'&&(ex.name.includes('Deadlift')||ex.name.includes('Bench')||ex.name.includes('Squat'))) console.log('[render] key=',key,'log=',state.logs[key]);
       const log=state.logs[key]||{};
       const isDone=log.done||false;
       const isSkipped=log.skipped||false;
@@ -1192,6 +1235,7 @@ function renderWorkout(){
       const hasSets=sets.length>0;
       const simple=parseSimple(pres);
       const ranged=(!hasSets&&!simple)?parseRangeSet(pres):null;
+      const inputMode=getExerciseInputMode(ex.name,pres);
 
       const isComp=isCompLift(ex.name);
       const group=classifyLift(ex.name);
@@ -1258,6 +1302,24 @@ function renderWorkout(){
         }
         if(showTrackBtn&&!isComp&&!tracked) h+=`<div class="track-hint">📊 Tap to track in metrics</div>`;
 
+        // Helper: build inputs HTML based on exercise input mode
+        function setInputsHtml(sk,sl,placeholder){
+          if(inputMode==='bw'||inputMode==='cardio') return '';
+          if(inputMode==='bw-timed') return `<div class="set-inputs-wrap">
+                    <div class="set-input-group"><div class="set-input-label">Reps</div>
+                      <input class="set-input" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                    </div>
+                  </div>`;
+          return `<div class="set-inputs-wrap">
+                    <div class="set-input-group"><div class="set-input-label">Weight</div>
+                      <input class="set-input" placeholder="${placeholder}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                    </div>
+                    <div class="set-input-group"><div class="set-input-label">RPE felt</div>
+                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
+                    </div>
+                  </div>`;
+        }
+
         if(hasSets){
           h+=`<div class="sets-grid">`;
           sets.forEach((s,si)=>{
@@ -1266,23 +1328,7 @@ function renderWorkout(){
               <div class="set-num">S${si+1}</div>
               <div class="set-reps">${s.reps}</div>
               <div class="set-weight ${s.isRpe?'rpe':''}">${s.isRpe?s.weight:s.weight+'lb'}</div>
-              ${s.isRpe
-                ?`<div class="set-inputs-wrap">
-                    <div class="set-input-group"><div class="set-input-label">Weight</div>
-                      <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
-                    </div>
-                    <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
-                    </div>
-                  </div>`
-                :`<div class="set-inputs-wrap">
-                    <div class="set-input-group"><div class="set-input-label">Weight</div>
-                      <input class="set-input" placeholder="${s.weight}lb" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
-                    </div>
-                    <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                      <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
-                    </div>
-                  </div>`}
+              ${setInputsHtml(sk,sl,s.isRpe?'lbs':s.weight+'lb')}
               <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
             </div>`;
           });
@@ -1293,14 +1339,7 @@ function renderWorkout(){
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
             h+=`<div class="set-row">
               <div class="set-num">S${si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
-              <div class="set-inputs-wrap">
-                <div class="set-input-group"><div class="set-input-label">Weight</div>
-                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
-                </div>
-                <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
-                </div>
-              </div>
+              ${setInputsHtml(sk,sl,'lbs')}
               <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
             </div>`;
           }
@@ -1311,14 +1350,7 @@ function renderWorkout(){
             const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
             h+=`<div class="set-row">
               <div class="set-num">S${si+1}</div><div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>
-              <div class="set-inputs-wrap">
-                <div class="set-input-group"><div class="set-input-label">Weight</div>
-                  <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
-                </div>
-                <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                  <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
-                </div>
-              </div>
+              ${setInputsHtml(sk,sl,'lbs')}
               <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
             </div>`;
           }
@@ -1328,14 +1360,7 @@ function renderWorkout(){
           h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
           h+=`<div class="set-row">
             <div class="set-num">S1</div><div class="set-reps">—</div><div class="set-weight rpe">open</div>
-            <div class="set-inputs-wrap">
-              <div class="set-input-group"><div class="set-input-label">Weight</div>
-                <input class="set-input" placeholder="lbs" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
-              </div>
-              <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
-              </div>
-            </div>
+            ${setInputsHtml(sk,sl,'lbs')}
             <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
           </div>`;
           h+=`</div>`;
@@ -1477,6 +1502,9 @@ function completeWorkout(){
       }
     }
   });
+  // Set force-complete flag so isDayComplete() returns true
+  const forceKey=lk(block.id,week.label,day.name,'__complete__');
+  state.logs[forceKey]={done:true};
   saveLogs();
   render();
 }
@@ -1494,6 +1522,8 @@ function clearWorkout(){
       if(state.logs[sk]!==undefined) delete state.logs[sk];
     }
   });
+  // Clear force-complete flag
+  delete state.logs[lk(block.id,week.label,day.name,'__complete__')];
   saveLogs();
   render();
 }
@@ -1507,7 +1537,7 @@ function toggleSkip(key){
 
 // A day is complete if:
 // 1. All exercises are done or skipped, OR
-// 2. ≥70% are done/skipped (covers accessories with no notes in sheet)
+// 2. Force-complete flag is set (via Complete Workout button)
 function isDayComplete(block, week, day){
   if(!day||day.exercises.length===0) return false;
   // Check force-complete flag
@@ -1570,9 +1600,7 @@ function autoCompleteExercise(setKey){
   const sets=pres?parseSets(pres):[];
   const simple=parseSimple(pres);
   const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
-  const extraSets=state.extraSets?.[exKey]||0;
-  const baseSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
-  const totalSets=Math.max(1,baseSetsCount+extraSets);
+  const totalSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
   
   // Check if all sets done
   let allDone=true;
@@ -1625,9 +1653,21 @@ function getPrevWeekNote(blockId,weekLabel,dayName,exName){
 }
 
 function toggleExpand(key){ state.expandedEx=state.expandedEx===key?null:key; render(); }
-function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=null; render(); }
-function setDay(di){ state.activeDay=di; state.expandedEx=null; render(); }
-function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){state.activeBlock=b;state.activeWeek=0;state.activeDay=0;state.editingBlockName=false;render();} }
+function findNextWorkout(block){
+  if(!block) return {weekIdx:0, dayIdx:0};
+  for(let wi=0;wi<block.weeks.length;wi++){
+    const week=block.weeks[wi];
+    for(let di=0;di<week.days.length;di++){
+      if(!isDayComplete(block,week,week.days[di])) return {weekIdx:wi, dayIdx:di};
+    }
+  }
+  // All complete — stay on last day
+  const lastWi=block.weeks.length-1;
+  return {weekIdx:lastWi, dayIdx:(block.weeks[lastWi]?.days.length||1)-1};
+}
+function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=null; saveNav(); render(); }
+function setDay(di){ state.activeDay=di; state.expandedEx=null; saveNav(); render(); }
+function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; saveNav(); render(); } }
 
 // ── GOOGLE DRIVE PICKER ───────────────────────────────────────────────────────
 const GAPI_KEY = 'AIzaSyAyDMjaar1LL7u8CbAiVx6RInQA_p2RrtM';
@@ -1706,9 +1746,9 @@ async function pickerCallback(data){
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    mergeBlocks(blocks); const _n=findNextWorkout(state.activeBlock); state.activeWeek=_n.weekIdx; state.activeDay=_n.dayIdx; state.screen='workout';
     autoRegisterCompLifts(blocks);
-    saveBlocks();
+    saveBlocks(); saveNav();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
     render();
@@ -1728,9 +1768,9 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     // Pull athlete name from filename
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    state.blocks=blocks; state.activeBlock=blocks[blocks.length-1]; state.activeWeek=0; state.activeDay=0; state.screen='workout';
+    mergeBlocks(blocks); const _n2=findNextWorkout(state.activeBlock); state.activeWeek=_n2.weekIdx; state.activeDay=_n2.dayIdx; state.screen='workout';
     autoRegisterCompLifts(blocks);
-    saveBlocks();
+    saveBlocks(); saveNav();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
     render();
