@@ -43,7 +43,7 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .day-tabs::-webkit-scrollbar { display: none; }
 .day-tab { flex: 1; min-width: 60px; padding: 13px 4px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: #555; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; }
 .day-tab.active { color: #C9A84C; border-bottom-color: #C9A84C; }
-.done-dot { width: 5px; height: 5px; border-radius: 50%; background: #4ade80; position: absolute; top: 8px; right: 6px; }
+.done-dot { position: absolute; top: 4px; right: 4px; font-size: 8px; color: #4ade80; line-height: 1; }
 .progress-wrap { padding: 0 16px 4px; }
 .progress-bg { height: 2px; background: #222; border-radius: 2px; overflow: hidden; }
 .progress-fill { height: 100%; background: #4ade80; transition: width 0.3s ease; }
@@ -1257,7 +1257,7 @@ function renderWorkout(){
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
     const weekDone=w.days.every(d=>isDayComplete(block,w,d));
-    const dot=weekDone?`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-left:5px;vertical-align:middle;margin-bottom:1px"></span>`:'';
+    const dot=weekDone?' <span style="font-size:11px;color:#4ade80">✓</span>':'';
     h+=`<button class="week-pill ${state.activeWeek===wi?'active':''}" onclick="setWeek(${wi})">${w.label}${dot}</button>`;
   });
   h+=`</div>`;
@@ -1267,7 +1267,7 @@ function renderWorkout(){
     h+=`<div class="day-tabs">`;
     week.days.forEach((d,di)=>{
       const complete=isDayComplete(block,week,d);
-      h+=`<button class="day-tab ${state.activeDay===di?'active':''}" onclick="setDay(${di})">${abbrev(d.name)}${complete?'<span class="done-dot"></span>':''}</button>`;
+      h+=`<button class="day-tab ${state.activeDay===di?'active':''}" onclick="setDay(${di})">${abbrev(d.name)}${complete?'<span class="done-dot">✓</span>':''}</button>`;
     });
     h+=`</div>`;
   }
