@@ -209,6 +209,59 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .method-badge { font-size: 9px; letter-spacing: 0.06em; padding: 1px 5px; border-radius: 3px; font-family: 'Barlow', sans-serif; }
 .rpe-badge { color: #a78bfa; background: rgba(167,139,250,0.1); }
 .est-badge { color: #444; background: rgba(255,255,255,0.04); }
+
+/* ── CALCULATOR SCREEN ─────────────────────────────────────────────────────── */
+.calc-screen { padding: 16px 16px 100px; }
+.calc-mode-toggle { display: flex; background: #141414; border: 1px solid #222; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+.calc-mode-btn { flex: 1; padding: 10px 8px; border: none; border-radius: 7px; background: transparent; color: #555; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.calc-mode-btn.active { background: #C9A84C; color: #000; }
+.calc-section { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.calc-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: #555; margin-bottom: 14px; }
+.calc-input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.calc-weight-input { flex: 1; background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 8px; color: #f0f0f0; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 32px; padding: 12px 16px; outline: none; text-align: center; -moz-appearance: textfield; }
+.calc-weight-input::-webkit-outer-spin-button,
+.calc-weight-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.calc-weight-input:focus { border-color: #C9A84C; }
+.calc-unit-toggle { display: flex; flex-direction: column; gap: 4px; }
+.calc-unit-btn { padding: 8px 14px; border: 1px solid #2a2a2a; border-radius: 6px; background: transparent; color: #555; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; }
+.calc-unit-btn.active { border-color: #C9A84C; color: #C9A84C; background: rgba(201,168,76,0.08); }
+.calc-totals-display { display: flex; gap: 12px; margin-bottom: 16px; }
+.calc-total-box { flex: 1; background: #1a1a1a; border: 1px solid #222; border-radius: 10px; padding: 12px 14px; text-align: center; }
+.calc-total-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: #C9A84C; line-height: 1; }
+.calc-total-unit { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+.calc-bar-wrap { display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; overflow: visible; }
+.calc-bar-svg { width: 100%; max-width: 420px; height: 80px; overflow: visible; }
+.calc-plate-breakdown { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.calc-plate-chip { display: flex; align-items: center; gap: 6px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; }
+.calc-plate-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.calc-plate-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: #f0f0f0; }
+.calc-plate-count { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: #555; }
+.calc-bar-note { font-size: 12px; color: #444; text-align: center; margin-top: 8px; font-style: italic; }
+.calc-no-solution { font-size: 14px; color: #f87171; text-align: center; padding: 16px 0; }
+/* Manual mode plate grid */
+.calc-plates-grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(5, auto); gap: 8px; }
+.calc-plate-row { display: flex; align-items: center; gap: 6px; background: #141414; border-radius: 8px; padding: 6px 8px; }
+.calc-plate-color-swatch { width: 14px; height: 36px; border-radius: 3px; flex-shrink: 0; }
+.calc-plate-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; width: 52px; flex-shrink: 0; }
+.calc-plate-stepper { display: flex; align-items: center; gap: 0; flex: 1; justify-content: flex-end; }
+.calc-stepper-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #2a2a2a; background: #1c1c1c; color: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.1s; line-height: 1; user-select: none; }
+.calc-stepper-btn:active { background: #2a2a2a; border-color: #C9A84C; }
+.calc-stepper-val { width: 48px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; color: #C9A84C; }
+.calc-stepper-val.zero { color: #333; }
+.calc-reset-btn { width: 100%; padding: 12px; background: none; border: 1px solid #2a2a2a; border-radius: 8px; color: #555; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
+.calc-reset-btn:active { border-color: #f87171; color: #f87171; }
+.calc-bar-selector { display: flex; gap: 8px; margin-bottom: 16px; }
+.calc-bar-btn { flex: 1; padding: 10px 8px; border: 1px solid #2a2a2a; border-radius: 8px; background: #141414; color: #555; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.04em; cursor: pointer; text-align: center; transition: all 0.15s; line-height: 1.3; }
+.calc-bar-btn.active { border-color: #C9A84C; color: #C9A84C; background: rgba(201,168,76,0.08); }
+.calc-bar-btn-sub { font-size: 11px; font-weight: 400; color: #444; display: block; margin-top: 2px; }
+.calc-bar-btn.active .calc-bar-btn-sub { color: #8a6f30; }
+.calc-collar-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #141414; border: 1px solid #222; border-radius: 8px; margin-bottom: 16px; }
+.calc-collar-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: #888; }
+.calc-collar-sub { font-size: 11px; color: #444; margin-top: 1px; }
+.calc-collar-toggle { width: 44px; height: 24px; border-radius: 12px; background: #222; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.calc-collar-toggle.on { background: #C9A84C; }
+.calc-collar-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #555; transition: transform 0.2s, background 0.2s; }
+.calc-collar-toggle.on::after { transform: translateX(20px); background: #fff; }
 </style>
 </head>
 <body>
@@ -227,6 +280,9 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     </button>
     <button class="nav-btn" id="nav-metrics" onclick="setScreen('metrics')">
       <span class="nav-icon">📈</span>Metrics
+    </button>
+    <button class="nav-btn" id="nav-calc" onclick="setScreen('calc')">
+      <span class="nav-icon">🔢</span>Calculator
     </button>
   </nav>
 </div>
@@ -345,6 +401,7 @@ function setScreen(s){
   if(s==='metrics') state.metricsDrillBlock=null;
   document.getElementById('nav-workout').classList.toggle('active',s==='workout');
   document.getElementById('nav-metrics').classList.toggle('active',s==='metrics');
+  document.getElementById('nav-calc').classList.toggle('active',s==='calc');
   render();
 }
 
@@ -1137,6 +1194,7 @@ function parseRangeSet(pres){
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
   if(state.screen==='metrics'){ renderMetrics(); return; }
+  if(state.screen==='calc'){ renderCalc(); return; }
   renderWorkout();
 }
 
@@ -1907,6 +1965,370 @@ function confirmDeleteBlock(){
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
 render();
+
+// ── CALCULATOR ────────────────────────────────────────────────────────────────
+const KG_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5, 0.25];
+const PLATE_COLORS = {
+  25: '#e63946',
+  20: '#1d7ed8',
+  15: '#f4a228',
+  10: '#2daa4f',
+  5: '#d4d4d4',
+  2.5: '#333333',
+  1.25: '#aaaaaa',
+  0.5: '#bbbbbb',
+  0.25: '#cccccc'
+};
+const BAR_KG = 20;
+
+const BARS = [
+  { id: 'standard', label: 'Standard Bar', kg: 20, lbs: 44 },
+  { id: 'squat',    label: 'Squat Bar',    kg: 25, lbs: 55 }
+];
+const COLLAR_KG = 5; // pair
+
+const calcState = {
+  mode: 'target',
+  inputUnit: 'lbs',
+  inputVal: '',
+  barId: 'standard',
+  collarsOn: false,
+  manualCounts: { 25: 0, 20: 0, 15: 0, 10: 0, 5: 0, 2.5: 0, 1.25: 0, 0.5: 0, 0.25: 0 }
+};
+
+function lbsToKg(lbs) { return lbs / 2.20462; }
+function kgToLbs(kg) { return kg * 2.20462; }
+function roundToNearest(val, step) { return Math.round(val / step) * step; }
+
+function getBarKg() { return BARS.find(b => b.id === calcState.barId).kg; }
+function getCollarKg() { return calcState.collarsOn ? COLLAR_KG : 0; }
+function getBaseKg() { return getBarKg() + getCollarKg(); }
+
+// Given a target total kg, return {plates: [{kg, count}], totalKg, remainder}
+function calcPlates(targetKg) {
+  let loadKg = targetKg - getBaseKg();
+  if (loadKg < 0) return null;
+  let perSide = loadKg / 2;
+  let remaining = perSide;
+  let plates = [];
+  for (const p of KG_PLATES) {
+    if (remaining <= 0) break;
+    const count = Math.floor(remaining / p + 0.001);
+    if (count > 0) {
+      plates.push({ kg: p, count });
+      remaining -= count * p;
+      remaining = Math.round(remaining * 1000) / 1000;
+    }
+  }
+  const actualPerSide = plates.reduce((s, p) => s + p.kg * p.count, 0);
+  const actualTotal = getBaseKg() + actualPerSide * 2;
+  return { plates, totalKg: actualTotal, remainder: Math.round(remaining * 1000) / 1000 };
+}
+
+function manualTotal() {
+  let perSide = 0;
+  for (const [kg, count] of Object.entries(calcState.manualCounts)) {
+    perSide += parseFloat(kg) * count;
+  }
+  return getBaseKg() + perSide * 2;
+}
+
+function renderCalcBarSVG(plates, showCollars) {
+  let allPlates = [];
+  for (const p of plates) {
+    for (let i = 0; i < p.count; i++) allPlates.push(p.kg);
+  }
+
+  function pThick(kg) {
+    if (kg >= 25) return 14; if (kg >= 20) return 13; if (kg >= 15) return 12;
+    if (kg >= 10) return 11; if (kg >= 5) return 9; if (kg >= 2.5) return 8;
+    if (kg >= 1.25) return 10; if (kg >= 0.5) return 9; return 7;
+  }
+  function pDiam(kg) {
+    if (kg >= 25) return 90; if (kg >= 20) return 82; if (kg >= 15) return 72;
+    if (kg >= 10) return 62; if (kg >= 5) return 50; if (kg >= 2.5) return 40;
+    if (kg >= 1.25) return 32; if (kg >= 0.5) return 26; return 20;
+  }
+
+  const SVG_H = 110;
+  const cy = SVG_H / 2;
+  const barH = 14;
+  const barShaftLen = 20;
+  const divider = 1;
+  const padLeft = 8;
+
+  // Built-in bar collar (always present, fixed part of bar)
+  const builtinCollarThick = 8;
+  const builtinCollarH = 22;
+
+  // Competition collar (add-on, outside the plates)
+  const compCollarThick = 14;
+  const compCollarH = 34;
+
+  let totalPlateW = allPlates.reduce((s, kg) => s + pThick(kg), 0);
+  if (allPlates.length > 1) totalPlateW += divider * (allPlates.length - 1);
+  const compCollarW = showCollars ? compCollarThick + 3 : 0;
+
+  const SVG_W = padLeft + barShaftLen + builtinCollarThick + totalPlateW + compCollarW + 12;
+
+  let parts = [];
+
+  // Bar shaft
+  const shaftTotalW = SVG_W - padLeft;
+  parts.push(`<rect x="${padLeft}" y="${cy - barH/2}" width="${shaftTotalW}" height="${barH}" rx="3" fill="#555"/>`);
+  parts.push(`<rect x="${padLeft + 3}" y="${cy - barH/2 + 1}" width="${barShaftLen - 6}" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>`);
+
+  let x = padLeft + barShaftLen;
+
+  // ── BUILT-IN BAR COLLAR (always visible, integral part of bar) ──
+  // Raised ring that's machined into the bar — slightly different look from comp collars
+  parts.push(`<rect x="${x}" y="${cy - builtinCollarH/2}" width="${builtinCollarThick}" height="${builtinCollarH}" rx="2" fill="#6a6a6a" stroke="rgba(0,0,0,0.4)" stroke-width="0.5"/>`);
+  // Engraved ring lines to look like a machined collar
+  parts.push(`<line x1="${x + 2}" y1="${cy - builtinCollarH/2 + 3}" x2="${x + builtinCollarThick - 2}" y2="${cy - builtinCollarH/2 + 3}" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>`);
+  parts.push(`<line x1="${x + 2}" y1="${cy + builtinCollarH/2 - 3}" x2="${x + builtinCollarThick - 2}" y2="${cy + builtinCollarH/2 - 3}" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>`);
+  parts.push(`<rect x="${x + 1}" y="${cy - builtinCollarH/2 + 1}" width="${builtinCollarThick - 2}" height="2" rx="1" fill="rgba(255,255,255,0.1)"/>`);
+  x += builtinCollarThick;
+
+  // ── PLATES (touching built-in collar) ──
+  for (let i = 0; i < allPlates.length; i++) {
+    const kg = allPlates[i];
+    const pt = pThick(kg);
+    const ph = pDiam(kg);
+    const color = PLATE_COLORS[kg];
+
+    if (i > 0) {
+      parts.push(`<rect x="${x}" y="${cy - pDiam(allPlates[i-1])/2}" width="1" height="${pDiam(allPlates[i-1])}" fill="rgba(0,0,0,0.6)"/>`);
+      x += divider;
+    }
+
+    parts.push(`<rect x="${x}" y="${cy - ph/2}" width="${pt}" height="${ph}" rx="2" fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>`);
+    parts.push(`<rect x="${x + 1}" y="${cy - ph/2 + 1}" width="${pt - 2}" height="2" rx="1" fill="rgba(255,255,255,0.18)"/>`);
+    parts.push(`<rect x="${x + 1}" y="${cy + ph/2 - 3}" width="${pt - 2}" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>`);
+
+    const r = Math.min(pt/2 - 0.5, 6);
+    if (r >= 3) {
+      parts.push(`<circle cx="${x + pt/2}" cy="${cy}" r="${r}" fill="rgba(0,0,0,0.65)"/>`);
+      const fontSize = Math.max(r * 1.1, 4);
+      parts.push(`<text x="${x + pt/2}" y="${cy}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${fontSize}">${kg}</text>`);
+    }
+
+    x += pt;
+  }
+
+  // ── COMPETITION COLLAR (outside plates, flush against last plate) ──
+  if (showCollars) {
+    // No gap — flush against last plate
+    const cx2 = x;
+    // Main collar body
+    parts.push(`<rect x="${cx2}" y="${cy - compCollarH/2}" width="${compCollarThick}" height="${compCollarH}" rx="3" fill="#999" stroke="rgba(0,0,0,0.45)" stroke-width="0.75"/>`);
+    // Top highlight
+    parts.push(`<rect x="${cx2 + 1}" y="${cy - compCollarH/2 + 2}" width="${compCollarThick - 2}" height="3" rx="1" fill="rgba(255,255,255,0.15)"/>`);
+    // Center clamp bolt detail
+    parts.push(`<rect x="${cx2 + 2}" y="${cy - 5}" width="${compCollarThick - 4}" height="10" rx="2" fill="#777" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>`);
+    parts.push(`<circle cx="${cx2 + compCollarThick/2}" cy="${cy}" r="3.5" fill="#555"/>`);
+    parts.push(`<circle cx="${cx2 + compCollarThick/2}" cy="${cy}" r="1.5" fill="#888"/>`);
+    // Handle/lever extending upward from top of collar
+    const handleX = cx2 + compCollarThick/2;
+    const handleBaseY = cy - compCollarH/2;
+    const handleW = 5;
+    const handleH = 18;
+    // Lever arm
+    parts.push(`<rect x="${handleX - handleW/2}" y="${handleBaseY - handleH}" width="${handleW}" height="${handleH}" rx="2" fill="#888" stroke="rgba(0,0,0,0.35)" stroke-width="0.5"/>`);
+    // Lever tip (rounded cap)
+    parts.push(`<ellipse cx="${handleX}" cy="${handleBaseY - handleH}" rx="${handleW/2 + 1}" ry="3" fill="#111" stroke="rgba(0,0,0,0.6)" stroke-width="0.5"/>`);
+    // Pivot pin where lever meets collar body
+    parts.push(`<circle cx="${handleX}" cy="${handleBaseY}" r="3" fill="#666" stroke="rgba(0,0,0,0.4)" stroke-width="0.5"/>`);
+    parts.push(`<circle cx="${handleX}" cy="${handleBaseY}" r="1.5" fill="#aaa"/>`);
+  }
+
+  const shiftLeft = padLeft + barShaftLen; // show built-in collar, bleed shaft off left
+  return `<svg viewBox="${shiftLeft} 0 ${SVG_W - shiftLeft} ${SVG_H}" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
+}
+function renderCalc() {
+  const main = document.getElementById('main-content');
+  const { mode, inputUnit, inputVal, manualCounts } = calcState;
+
+  let totalKg = 0, totalLbs = 0, plates = [], remainder = 0, noSolution = false;
+
+  if (mode === 'target') {
+    const numVal = parseFloat(inputVal);
+    if (!isNaN(numVal) && numVal > 0) {
+      let rawKg = inputUnit === 'lbs' ? lbsToKg(numVal) : numVal;
+      // Round the *load* UP to the nearest 2.5kg step (= 1x 1.25kg plate per side, standard minimum)
+      // Always round UP — entering 440 lbs should never give you less than 440 lbs
+      const baseKg = getBaseKg();
+      let loadKg = rawKg - baseKg;
+      if (loadKg < 0) loadKg = 0;
+      let targetKg = Math.round(loadKg / 2.5) * 2.5 + baseKg;
+      if (targetKg < baseKg) targetKg = baseKg;
+      const result = calcPlates(targetKg);
+      if (result) {
+        plates = result.plates;
+        totalKg = result.totalKg;
+        totalLbs = kgToLbs(totalKg);
+        remainder = result.remainder;
+        if (remainder > 0.01) noSolution = true;
+      }
+    }
+  } else {
+    totalKg = manualTotal();
+    totalLbs = kgToLbs(totalKg);
+    plates = KG_PLATES
+      .map(kg => ({ kg, count: manualCounts[kg] || 0 }))
+      .filter(p => p.count > 0);
+  }
+
+  const hasPlates = plates.some(p => p.count > 0);
+  const barSVG = renderCalcBarSVG(plates, calcState.collarsOn);
+
+  // Plate breakdown chips (for target mode)
+  let breakdownHtml = '';
+  if (hasPlates) {
+    breakdownHtml = `<div class="calc-plate-breakdown">`;
+    for (const p of plates) {
+      if (p.count === 0) continue;
+      const total = p.count * 2; // both sides
+      breakdownHtml += `<div class="calc-plate-chip">
+        <div class="calc-plate-dot" style="background:${PLATE_COLORS[p.kg]}"></div>
+        <span class="calc-plate-label">${p.kg}kg</span>
+        <span class="calc-plate-count">×${p.count} per side</span>
+      </div>`;
+    }
+    breakdownHtml += `</div>`;
+  }
+
+  // Manual plate rows
+  let manualRowsHtml = '';
+  for (const kg of KG_PLATES) {
+    const count = manualCounts[kg] || 0;
+    manualRowsHtml += `
+      <div class="calc-plate-row">
+        <div class="calc-plate-color-swatch" style="background:${PLATE_COLORS[kg]}"></div>
+        <span class="calc-plate-name">${kg}kg</span>
+        <div class="calc-plate-stepper">
+          <button class="calc-stepper-btn" onclick="calcAdjust(${kg}, -1)">−</button>
+          <span class="calc-stepper-val${count === 0 ? ' zero' : ''}">${count}</span>
+          <button class="calc-stepper-btn" onclick="calcAdjust(${kg}, 1)">+</button>
+        </div>
+      </div>`;
+  }
+
+  let html = `<div class="calc-screen">
+    <div class="calc-mode-toggle">
+      <button class="calc-mode-btn${mode === 'target' ? ' active' : ''}" onclick="calcSetMode('target')">Target Weight</button>
+      <button class="calc-mode-btn${mode === 'manual' ? ' active' : ''}" onclick="calcSetMode('manual')">Load Manually</button>
+    </div>
+
+    <div class="calc-bar-selector">
+      ${BARS.map(b => `<button class="calc-bar-btn${calcState.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
+        ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
+      </button>`).join('')}
+    </div>`;
+
+  // Collar toggle — shown in both modes
+  html += `
+    <div class="calc-collar-row">
+      <div>
+        <div class="calc-collar-label">Collars</div>
+        <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
+      </div>
+      <button class="calc-collar-toggle${calcState.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
+    </div>`;
+
+  if (mode === 'target') {
+    html += `
+    <div class="calc-section">
+      <div class="calc-section-title">Enter Target Weight</div>
+      <div class="calc-input-row">
+        <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" />
+        <div class="calc-unit-toggle">
+          <button class="calc-unit-btn${inputUnit === 'lbs' ? ' active' : ''}" onclick="calcSetUnit('lbs')">LBS</button>
+          <button class="calc-unit-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
+        </div>
+      </div>
+      ${inputUnit === 'lbs' && inputVal && !isNaN(parseFloat(inputVal)) ? (() => { const base = getBaseKg(); const load = Math.max(0, lbsToKg(parseFloat(inputVal)) - base); const rounded = Math.round(load / 2.5) * 2.5 + base; const roundedLbs = (rounded * 2.2046).toFixed(1); const roundedDisplay = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
+      const down = rounded - 2.5; const up = rounded + 2.5;
+      const downLbs = (down * 2.2046).toFixed(1); const upLbs = (up * 2.2046).toFixed(1);
+      const downDisplay = down % 1 === 0 ? down.toFixed(0) : down.toFixed(1);
+      const upDisplay = up % 1 === 0 ? up.toFixed(0) : up.toFixed(1);
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+        <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
+          <span style="color:#C9A84C;font-size:13px;">−</span><span>${downDisplay}kg</span><span style="color:#555;font-size:10px;">${downLbs}</span>
+        </div>
+        <div onclick="calcSnapToNearest(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1e1c18;border:1px solid #C9A84C55;border-radius:8px;padding:4px 8px;font-size:11px;color:#C9A84C;font-weight:600;">
+          <span>→ ${roundedDisplay}kg</span><span style="color:#888;font-size:10px;">${roundedLbs}</span>
+        </div>
+        <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
+          <span style="color:#C9A84C;font-size:13px;">+</span><span>${upDisplay}kg</span><span style="color:#555;font-size:10px;">${upLbs}</span>
+        </div>
+      </div>`; })() : ''}
+    </div>`;
+  } else {
+    html += `
+    <div class="calc-section">
+      <div class="calc-section-title">Add Plates (per side)</div>
+      <div class="calc-plates-grid">${manualRowsHtml}</div>
+      <button class="calc-reset-btn" onclick="calcReset()">Clear All Plates</button>
+    </div>`;
+  }
+
+  const bar = BARS.find(b => b.id === calcState.barId);
+  const collarNote = calcState.collarsOn ? ` + collars (5kg)` : '';
+  const plateNote = hasPlates ? ` + ${plates.map(p => `${p.count}×${p.kg}kg`).join(' + ')} per side` : '';
+
+  // Totals + bar visual
+  if (mode === 'manual' || (inputVal && !isNaN(parseFloat(inputVal)))) {
+    html += `
+    <div class="calc-section">
+      <div class="calc-totals-display">
+        <div class="calc-total-box">
+          <div class="calc-total-val">${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}</div>
+          <div class="calc-total-unit">Kilograms</div>
+        </div>
+        <div class="calc-total-box">
+          <div class="calc-total-val">${totalLbs.toFixed(1)}</div>
+          <div class="calc-total-unit">Pounds</div>
+        </div>
+      </div>
+      <div class="calc-bar-wrap">${barSVG}</div>
+      ${noSolution ? `<div class="calc-no-solution">⚠ Weight not achievable with standard KG plates</div>` : ''}
+      ${breakdownHtml}
+      <div class="calc-bar-note">${bar.label} (${bar.kg}kg)${collarNote}${plateNote || ' — bar only'}</div>
+    </div>`;
+  }
+
+  html += `</div>`;
+  main.innerHTML = html;
+}
+
+function calcSnapToNearest(targetKg) {
+  // Populate input with the nearest valid attempt value
+  // Convert back to whatever unit is currently selected
+  if (calcState.inputUnit === 'lbs') {
+    const lbs = Math.round(targetKg * 2.2046 * 10) / 10;
+    calcState.inputVal = String(lbs);
+  } else {
+    calcState.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
+  }
+  const inp = document.getElementById('calc-weight-input');
+  if (inp) inp.value = calcState.inputVal;
+  renderCalc();
+}
+
+function calcSetMode(m) { calcState.mode = m; renderCalc(); }
+function calcSetUnit(u) { calcState.inputUnit = u; renderCalc(); }
+function calcInput(v) { calcState.inputVal = v; renderCalc(); }
+function calcSetBar(id) { calcState.barId = id; renderCalc(); }
+function calcToggleCollars() { calcState.collarsOn = !calcState.collarsOn; renderCalc(); }
+function calcAdjust(kg, delta) {
+  const cur = calcState.manualCounts[kg] || 0;
+  calcState.manualCounts[kg] = Math.max(0, cur + delta);
+  renderCalc();
+}
+function calcReset() {
+  for (const kg of KG_PLATES) calcState.manualCounts[kg] = 0;
+  renderCalc();
+}
 </script>
 </body>
 </html>
