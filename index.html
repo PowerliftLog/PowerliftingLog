@@ -38,12 +38,12 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .week-bar { display: flex; gap: 8px; padding: 14px 16px; overflow-x: auto; border-bottom: 1px solid #222; scrollbar-width: none; }
 .week-bar::-webkit-scrollbar { display: none; }
 .week-pill { flex-shrink: 0; padding: 8px 20px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid #222; background: transparent; color: #555; cursor: pointer; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
-.week-pill.active { background: #C9A84C; color: #000; border-color: #C9A84C; }
+.week-pill.active { background: transparent; color: #C9A84C; border-color: #C9A84C; border-width: 2px; }
 .day-tabs { display: flex; border-bottom: 1px solid #222; overflow-x: auto; scrollbar-width: none; }
 .day-tabs::-webkit-scrollbar { display: none; }
 .day-tab { flex: 1; min-width: 60px; padding: 13px 4px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: #555; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; }
 .day-tab.active { color: #C9A84C; border-bottom-color: #C9A84C; }
-.done-dot { position: absolute; top: 4px; right: 4px; font-size: 8px; color: #4ade80; line-height: 1; }
+.done-dot { position: absolute; top: 3px; right: 4px; font-size: 11px; color: #4ade80; line-height: 1; }
 .progress-wrap { padding: 0 16px 4px; }
 .progress-bg { height: 2px; background: #222; border-radius: 2px; overflow: hidden; }
 .progress-fill { height: 100%; background: #4ade80; transition: width 0.3s ease; }
@@ -353,6 +353,9 @@ const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.lengt
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
+function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch{ return {}; } }
+let _saveLogsTimer=null;
+function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(()=>{ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); } },300); }
 function rePopulateSets(blocks){
   try{
     for(const block of blocks){
@@ -381,9 +384,6 @@ function rePopulateSets(blocks){
   }catch(e){ console.error('[liftlog] rePopulateSets error:',e); }
 }
 if(_savedBlocks.length>0) rePopulateSets(_savedBlocks);
-function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch{ return {}; } }
-let _saveLogsTimer=null;
-function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(()=>{ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); } },300); }
 function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); return null; } }
 function saveBlocks(){ try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
 function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
@@ -1028,7 +1028,13 @@ function parseASheet(sn,rows){
         const lp=(/\(/.test(cs)&&(/\d/.test(cs)||/[LMH]/.test(cs)));
         const lp2=/^\d+x\d+/i.test(cs); // e.g. "4x15", "3x5"
         const ln=cs.startsWith('(')||cs.toLowerCase().includes('increase');
-        const isSectionHeader=/^\d+\s*rounds?[\s:]/i.test(cs)||/^round\s*\d/i.test(cs)||/^superset/i.test(cs)||/^circuit/i.test(cs);
+        const isSectionHeader=
+          /^\d+\s*rounds?[\s:]/i.test(cs) ||  // "2 rounds:"
+          /^round\s*\d/i.test(cs) ||            // "Round 1"
+          /^superset/i.test(cs) ||
+          /^circuit/i.test(cs) ||
+          /^\d+\s*rep\s/i.test(cs) ||          // "1 rep (rest :10)"
+          /^\d+\.?\d*\s*$/.test(cs);           // bare number like "2.0"
         // Coach note patterns:
         // - wrapped in dashes: -McGill Protocol-
         // - starts with "goal", "continue", "protocol"
@@ -1042,7 +1048,8 @@ function parseASheet(sn,rows){
           (cs.endsWith('.')&&wordCount>=4&&!lp&&!lp2&&!ln);
 
         if(!lp&&!lp2&&!ln&&!isSectionHeader&&!isCoachNoteLine){
-          const correctedName=spellCorrectExerciseName(cs);
+          const normalizedCs=cs.replace(/\s+/g,' ').trim(); // collapse double spaces
+          const correctedName=spellCorrectExerciseName(normalizedCs);
           cur={name:correctedName,weeks:[],staticPrescription:null,note:note?String(note).trim():null,coachNotes:[]};
           exs.push(cur);
         } else if(cur&&(isCoachNoteLine||ln)){
@@ -1100,7 +1107,7 @@ function parseBSheet(sn,rows){
     const row=rows[i]; if(!row) continue;
     const a=row[0]; if(!a) continue;
     const aStr=String(a).trim(); if(!aStr) continue;
-    if(/^\d+\.?\s*$/.test(aStr)) continue;
+    if(/^\d+\.?\d*\s*$/.test(aStr)) continue; // skip bare numbers (integers and decimals like 2.0)
 
     // A day section header has:
     // 1. A short name in col 0 (day section names are typically < 20 chars)
@@ -1139,7 +1146,8 @@ function parseBSheet(sn,rows){
         if(vs&&!/^[✔️\s]+$/.test(vs)){ note=vs; break; }
       }
 
-      curDay.exercises.push({name:aStr,prescription:pres,note,loggedWeight:cleanLogged});
+      const normName=aStr.replace(/\s+/g,' ').trim(); // collapse double spaces
+      curDay.exercises.push({name:normName,prescription:pres,note,loggedWeight:cleanLogged});
     }
   }
   if(days.length===0) return null;
@@ -1257,7 +1265,7 @@ function renderWorkout(){
   h+=`<div class="week-bar">`;
   block.weeks.forEach((w,wi)=>{
     const weekDone=w.days.every(d=>isDayComplete(block,w,d));
-    const dot=weekDone?' <span style="font-size:11px;color:#4ade80">✓</span>':'';
+    const dot=weekDone?' <span style="font-size:13px;color:#4ade80">✓</span>':'';
     h+=`<button class="week-pill ${state.activeWeek===wi?'active':''}" onclick="setWeek(${wi})">${w.label}${dot}</button>`;
   });
   h+=`</div>`;
@@ -1967,6 +1975,7 @@ document.getElementById('new-btn').addEventListener('click', openProgramModal);
 render();
 
 // ── CALCULATOR ────────────────────────────────────────────────────────────────
+const KG_TO_LBS = 2.2046; // USPA standard conversion factor (1 kg = KG_TO_LBS lbs)
 const KG_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5, 0.25];
 const PLATE_COLORS = {
   25: '#e63946',
@@ -1996,9 +2005,19 @@ const calcState = {
   manualCounts: { 25: 0, 20: 0, 15: 0, 10: 0, 5: 0, 2.5: 0, 1.25: 0, 0.5: 0, 0.25: 0 }
 };
 
-function lbsToKg(lbs) { return lbs / 2.20462; }
-function kgToLbs(kg) { return kg * 2.20462; }
+function lbsToKg(lbs) { return lbs / KG_TO_LBS; }
+function kgToLbs(kg) { return kg * KG_TO_LBS; }
 function roundToNearest(val, step) { return Math.round(val / step) * step; }
+// Snap a kg value to nearest valid USPA attempt (multiples of 2.5kg per side)
+function snapToAttempt(kg, direction) {
+  const base = getBaseKg();
+  const load = Math.max(0, kg - base);
+  let snapped;
+  if (direction === 'up')        snapped = Math.ceil(load / 2.5) * 2.5;
+  else if (direction === 'down') snapped = Math.floor(load / 2.5) * 2.5;
+  else                           snapped = Math.round(load / 2.5) * 2.5;
+  return base + snapped;
+}
 
 function getBarKg() { return BARS.find(b => b.id === calcState.barId).kg; }
 function getCollarKg() { return calcState.collarsOn ? COLLAR_KG : 0; }
@@ -2156,10 +2175,8 @@ function renderCalc() {
       let rawKg = inputUnit === 'lbs' ? lbsToKg(numVal) : numVal;
       // Round the *load* UP to the nearest 2.5kg step (= 1x 1.25kg plate per side, standard minimum)
       // Always round UP — entering 440 lbs should never give you less than 440 lbs
+      let targetKg = snapToAttempt(rawKg);
       const baseKg = getBaseKg();
-      let loadKg = rawKg - baseKg;
-      if (loadKg < 0) loadKg = 0;
-      let targetKg = Math.round(loadKg / 2.5) * 2.5 + baseKg;
       if (targetKg < baseKg) targetKg = baseKg;
       const result = calcPlates(targetKg);
       if (result) {
@@ -2246,9 +2263,9 @@ function renderCalc() {
           <button class="calc-unit-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
         </div>
       </div>
-      ${inputUnit === 'lbs' && inputVal && !isNaN(parseFloat(inputVal)) ? (() => { const base = getBaseKg(); const load = Math.max(0, lbsToKg(parseFloat(inputVal)) - base); const rounded = Math.round(load / 2.5) * 2.5 + base; const roundedLbs = (rounded * 2.2046).toFixed(1); const roundedDisplay = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
+      ${inputUnit === 'lbs' && inputVal && !isNaN(parseFloat(inputVal)) ? (() => { const rounded = snapToAttempt(lbsToKg(parseFloat(inputVal))); const roundedLbs = (rounded * KG_TO_LBS).toFixed(1); const roundedDisplay = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
       const down = rounded - 2.5; const up = rounded + 2.5;
-      const downLbs = (down * 2.2046).toFixed(1); const upLbs = (up * 2.2046).toFixed(1);
+      const downLbs = (down * KG_TO_LBS).toFixed(1); const upLbs = (up * KG_TO_LBS).toFixed(1);
       const downDisplay = down % 1 === 0 ? down.toFixed(0) : down.toFixed(1);
       const upDisplay = up % 1 === 0 ? up.toFixed(0) : up.toFixed(1);
       return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
@@ -2305,7 +2322,7 @@ function calcSnapToNearest(targetKg) {
   // Populate input with the nearest valid attempt value
   // Convert back to whatever unit is currently selected
   if (calcState.inputUnit === 'lbs') {
-    const lbs = Math.round(targetKg * 2.2046 * 10) / 10;
+    const lbs = Math.round(targetKg * KG_TO_LBS * 10) / 10;
     calcState.inputVal = String(lbs);
   } else {
     calcState.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
