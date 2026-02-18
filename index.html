@@ -217,14 +217,12 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-mode-btn.active { background: #C9A84C; color: #000; }
 .calc-section { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
 .calc-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: #555; margin-bottom: 14px; }
-.calc-input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.calc-input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; overflow: hidden; }
 .calc-weight-input { flex: 1; background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 8px; color: #f0f0f0; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 32px; padding: 12px 16px; outline: none; text-align: center; -moz-appearance: textfield; }
 .calc-weight-input::-webkit-outer-spin-button,
 .calc-weight-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 .calc-weight-input:focus { border-color: #C9A84C; }
-.calc-unit-toggle { display: flex; flex-direction: column; gap: 4px; }
-.calc-unit-btn { padding: 8px 14px; border: 1px solid #2a2a2a; border-radius: 6px; background: transparent; color: #555; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; }
-.calc-unit-btn.active { border-color: #C9A84C; color: #C9A84C; background: rgba(201,168,76,0.08); }
+
 .calc-totals-display { display: flex; gap: 12px; margin-bottom: 16px; }
 .calc-total-box { flex: 1; background: #1a1a1a; border: 1px solid #222; border-radius: 10px; padding: 12px 14px; text-align: center; }
 .calc-total-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: #C9A84C; line-height: 1; }
@@ -342,7 +340,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <script>
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -1996,14 +1994,7 @@ const BARS = [
 ];
 const COLLAR_KG = 5; // pair
 
-const calcState = {
-  mode: 'target',
-  inputUnit: 'lbs',
-  inputVal: '',
-  barId: 'standard',
-  collarsOn: false,
-  manualCounts: { 25: 0, 20: 0, 15: 0, 10: 0, 5: 0, 2.5: 0, 1.25: 0, 0.5: 0, 0.25: 0 }
-};
+
 
 function lbsToKg(lbs) { return lbs / KG_TO_LBS; }
 function kgToLbs(kg) { return kg * KG_TO_LBS; }
@@ -2019,8 +2010,8 @@ function snapToAttempt(kg, direction) {
   return base + snapped;
 }
 
-function getBarKg() { return BARS.find(b => b.id === calcState.barId).kg; }
-function getCollarKg() { return calcState.collarsOn ? COLLAR_KG : 0; }
+function getBarKg() { return BARS.find(b => b.id === state.calc.barId).kg; }
+function getCollarKg() { return state.calc.collarsOn ? COLLAR_KG : 0; }
 function getBaseKg() { return getBarKg() + getCollarKg(); }
 
 // Given a target total kg, return {plates: [{kg, count}], totalKg, remainder}
@@ -2046,7 +2037,7 @@ function calcPlates(targetKg) {
 
 function manualTotal() {
   let perSide = 0;
-  for (const [kg, count] of Object.entries(calcState.manualCounts)) {
+  for (const [kg, count] of Object.entries(state.calc.manualCounts)) {
     perSide += parseFloat(kg) * count;
   }
   return getBaseKg() + perSide * 2;
@@ -2165,7 +2156,7 @@ function renderCalcBarSVG(plates, showCollars) {
 }
 function renderCalc() {
   const main = document.getElementById('main-content');
-  const { mode, inputUnit, inputVal, manualCounts } = calcState;
+  const { mode, inputUnit, inputVal, manualCounts } = state.calc;
 
   let totalKg = 0, totalLbs = 0, plates = [], remainder = 0, noSolution = false;
 
@@ -2196,7 +2187,7 @@ function renderCalc() {
   }
 
   const hasPlates = plates.some(p => p.count > 0);
-  const barSVG = renderCalcBarSVG(plates, calcState.collarsOn);
+  const barSVG = renderCalcBarSVG(plates, state.calc.collarsOn);
 
   // Plate breakdown chips (for target mode)
   let breakdownHtml = '';
@@ -2237,7 +2228,7 @@ function renderCalc() {
     </div>
 
     <div class="calc-bar-selector">
-      ${BARS.map(b => `<button class="calc-bar-btn${calcState.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
+      ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
         ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
       </button>`).join('')}
     </div>`;
@@ -2249,19 +2240,19 @@ function renderCalc() {
         <div class="calc-collar-label">Collars</div>
         <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
       </div>
-      <button class="calc-collar-toggle${calcState.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
+      <button class="calc-collar-toggle${state.calc.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
     </div>`;
 
   if (mode === 'target') {
     html += `
     <div class="calc-section">
       <div class="calc-section-title">Enter Target Weight</div>
+      <div class="calc-mode-toggle" style="margin-bottom:12px;">
+        <button class="calc-mode-btn${inputUnit === 'lbs' ? ' active' : ''}" onclick="calcSetUnit('lbs')">LBS</button>
+        <button class="calc-mode-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
+      </div>
       <div class="calc-input-row">
-        <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" />
-        <div class="calc-unit-toggle">
-          <button class="calc-unit-btn${inputUnit === 'lbs' ? ' active' : ''}" onclick="calcSetUnit('lbs')">LBS</button>
-          <button class="calc-unit-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
-        </div>
+        <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="width:100%;" />
       </div>
       ${inputUnit === 'lbs' && inputVal && !isNaN(parseFloat(inputVal)) ? (() => { const rounded = snapToAttempt(lbsToKg(parseFloat(inputVal))); const roundedLbs = (rounded * KG_TO_LBS).toFixed(1); const roundedDisplay = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
       const down = rounded - 2.5; const up = rounded + 2.5;
@@ -2289,8 +2280,8 @@ function renderCalc() {
     </div>`;
   }
 
-  const bar = BARS.find(b => b.id === calcState.barId);
-  const collarNote = calcState.collarsOn ? ` + collars (5kg)` : '';
+  const bar = BARS.find(b => b.id === state.calc.barId);
+  const collarNote = state.calc.collarsOn ? ` + collars (5kg)` : '';
   const plateNote = hasPlates ? ` + ${plates.map(p => `${p.count}×${p.kg}kg`).join(' + ')} per side` : '';
 
   // Totals + bar visual
@@ -2321,29 +2312,29 @@ function renderCalc() {
 function calcSnapToNearest(targetKg) {
   // Populate input with the nearest valid attempt value
   // Convert back to whatever unit is currently selected
-  if (calcState.inputUnit === 'lbs') {
+  if (state.calc.inputUnit === 'lbs') {
     const lbs = Math.round(targetKg * KG_TO_LBS * 10) / 10;
-    calcState.inputVal = String(lbs);
+    state.calc.inputVal = String(lbs);
   } else {
-    calcState.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
+    state.calc.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
   }
   const inp = document.getElementById('calc-weight-input');
-  if (inp) inp.value = calcState.inputVal;
+  if (inp) inp.value = state.calc.inputVal;
   renderCalc();
 }
 
-function calcSetMode(m) { calcState.mode = m; renderCalc(); }
-function calcSetUnit(u) { calcState.inputUnit = u; renderCalc(); }
-function calcInput(v) { calcState.inputVal = v; renderCalc(); }
-function calcSetBar(id) { calcState.barId = id; renderCalc(); }
-function calcToggleCollars() { calcState.collarsOn = !calcState.collarsOn; renderCalc(); }
+function calcSetMode(m) { state.calc.mode = m; renderCalc(); }
+function calcSetUnit(u) { state.calc.inputUnit = u; renderCalc(); }
+function calcInput(v) { state.calc.inputVal = v; renderCalc(); }
+function calcSetBar(id) { state.calc.barId = id; renderCalc(); }
+function calcToggleCollars() { state.calc.collarsOn = !state.calc.collarsOn; renderCalc(); }
 function calcAdjust(kg, delta) {
-  const cur = calcState.manualCounts[kg] || 0;
-  calcState.manualCounts[kg] = Math.max(0, cur + delta);
+  const cur = state.calc.manualCounts[kg] || 0;
+  state.calc.manualCounts[kg] = Math.max(0, cur + delta);
   renderCalc();
 }
 function calcReset() {
-  for (const kg of KG_PLATES) calcState.manualCounts[kg] = 0;
+  for (const kg of KG_PLATES) state.calc.manualCounts[kg] = 0;
   renderCalc();
 }
 </script>
