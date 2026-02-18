@@ -150,6 +150,11 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .program-select-btn.current { border-color: #C9A84C; color: #C9A84C; }
 .program-delete-btn { background: none; border: none; color: #444; font-size: 18px; cursor: pointer; padding: 4px 6px; transition: color 0.15s; line-height: 1; }
 .program-delete-btn:active { color: #f87171; }
+.program-export-btn { background: none; border: none; color: #555; font-size: 16px; cursor: pointer; padding: 4px 6px; transition: color 0.15s; line-height: 1; }
+.program-export-btn:active { color: #C9A84C; }
+.export-scope-picker { display: none; gap: 6px; margin-top: 6px; padding: 6px 0 2px; }
+.export-scope-btn { flex: 1; padding: 6px 8px; border: 1px solid #2a2a2a; border-radius: 6px; background: none; color: #888; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
+.export-scope-btn:hover { border-color: #C9A84C; color: #C9A84C; }
 .metrics-screen { padding: 16px 16px 100px; }
 .cycle-tabs { display: flex; gap: 8px; padding: 0 0 14px; overflow-x: auto; scrollbar-width: none; }
 .cycle-tabs::-webkit-scrollbar { display: none; }
@@ -405,27 +410,39 @@ function setScreen(s){
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
 const LIFT_GROUPS = {
-  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar','low bar','pin squat','pause squat','safety bar','ssb','1/4 squat'],
+  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar','low bar','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat'],
   bench: ['bench','close grip','larson','larsen','slingshot','incline','decline','floor press','feet up','pause bench','touch and go','tng','comp bench','board press'],
   deadlift: ['deadlift','sumo','conventional','romanian','rdl','rack pull','block pull','deficit','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo'],
 };
 
 // ── COMP LIFT DETECTION ───────────────────────────────────────────────────────
-// Generic/comp names auto-tracked. Variation modifiers = opt-in via star.
+// Exact names that count as competition lifts for projections and default tracking.
+// Variation modifiers disqualify a lift from being treated as a comp lift.
 const COMP_KEYWORDS = {
-  squat: ['squat','low bar squat','high bar squat','back squat','barbell squat','comp squat'],
-  bench: ['bench','bench press','barbell bench','comp bench','competition bench','barbell comp bench'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift'],
+  squat:    ['squat','back squat','low bar squat','high bar squat','barbell squat','comp squat','competition squat'],
+  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
+  deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift','competition deadlift','conventional pull','sumo pull','comp pull','competition style deadlift'],
 };
-const VARIATION_MODIFIERS = ['pause','pin','close grip','wide grip','tempo','incline','decline','deficit','rack pull','block pull','snatch grip','stiff leg','romanian','rdl','floor press','board press','slingshot','feet up','touch and go','tng','safety bar','ssb','zercher','front squat','goblet','hack','belt squat','box squat','semi sumo'];
+
+// These terms in a lift name disqualify it from being a comp lift
+const VARIATION_MODIFIERS = [
+  'pin','close grip','wide grip','tempo','incline','decline','deficit',
+  'rack pull','block pull','snatch grip','stiff leg','romanian','rdl',
+  'floor press','board press','slingshot','sling shot','feet up',
+  'touch and go','tng','safety bar','ssb','zercher','front squat',
+  'goblet','hack','belt squat','box squat','semi sumo',
+  '1/4','quarter','partial',
+  'pause squat','paused squat',
+  'pause deadlift','paused deadlift','pause dead','paused dead',
+];
 
 function isCompLift(name){
-  const n=name.toLowerCase().trim();
-  // Has a variation modifier? Not a comp lift.
-  if(VARIATION_MODIFIERS.some(v=>n.includes(v))) return false;
-  // Matches a comp keyword?
-  for(const keywords of Object.values(COMP_KEYWORDS)){
-    if(keywords.some(k=>n===k||n.endsWith(k)||n.startsWith(k)||n.includes(k))) return true;
+  const n = name.toLowerCase().trim();
+  // Variation modifier present → not a comp lift
+  if (VARIATION_MODIFIERS.some(v => n.includes(v))) return false;
+  // Exact match against comp keyword list
+  for (const keywords of Object.values(COMP_KEYWORDS)) {
+    if (keywords.includes(n)) return true;
   }
   return false;
 }
@@ -1497,7 +1514,7 @@ function saveBlockName(){
   const el=document.getElementById('block-name-input');
   const newName=el?el.value.trim():'';
   state.editingBlockName=false;
-  if(newName&&newName!==state.activeBlock.name){
+  if(newName&&state.activeBlock&&newName!==state.activeBlock.name){
     state.activeBlock.name=newName;
     saveBlocks();
   }
@@ -1920,14 +1937,19 @@ function renderProgramList(){
   state.blocks.forEach(block=>{
     const isCurrent=state.activeBlock&&state.activeBlock.id===block.id;
     const weeks=block.weeks?.length||0;
-    h+=`<div class="program-item">
+    h+=`<div class="program-item" style="flex-wrap:wrap;">
       <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')">
         <div class="program-item-name${isCurrent?' active-cycle':''}">${esc(block.name)}</div>
         <div class="program-item-meta">${weeks} weeks${block.dateRange?' · '+block.dateRange:''}</div>
       </div>
       <div class="program-item-actions">
+        <button class="program-export-btn" onclick="toggleExportPicker('${esc(block.id)}')" title="Export report">📊</button>
         <button class="program-select-btn${isCurrent?' current':''}" onclick="selectBlock('${esc(block.id)}')">${isCurrent?'ACTIVE':'SELECT'}</button>
         <button class="program-delete-btn" onclick="promptDeleteBlock('${esc(block.id)}')" title="Delete program">🗑</button>
+      </div>
+      <div class="export-scope-picker" id="export-picker-${esc(block.id)}">
+        <button class="export-scope-btn" onclick="exportReport('${esc(block.id)}','week')">This Week</button>
+        <button class="export-scope-btn" onclick="exportReport('${esc(block.id)}','full')">Full Program</button>
       </div>
     </div>`;
   });
@@ -1970,6 +1992,303 @@ function confirmDeleteBlock(){
 }
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
+// ── EXPORT REPORT ─────────────────────────────────────────────────────────────
+function toggleExportPicker(blockId) {
+  // Close all other pickers first
+  document.querySelectorAll('.export-scope-picker').forEach(el => {
+    if (el.id !== 'export-picker-' + blockId) el.style.display = 'none';
+  });
+  const picker = document.getElementById('export-picker-' + blockId);
+  if (!picker) return;
+  picker.style.display = picker.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function exportReport(blockId, scope) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+
+  // Determine which weeks to include
+  let weeks = block.weeks || [];
+  if (scope === 'week') {
+    const activeWeekLabel = block.weeks[state.activeWeek]?.label;
+    weeks = block.weeks.filter(w => w.label === activeWeekLabel);
+    if (!weeks.length) { alert('No data for current week.'); return; }
+  }
+
+  // Gather all logs for this block
+  const blockLogs = {};
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (key.startsWith(blockId + '||')) blockLogs[key] = val;
+  }
+
+  if (!Object.keys(blockLogs).length) {
+    alert('No logged data found for this program.');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── SHEET 1: CYCLE SUMMARY ────────────────────────────────────────────────
+  const { rows: summaryRows, styleMap: summaryStyles } = buildSummarySheet(block, weeks, blockLogs, scope);
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
+  applySheetFormatting(ws1, summaryRows, { minWidth: 12, maxWidth: 30, styleMap: summaryStyles });
+  XLSX.utils.book_append_sheet(wb, ws1, 'Dashboard');
+
+  // ── SHEET 2: WEEK-OVER-WEEK PROGRESSION ──────────────────────────────────
+  const { rows: progressRows, styleMap: progressStyles } = buildProgressionSheet(block, weeks, blockLogs);
+  const ws2 = XLSX.utils.aoa_to_sheet(progressRows);
+  applySheetFormatting(ws2, progressRows, { minWidth: 8, maxWidth: 30, styleMap: progressStyles });
+  XLSX.utils.book_append_sheet(wb, ws2, 'Progression');
+
+  // ── SHEET 3: FULL LOG ─────────────────────────────────────────────────────
+  const { rows: logRows, styleMap: logStyles } = buildFullLogSheet(block, weeks, blockLogs);
+  const ws3 = XLSX.utils.aoa_to_sheet(logRows);
+  applySheetFormatting(ws3, logRows, { minWidth: 8, maxWidth: 30, styleMap: logStyles });
+  XLSX.utils.book_append_sheet(wb, ws3, 'Full Log');
+
+  // Download
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const safeName = block.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const scopeStr = scope === 'week' ? '-week' + (state.activeWeek + 1) : '';
+  XLSX.writeFile(wb, `liftlog-${safeName}${scopeStr}-${dateStr}.xlsx`, { cellStyles: true });
+
+  // Close picker
+  document.querySelectorAll('.export-scope-picker').forEach(el => el.style.display = 'none');
+}
+
+function buildSummarySheet(block, weeks, blockLogs, scope) {
+  const peakByGroup = { squat: null, bench: null, deadlift: null };
+  const prMap = {};
+
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    if (!isTracked(exName)) continue;
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    // Projections: comp lifts only (not variations)
+    const group = classifyLift(exName);
+    if (group && group !== 'other' && isCompLift(exName)) {
+      if (!peakByGroup[group] || result.value > peakByGroup[group]) peakByGroup[group] = result.value;
+    }
+    if (val.actual) {
+      const existing = prMap[exName];
+      if (!existing || result.value > existing.e1rm)
+        prMap[exName] = { weight, reps, e1rm: result.value, week: parts[1] };
+    }
+  }
+
+  let totalDays = 0, completedDays = 0;
+  const complianceRows = [];
+  for (const week of weeks) {
+    const scheduled = week.days?.length || 0;
+    let done = 0;
+    for (const day of (week.days || [])) { if (isDayComplete(block, week, day)) done++; }
+    totalDays += scheduled; completedDays += done;
+    complianceRows.push([week.label, done + ' / ' + scheduled + ' days', Math.round(done/Math.max(scheduled,1)*100) + '%']);
+  }
+  const overallPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+  const rows = [];
+  const styleMap = {};
+  const scopeLabel = scope === 'week' ? (weeks[0]?.label || 'Week') : block.weeks.length + '-Week Program';
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const r = () => rows.length; // current row index helper
+
+  rows.push([block.name]);                                              styleMap[r()-1] = XLS.title;
+  rows.push([scopeLabel + '  ·  ' + dateStr + '  ·  Compliance: ' + overallPct + '%']); styleMap[r()-1] = XLS.subtitle;
+  rows.push([]);
+
+  rows.push(['MEET PROJECTIONS']);                                      styleMap[r()-1] = XLS.section;
+  rows.push(['Lift', 'Peak e1RM', 'Opener (90%)', '2nd (95%)', '3rd (101%)']); styleMap[r()-1] = XLS.colHead;
+
+  let projTotal = 0;
+  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const peak = peakByGroup[group];
+    if (peak) {
+      const opener = Math.round(peak * 0.90 / 2.5) * 2.5;
+      const second = Math.round(peak * 0.95 / 2.5) * 2.5;
+      const third  = Math.round(peak * 1.01 / 2.5) * 2.5;
+      rows.push([label, Math.round(peak) + ' lbs', opener + ' lbs', second + ' lbs', third + ' lbs']);
+      projTotal += third;
+    } else {
+      rows.push([label, 'No data', '—', '—', '—']);
+    }
+  }
+  rows.push(['Projected Total', projTotal > 0 ? projTotal + ' lbs' : 'N/A', '', '', '']); styleMap[r()-1] = XLS.bold;
+  rows.push([]);
+
+  rows.push(['PERSONAL RECORDS']);                                      styleMap[r()-1] = XLS.section;
+  rows.push(['Exercise', 'Weight', 'Reps', 'e1RM', 'Week']);           styleMap[r()-1] = XLS.colHead;
+  const prEntries = Object.entries(prMap).sort((a, b) => b[1].e1rm - a[1].e1rm);
+  if (prEntries.length) {
+    for (const [name, pr] of prEntries)
+      rows.push([name, pr.weight + ' lbs', pr.reps + ' reps', Math.round(pr.e1rm) + ' lbs', pr.week]);
+  } else {
+    rows.push(['No logged sets with actual weights found.', '', '', '', '']);
+  }
+  rows.push([]);
+
+  rows.push(['COMPLIANCE BY WEEK']);                                    styleMap[r()-1] = XLS.section;
+  rows.push(['Week', 'Days Completed', 'Rate']);                        styleMap[r()-1] = XLS.colHead;
+  for (const cr of complianceRows) rows.push(cr);
+
+  return { rows, styleMap };
+}
+
+function buildProgressionSheet(block, weeks, blockLogs) {
+  const tracked = {};
+
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    if (!isTracked(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group) continue;
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    if (!tracked[exName]) tracked[exName] = { group, weeks: {} };
+    const weekLabel = parts[1];
+    if (!tracked[exName].weeks[weekLabel])
+      tracked[exName].weeks[weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0 };
+    const w = tracked[exName].weeks[weekLabel];
+    w.tonnage += weight * reps;
+    if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; }
+  }
+
+  if (!Object.keys(tracked).length)
+    return { rows: [['No tracked lifts with logged data found.']], styleMap: {} };
+
+  const groupOrder = { squat: 0, bench: 1, deadlift: 2, other: 3 };
+  const sortedExercises = Object.entries(tracked).sort((a, b) => {
+    const go = (groupOrder[a[1].group] || 3) - (groupOrder[b[1].group] || 3);
+    return go !== 0 ? go : a[0].localeCompare(b[0]);
+  });
+
+  const rows = [];
+  const styleMap = {};
+  const r = () => rows.length;
+
+  rows.push(['WEEK-OVER-WEEK PROGRESSION']);             styleMap[r()-1] = XLS.title;
+  rows.push(['All weights in lbs  ·  e1RM = estimated 1-rep max from top set']); styleMap[r()-1] = XLS.subtitle;
+  rows.push([]);
+
+  for (const [exName, data] of sortedExercises) {
+    const weekData = data.weeks;
+    if (!Object.keys(weekData).length) continue;
+
+    rows.push([exName]);                                 styleMap[r()-1] = XLS.section;
+    rows.push(['Week', 'Top Set', 'Reps', 'RPE', 'e1RM', '∆ e1RM', 'Volume (lbs)']); styleMap[r()-1] = XLS.colHead;
+
+    const sortedWeeks = Object.entries(weekData).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
+    let prevE1rm = null;
+    for (const [weekLabel, w] of sortedWeeks) {
+      const e1rmRounded = Math.round(w.e1rm);
+      let deltaStr = '—';
+      if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); deltaStr = (d >= 0 ? '+' : '') + d; }
+      rows.push([weekLabel, w.topWeight, w.topReps, w.topRpe !== null ? w.topRpe : '—', e1rmRounded, deltaStr, Math.round(w.tonnage)]);
+      prevE1rm = w.e1rm;
+    }
+    rows.push([]);
+  }
+
+  return { rows, styleMap };
+}
+
+function buildFullLogSheet(block, weeks, blockLogs) {
+  const rows = [];
+  const styleMap = {};
+  const r = () => rows.length;
+
+  rows.push(['FULL TRAINING LOG']);                      styleMap[r()-1] = XLS.title;
+  rows.push([block.name + '  ·  ' + weeks.length + ' week(s)']); styleMap[r()-1] = XLS.subtitle;
+  rows.push([]);
+  rows.push(['Week', 'Day', 'Exercise', 'Set', 'Prescribed', 'Logged (lbs)', 'RPE', 'Done']); styleMap[r()-1] = XLS.colHead;
+
+  let lastWeek = null;
+  for (const week of weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        const sets = parseSets(ex.prescription) || [];
+        const setCount = Math.max(sets.length, 1);
+        for (let si = 0; si < setCount; si++) {
+          const setKey = [block.id, week.label, day.name, ex.name, 's' + si].join('||');
+          const log = blockLogs[setKey] || {};
+          const prescribed = sets[si]
+            ? (sets[si].isRpe ? `${sets[si].reps} @ RPE ${sets[si].rpe}` : `${sets[si].reps}×${sets[si].weight}`)
+            : (ex.prescription || '');
+          // Bold the week label cell when week changes
+          if (week.label !== lastWeek && si === 0) {
+            styleMap[r()] = XLS.bold;
+            lastWeek = week.label;
+          }
+          rows.push([week.label, day.name, ex.name, si + 1, prescribed, log.actual || '', log.rpe || '', log.done ? '✓' : (log.skipped ? 'skip' : '')]);
+        }
+      }
+    }
+  }
+
+  return { rows, styleMap };
+}
+
+function applySheetFormatting(ws, rows, opts = {}) {
+  // Column widths
+  const colWidths = [];
+  rows.forEach(row => {
+    row.forEach((cell, i) => {
+      const len = String(cell || '').length;
+      if (!colWidths[i] || colWidths[i] < len) colWidths[i] = len;
+    });
+  });
+  ws['!cols'] = colWidths.map(w => ({
+    wch: Math.min(Math.max(w + 2, opts.minWidth || 10), opts.maxWidth || 35)
+  }));
+
+  // Freeze top rows
+  if (opts.freezeRows) {
+    ws['!freeze'] = { xSplit: 0, ySplit: opts.freezeRows, topLeftCell: 'A' + (opts.freezeRows + 1), activeCell: 'A' + (opts.freezeRows + 1), sqref: 'A' + (opts.freezeRows + 1) };
+  }
+
+  // Apply cell styles based on row role markers
+  if (!opts.styleMap) return;
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    const style = opts.styleMap[R];
+    if (!style) continue;
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const addr = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+      ws[addr].s = style;
+    }
+  }
+}
+
+function styleSheetHeaders(ws, rows) { applySheetFormatting(ws, rows); }
+
+// Style presets
+const XLS = {
+  title:    { font: { bold: true, sz: 16 }, alignment: { vertical: 'center' } },
+  subtitle: { font: { bold: false, sz: 11, color: { rgb: '888888' } } },
+  section:  { font: { bold: true, sz: 12 } },
+  colHead:  { font: { bold: true, sz: 11 } },
+  bold:     { font: { bold: true, sz: 11 } },
+  normal:   { font: { sz: 11 } },
+};
 render();
 
 // ── CALCULATOR ────────────────────────────────────────────────────────────────
