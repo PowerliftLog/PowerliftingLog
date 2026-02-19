@@ -49,6 +49,14 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .progress-fill { height: 100%; background: #4ade80; transition: width 0.3s ease; }
 .exercises { padding: 12px 16px 100px; }
 .exercise-card { background: #141414; border: 1px solid #222; border-radius: 12px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; }
+.superset-group { border: 1px solid #2a2a1a; border-radius: 12px; margin-bottom: 12px; overflow: hidden; background: #0e0e0e; }
+.superset-header { display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: #161610; border-bottom: 1px solid #2a2a1a; }
+.superset-badge { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #C9A84C; background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2); border-radius: 4px; padding: 2px 8px; }
+.superset-label { font-size: 11px; color: #444; font-family: 'Barlow', sans-serif; }
+.superset-group .exercise-card { border-radius: 0; border-left: 3px solid rgba(201,168,76,0.2); border-right: none; border-top: none; border-bottom: 1px solid #1a1a1a; margin-bottom: 0; background: #111; }
+.superset-group .exercise-card:last-child { border-bottom: none; }
+.superset-group .exercise-card.completed { border-left-color: rgba(74,222,128,0.3); }
+.superset-group .exercise-card.skipped { border-left-color: rgba(255,255,255,0.05); }
 .exercise-card.completed { border-color: rgba(74,222,128,0.35); }
 .exercise-card.skipped { border-color: rgba(255,255,255,0.06); }
 .exercise-card.skipped .ex-summary-name { text-decoration: line-through; color: #3a3a3a; }
@@ -150,6 +158,11 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .program-select-btn.current { border-color: #C9A84C; color: #C9A84C; }
 .program-delete-btn { background: none; border: none; color: #444; font-size: 18px; cursor: pointer; padding: 4px 6px; transition: color 0.15s; line-height: 1; }
 .program-delete-btn:active { color: #f87171; }
+.program-export-btn { background: none; border: none; color: #555; font-size: 16px; cursor: pointer; padding: 4px 6px; transition: color 0.15s; line-height: 1; }
+.program-export-btn:active { color: #C9A84C; }
+.export-scope-picker { display: none; gap: 6px; margin-top: 6px; padding: 6px 0 2px; }
+.export-scope-btn { flex: 1; padding: 6px 8px; border: 1px solid #2a2a2a; border-radius: 6px; background: none; color: #888; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
+.export-scope-btn:hover { border-color: #C9A84C; color: #C9A84C; }
 .metrics-screen { padding: 16px 16px 100px; }
 .cycle-tabs { display: flex; gap: 8px; padding: 0 0 14px; overflow-x: auto; scrollbar-width: none; }
 .cycle-tabs::-webkit-scrollbar { display: none; }
@@ -340,7 +353,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <script>
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -405,27 +418,39 @@ function setScreen(s){
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
 const LIFT_GROUPS = {
-  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar','low bar','pin squat','pause squat','safety bar','ssb','1/4 squat'],
+  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar','low bar','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat'],
   bench: ['bench','close grip','larson','larsen','slingshot','incline','decline','floor press','feet up','pause bench','touch and go','tng','comp bench','board press'],
   deadlift: ['deadlift','sumo','conventional','romanian','rdl','rack pull','block pull','deficit','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo'],
 };
 
 // ── COMP LIFT DETECTION ───────────────────────────────────────────────────────
-// Generic/comp names auto-tracked. Variation modifiers = opt-in via star.
+// Exact names that count as competition lifts for projections and default tracking.
+// Variation modifiers disqualify a lift from being treated as a comp lift.
 const COMP_KEYWORDS = {
-  squat: ['squat','low bar squat','high bar squat','back squat','barbell squat','comp squat'],
-  bench: ['bench','bench press','barbell bench','comp bench','competition bench','barbell comp bench'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift'],
+  squat:    ['squat','back squat','low bar squat','high bar squat','barbell squat','comp squat','competition squat'],
+  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
+  deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift','competition deadlift','conventional pull','sumo pull','comp pull','competition style deadlift'],
 };
-const VARIATION_MODIFIERS = ['pause','pin','close grip','wide grip','tempo','incline','decline','deficit','rack pull','block pull','snatch grip','stiff leg','romanian','rdl','floor press','board press','slingshot','feet up','touch and go','tng','safety bar','ssb','zercher','front squat','goblet','hack','belt squat','box squat','semi sumo'];
+
+// These terms in a lift name disqualify it from being a comp lift
+const VARIATION_MODIFIERS = [
+  'pin','close grip','wide grip','tempo','incline','decline','deficit',
+  'rack pull','block pull','snatch grip','stiff leg','romanian','rdl',
+  'floor press','board press','slingshot','sling shot','feet up',
+  'touch and go','tng','safety bar','ssb','zercher','front squat',
+  'goblet','hack','belt squat','box squat','semi sumo',
+  '1/4','quarter','partial',
+  'pause squat','paused squat',
+  'pause deadlift','paused deadlift','pause dead','paused dead',
+];
 
 function isCompLift(name){
-  const n=name.toLowerCase().trim();
-  // Has a variation modifier? Not a comp lift.
-  if(VARIATION_MODIFIERS.some(v=>n.includes(v))) return false;
-  // Matches a comp keyword?
-  for(const keywords of Object.values(COMP_KEYWORDS)){
-    if(keywords.some(k=>n===k||n.endsWith(k)||n.startsWith(k)||n.includes(k))) return true;
+  const n = name.toLowerCase().trim();
+  // Variation modifier present → not a comp lift
+  if (VARIATION_MODIFIERS.some(v => n.includes(v))) return false;
+  // Exact match against comp keyword list
+  for (const keywords of Object.values(COMP_KEYWORDS)) {
+    if (keywords.includes(n)) return true;
   }
   return false;
 }
@@ -701,13 +726,44 @@ function renderMetrics(){
     h+=`<div class="metrics-cycle-hint">Tap a point on the chart to drill into that cycle</div>`;
   }
 
+  // ── Est. 1RM from logged comp lifts ──────────────────────────────────────
+  const e1rmByGroup = { squat: null, bench: null, deadlift: null };
+  const drillId = drill || (state.blocks.find(b=>b.id===state.activeBlock)||state.blocks[state.blocks.length-1])?.id;
+  for (const [key, val] of Object.entries(state.logs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    if (parts[0] !== drillId && !drill) { /* allow all blocks if no drill */ }
+    const exName = parts[3];
+    if (!isCompLift(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group || group === 'other') continue;
+    const si = parseInt(parts[4].slice(1));
+    let weight = val.actual ? parseFloat(val.actual) : null;
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    if (!e1rmByGroup[group] || result.value > e1rmByGroup[group]) e1rmByGroup[group] = Math.round(result.value);
+  }
+  if (e1rmByGroup.squat || e1rmByGroup.bench || e1rmByGroup.deadlift) {
+    h += `<div class="maxes-bar">`;
+    if (e1rmByGroup.squat) h += `<div class="max-item"><div class="max-lift">Squat</div><div class="max-weight">${e1rmByGroup.squat}</div><div style="font-size:9px;color:#555;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Est. 1RM</div></div>`;
+    if (e1rmByGroup.bench) h += `<div class="max-item"><div class="max-lift">Bench</div><div class="max-weight">${e1rmByGroup.bench}</div><div style="font-size:9px;color:#555;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Est. 1RM</div></div>`;
+    if (e1rmByGroup.deadlift) h += `<div class="max-item"><div class="max-lift">Dead</div><div class="max-weight">${e1rmByGroup.deadlift}</div><div style="font-size:9px;color:#555;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Est. 1RM</div></div>`;
+    h += `</div>`;
+  }
+
   let hasAnyData=false;
   for(const [groupKey,group] of Object.entries(metrics)){
     const vars=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
     if(vars.length===0) continue;
     hasAnyData=true;
 
-    const best=Math.max(...vars.flatMap(([,pts])=>pts.map(p=>p.e1rm)));
+    const compVars=vars.filter(([vname])=>isCompLift(vname));
+    const bestSource=compVars.length>0?compVars:vars;
+    const best=Math.max(...bestSource.flatMap(([,pts])=>pts.map(p=>p.e1rm)));
 
     h+=`<div class="metrics-lift-group">`;
     h+=`<div class="metrics-lift-header">
@@ -1011,11 +1067,12 @@ function parseASheet(sn,rows){
       dayCols.push({col,name:String(c).trim(),noteCol:col+1});
   }
   const rawDays=dayCols.map(({col,name,noteCol})=>{
-    const exs=[]; let cur=null;
+    const exs=[]; let cur=null; let curSupersetGroup=null;
     for(let r=hdr+1;r<rows.length;r++){
       const row=rows[r]; if(!row) continue;
       const cell=row[col]; const note=row[noteCol];
-      if(cell===null||cell===undefined||!String(cell).trim()) continue;
+      // Blank row closes any open superset group
+      if(cell===null||cell===undefined||!String(cell).trim()){ curSupersetGroup=null; continue; }
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
       if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); } }
@@ -1026,11 +1083,15 @@ function parseASheet(sn,rows){
         const lp=(/\(/.test(cs)&&(/\d/.test(cs)||/[LMH]/.test(cs)));
         const lp2=/^\d+x\d+/i.test(cs); // e.g. "4x15", "3x5"
         const ln=cs.startsWith('(')||cs.toLowerCase().includes('increase');
+        const supersetMatch=
+          cs.match(/^(\d+)\s*rounds?[\s:]*/i) ||  // "2 rounds:"
+          (cs.match(/^superset[\s:]*/i) && ['1']) ||
+          (cs.match(/^SS[\s:]*/i) && ['1']) ||
+          (cs.match(/^giant\s*set[\s:]*/i) && ['1']) ||
+          (cs.match(/^circuit[\s:]*/i) && ['1']);
         const isSectionHeader=
-          /^\d+\s*rounds?[\s:]/i.test(cs) ||  // "2 rounds:"
+          supersetMatch!=null ||
           /^round\s*\d/i.test(cs) ||            // "Round 1"
-          /^superset/i.test(cs) ||
-          /^circuit/i.test(cs) ||
           /^\d+\s*rep\s/i.test(cs) ||          // "1 rep (rest :10)"
           /^\d+\.?\d*\s*$/.test(cs);           // bare number like "2.0"
         // Coach note patterns:
@@ -1045,10 +1106,24 @@ function parseASheet(sn,rows){
           /^protocol\b/i.test(cs) ||
           (cs.endsWith('.')&&wordCount>=4&&!lp&&!lp2&&!ln);
 
+        // Superset group tracking: open on header, close on blank row
+        if(supersetMatch){
+          const rounds=parseInt(supersetMatch[1])||1;
+          const label=rounds>1?rounds+' rounds':'superset';
+          curSupersetGroup={label,rounds,startIdx:exs.length};
+        }
+
         if(!lp&&!lp2&&!ln&&!isSectionHeader&&!isCoachNoteLine){
-          const normalizedCs=cs.replace(/\s+/g,' ').trim(); // collapse double spaces
+          let normalizedCs=cs.replace(/\s+/g,' ').trim(); // collapse double spaces
+          // Detect "20 Reverse Hyper" pattern — leading number is a rep count, not part of name
+          let embeddedPres=null;
+          const leadingRepsMatch=normalizedCs.match(/^(\d+(?:[:\.]\d+)?)\s+([A-Za-z].+)$/);
+          if(leadingRepsMatch){
+            embeddedPres=leadingRepsMatch[1]; // e.g. "20" or "1:00"
+            normalizedCs=leadingRepsMatch[2]; // e.g. "Reverse Hyper" or "Plank Hold"
+          }
           const correctedName=spellCorrectExerciseName(normalizedCs);
-          cur={name:correctedName,weeks:[],staticPrescription:null,note:note?String(note).trim():null,coachNotes:[]};
+          cur={name:correctedName,weeks:[],staticPrescription:embeddedPres||null,note:note?String(note).trim():null,coachNotes:[],supersetGroup:curSupersetGroup||null};
           exs.push(cur);
         } else if(cur&&(isCoachNoteLine||ln)){
           const noteText=cs.replace(/^-|-$/g,'').trim();
@@ -1070,7 +1145,7 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[]};
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],supersetGroup:ex.supersetGroup||null};
     })}))});
   }
 
@@ -1197,6 +1272,17 @@ function parseRangeSet(pres){
   return{sets,reps};
 }
 
+// Handles bare prescriptions like "20" (reps) or "1:00" (time) — single set, no weight in prescription
+function parseBarePres(pres){
+  if(!pres) return null;
+  const p=pres.trim();
+  // bare number: "20"
+  if(/^\d+$/.test(p)) return{sets:1,reps:p};
+  // time format: "1:00", "0:30"
+  if(/^\d+:\d{2}$/.test(p)) return{sets:1,reps:p};
+  return null;
+}
+
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
   if(state.screen==='metrics'){ renderMetrics(); return; }
@@ -1250,14 +1336,7 @@ function renderWorkout(){
     h+=`</div>`;
   }
 
-  // Maxes
-  if(hasMaxes){
-    h+=`<div class="maxes-bar">`;
-    if(block.maxes.squat) h+=`<div class="max-item"><div class="max-lift">Squat</div><div class="max-weight">${block.maxes.squat}</div></div>`;
-    if(block.maxes.bench) h+=`<div class="max-item"><div class="max-lift">Bench</div><div class="max-weight">${block.maxes.bench}</div></div>`;
-    if(block.maxes.deadlift) h+=`<div class="max-item"><div class="max-lift">Dead</div><div class="max-weight">${block.maxes.deadlift}</div></div>`;
-    h+=`</div>`;
-  }
+  // 1RM targets moved to Metrics tab
 
   // Week pills
   h+=`<div class="week-bar">`;
@@ -1282,7 +1361,7 @@ function renderWorkout(){
   const _next=findNextWorkout(block);
   if(_next.weekIdx!==state.activeWeek||_next.dayIdx!==state.activeDay){
     const nw=block.weeks[_next.weekIdx]; const nd=nw?.days[_next.dayIdx];
-    if(nd) h+=`<div class="next-workout-banner" onclick="state.activeWeek=${_next.weekIdx};state.activeDay=${_next.dayIdx};state.expandedEx=null;saveNav();render()">
+    if(nd) h+=`<div class="next-workout-banner" onclick="state.activeWeek=${_next.weekIdx};state.activeDay=${_next.dayIdx};state.expandedEx=new Set();saveNav();render()">
       <span class="next-workout-banner-text">▶ Next workout: ${nw.label} — ${nd.name}</span><span class="next-workout-banner-arrow">→</span>
     </div>`;
   }
@@ -1293,7 +1372,27 @@ function renderWorkout(){
   if(!day||day.exercises.length===0){
     h+=`<div class="rest-msg">Rest day. Eat enough protein.</div>`;
   } else {
-    day.exercises.forEach(ex=>{
+    // Group exercises into superset clusters and standalone items
+    const renderItems = [];
+    let i = 0;
+    while (i < day.exercises.length) {
+      const ex = day.exercises[i];
+      if (ex.supersetGroup) {
+        const groupLabel = ex.supersetGroup.label;
+        const cluster = [];
+        while (i < day.exercises.length && day.exercises[i].supersetGroup && day.exercises[i].supersetGroup.label === groupLabel) {
+          cluster.push(day.exercises[i]);
+          i++;
+        }
+        renderItems.push({ type: 'superset', label: groupLabel, exercises: cluster });
+      } else {
+        renderItems.push({ type: 'single', ex });
+        i++;
+      }
+    }
+
+    function renderExCard(ex, groupKeys) {
+      let h = '';
       const key=lk(block.id,week.label,day.name,ex.name);
       const log=state.logs[key]||{};
       const isDone=log.done||false;
@@ -1303,6 +1402,9 @@ function renderWorkout(){
       const hasSets=sets.length>0;
       const simple=parseSimple(pres);
       const ranged=(!hasSets&&!simple)?parseRangeSet(pres):null;
+      const supersetRounds = ex.supersetGroup?.rounds || 1;
+      const bare=(!hasSets&&!simple&&!ranged)?parseBarePres(pres):null;
+      const bareWithRounds = bare ? {...bare, sets: supersetRounds} : null;
       const inputMode=getExerciseInputMode(ex.name,pres);
 
       const isComp=isCompLift(ex.name);
@@ -1326,19 +1428,20 @@ function renderWorkout(){
         }
         if(simple) return `${simple.sets}×${simple.reps}`;
         if(ranged) return `${ranged.sets}×${ranged.reps}`;
+        if(bareWithRounds) return `${bareWithRounds.sets>1?bareWithRounds.sets+'×':''}${bareWithRounds.reps}`;
         if(pres) return pres;
         return '';
       }
 
-      const isExpanded=state.expandedEx===key;
+      const isExpanded=state.expandedEx.has(key);
       const presSum=presShortSummary(sets,simple,ranged,pres);
-      const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||1))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
-      const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0);
+      const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
+      const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bare?.sets||0)||(pres?1:0);
 
       h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}">`;
 
       // ── Collapsed summary row (always visible) ───────────────────────────
-      h+=`<div class="ex-summary" onclick="toggleExpand('${esc(key)}')">
+      h+=`<div class="ex-summary" onclick="toggleExpand('${esc(key)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
         <div class="ex-summary-left">
           <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.name}</div>
           ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
@@ -1423,6 +1526,17 @@ function renderWorkout(){
             </div>`;
           }
           h+=`</div>`;
+        } else if(bareWithRounds){
+          h+=`<div class="sets-grid">`;
+          for(let si=0;si<bareWithRounds.sets;si++){
+            const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
+            h+=`<div class="set-row">
+            <div class="set-num">S${si+1}</div><div class="set-reps">${bareWithRounds.reps}</div><div class="set-weight rpe">reps</div>
+            ${setInputsHtml(sk,sl,'lbs')}
+            <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+          </div>`;
+          }
+          h+=`</div>`;
         } else if(pres){
           const sk=key+`||s0`; const sl=state.logs[sk]||{};
           h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
@@ -1469,6 +1583,22 @@ function renderWorkout(){
       }
 
       h+=`</div>`; // exercise-card
+      return h;
+    } // end renderExCard
+
+    // Render all items (singles and superset groups)
+    renderItems.forEach(item => {
+      if (item.type === 'single') {
+        h += renderExCard(item.ex);
+      } else {
+        const groupKeys = item.exercises.map(ex => {
+          return block.id+'||'+week.label+'||'+day.name+'||'+ex.name;
+        });
+        h += `<div class="superset-group">`;
+        h += `<div class="superset-header" onclick="toggleExpand('${esc(groupKeys[0])}','${esc(groupKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${item.label}</span><span class="superset-label">${item.exercises.map(e=>e.name).join(" · ")}</span></div>`;
+        item.exercises.forEach(ex => { h += renderExCard(ex, groupKeys); });
+        h += `</div>`;
+      }
     });
 
     // Complete Workout button — only show if day isn't already complete
@@ -1497,7 +1627,7 @@ function saveBlockName(){
   const el=document.getElementById('block-name-input');
   const newName=el?el.value.trim():'';
   state.editingBlockName=false;
-  if(newName&&newName!==state.activeBlock.name){
+  if(newName&&state.activeBlock&&newName!==state.activeBlock.name){
     state.activeBlock.name=newName;
     saveBlocks();
   }
@@ -1777,7 +1907,18 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
   return null;
 }
 
-function toggleExpand(key){ state.expandedEx=state.expandedEx===key?null:key; render(); }
+function toggleExpand(key, groupEncoded){
+  const groupKeys=groupEncoded?groupEncoded.split(':::'):null;
+  if(groupKeys&&groupKeys.length>1){
+    const allOpen=groupKeys.every(k=>state.expandedEx.has(k));
+    if(allOpen){ groupKeys.forEach(k=>state.expandedEx.delete(k)); }
+    else { groupKeys.forEach(k=>state.expandedEx.add(k)); }
+  } else {
+    if(state.expandedEx.has(key)){ state.expandedEx.delete(key); }
+    else { state.expandedEx.add(key); }
+  }
+  render();
+}
 function findNextWorkout(block){
   if(!block) return {weekIdx:0, dayIdx:0};
   for(let wi=0;wi<block.weeks.length;wi++){
@@ -1790,8 +1931,8 @@ function findNextWorkout(block){
   const lastWi=block.weeks.length-1;
   return {weekIdx:lastWi, dayIdx:(block.weeks[lastWi]?.days.length||1)-1};
 }
-function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=null; saveNav(); render(); }
-function setDay(di){ state.activeDay=di; state.expandedEx=null; saveNav(); render(); }
+function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); saveNav(); render(); }
+function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); saveNav(); render(); }
 function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; saveNav(); render(); } }
 
 // ── GOOGLE DRIVE PICKER ───────────────────────────────────────────────────────
@@ -1920,14 +2061,19 @@ function renderProgramList(){
   state.blocks.forEach(block=>{
     const isCurrent=state.activeBlock&&state.activeBlock.id===block.id;
     const weeks=block.weeks?.length||0;
-    h+=`<div class="program-item">
+    h+=`<div class="program-item" style="flex-wrap:wrap;">
       <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')">
         <div class="program-item-name${isCurrent?' active-cycle':''}">${esc(block.name)}</div>
         <div class="program-item-meta">${weeks} weeks${block.dateRange?' · '+block.dateRange:''}</div>
       </div>
       <div class="program-item-actions">
+        <button class="program-export-btn" onclick="toggleExportPicker('${esc(block.id)}')" title="Export report">📊</button>
         <button class="program-select-btn${isCurrent?' current':''}" onclick="selectBlock('${esc(block.id)}')">${isCurrent?'ACTIVE':'SELECT'}</button>
         <button class="program-delete-btn" onclick="promptDeleteBlock('${esc(block.id)}')" title="Delete program">🗑</button>
+      </div>
+      <div class="export-scope-picker" id="export-picker-${esc(block.id)}">
+        <button class="export-scope-btn" onclick="exportReport('${esc(block.id)}','week')">This Week</button>
+        <button class="export-scope-btn" onclick="exportReport('${esc(block.id)}','full')">Full Program</button>
       </div>
     </div>`;
   });
@@ -1970,6 +2116,303 @@ function confirmDeleteBlock(){
 }
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
+// ── EXPORT REPORT ─────────────────────────────────────────────────────────────
+function toggleExportPicker(blockId) {
+  // Close all other pickers first
+  document.querySelectorAll('.export-scope-picker').forEach(el => {
+    if (el.id !== 'export-picker-' + blockId) el.style.display = 'none';
+  });
+  const picker = document.getElementById('export-picker-' + blockId);
+  if (!picker) return;
+  picker.style.display = picker.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function exportReport(blockId, scope) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+
+  // Determine which weeks to include
+  let weeks = block.weeks || [];
+  if (scope === 'week') {
+    const activeWeekLabel = block.weeks[state.activeWeek]?.label;
+    weeks = block.weeks.filter(w => w.label === activeWeekLabel);
+    if (!weeks.length) { alert('No data for current week.'); return; }
+  }
+
+  // Gather all logs for this block
+  const blockLogs = {};
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (key.startsWith(blockId + '||')) blockLogs[key] = val;
+  }
+
+  if (!Object.keys(blockLogs).length) {
+    alert('No logged data found for this program.');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── SHEET 1: CYCLE SUMMARY ────────────────────────────────────────────────
+  const { rows: summaryRows, styleMap: summaryStyles } = buildSummarySheet(block, weeks, blockLogs, scope);
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
+  applySheetFormatting(ws1, summaryRows, { minWidth: 12, maxWidth: 30, styleMap: summaryStyles });
+  XLSX.utils.book_append_sheet(wb, ws1, 'Dashboard');
+
+  // ── SHEET 2: WEEK-OVER-WEEK PROGRESSION ──────────────────────────────────
+  const { rows: progressRows, styleMap: progressStyles } = buildProgressionSheet(block, weeks, blockLogs);
+  const ws2 = XLSX.utils.aoa_to_sheet(progressRows);
+  applySheetFormatting(ws2, progressRows, { minWidth: 8, maxWidth: 30, styleMap: progressStyles });
+  XLSX.utils.book_append_sheet(wb, ws2, 'Progression');
+
+  // ── SHEET 3: FULL LOG ─────────────────────────────────────────────────────
+  const { rows: logRows, styleMap: logStyles } = buildFullLogSheet(block, weeks, blockLogs);
+  const ws3 = XLSX.utils.aoa_to_sheet(logRows);
+  applySheetFormatting(ws3, logRows, { minWidth: 8, maxWidth: 30, styleMap: logStyles });
+  XLSX.utils.book_append_sheet(wb, ws3, 'Full Log');
+
+  // Download
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const safeName = block.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const scopeStr = scope === 'week' ? '-week' + (state.activeWeek + 1) : '';
+  XLSX.writeFile(wb, `liftlog-${safeName}${scopeStr}-${dateStr}.xlsx`, { cellStyles: true });
+
+  // Close picker
+  document.querySelectorAll('.export-scope-picker').forEach(el => el.style.display = 'none');
+}
+
+function buildSummarySheet(block, weeks, blockLogs, scope) {
+  const peakByGroup = { squat: null, bench: null, deadlift: null };
+  const prMap = {};
+
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    if (!isTracked(exName)) continue;
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    // Projections: comp lifts only (not variations)
+    const group = classifyLift(exName);
+    if (group && group !== 'other' && isCompLift(exName)) {
+      if (!peakByGroup[group] || result.value > peakByGroup[group]) peakByGroup[group] = result.value;
+    }
+    if (val.actual) {
+      const existing = prMap[exName];
+      if (!existing || result.value > existing.e1rm)
+        prMap[exName] = { weight, reps, e1rm: result.value, week: parts[1] };
+    }
+  }
+
+  let totalDays = 0, completedDays = 0;
+  const complianceRows = [];
+  for (const week of weeks) {
+    const scheduled = week.days?.length || 0;
+    let done = 0;
+    for (const day of (week.days || [])) { if (isDayComplete(block, week, day)) done++; }
+    totalDays += scheduled; completedDays += done;
+    complianceRows.push([week.label, done + ' / ' + scheduled + ' days', Math.round(done/Math.max(scheduled,1)*100) + '%']);
+  }
+  const overallPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+  const rows = [];
+  const styleMap = {};
+  const scopeLabel = scope === 'week' ? (weeks[0]?.label || 'Week') : block.weeks.length + '-Week Program';
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const r = () => rows.length; // current row index helper
+
+  rows.push([block.name]);                                              styleMap[r()-1] = XLS.title;
+  rows.push([scopeLabel + '  ·  ' + dateStr + '  ·  Compliance: ' + overallPct + '%']); styleMap[r()-1] = XLS.subtitle;
+  rows.push([]);
+
+  rows.push(['MEET PROJECTIONS']);                                      styleMap[r()-1] = XLS.section;
+  rows.push(['Lift', 'Peak e1RM', 'Opener (90%)', '2nd (95%)', '3rd (101%)']); styleMap[r()-1] = XLS.colHead;
+
+  let projTotal = 0;
+  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const peak = peakByGroup[group];
+    if (peak) {
+      const opener = Math.round(peak * 0.90 / 2.5) * 2.5;
+      const second = Math.round(peak * 0.95 / 2.5) * 2.5;
+      const third  = Math.round(peak * 1.01 / 2.5) * 2.5;
+      rows.push([label, Math.round(peak) + ' lbs', opener + ' lbs', second + ' lbs', third + ' lbs']);
+      projTotal += third;
+    } else {
+      rows.push([label, 'No data', '—', '—', '—']);
+    }
+  }
+  rows.push(['Projected Total', projTotal > 0 ? projTotal + ' lbs' : 'N/A', '', '', '']); styleMap[r()-1] = XLS.bold;
+  rows.push([]);
+
+  rows.push(['PERSONAL RECORDS']);                                      styleMap[r()-1] = XLS.section;
+  rows.push(['Exercise', 'Weight', 'Reps', 'e1RM', 'Week']);           styleMap[r()-1] = XLS.colHead;
+  const prEntries = Object.entries(prMap).sort((a, b) => b[1].e1rm - a[1].e1rm);
+  if (prEntries.length) {
+    for (const [name, pr] of prEntries)
+      rows.push([name, pr.weight + ' lbs', pr.reps + ' reps', Math.round(pr.e1rm) + ' lbs', pr.week]);
+  } else {
+    rows.push(['No logged sets with actual weights found.', '', '', '', '']);
+  }
+  rows.push([]);
+
+  rows.push(['COMPLIANCE BY WEEK']);                                    styleMap[r()-1] = XLS.section;
+  rows.push(['Week', 'Days Completed', 'Rate']);                        styleMap[r()-1] = XLS.colHead;
+  for (const cr of complianceRows) rows.push(cr);
+
+  return { rows, styleMap };
+}
+
+function buildProgressionSheet(block, weeks, blockLogs) {
+  const tracked = {};
+
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    if (!isTracked(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group) continue;
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    if (!tracked[exName]) tracked[exName] = { group, weeks: {} };
+    const weekLabel = parts[1];
+    if (!tracked[exName].weeks[weekLabel])
+      tracked[exName].weeks[weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0 };
+    const w = tracked[exName].weeks[weekLabel];
+    w.tonnage += weight * reps;
+    if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; }
+  }
+
+  if (!Object.keys(tracked).length)
+    return { rows: [['No tracked lifts with logged data found.']], styleMap: {} };
+
+  const groupOrder = { squat: 0, bench: 1, deadlift: 2, other: 3 };
+  const sortedExercises = Object.entries(tracked).sort((a, b) => {
+    const go = (groupOrder[a[1].group] || 3) - (groupOrder[b[1].group] || 3);
+    return go !== 0 ? go : a[0].localeCompare(b[0]);
+  });
+
+  const rows = [];
+  const styleMap = {};
+  const r = () => rows.length;
+
+  rows.push(['WEEK-OVER-WEEK PROGRESSION']);             styleMap[r()-1] = XLS.title;
+  rows.push(['All weights in lbs  ·  e1RM = estimated 1-rep max from top set']); styleMap[r()-1] = XLS.subtitle;
+  rows.push([]);
+
+  for (const [exName, data] of sortedExercises) {
+    const weekData = data.weeks;
+    if (!Object.keys(weekData).length) continue;
+
+    rows.push([exName]);                                 styleMap[r()-1] = XLS.section;
+    rows.push(['Week', 'Top Set', 'Reps', 'RPE', 'e1RM', '∆ e1RM', 'Volume (lbs)']); styleMap[r()-1] = XLS.colHead;
+
+    const sortedWeeks = Object.entries(weekData).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
+    let prevE1rm = null;
+    for (const [weekLabel, w] of sortedWeeks) {
+      const e1rmRounded = Math.round(w.e1rm);
+      let deltaStr = '—';
+      if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); deltaStr = (d >= 0 ? '+' : '') + d; }
+      rows.push([weekLabel, w.topWeight, w.topReps, w.topRpe !== null ? w.topRpe : '—', e1rmRounded, deltaStr, Math.round(w.tonnage)]);
+      prevE1rm = w.e1rm;
+    }
+    rows.push([]);
+  }
+
+  return { rows, styleMap };
+}
+
+function buildFullLogSheet(block, weeks, blockLogs) {
+  const rows = [];
+  const styleMap = {};
+  const r = () => rows.length;
+
+  rows.push(['FULL TRAINING LOG']);                      styleMap[r()-1] = XLS.title;
+  rows.push([block.name + '  ·  ' + weeks.length + ' week(s)']); styleMap[r()-1] = XLS.subtitle;
+  rows.push([]);
+  rows.push(['Week', 'Day', 'Exercise', 'Set', 'Prescribed', 'Logged (lbs)', 'RPE', 'Done']); styleMap[r()-1] = XLS.colHead;
+
+  let lastWeek = null;
+  for (const week of weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        const sets = parseSets(ex.prescription) || [];
+        const setCount = Math.max(sets.length, 1);
+        for (let si = 0; si < setCount; si++) {
+          const setKey = [block.id, week.label, day.name, ex.name, 's' + si].join('||');
+          const log = blockLogs[setKey] || {};
+          const prescribed = sets[si]
+            ? (sets[si].isRpe ? `${sets[si].reps} @ RPE ${sets[si].rpe}` : `${sets[si].reps}×${sets[si].weight}`)
+            : (ex.prescription || '');
+          // Bold the week label cell when week changes
+          if (week.label !== lastWeek && si === 0) {
+            styleMap[r()] = XLS.bold;
+            lastWeek = week.label;
+          }
+          rows.push([week.label, day.name, ex.name, si + 1, prescribed, log.actual || '', log.rpe || '', log.done ? '✓' : (log.skipped ? 'skip' : '')]);
+        }
+      }
+    }
+  }
+
+  return { rows, styleMap };
+}
+
+function applySheetFormatting(ws, rows, opts = {}) {
+  // Column widths
+  const colWidths = [];
+  rows.forEach(row => {
+    row.forEach((cell, i) => {
+      const len = String(cell || '').length;
+      if (!colWidths[i] || colWidths[i] < len) colWidths[i] = len;
+    });
+  });
+  ws['!cols'] = colWidths.map(w => ({
+    wch: Math.min(Math.max(w + 2, opts.minWidth || 10), opts.maxWidth || 35)
+  }));
+
+  // Freeze top rows
+  if (opts.freezeRows) {
+    ws['!freeze'] = { xSplit: 0, ySplit: opts.freezeRows, topLeftCell: 'A' + (opts.freezeRows + 1), activeCell: 'A' + (opts.freezeRows + 1), sqref: 'A' + (opts.freezeRows + 1) };
+  }
+
+  // Apply cell styles based on row role markers
+  if (!opts.styleMap) return;
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    const style = opts.styleMap[R];
+    if (!style) continue;
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const addr = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+      ws[addr].s = style;
+    }
+  }
+}
+
+function styleSheetHeaders(ws, rows) { applySheetFormatting(ws, rows); }
+
+// Style presets
+const XLS = {
+  title:    { font: { bold: true, sz: 16 }, alignment: { vertical: 'center' } },
+  subtitle: { font: { bold: false, sz: 11, color: { rgb: '888888' } } },
+  section:  { font: { bold: true, sz: 12 } },
+  colHead:  { font: { bold: true, sz: 11 } },
+  bold:     { font: { bold: true, sz: 11 } },
+  normal:   { font: { sz: 11 } },
+};
 render();
 
 // ── CALCULATOR ────────────────────────────────────────────────────────────────
