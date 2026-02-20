@@ -43,7 +43,7 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .week-pill.active { background: transparent; color: #C9A84C; border-color: #C9A84C; border-width: 2px; }
 .day-tabs { display: flex; border-bottom: 1px solid #222; overflow-x: auto; scrollbar-width: none; }
 .day-tabs::-webkit-scrollbar { display: none; }
-.day-tab { flex: 1; min-width: 60px; padding: 13px 4px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: #555; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; }
+.day-tab { flex-shrink: 0; padding: 13px 14px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: #555; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; white-space: nowrap; }
 .day-tab.active { color: #C9A84C; border-bottom-color: #C9A84C; }
 .done-dot { position: absolute; top: 3px; right: 4px; font-size: 11px; color: #4ade80; line-height: 1; }
 .progress-wrap { padding: 0 16px 4px; }
@@ -77,9 +77,11 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .ex-expand-icon svg { width: 14px; height: 14px; }
 .ex-expand-icon.open { transform: rotate(180deg); }
 .ex-detail { border-top: 1px solid #1e1e1e; }
-.skip-btn { font-size: 11px; color: #444; background: none; border: 1px solid #2a2a2a; border-radius: 5px; padding: 4px 8px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
-.skip-btn.active { color: #888; border-color: #444; background: #1a1a1a; }
-.skip-row { padding: 0 16px 14px; display: flex; justify-content: flex-end; }
+.skip-btn { font-size: 11px; color: #666; background: none; border: 1px solid #333; border-radius: 5px; padding: 4px 8px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
+.skip-btn.active { color: #aaa; border-color: #555; background: #1a1a1a; }
+.skip-row { padding: 0 16px 14px; display: flex; justify-content: flex-end; gap: 8px; }
+.set-adjust-btn { font-size: 11px; color: #666; background: none; border: 1px solid #333; border-radius: 5px; padding: 4px 8px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
+.set-adjust-btn:active { color: #C9A84C; border-color: #C9A84C; }
 .skipped-badge { font-size: 10px; color: #555; font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid #2a2a2a; border-radius: 4px; padding: 2px 6px; }
 .edit-name-btn { background: none; border: none; cursor: pointer; font-size: 12px; opacity: 0.0; padding: 2px 4px; transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
 .exercise-card:hover .edit-name-btn { opacity: 0.4; }
@@ -108,9 +110,9 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .set-check { width: 32px; height: 32px; border-radius: 7px; border: 1px solid #2a2a2a; background: transparent; color: #444; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
 .set-check.done { background: rgba(74,222,128,0.15); border-color: #4ade80; color: #4ade80; }
 .prev-log { padding: 0 16px 10px; font-size: 13px; color: #4ade80; }
-.coach-note { padding: 8px 16px; background: rgba(26,26,10,0.8); border-top: 1px solid #2a2a18; font-size: 12px; color: #8a8840; font-style: italic; }
+.coach-note { padding: 8px 16px; background: rgba(26,26,10,0.8); border-top: 1px solid #2a2a18; font-size: 12px; color: #a8a850; font-style: italic; }
 .notes-section { border-top: 1px solid #1a1a1a; }
-.notes-label { font-size: 10px; color: #333; text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
+.notes-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
 .notes-label svg { width: 12px; height: 12px; flex-shrink: 0; }
 .upload-icon svg { width: 48px; height: 48px; }
 .edit-name-btn svg { width: 12px; height: 12px; vertical-align: middle; }
@@ -120,10 +122,10 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .next-workout-banner-text svg { width: 10px; height: 10px; vertical-align: middle; margin-right: 2px; }
 .calc-no-solution svg { width: 14px; height: 14px; vertical-align: middle; }
 .notes-area { padding: 0 16px 12px; }
-.notes-input { width: 100%; background: #1a1a1a; border: 1px solid #222; border-radius: 6px; color: #555; font-family: 'Barlow', sans-serif; font-size: 13px; padding: 8px 10px; resize: none; outline: none; min-height: 36px; }
+.notes-input { width: 100%; background: #1a1a1a; border: 1px solid #222; border-radius: 6px; color: #888; font-family: 'Barlow', sans-serif; font-size: 13px; padding: 8px 10px; resize: none; outline: none; min-height: 36px; }
 .notes-input:focus { border-color: #333; color: #f0f0f0; }
-.notes-input::placeholder { color: #333; }
-.lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: #4ade80; font-style: italic; opacity: 0.7; }
+.notes-input::placeholder { color: #555; }
+.lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: #4ade80; font-style: italic; opacity: 0.85; }
 .prev-performance { border-top: 1px solid #1a1a1a; padding: 8px 16px 10px; }
 .prev-performance-label { font-size: 10px; color: #333; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; }
 .prev-performance-sets { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -275,14 +277,14 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-bar-note { font-size: 12px; color: #444; text-align: center; margin-top: 8px; font-style: italic; }
 .calc-no-solution { font-size: 14px; color: #f87171; text-align: center; padding: 16px 0; }
 /* Manual mode plate grid */
-.calc-plates-grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(5, auto); gap: 8px; }
-.calc-plate-row { display: flex; align-items: center; gap: 6px; background: #141414; border-radius: 8px; padding: 6px 8px; }
-.calc-plate-color-swatch { width: 14px; height: 36px; border-radius: 3px; flex-shrink: 0; }
-.calc-plate-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; width: 52px; flex-shrink: 0; }
-.calc-plate-stepper { display: flex; align-items: center; gap: 0; flex: 1; justify-content: flex-end; }
-.calc-stepper-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #2a2a2a; background: #1c1c1c; color: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.1s; line-height: 1; user-select: none; }
+.calc-plates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.calc-plate-row { display: flex; align-items: center; gap: 4px; background: #141414; border-radius: 8px; padding: 5px 6px; min-width: 0; }
+.calc-plate-color-swatch { width: 8px; height: 28px; border-radius: 2px; flex-shrink: 0; }
+.calc-plate-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; }
+.calc-plate-stepper { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.calc-stepper-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #2a2a2a; background: #1c1c1c; color: #f0f0f0; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.1s; line-height: 1; user-select: none; }
 .calc-stepper-btn:active { background: #2a2a2a; border-color: #C9A84C; }
-.calc-stepper-val { width: 48px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; color: #C9A84C; }
+.calc-stepper-val { width: 32px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: #C9A84C; }
 .calc-stepper-val.zero { color: #333; }
 .calc-reset-btn { width: 100%; padding: 12px; background: none; border: 1px solid #2a2a2a; border-radius: 8px; color: #555; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
 .calc-reset-btn:active { border-color: #f87171; color: #f87171; }
@@ -378,7 +380,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <script>
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -1317,11 +1319,17 @@ function parseSimple(pres){
 // Handles "3-4x15 (M)", "3x12-15", range-set patterns with no specific weight
 function parseRangeSet(pres){
   if(!pres) return null;
+  // Standard: "3x10", "3-4x10", "3x8-12"
   const m=pres.match(/^(\d+)[\-–]?(\d*)x([\d\-]+)/i);
-  if(!m) return null;
-  const sets=parseInt(m[1]); // use lower bound of set range
-  const reps=m[3];
-  return{sets,reps};
+  if(m){
+    const sets=parseInt(m[1]); // use lower bound of set range
+    const reps=m[3];
+    return{sets,reps};
+  }
+  // "2-3 sets" or "2-3 sets (pick reps)" — sets range, open reps
+  const s=pres.match(/^(\d+)[\-–](\d+)\s*sets?/i);
+  if(s) return{sets:parseInt(s[1]),reps:'open'};
+  return null;
 }
 
 // Handles bare prescriptions like "20" (reps) or "1:00" (time) — single set, no weight in prescription
@@ -1393,7 +1401,7 @@ function renderDayTabs(block, week) {
   let h=`<div class="day-tabs">`;
   week.days.forEach((d,di)=>{
     const complete=isDayComplete(block,week,d);
-    h+=`<button class="day-tab ${state.activeDay===di?'active':''}" onclick="setDay(${di})">${abbrev(d.name)}${complete?'<span class="done-dot">✓</span>':''}</button>`;
+    h+=`<button class="day-tab ${state.activeDay===di?'active':''}" onclick="setDay(${di})">${d.name}${complete?'<span class="done-dot">✓</span>':''}</button>`;
   });
   h+=`</div>`;
   return h;
@@ -1453,6 +1461,11 @@ function renderExCard(ex, groupKeys, block, week, day) {
   }
 
   function setInputsHtml(sk,sl,placeholder){
+    if(placeholder==='open') return `<div class="set-inputs-wrap">
+              <div class="set-input-group"><div class="set-input-label">Reps</div>
+                <input class="set-input" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+              </div>
+            </div>`;
     if(inputMode==='bw'||inputMode==='cardio') return '';
     if(inputMode==='bw-timed') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
@@ -1534,9 +1547,10 @@ function renderExCard(ex, groupKeys, block, week, day) {
       h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
       for(let si=0;si<ranged.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
+        const isOpen=ranged.reps==='open';
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div><div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>
-          ${setInputsHtml(sk,sl,'lbs')}
+          <div class="set-num">S${si+1}</div>${isOpen?'':(`<div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>`)}
+          ${setInputsHtml(sk,sl,isOpen?'open':'lbs')}
           <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
         </div>`;
       }
@@ -1593,6 +1607,8 @@ function renderExCard(ex, groupKeys, block, week, day) {
     </div>`;
     h+=`</div>`; // ex-detail - close notes section
     h+=`<div class="skip-row">
+      <button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',-1)">− Set</button>
+      <button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',1)">+ Set</button>
       <button class="skip-btn ${isSkipped?'active':''}" onclick="toggleSkip('${esc(key)}')">${isSkipped?'↩ Undo Skip':'Skip Exercise'}</button>
     </div>`;
   }
@@ -1825,6 +1841,23 @@ function isDayComplete(block, week, day){
   return resolved===total;
 }
 function toggleSet(key){ const l=state.logs[key]||{}; state.logs[key]={...l,done:!l.done}; saveLogs(); render(); }
+function adjustSets(key, delta){
+  const cur = state.extraSets[key] || 0;
+  const next = Math.max(0, cur + delta);
+  if(delta < 0 && cur > 0){
+    const block=state.activeBlock, week=block.weeks[state.activeWeek], day=week.days[state.activeDay];
+    const ex=day.exercises.find(e=>lk(block.id,week.label,day.name,e.name)===key);
+    if(ex){
+      const baseCount=(ex.sets&&ex.sets.length>0)?ex.sets.length:(parseSimple(ex.prescription)||{sets:1}).sets;
+      const removedIdx=baseCount+cur-1;
+      const sk=key+`||s${removedIdx}`;
+      delete state.logs[sk];
+      saveLogs();
+    }
+  }
+  state.extraSets[key]=next;
+  render();
+}
 function setActual(key,v){
   state.logs[key]={...(state.logs[key]||{}),actual:v};
   // Auto-complete set when weight is entered
@@ -2133,8 +2166,8 @@ function renderProgramList(){
         <button class="program-delete-btn" onclick="promptDeleteBlock('${esc(block.id)}')" title="Delete program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
       <div class="export-scope-picker" id="export-picker-${esc(block.id)}">
-        <button class="export-scope-btn" onclick="exportReport('${esc(block.id)}','week')">This Week</button>
-        <button class="export-scope-btn" onclick="exportReport('${esc(block.id)}','full')">Full Program</button>
+        <button class="export-scope-btn" onclick="exportHTMLReport('${esc(block.id)}','week')">This Week</button>
+        <button class="export-scope-btn" onclick="exportHTMLReport('${esc(block.id)}','full')">Full Program</button>
       </div>
     </div>`;
   });
@@ -2186,6 +2219,244 @@ function toggleExportPicker(blockId) {
   const picker = document.getElementById('export-picker-' + blockId);
   if (!picker) return;
   picker.style.display = picker.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function exportHTMLReport(blockId, scope) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+
+  let weeks = block.weeks || [];
+  if (scope === 'week') {
+    const activeWeekLabel = block.weeks[state.activeWeek]?.label;
+    weeks = block.weeks.filter(w => w.label === activeWeekLabel);
+    if (!weeks.length) { alert('No data for current week.'); return; }
+  }
+
+  const blockLogs = {};
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (key.startsWith(blockId + '||')) blockLogs[key] = val;
+  }
+
+  // ── Gather tracked lift data ──────────────────────────────────────────────
+  const tracked = {};
+  const peakByGroup = { squat: null, bench: null, deadlift: null };
+
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    if (!isTracked(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group) continue;
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+
+    if (!tracked[exName]) tracked[exName] = { group, weeks: {} };
+    const weekLabel = parts[1];
+    if (!tracked[exName].weeks[weekLabel])
+      tracked[exName].weeks[weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0, method: 'epley' };
+    const w = tracked[exName].weeks[weekLabel];
+    w.tonnage += weight * reps;
+    if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
+
+    if (group !== 'other' && isCompLift(exName)) {
+      if (!peakByGroup[group] || result.value > peakByGroup[group]) peakByGroup[group] = result.value;
+    }
+  }
+
+  // ── Compliance ────────────────────────────────────────────────────────────
+  let totalDays = 0, completedDays = 0;
+  for (const week of weeks) {
+    for (const day of (week.days || [])) {
+      totalDays++;
+      if (isDayComplete(block, week, day)) completedDays++;
+    }
+  }
+  const compliancePct = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
+
+  // ── Sort exercises ────────────────────────────────────────────────────────
+  const groupOrder = { squat: 0, bench: 1, deadlift: 2, other: 3 };
+  const sortedExercises = Object.entries(tracked).sort((a, b) =>
+    (groupOrder[a[1].group] ?? 3) - (groupOrder[b[1].group] ?? 3) || a[0].localeCompare(b[0])
+  );
+
+  // ── Build sections ────────────────────────────────────────────────────────
+  const chartConfigs = [];
+  let liftSectionsHtml = '';
+
+  for (const [exName, data] of sortedExercises) {
+    const sortedWeeks = Object.entries(data.weeks).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
+    if (!sortedWeeks.length) continue;
+
+    const chartId = 'chart_' + exName.replace(/[^a-z0-9]/gi, '_');
+    chartConfigs.push({
+      id: chartId,
+      labels: sortedWeeks.map(([wl]) => wl),
+      data: sortedWeeks.map(([, w]) => Math.round(w.e1rm)),
+      label: exName
+    });
+
+    let prevE1rm = null;
+    let tableRows = '';
+    for (const [weekLabel, w] of sortedWeeks) {
+      const e1rmRounded = Math.round(w.e1rm);
+      let delta = '—';
+      if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); delta = (d >= 0 ? '+' : '') + d; }
+      const deltaClass = delta === '—' ? '' : delta.startsWith('+') ? 'pos' : 'neg';
+      const rpeStr = w.topRpe !== null ? `@${w.topRpe}` : '—';
+      const badge = w.method === 'rpe' ? '<span class="badge rpe-badge">RPE</span>' : '<span class="badge est-badge">EST</span>';
+      tableRows += `<tr>
+        <td class="muted">${weekLabel}</td>
+        <td>${w.topWeight}×${w.topReps}</td>
+        <td class="muted">${rpeStr}</td>
+        <td>${e1rmRounded} ${badge}</td>
+        <td class="${deltaClass}">${delta}</td>
+        <td class="muted">${Math.round(w.tonnage).toLocaleString()}</td>
+      </tr>`;
+      prevE1rm = w.e1rm;
+    }
+
+    const groupLabel = data.group.charAt(0).toUpperCase() + data.group.slice(1);
+    liftSectionsHtml += `
+    <div class="lift-section">
+      <div class="lift-header">
+        <span class="lift-name">${exName}</span>
+        <span class="lift-group">${groupLabel}</span>
+      </div>
+      <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
+      <table class="lift-table">
+        <thead><tr><th>Week</th><th>Top Set</th><th>RPE</th><th>e1RM (lbs)</th><th>Δ</th><th>Volume (lbs)</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  // ── 1RM Projections ───────────────────────────────────────────────────────
+  let projectionsHtml = '';
+  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const peak = peakByGroup[group];
+    const lbs = peak ? Math.round(peak) : null;
+    projectionsHtml += `<div class="proj-card">
+      <div class="proj-lift">${label}</div>
+      <div class="proj-val">${lbs ? lbs + '<span class="proj-unit"> lbs</span>' : '—'}</div>
+    </div>`;
+  }
+
+  // ── Chart init script ─────────────────────────────────────────────────────
+  const chartScript = chartConfigs.map(c => `
+  new Chart(document.getElementById('${c.id}'), {
+    type: 'line',
+    data: {
+      labels: ${JSON.stringify(c.labels)},
+      datasets: [{ label: 'e1RM', data: ${JSON.stringify(c.data)},
+        borderColor: '#C9A84C', backgroundColor: 'rgba(201,168,76,0.08)',
+        pointBackgroundColor: '#C9A84C', pointRadius: 4, pointHoverRadius: 6,
+        tension: 0.3, fill: true }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', borderWidth: 1,
+          titleColor: '#C9A84C', bodyColor: '#aaa',
+          callbacks: { label: ctx => ctx.parsed.y + ' lbs e1RM' } }
+      },
+      scales: {
+        x: { ticks: { color: '#555', font: { family: 'Barlow Condensed', size: 12 } }, grid: { color: '#1a1a1a' } },
+        y: { ticks: { color: '#555', font: { family: 'Barlow Condensed', size: 12 } }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });`).join('\n');
+
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const scopeLabel = scope === 'week' ? (weeks[0]?.label || 'Week') : `${block.weeks.length}-Week Program`;
+
+  // ── Full HTML ─────────────────────────────────────────────────────────────
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${block.name} — Training Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0a0a0a;color:#f0f0f0;font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
+.report{max-width:680px;margin:0 auto;padding:32px 20px 80px}
+
+/* Header */
+.rpt-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;letter-spacing:.14em;color:#C9A84C;text-transform:uppercase;margin-bottom:10px}
+.rpt-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:38px;line-height:1.05;letter-spacing:.02em;margin-bottom:8px}
+.rpt-meta{font-size:13px;color:#555;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.compliance-track{height:3px;background:#1a1a1a;border-radius:2px;margin-bottom:5px}
+.compliance-fill{height:100%;background:#4ade80;border-radius:2px}
+.compliance-label{font-size:11px;color:#444}
+.rpt-divider{border:none;border-top:1px solid #1a1a1a;margin:28px 0}
+
+/* Section title */
+.section-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:12px}
+
+/* Projections */
+.projections{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:36px}
+.proj-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px 12px;text-align:center}
+.proj-lift{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:6px}
+.proj-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:34px;color:#C9A84C;line-height:1}
+.proj-unit{font-size:14px;font-weight:400;color:#555}
+.proj-lbs{font-size:11px;color:#333;margin-top:4px}
+
+/* Lift sections */
+.lift-section{background:#141414;border:1px solid #1e1e1e;border-radius:12px;margin-bottom:14px;overflow:hidden}
+.lift-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid #1a1a1a}
+.lift-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.02em}
+.lift-group{font-size:10px;color:#333;text-transform:uppercase;letter-spacing:.1em}
+.chart-wrap{height:150px;padding:12px 12px 0}
+.lift-table{width:100%;border-collapse:collapse;font-size:13px}
+.lift-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:8px 12px 6px;text-align:left;border-top:1px solid #1a1a1a}
+.lift-table td{padding:7px 12px;border-top:1px solid #111;color:#ccc}
+.lift-table tr:last-child td{padding-bottom:14px}
+.muted{color:#555!important}
+.pos{color:#4ade80}
+.neg{color:#f87171}
+.badge{font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;border-radius:3px;padding:1px 4px;vertical-align:middle;margin-left:3px}
+.rpe-badge{background:rgba(201,168,76,.15);color:#C9A84C;border:1px solid rgba(201,168,76,.25)}
+.est-badge{background:#1a1a1a;color:#444;border:1px solid #2a2a2a}
+
+.empty{text-align:center;padding:48px;color:#333;font-size:14px}
+</style>
+</head>
+<body>
+<div class="report">
+  <div class="rpt-logo">PowerliftingLog</div>
+  <div class="rpt-title">${block.name}</div>
+  <div class="rpt-meta">
+    <span>${scopeLabel}</span><span>${dateStr}</span>${block.athleteName ? `<span>${block.athleteName}</span>` : ''}
+  </div>
+  <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
+  <div class="compliance-label">${compliancePct}% compliance · ${completedDays} of ${totalDays} days completed</div>
+
+  <hr class="rpt-divider">
+  <div class="section-title">1RM Projections</div>
+  <div class="projections">${projectionsHtml}</div>
+
+  <div class="section-title">Tracked Lifts</div>
+  ${sortedExercises.length ? liftSectionsHtml : '<div class="empty">No tracked lifts with logged data found.</div>'}
+</div>
+<script>
+${chartScript}
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  window.open(URL.createObjectURL(blob), '_blank');
+  document.querySelectorAll('.export-scope-picker').forEach(el => el.style.display = 'none');
 }
 
 function exportReport(blockId, scope) {
@@ -2564,8 +2835,8 @@ function renderCalcBarSVG(plates, showCollars) {
     if (kg >= 1.25) return 64; if (kg >= 0.5) return 48; return 36;
   }
 
-  const SVG_H = 220;
-  const cy = SVG_H / 2;
+  const SVG_H = 240;
+  const cy = SVG_H / 2 - 10;
   const barH = 10;
   const divider = 1;
   const padLeft = 8;
@@ -2614,12 +2885,9 @@ function renderCalcBarSVG(plates, showCollars) {
     parts.push(`<rect x="${x+1}" y="${cy - ph/2 + 1}" width="${pt-2}" height="2" rx="1" fill="rgba(255,255,255,0.18)"/>`);
     parts.push(`<rect x="${x+1}" y="${cy + ph/2 - 3}" width="${pt-2}" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>`);
 
-    const r = Math.min(pt/2 - 0.5, 7);
-    if (r >= 3) {
-      parts.push(`<circle cx="${x + pt/2}" cy="${cy}" r="${r}" fill="rgba(0,0,0,0.65)"/>`);
-      const fontSize = Math.max(r * 1.1, 5);
-      parts.push(`<text x="${x + pt/2}" y="${cy}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${fontSize}">${kg}</text>`);
-    }
+    // Uniform label below every plate
+    const labelY = cy + ph/2 + 14;
+    parts.push(`<text x="${x + pt/2}" y="${labelY}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11">${kg}</text>`);
 
     x += pt;
   }
@@ -2696,7 +2964,8 @@ function renderCalc() {
 
   // Manual plate rows
   let manualRowsHtml = '';
-  for (const kg of KG_PLATES) {
+  const manualPlateOrder = [25, 2.5, 20, 1.25, 15, 0.5, 10, 0.25, 5];
+  for (const kg of manualPlateOrder) {
     const count = manualCounts[kg] || 0;
     manualRowsHtml += `
       <div class="calc-plate-row">
