@@ -90,19 +90,19 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .exercise-check { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #333; background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 2px; transition: all 0.15s; }
 .exercise-check.done { background: #4ade80; border-color: #4ade80; color: #000; }
 .prescription { padding: 0 16px 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; color: #C9A84C; letter-spacing: 0.03em; }
-.prescription.purple { color: #a78bfa; }
+.prescription.purple { color: #C9A84C; }
 .sets-grid { padding: 2px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
 .set-row { display: flex; align-items: center; gap: 10px; }
 .set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: #444; width: 22px; flex-shrink: 0; }
 .set-reps { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 19px; min-width: 32px; }
 .set-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 16px; color: #C9A84C; min-width: 50px; }
-.set-weight.rpe { color: #a78bfa; }
+.set-weight.rpe { color: #C9A84C; }
 .set-inputs-wrap { display: flex; flex-direction: column; gap: 4px; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; }
 .set-input-label { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.08em; padding-left: 2px; }
 .set-input { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 6px; color: #f0f0f0; font-family: 'Barlow', sans-serif; font-size: 14px; padding: 7px 10px; width: 80px; text-align: center; outline: none; }
 .set-input:focus { border-color: #C9A84C; color: #fff; }
-.set-input.rpe-input:focus { border-color: #a78bfa; }
+.set-input.rpe-input:focus { border-color: #C9A84C; }
 .set-input::placeholder { color: #333; font-size: 11px; }
 .prescribed-label { width: 80px; text-align: center; font-size: 12px; color: #333; }
 .set-check { width: 32px; height: 32px; border-radius: 7px; border: 1px solid #2a2a2a; background: transparent; color: #444; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
@@ -166,8 +166,10 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .metrics-drill-header { display: flex; align-items: center; gap: 12px; padding: 0 0 16px; }
 .metrics-back-btn { background: none; border: 1px solid #333; border-radius: 100px; color: #888; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; letter-spacing: 0.04em; padding: 6px 14px; cursor: pointer; transition: all 0.15s; }
 .metrics-back-btn:active { border-color: #C9A84C; color: #C9A84C; }
-.metrics-float-back { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #1e1e1e; border: 1px solid #C9A84C55; border-radius: 100px; color: #C9A84C; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; padding: 12px 28px; cursor: pointer; z-index: 50; box-shadow: 0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,168,76,0.1); transition: border-color 0.15s, background 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.metrics-float-back:active { background: #252520; border-color: #C9A84C; }
+.metrics-cycle-toggle { display: flex; gap: 8px; padding: 0 0 16px; }
+.metrics-toggle-pill { flex: 1; padding: 8px 12px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid #222; background: transparent; color: #555; cursor: pointer; transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metrics-toggle-pill.active { color: #C9A84C; border-color: #C9A84C; border-width: 2px; }
+.metrics-toggle-pill:active { opacity: 0.7; }
 .metrics-drill-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.04em; color: #C9A84C; }
 .metrics-cycle-hint { font-size: 11px; color: #333; text-align: center; padding: 0 0 12px; font-style: italic; letter-spacing: 0.04em; }
 .program-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1e1e1e; }
@@ -243,7 +245,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 /* Method badges */
 .method-badge { font-size: 9px; letter-spacing: 0.06em; padding: 1px 5px; border-radius: 3px; font-family: 'Barlow', sans-serif; }
-.rpe-badge { color: #a78bfa; background: rgba(167,139,250,0.1); }
+.rpe-badge { color: #C9A84C; background: rgba(201,168,76,0.1); }
 .est-badge { color: #444; background: rgba(255,255,255,0.04); }
 
 /* ── CALCULATOR SCREEN ─────────────────────────────────────────────────────── */
@@ -264,7 +266,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-total-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: #C9A84C; line-height: 1; }
 .calc-total-unit { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
 .calc-bar-wrap { display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; overflow: visible; }
-.calc-bar-svg { width: 100%; max-width: 420px; height: 80px; overflow: visible; }
+.calc-bar-svg { width: 100%; height: 160px; overflow: visible; }
 .calc-plate-breakdown { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .calc-plate-chip { display: flex; align-items: center; gap: 6px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; }
 .calc-plate-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
@@ -441,9 +443,9 @@ function setScreen(s){
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
 const LIFT_GROUPS = {
-  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar','low bar','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat'],
-  bench: ['bench','close grip','larson','larsen','slingshot','incline','decline','floor press','feet up','pause bench','touch and go','tng','comp bench','board press'],
-  deadlift: ['deadlift','sumo','conventional','romanian','rdl','rack pull','block pull','deficit','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo'],
+  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar squat','low bar squat','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat'],
+  bench: ['bench','close grip bench','close grip press','larson','larsen','slingshot','incline press','incline bench','decline press','decline bench','floor press','feet up bench','pause bench','touch and go bench','touch and go press','tng bench','tng press','comp bench','board press'],
+  deadlift: ['deadlift','sumo deadlift','sumo pull','sumo dead','conventional deadlift','conventional pull','romanian','rdl','rack pull','block pull','deficit deadlift','deficit pull','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo'],
 };
 
 // ── COMP LIFT DETECTION ───────────────────────────────────────────────────────
@@ -768,12 +770,15 @@ function renderMetrics(){
     return;
   }
 
-  // Header — show cycle name or "All Cycles"
-  if(drill==='all'){
-    h+=`<div class="metrics-drill-header"><div class="metrics-drill-label">All Cycles</div></div>`;
-  } else {
-    const block=state.blocks.find(b=>b.id===activeBlockId);
-    if(block) h+=`<div class="metrics-drill-header"><div class="metrics-drill-label">${block.name}</div></div>`;
+  // Inline cycle toggle pills
+  if(multiCycle){
+    const activeBlock=state.blocks.find(b=>b.id===activeBlockId);
+    const cycleName=activeBlock?activeBlock.name:'Current Cycle';
+    const isCurrent=drill!=='all';
+    h+=`<div class="metrics-cycle-toggle">
+      <button class="metrics-toggle-pill${isCurrent?' active':''}" onclick="setMetricsDrill(null)">${cycleName}</button>
+      <button class="metrics-toggle-pill${!isCurrent?' active':''}" onclick="setMetricsDrill('all')">All Cycles</button>
+    </div>`;
   }
 
   // ── Est. 1RM from logged comp lifts ──────────────────────────────────────
@@ -872,13 +877,7 @@ function renderMetrics(){
   }
 
   h+=`<button class="add-lift-btn" onclick="openAddLift()">+ Track Another Lift</button>`;
-  if(multiCycle) h+=`<div style="height:72px"></div>`; // space for floating pill
   h+=`</div>`;
-  if(drill==='all'){
-    h+=`<button class="metrics-float-back" onclick="setMetricsDrill(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Current Cycle</button>`;
-  } else if(multiCycle){
-    h+=`<button class="metrics-float-back" onclick="setMetricsDrill('all')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg> All Cycles</button>`;
-  }
   main.innerHTML=h;
 
   setTimeout(()=>{
@@ -2555,56 +2554,51 @@ function renderCalcBarSVG(plates, showCollars) {
   }
 
   function pThick(kg) {
-    if (kg >= 25) return 14; if (kg >= 20) return 13; if (kg >= 15) return 12;
-    if (kg >= 10) return 11; if (kg >= 5) return 9; if (kg >= 2.5) return 8;
-    if (kg >= 1.25) return 10; if (kg >= 0.5) return 9; return 7;
+    if (kg >= 25) return 16; if (kg >= 20) return 15; if (kg >= 15) return 13;
+    if (kg >= 10) return 12; if (kg >= 5) return 10; if (kg >= 2.5) return 9;
+    if (kg >= 1.25) return 11; if (kg >= 0.5) return 9; return 7;
   }
   function pDiam(kg) {
-    if (kg >= 25) return 90; if (kg >= 20) return 82; if (kg >= 15) return 72;
-    if (kg >= 10) return 62; if (kg >= 5) return 50; if (kg >= 2.5) return 40;
-    if (kg >= 1.25) return 32; if (kg >= 0.5) return 26; return 20;
+    if (kg >= 25) return 190; if (kg >= 20) return 172; if (kg >= 15) return 152;
+    if (kg >= 10) return 130; if (kg >= 5)  return 104; if (kg >= 2.5) return 82;
+    if (kg >= 1.25) return 64; if (kg >= 0.5) return 48; return 36;
   }
 
-  const SVG_H = 110;
+  const SVG_H = 220;
   const cy = SVG_H / 2;
-  const barH = 14;
-  const barShaftLen = 20;
+  const barH = 10;
   const divider = 1;
   const padLeft = 8;
 
-  // Built-in bar collar (always present, fixed part of bar)
-  const builtinCollarThick = 8;
-  const builtinCollarH = 22;
-
-  // Competition collar (add-on, outside the plates)
+  const builtinCollarThick = 10;
+  const builtinCollarH = 26;
   const compCollarThick = 14;
-  const compCollarH = 34;
+  const compCollarH = 38;
 
+  // Shaft extends to fill container — always show generous bar to the right
   let totalPlateW = allPlates.reduce((s, kg) => s + pThick(kg), 0);
   if (allPlates.length > 1) totalPlateW += divider * (allPlates.length - 1);
   const compCollarW = showCollars ? compCollarThick + 3 : 0;
-
-  const SVG_W = padLeft + barShaftLen + builtinCollarThick + totalPlateW + compCollarW + 12;
+  const minRightShaft = 80; // always show this much empty bar after plates
+  const contentW = padLeft + builtinCollarThick + totalPlateW + compCollarW + minRightShaft;
+  const SVG_W = Math.max(contentW, 220);
 
   let parts = [];
 
-  // Bar shaft
-  const shaftTotalW = SVG_W - padLeft;
-  parts.push(`<rect x="${padLeft}" y="${cy - barH/2}" width="${shaftTotalW}" height="${barH}" rx="3" fill="#555"/>`);
-  parts.push(`<rect x="${padLeft + 3}" y="${cy - barH/2 + 1}" width="${barShaftLen - 6}" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>`);
+  // Bar shaft — full width
+  parts.push(`<rect x="${padLeft}" y="${cy - barH/2}" width="${SVG_W - padLeft}" height="${barH}" rx="3" fill="#555"/>`);
+  parts.push(`<rect x="${padLeft}" y="${cy - barH/2}" width="${SVG_W - padLeft}" height="3" rx="1" fill="rgba(255,255,255,0.08)"/>`);
 
-  let x = padLeft + barShaftLen;
+  let x = padLeft;
 
-  // ── BUILT-IN BAR COLLAR (always visible, integral part of bar) ──
-  // Raised ring that's machined into the bar — slightly different look from comp collars
+  // Built-in collar
   parts.push(`<rect x="${x}" y="${cy - builtinCollarH/2}" width="${builtinCollarThick}" height="${builtinCollarH}" rx="2" fill="#6a6a6a" stroke="rgba(0,0,0,0.4)" stroke-width="0.5"/>`);
-  // Engraved ring lines to look like a machined collar
-  parts.push(`<line x1="${x + 2}" y1="${cy - builtinCollarH/2 + 3}" x2="${x + builtinCollarThick - 2}" y2="${cy - builtinCollarH/2 + 3}" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>`);
-  parts.push(`<line x1="${x + 2}" y1="${cy + builtinCollarH/2 - 3}" x2="${x + builtinCollarThick - 2}" y2="${cy + builtinCollarH/2 - 3}" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>`);
-  parts.push(`<rect x="${x + 1}" y="${cy - builtinCollarH/2 + 1}" width="${builtinCollarThick - 2}" height="2" rx="1" fill="rgba(255,255,255,0.1)"/>`);
+  parts.push(`<rect x="${x+1}" y="${cy - builtinCollarH/2 + 1}" width="${builtinCollarThick-2}" height="2" rx="1" fill="rgba(255,255,255,0.12)"/>`);
+  parts.push(`<line x1="${x+2}" y1="${cy - builtinCollarH/2 + 4}" x2="${x+builtinCollarThick-2}" y2="${cy - builtinCollarH/2 + 4}" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>`);
+  parts.push(`<line x1="${x+2}" y1="${cy + builtinCollarH/2 - 4}" x2="${x+builtinCollarThick-2}" y2="${cy + builtinCollarH/2 - 4}" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>`);
   x += builtinCollarThick;
 
-  // ── PLATES (touching built-in collar) ──
+  // Plates
   for (let i = 0; i < allPlates.length; i++) {
     const kg = allPlates[i];
     const pt = pThick(kg);
@@ -2617,47 +2611,37 @@ function renderCalcBarSVG(plates, showCollars) {
     }
 
     parts.push(`<rect x="${x}" y="${cy - ph/2}" width="${pt}" height="${ph}" rx="2" fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>`);
-    parts.push(`<rect x="${x + 1}" y="${cy - ph/2 + 1}" width="${pt - 2}" height="2" rx="1" fill="rgba(255,255,255,0.18)"/>`);
-    parts.push(`<rect x="${x + 1}" y="${cy + ph/2 - 3}" width="${pt - 2}" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>`);
+    parts.push(`<rect x="${x+1}" y="${cy - ph/2 + 1}" width="${pt-2}" height="2" rx="1" fill="rgba(255,255,255,0.18)"/>`);
+    parts.push(`<rect x="${x+1}" y="${cy + ph/2 - 3}" width="${pt-2}" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>`);
 
-    const r = Math.min(pt/2 - 0.5, 6);
+    const r = Math.min(pt/2 - 0.5, 7);
     if (r >= 3) {
       parts.push(`<circle cx="${x + pt/2}" cy="${cy}" r="${r}" fill="rgba(0,0,0,0.65)"/>`);
-      const fontSize = Math.max(r * 1.1, 4);
+      const fontSize = Math.max(r * 1.1, 5);
       parts.push(`<text x="${x + pt/2}" y="${cy}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${fontSize}">${kg}</text>`);
     }
 
     x += pt;
   }
 
-  // ── COMPETITION COLLAR (outside plates, flush against last plate) ──
+  // Competition collar
   if (showCollars) {
-    // No gap — flush against last plate
     const cx2 = x;
-    // Main collar body
     parts.push(`<rect x="${cx2}" y="${cy - compCollarH/2}" width="${compCollarThick}" height="${compCollarH}" rx="3" fill="#999" stroke="rgba(0,0,0,0.45)" stroke-width="0.75"/>`);
-    // Top highlight
-    parts.push(`<rect x="${cx2 + 1}" y="${cy - compCollarH/2 + 2}" width="${compCollarThick - 2}" height="3" rx="1" fill="rgba(255,255,255,0.15)"/>`);
-    // Center clamp bolt detail
-    parts.push(`<rect x="${cx2 + 2}" y="${cy - 5}" width="${compCollarThick - 4}" height="10" rx="2" fill="#777" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>`);
+    parts.push(`<rect x="${cx2+1}" y="${cy - compCollarH/2 + 2}" width="${compCollarThick-2}" height="3" rx="1" fill="rgba(255,255,255,0.15)"/>`);
+    parts.push(`<rect x="${cx2+2}" y="${cy-5}" width="${compCollarThick-4}" height="10" rx="2" fill="#777"/>`);
     parts.push(`<circle cx="${cx2 + compCollarThick/2}" cy="${cy}" r="3.5" fill="#555"/>`);
     parts.push(`<circle cx="${cx2 + compCollarThick/2}" cy="${cy}" r="1.5" fill="#888"/>`);
-    // Handle/lever extending upward from top of collar
     const handleX = cx2 + compCollarThick/2;
     const handleBaseY = cy - compCollarH/2;
-    const handleW = 5;
-    const handleH = 18;
-    // Lever arm
-    parts.push(`<rect x="${handleX - handleW/2}" y="${handleBaseY - handleH}" width="${handleW}" height="${handleH}" rx="2" fill="#888" stroke="rgba(0,0,0,0.35)" stroke-width="0.5"/>`);
-    // Lever tip (rounded cap)
-    parts.push(`<ellipse cx="${handleX}" cy="${handleBaseY - handleH}" rx="${handleW/2 + 1}" ry="3" fill="#111" stroke="rgba(0,0,0,0.6)" stroke-width="0.5"/>`);
-    // Pivot pin where lever meets collar body
-    parts.push(`<circle cx="${handleX}" cy="${handleBaseY}" r="3" fill="#666" stroke="rgba(0,0,0,0.4)" stroke-width="0.5"/>`);
+    parts.push(`<rect x="${handleX-2.5}" y="${handleBaseY-18}" width="5" height="18" rx="2" fill="#888"/>`);
+    parts.push(`<ellipse cx="${handleX}" cy="${handleBaseY-18}" rx="3.5" ry="3" fill="#111"/>`);
+    parts.push(`<circle cx="${handleX}" cy="${handleBaseY}" r="3" fill="#666"/>`);
     parts.push(`<circle cx="${handleX}" cy="${handleBaseY}" r="1.5" fill="#aaa"/>`);
   }
 
-  const shiftLeft = padLeft + barShaftLen; // show built-in collar, bleed shaft off left
-  return `<svg viewBox="${shiftLeft} 0 ${SVG_W - shiftLeft} ${SVG_H}" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
+  // viewBox anchored to left edge (collar), width fills container
+  return `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" width="100%" height="${SVG_H}" style="display:block" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
 }
 function renderCalc() {
   const main = document.getElementById('main-content');
@@ -2726,74 +2710,56 @@ function renderCalc() {
       </div>`;
   }
 
-  let html = `<div class="calc-screen">
-    <div class="calc-mode-toggle">
-      <button class="calc-mode-btn${mode === 'target' ? ' active' : ''}" onclick="calcSetMode('target')">Target Weight</button>
-      <button class="calc-mode-btn${mode === 'manual' ? ' active' : ''}" onclick="calcSetMode('manual')">Load Manually</button>
-    </div>
-
-    <div class="calc-bar-selector">
-      ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
-        ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
-      </button>`).join('')}
-    </div>`;
-
-  // Collar toggle — shown in both modes
-  html += `
-    <div class="calc-collar-row">
-      <div>
-        <div class="calc-collar-label">Collars</div>
-        <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
-      </div>
-      <button class="calc-collar-toggle${state.calc.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
-    </div>`;
-
-  if (mode === 'target') {
-    html += `
-    <div class="calc-section">
-      <div class="calc-section-title">Enter Target Weight</div>
-      <div class="calc-mode-toggle" style="margin-bottom:12px;">
-        <button class="calc-mode-btn${inputUnit === 'lbs' ? ' active' : ''}" onclick="calcSetUnit('lbs')">LBS</button>
-        <button class="calc-mode-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
-      </div>
-      <div class="calc-input-row">
-        <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="width:100%;" />
-      </div>
-      ${inputUnit === 'lbs' && inputVal && !isNaN(parseFloat(inputVal)) ? (() => { const rounded = snapToAttempt(lbsToKg(parseFloat(inputVal))); const roundedLbs = (rounded * KG_TO_LBS).toFixed(1); const roundedDisplay = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
-      const down = rounded - 2.5; const up = rounded + 2.5;
-      const downLbs = (down * KG_TO_LBS).toFixed(1); const upLbs = (up * KG_TO_LBS).toFixed(1);
-      const downDisplay = down % 1 === 0 ? down.toFixed(0) : down.toFixed(1);
-      const upDisplay = up % 1 === 0 ? up.toFixed(0) : up.toFixed(1);
-      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
-        <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
-          <span style="color:#C9A84C;font-size:13px;">−</span><span>${downDisplay}kg</span><span style="color:#555;font-size:10px;">${downLbs}</span>
-        </div>
-        <div onclick="calcSnapToNearest(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1e1c18;border:1px solid #C9A84C55;border-radius:8px;padding:4px 8px;font-size:11px;color:#C9A84C;font-weight:600;">
-          <span>→ ${roundedDisplay}kg</span><span style="color:#888;font-size:10px;">${roundedLbs}</span>
-        </div>
-        <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
-          <span style="color:#C9A84C;font-size:13px;">+</span><span>${upDisplay}kg</span><span style="color:#555;font-size:10px;">${upLbs}</span>
-        </div>
-      </div>`; })() : ''}
-    </div>`;
-  } else {
-    html += `
-    <div class="calc-section">
-      <div class="calc-section-title">Add Plates (per side)</div>
-      <div class="calc-plates-grid">${manualRowsHtml}</div>
-      <button class="calc-reset-btn" onclick="calcReset()">Clear All Plates</button>
-    </div>`;
-  }
-
   const bar = BARS.find(b => b.id === state.calc.barId);
   const collarNote = state.calc.collarsOn ? ` + collars (5kg)` : '';
   const plateNote = hasPlates ? ` + ${plates.map(p => `${p.count}×${p.kg}kg`).join(' + ')} per side` : '';
 
-  // Totals + bar visual
-  if (mode === 'manual' || (inputVal && !isNaN(parseFloat(inputVal)))) {
-    html += `
-    <div class="calc-section">
-      <div class="calc-totals-display">
+  // Attempt snaps for target mode
+  const snapHtml = (mode === 'target' && inputUnit === 'lbs' && inputVal && !isNaN(parseFloat(inputVal))) ? (() => {
+    const rounded = snapToAttempt(lbsToKg(parseFloat(inputVal)));
+    const roundedLbs = (rounded * KG_TO_LBS).toFixed(1);
+    const roundedDisplay = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
+    const down = rounded - 2.5; const up = rounded + 2.5;
+    const downLbs = (down * KG_TO_LBS).toFixed(1); const upLbs = (up * KG_TO_LBS).toFixed(1);
+    const downDisplay = down % 1 === 0 ? down.toFixed(0) : down.toFixed(1);
+    const upDisplay = up % 1 === 0 ? up.toFixed(0) : up.toFixed(1);
+    return `<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
+      <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
+        <span style="color:#C9A84C;font-size:13px;">−</span><span>${downDisplay}kg</span><span style="color:#555;font-size:10px;">${downLbs}</span>
+      </div>
+      <div onclick="calcSnapToNearest(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1e1c18;border:1px solid #C9A84C55;border-radius:8px;padding:4px 8px;font-size:11px;color:#C9A84C;font-weight:600;">
+        <span>→ ${roundedDisplay}kg</span><span style="color:#888;font-size:10px;">${roundedLbs}</span>
+      </div>
+      <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
+        <span style="color:#C9A84C;font-size:13px;">+</span><span>${upDisplay}kg</span><span style="color:#555;font-size:10px;">${upLbs}</span>
+      </div>
+    </div>`;
+  })() : '';
+
+  let html = `<div class="calc-screen">
+
+    <!-- ── MODE TOGGLE + INPUT (top, always visible) ── -->
+    <div class="calc-section" style="padding:12px;">
+      <div class="calc-mode-toggle" style="margin-bottom:10px;">
+        <button class="calc-mode-btn${mode === 'target' ? ' active' : ''}" onclick="calcSetMode('target')">Target Weight</button>
+        <button class="calc-mode-btn${mode === 'manual' ? ' active' : ''}" onclick="calcSetMode('manual')">Load Manually</button>
+      </div>
+
+      ${mode === 'target' ? `
+        <div class="calc-mode-toggle" style="margin-bottom:10px;">
+          <button class="calc-mode-btn${inputUnit === 'lbs' ? ' active' : ''}" onclick="calcSetUnit('lbs')">LBS</button>
+          <button class="calc-mode-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
+        </div>
+        <div class="calc-input-row" style="margin-bottom:0;">
+          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="width:100%;" />
+        </div>
+        ${snapHtml}
+      ` : ''}
+    </div>
+
+    <!-- ── BAR VISUAL + TOTALS ── -->
+    <div class="calc-section" style="padding:12px 12px 10px;">
+      <div class="calc-totals-display" style="margin-bottom:10px;">
         <div class="calc-total-box">
           <div class="calc-total-val">${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}</div>
           <div class="calc-total-unit">Kilograms</div>
@@ -2807,10 +2773,30 @@ function renderCalc() {
       ${noSolution ? `<div class="calc-no-solution"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Weight not achievable with standard KG plates</div>` : ''}
       ${breakdownHtml}
       <div class="calc-bar-note">${bar.label} (${bar.kg}kg)${collarNote}${plateNote || ' — bar only'}</div>
-    </div>`;
-  }
+    </div>
 
-  html += `</div>`;
+    <!-- ── SECONDARY CONTROLS ── -->
+    <div class="calc-section" style="padding:12px;">
+      <div class="calc-bar-selector" style="margin-bottom:10px;">
+        ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
+          ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
+        </button>`).join('')}
+      </div>
+      <div class="calc-collar-row" style="margin-bottom:${mode === 'manual' ? '12px' : '0'};">
+        <div>
+          <div class="calc-collar-label">Collars</div>
+          <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
+        </div>
+        <button class="calc-collar-toggle${state.calc.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
+      </div>
+      ${mode === 'manual' ? `
+        <div class="calc-section-title" style="margin-bottom:10px;">Plates (per side)</div>
+        <div class="calc-plates-grid">${manualRowsHtml}</div>
+        <button class="calc-reset-btn" onclick="calcReset()">Clear All Plates</button>
+      ` : ''}
+    </div>
+
+  </div>`;
   main.innerHTML = html;
 }
 
