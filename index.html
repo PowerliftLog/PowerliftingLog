@@ -189,6 +189,25 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .export-scope-picker { display: none; gap: 6px; margin-top: 6px; padding: 6px 0 2px; }
 .export-scope-btn { flex: 1; padding: 6px 8px; border: 1px solid #2a2a2a; border-radius: 6px; background: none; color: #888; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
 .export-scope-btn:hover { border-color: #C9A84C; color: #C9A84C; }
+
+/* ── Export Modal ─────────────────────────────────────────────────────────── */
+.export-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
+.export-modal { background: #0f0f0f; border: 1px solid #222; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 20px 16px 32px; }
+.export-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.export-modal-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
+.export-modal-close { background: none; border: none; color: #444; cursor: pointer; padding: 4px; line-height: 1; font-size: 20px; }
+.export-modal-close:active { color: #fff; }
+.export-card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+.export-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.export-card-icon { width: 36px; height: 36px; flex-shrink: 0; }
+.export-card-info { flex: 1; }
+.export-card-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .04em; color: #fff; margin-bottom: 2px; }
+.export-card-desc { font-size: 12px; color: #555; line-height: 1.4; }
+.export-scope-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+.export-scope-pill { flex: 1; padding: 7px 10px; border: 1px solid #2a2a2a; border-radius: 6px; background: none; color: #666; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; text-align: center; }
+.export-scope-pill.active { border-color: #C9A84C; color: #C9A84C; }
+.export-action-btn { width: 100%; padding: 11px; background: #C9A84C; border: none; border-radius: 8px; color: #000; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s; }
+.export-action-btn:active { opacity: 0.8; }
 .metrics-screen { padding: 16px 16px 100px; }
 .cycle-tabs { display: flex; gap: 8px; padding: 0 0 14px; overflow-x: auto; scrollbar-width: none; }
 .cycle-tabs::-webkit-scrollbar { display: none; }
@@ -779,22 +798,14 @@ function renderMetrics(){
     h+=`<div class="metrics-cycle-toggle">
       <button class="metrics-toggle-pill${isCurrent?' active':''}" onclick="setMetricsDrill(null)">${cycleName}</button>
       <button class="metrics-toggle-pill${!isCurrent?' active':''}" onclick="setMetricsDrill('all')">All Cycles</button>
-      <button class="metrics-export-btn" onclick="toggleMetricsExportPicker()" id="metrics-export-btn" title="Export report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-    </div>
-    <div class="export-scope-picker" id="metrics-export-picker" style="display:none;padding:0 0 10px;">
-      <button class="export-scope-btn" onclick="exportHTMLReport('${esc(activeBlockId)}','week')">This Week</button>
-      <button class="export-scope-btn" onclick="exportHTMLReport('${esc(activeBlockId)}','full')">Full Program</button>
+      <button class="metrics-export-btn" onclick="openExportModal('${esc(activeBlockId)}')" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>`;
   }
 
   // Single cycle — show export button in its own header row
   if(!multiCycle && state.blocks.length > 0){
     h+=`<div class="metrics-cycle-toggle" style="justify-content:flex-end">
-      <button class="metrics-export-btn" onclick="toggleMetricsExportPicker()" id="metrics-export-btn" title="Export report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-    </div>
-    <div class="export-scope-picker" id="metrics-export-picker" style="display:none;padding:0 0 10px;">
-      <button class="export-scope-btn" onclick="exportHTMLReport('${esc(activeBlockId)}','week')">This Week</button>
-      <button class="export-scope-btn" onclick="exportHTMLReport('${esc(activeBlockId)}','full')">Full Program</button>
+      <button class="metrics-export-btn" onclick="openExportModal('${esc(activeBlockId)}')" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>`;
   }
 
@@ -2277,38 +2288,127 @@ function confirmDeleteBlock(){
 
 document.getElementById('new-btn').addEventListener('click', openProgramModal);
 // ── EXPORT REPORT ─────────────────────────────────────────────────────────────
-function toggleMetricsExportPicker(){
-  const picker = document.getElementById('metrics-export-picker');
-  if(picker) picker.style.display = picker.style.display === 'none' ? 'flex' : 'none';
+function openExportModal(blockId) {
+  const existing = document.getElementById('export-modal-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'export-modal-overlay';
+  overlay.id = 'export-modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeExportModal(); };
+
+  overlay.innerHTML = `
+  <div class="export-modal">
+    <div class="export-modal-header">
+      <span class="export-modal-title">Export</span>
+      <button class="export-modal-close" onclick="closeExportModal()">✕</button>
+    </div>
+
+    <!-- Training Log Card -->
+    <div class="export-card">
+      <div class="export-card-header">
+        <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#1D6F42"/>
+          <rect x="7" y="9" width="22" height="3" rx="1" fill="white" opacity="0.9"/>
+          <rect x="7" y="14" width="22" height="1.5" rx="0.75" fill="white" opacity="0.4"/>
+          <rect x="7" y="17.5" width="22" height="1.5" rx="0.75" fill="white" opacity="0.4"/>
+          <rect x="7" y="21" width="22" height="1.5" rx="0.75" fill="white" opacity="0.4"/>
+          <rect x="7" y="24.5" width="14" height="1.5" rx="0.75" fill="white" opacity="0.4"/>
+          <rect x="23" y="22" width="7" height="7" rx="1" fill="#1D6F42"/>
+          <path d="M24.5 25.5L26.5 27.5L29 24" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="export-card-info">
+          <div class="export-card-name">Training Log</div>
+          <div class="export-card-desc">Full workout log with prescribed vs. actual sets — Excel file</div>
+        </div>
+      </div>
+      <div class="export-scope-toggle">
+        <button class="export-scope-pill active" id="log-scope-week" onclick="setLogScope('week')">This Week</button>
+        <button class="export-scope-pill" id="log-scope-full" onclick="setLogScope('full')">Full Block</button>
+      </div>
+      <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')">Download Excel</button>
+    </div>
+
+    <!-- Training Report Card -->
+    <div class="export-card">
+      <div class="export-card-header">
+        <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#141414" stroke="#2a2a2a"/>
+          <polyline points="7,26 13,18 18,21 23,13 29,8" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="13" cy="18" r="1.5" fill="#C9A84C"/>
+          <circle cx="18" cy="21" r="1.5" fill="#C9A84C"/>
+          <circle cx="23" cy="13" r="1.5" fill="#C9A84C"/>
+          <line x1="7" y1="28" x2="29" y2="28" stroke="#333" stroke-width="1"/>
+        </svg>
+        <div class="export-card-info">
+          <div class="export-card-name">Training Report</div>
+          <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts — full block</div>
+        </div>
+      </div>
+      <button class="export-action-btn" onclick="exportHTMLReport('${blockId}','full');closeExportModal()">Open Report</button>
+      <div style="text-align:center;font-size:11px;color:#444;margin-top:8px;letter-spacing:0.03em">Save as PDF via share sheet ↑</div>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+  // Default log scope state
+  overlay._logScope = 'week';
+}
+
+function closeExportModal() {
+  const overlay = document.getElementById('export-modal-overlay');
+  if (overlay) overlay.remove();
+}
+
+function setLogScope(scope) {
+  const overlay = document.getElementById('export-modal-overlay');
+  if (!overlay) return;
+  overlay._logScope = scope;
+  document.getElementById('log-scope-week').classList.toggle('active', scope === 'week');
+  document.getElementById('log-scope-full').classList.toggle('active', scope === 'full');
+}
+
+function exportTrainingLog(blockId) {
+  const overlay = document.getElementById('export-modal-overlay');
+  const scope = overlay ? overlay._logScope : 'full';
+  // TODO: build Excel export — for now alert
+  alert('Training Log export coming soon. Scope: ' + scope);
 }
 
 function exportHTMLReport(blockId, scope) {
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return;
 
-  let weeks = block.weeks || [];
-  if (scope === 'week') {
-    const activeWeekLabel = block.weeks[state.activeWeek]?.label;
-    weeks = block.weeks.filter(w => w.label === activeWeekLabel);
-    if (!weeks.length) { alert('No data for current week.'); return; }
-  }
+  const weeks = block.weeks || [];
 
   const blockLogs = {};
   for (const [key, val] of Object.entries(state.logs)) {
     if (key.startsWith(blockId + '||')) blockLogs[key] = val;
   }
 
-  // ── Gather tracked lift data ──────────────────────────────────────────────
-  const tracked = {};
+  // ── Palette for multi-line charts (one color per variation) ──────────────
+  const FAMILY_COLORS = [
+    '#C9A84C', // gold
+    '#7B9FD4', // blue
+    '#7EC89A', // green
+    '#D47B7B', // red
+    '#B07BD4', // purple
+    '#D4A97B', // orange
+    '#7BD4D4', // teal
+  ];
+
+  // ── Gather data grouped by family, then by exercise ──────────────────────
+  // Source: LIFT_GROUPS (not isTracked) — all barbell variations included
+  const families = { squat: {}, bench: {}, deadlift: {} };
   const peakByGroup = { squat: null, bench: null, deadlift: null };
 
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
     const exName = parts[3];
-    if (!isTracked(exName)) continue;
     const group = classifyLift(exName);
-    if (!group) continue;
+    if (!group || !families[group]) continue; // skip non-big-3
+
     const si = parseInt(parts[4].slice(1));
     const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
     if (!weight || isNaN(weight) || weight <= 0) continue;
@@ -2318,20 +2418,94 @@ function exportHTMLReport(blockId, scope) {
     const result = calc1rm(weight, reps, rpe);
     if (!result) continue;
 
-    if (!tracked[exName]) tracked[exName] = { group, weeks: {} };
     const weekLabel = parts[1];
-    if (!tracked[exName].weeks[weekLabel])
-      tracked[exName].weeks[weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0, method: 'epley' };
-    const w = tracked[exName].weeks[weekLabel];
+    if (!families[group][exName]) families[group][exName] = {};
+    if (!families[group][exName][weekLabel])
+      families[group][exName][weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0, method: 'epley' };
+    const w = families[group][exName][weekLabel];
     w.tonnage += weight * reps;
     if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
 
-    if (group !== 'other' && isCompLift(exName)) {
+    // Peak for 1RM projection — comp lifts only
+    if (isCompLift(exName)) {
       if (!peakByGroup[group] || result.value > peakByGroup[group]) peakByGroup[group] = result.value;
     }
   }
 
-  // ── Compliance ────────────────────────────────────────────────────────────
+  // ── Summary page data ─────────────────────────────────────────────────────
+  let totalSets = 0, totalVolume = 0;
+  const volumeByFamily = { squat: 0, bench: 0, deadlift: 0, other: 0 };
+  const volumeByWeek = {}; // { weekLabel: { squat, bench, deadlift, other, total } }
+  const peakSetByFamily = { squat: null, bench: null, deadlift: null };
+
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    const weekLabel = parts[1];
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps || isNaN(reps)) continue;
+
+    const setVol = weight * reps;
+    const group = classifyLift(exName) || 'other';
+
+    totalSets++;
+    totalVolume += setVol;
+    volumeByFamily[group] = (volumeByFamily[group] || 0) + setVol;
+
+    if (!volumeByWeek[weekLabel]) volumeByWeek[weekLabel] = { squat: 0, bench: 0, deadlift: 0, other: 0 };
+    volumeByWeek[weekLabel][group] = (volumeByWeek[weekLabel][group] || 0) + setVol;
+
+    // Track peak set per family (heaviest single set by weight)
+    if (group !== 'other') {
+      if (!peakSetByFamily[group] || weight > peakSetByFamily[group].weight) {
+        peakSetByFamily[group] = { weight, reps, name: exName };
+      }
+    }
+  }
+
+  const sortedWeekLabels = Object.keys(volumeByWeek).sort((a, b) => sessionOrder(a) - sessionOrder(b));
+  const weekVolTotals = sortedWeekLabels.map(wl =>
+    (volumeByWeek[wl].squat || 0) + (volumeByWeek[wl].bench || 0) + (volumeByWeek[wl].deadlift || 0) + (volumeByWeek[wl].other || 0)
+  );
+
+  // Week-by-week completion grid
+  let weekGridHtml = '';
+  for (const week of weeks) {
+    const daysTotal = week.days.length;
+    const daysDone = week.days.filter(d => isDayComplete(block, week, d)).length;
+    const allDone = daysDone === daysTotal;
+    const dotHtml = week.days.map(d => {
+      const done = isDayComplete(block, week, d);
+      return `<span class="day-dot${done ? ' done' : ''}"></span>`;
+    }).join('');
+    weekGridHtml += `<div class="week-row">
+      <span class="week-row-label">${week.label}</span>
+      <span class="week-row-dots">${dotHtml}</span>
+      <span class="week-row-count${allDone ? ' all-done' : ''}">${daysDone}/${daysTotal}</span>
+    </div>`;
+  }
+
+  // Peak sets html
+  let peakSetsHtml = '';
+  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const p = peakSetByFamily[group];
+    peakSetsHtml += `<div class="peak-card">
+      <div class="peak-label">${label}</div>
+      <div class="peak-val">${p ? p.weight + '<span class="peak-unit"> lbs</span>' : '—'}</div>
+      <div class="peak-set">${p ? `${p.weight}×${p.reps} ${p.name}` : 'No data'}</div>
+    </div>`;
+  }
+
+  // Volume by family bar
+  const famLabels = ['Squat','Bench','Deadlift','Other'];
+  const famColors = ['#C9A84C','#7B9FD4','#7EC89A','#555'];
+  const famVols = [volumeByFamily.squat||0, volumeByFamily.bench||0, volumeByFamily.deadlift||0, volumeByFamily.other||0];
+
+
   let totalDays = 0, completedDays = 0;
   for (const week of weeks) {
     for (const day of (week.days || [])) {
@@ -2340,63 +2514,6 @@ function exportHTMLReport(blockId, scope) {
     }
   }
   const compliancePct = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
-
-  // ── Sort exercises ────────────────────────────────────────────────────────
-  const groupOrder = { squat: 0, bench: 1, deadlift: 2, other: 3 };
-  const sortedExercises = Object.entries(tracked).sort((a, b) =>
-    (groupOrder[a[1].group] ?? 3) - (groupOrder[b[1].group] ?? 3) || a[0].localeCompare(b[0])
-  );
-
-  // ── Build sections ────────────────────────────────────────────────────────
-  const chartConfigs = [];
-  let liftSectionsHtml = '';
-
-  for (const [exName, data] of sortedExercises) {
-    const sortedWeeks = Object.entries(data.weeks).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
-    if (!sortedWeeks.length) continue;
-
-    const chartId = 'chart_' + exName.replace(/[^a-z0-9]/gi, '_');
-    chartConfigs.push({
-      id: chartId,
-      labels: sortedWeeks.map(([wl]) => wl),
-      data: sortedWeeks.map(([, w]) => Math.round(w.e1rm)),
-      label: exName
-    });
-
-    let prevE1rm = null;
-    let tableRows = '';
-    for (const [weekLabel, w] of sortedWeeks) {
-      const e1rmRounded = Math.round(w.e1rm);
-      let delta = '—';
-      if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); delta = (d >= 0 ? '+' : '') + d; }
-      const deltaClass = delta === '—' ? '' : delta.startsWith('+') ? 'pos' : 'neg';
-      const rpeStr = w.topRpe !== null ? `@${w.topRpe}` : '—';
-      const badge = w.method === 'rpe' ? '<span class="badge rpe-badge">RPE</span>' : '<span class="badge est-badge">EST</span>';
-      tableRows += `<tr>
-        <td class="muted">${weekLabel}</td>
-        <td>${w.topWeight}×${w.topReps}</td>
-        <td class="muted">${rpeStr}</td>
-        <td>${e1rmRounded} ${badge}</td>
-        <td class="${deltaClass}">${delta}</td>
-        <td class="muted">${Math.round(w.tonnage).toLocaleString()}</td>
-      </tr>`;
-      prevE1rm = w.e1rm;
-    }
-
-    const groupLabel = data.group.charAt(0).toUpperCase() + data.group.slice(1);
-    liftSectionsHtml += `
-    <div class="lift-section">
-      <div class="lift-header">
-        <span class="lift-name">${exName}</span>
-        <span class="lift-group">${groupLabel}</span>
-      </div>
-      <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
-      <table class="lift-table">
-        <thead><tr><th>Week</th><th>Top Set</th><th>RPE</th><th>e1RM (lbs)</th><th>Δ</th><th>Volume (lbs)</th></tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-    </div>`;
-  }
 
   // ── 1RM Projections ───────────────────────────────────────────────────────
   let projectionsHtml = '';
@@ -2409,24 +2526,112 @@ function exportHTMLReport(blockId, scope) {
     </div>`;
   }
 
+  // ── Build family sections ─────────────────────────────────────────────────
+  const chartInits = [];
+  let familySectionsHtml = '';
+  let anyData = false;
+
+  for (const [groupKey, groupLabel] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const exercises = families[groupKey];
+    const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
+    if (!exNames.length) continue;
+    anyData = true;
+
+    // Collect all week labels across all exercises in this family, sorted
+    const allWeekLabels = [...new Set(
+      exNames.flatMap(n => Object.keys(exercises[n]))
+    )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
+
+    // Legend dots
+    const legendHtml = exNames.map((n, i) => {
+      const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
+      return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${n}</span>`;
+    }).join('');
+
+    // Chart datasets — one per exercise
+    const datasets = exNames.map((n, i) => {
+      const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
+      const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
+      return {
+        label: n,
+        data,
+        borderColor: color,
+        backgroundColor: 'transparent',
+        pointBackgroundColor: color,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.3,
+        spanGaps: true
+      };
+    });
+
+    const chartId = 'chart_' + groupKey;
+    chartInits.push({ id: chartId, labels: allWeekLabels, datasets });
+
+    // Per-exercise tables
+    let tablesHtml = '';
+    for (let i = 0; i < exNames.length; i++) {
+      const exName = exNames[i];
+      const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
+      const sortedWeeks = Object.entries(exercises[exName]).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
+      let prevE1rm = null;
+      let rows = '';
+      for (const [weekLabel, w] of sortedWeeks) {
+        const e1rmRounded = Math.round(w.e1rm);
+        let delta = '—';
+        if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); delta = (d >= 0 ? '+' : '') + d; }
+        const deltaClass = delta === '—' ? '' : delta.startsWith('+') ? 'pos' : 'neg';
+        const rpeStr = w.topRpe !== null ? `@${w.topRpe}` : '—';
+        const badge = w.method === 'rpe' ? '<span class="badge rpe-badge">RPE</span>' : '<span class="badge est-badge">EST</span>';
+        rows += `<tr>
+          <td class="muted">${weekLabel}</td>
+          <td>${w.topWeight}×${w.topReps}</td>
+          <td class="muted">${rpeStr}</td>
+          <td>${e1rmRounded} ${badge}</td>
+          <td class="${deltaClass}">${delta}</td>
+          <td class="muted">${Math.round(w.tonnage).toLocaleString()}</td>
+        </tr>`;
+        prevE1rm = w.e1rm;
+      }
+      tablesHtml += `
+      <div class="ex-block">
+        <div class="ex-block-name" style="border-left:3px solid ${color}">${exName}</div>
+        <table class="lift-table">
+          <thead><tr><th>Week</th><th>Top Set</th><th>RPE</th><th>e1RM (lbs)</th><th>Δ</th><th>Volume (lbs)</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }
+
+    familySectionsHtml += `
+    <div class="family-section">
+      <div class="family-header">
+        <span class="family-name">${groupLabel}</span>
+        <span class="family-peak">${peakByGroup[groupKey] ? Math.round(peakByGroup[groupKey]) + ' lbs est. 1RM' : ''}</span>
+      </div>
+      <div class="legend">${legendHtml}</div>
+      <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
+      ${tablesHtml}
+    </div>`;
+  }
+
   // ── Chart init script ─────────────────────────────────────────────────────
-  const chartScript = chartConfigs.map(c => `
+  const chartScript = chartInits.map(c => `
   new Chart(document.getElementById('${c.id}'), {
     type: 'line',
     data: {
       labels: ${JSON.stringify(c.labels)},
-      datasets: [{ label: 'e1RM', data: ${JSON.stringify(c.data)},
-        borderColor: '#C9A84C', backgroundColor: 'rgba(201,168,76,0.08)',
-        pointBackgroundColor: '#C9A84C', pointRadius: 4, pointHoverRadius: 6,
-        tension: 0.3, fill: true }]
+      datasets: ${JSON.stringify(c.datasets)}
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', borderWidth: 1,
-          titleColor: '#C9A84C', bodyColor: '#aaa',
-          callbacks: { label: ctx => ctx.parsed.y + ' lbs e1RM' } }
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', borderWidth: 1,
+          titleColor: '#aaa', bodyColor: '#aaa',
+          callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' lbs' }
+        }
       },
       scales: {
         x: { ticks: { color: '#555', font: { family: 'Barlow Condensed', size: 12 } }, grid: { color: '#1a1a1a' } },
@@ -2436,7 +2641,7 @@ function exportHTMLReport(blockId, scope) {
   });`).join('\n');
 
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const scopeLabel = scope === 'week' ? (weeks[0]?.label || 'Week') : `${block.weeks.length}-Week Program`;
+  const scopeLabel = `${block.weeks.length}-Week Program`;
 
   // ── Full HTML ─────────────────────────────────────────────────────────────
   const html = `<!DOCTYPE html>
@@ -2452,7 +2657,6 @@ function exportHTMLReport(blockId, scope) {
 html,body{background:#0a0a0a;color:#f0f0f0;font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
 .report{max-width:680px;margin:0 auto;padding:32px 20px 80px}
 
-/* Header */
 .rpt-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;letter-spacing:.14em;color:#C9A84C;text-transform:uppercase;margin-bottom:10px}
 .rpt-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:38px;line-height:1.05;letter-spacing:.02em;margin-bottom:8px}
 .rpt-meta{font-size:13px;color:#555;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
@@ -2460,56 +2664,156 @@ html,body{background:#0a0a0a;color:#f0f0f0;font-family:'Barlow',sans-serif;-webk
 .compliance-fill{height:100%;background:#4ade80;border-radius:2px}
 .compliance-label{font-size:11px;color:#444}
 .rpt-divider{border:none;border-top:1px solid #1a1a1a;margin:28px 0}
-
-/* Section title */
 .section-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:12px}
 
-/* Projections */
 .projections{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:36px}
 .proj-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px 12px;text-align:center}
 .proj-lift{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:6px}
 .proj-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:34px;color:#C9A84C;line-height:1}
 .proj-unit{font-size:14px;font-weight:400;color:#555}
-.proj-lbs{font-size:11px;color:#333;margin-top:4px}
 
-/* Lift sections */
-.lift-section{background:#141414;border:1px solid #1e1e1e;border-radius:12px;margin-bottom:14px;overflow:hidden}
-.lift-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid #1a1a1a}
-.lift-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.02em}
-.lift-group{font-size:10px;color:#333;text-transform:uppercase;letter-spacing:.1em}
-.chart-wrap{height:150px;padding:12px 12px 0}
+.family-section{background:#141414;border:1px solid #1e1e1e;border-radius:12px;margin-bottom:20px;overflow:hidden}
+.family-header{display:flex;align-items:baseline;justify-content:space-between;padding:16px 16px 0}
+.family-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;letter-spacing:.02em}
+.family-peak{font-size:11px;color:#555;letter-spacing:.04em}
+.legend{display:flex;flex-wrap:wrap;gap:10px;padding:10px 16px 4px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#888;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.chart-wrap{height:160px;padding:8px 12px 12px}
+
+.ex-block{border-top:1px solid #1a1a1a}
+.ex-block-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#aaa;padding:10px 16px 6px;margin-left:0}
+
 .lift-table{width:100%;border-collapse:collapse;font-size:13px}
-.lift-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:8px 12px 6px;text-align:left;border-top:1px solid #1a1a1a}
-.lift-table td{padding:7px 12px;border-top:1px solid #111;color:#ccc}
-.lift-table tr:last-child td{padding-bottom:14px}
+.lift-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#333;padding:4px 16px 6px;text-align:left}
+.lift-table td{padding:6px 16px;border-top:1px solid #111;color:#ccc}
+.lift-table tr:last-child td{padding-bottom:12px}
 .muted{color:#555!important}
 .pos{color:#4ade80}
 .neg{color:#f87171}
 .badge{font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;border-radius:3px;padding:1px 4px;vertical-align:middle;margin-left:3px}
 .rpe-badge{background:rgba(201,168,76,.15);color:#C9A84C;border:1px solid rgba(201,168,76,.25)}
 .est-badge{background:#1a1a1a;color:#444;border:1px solid #2a2a2a}
-
 .empty{text-align:center;padding:48px;color:#333;font-size:14px}
+
+/* Summary page */
+.summary-page{min-height:90vh;padding-bottom:40px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
+.stat-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px}
+.stat-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:6px}
+.stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;color:#fff;line-height:1}
+.stat-unit{font-size:13px;font-weight:400;color:#555}
+.stat-sub{font-size:11px;color:#444;margin-top:4px}
+
+.peak-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+.peak-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:14px 12px;text-align:center}
+.peak-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:6px}
+.peak-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;color:#C9A84C;line-height:1}
+.peak-unit{font-size:12px;font-weight:400;color:#555}
+.peak-set{font-size:10px;color:#444;margin-top:4px}
+
+.week-grid{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:12px 16px;margin-bottom:24px}
+.week-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #111}
+.week-row:last-child{border-bottom:none}
+.week-row-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#555;width:36px;flex-shrink:0}
+.week-row-dots{display:flex;gap:5px;flex:1}
+.day-dot{width:10px;height:10px;border-radius:50%;background:#222;flex-shrink:0}
+.day-dot.done{background:#4ade80}
+.week-row-count{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#444;width:28px;text-align:right}
+.week-row-count.all-done{color:#4ade80}
+
+.vol-chart-wrap{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px;margin-bottom:24px}
+.vol-chart-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:12px}
+.vol-chart-inner{height:160px}
+
+/* Save button */
+.save-btn{position:fixed;bottom:24px;right:24px;background:#C9A84C;color:#000;border:none;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:100}
+.save-btn:active{opacity:0.85}
+
+@media print{
+  .save-btn{display:none}
+  .report{padding:16px;max-width:100%}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .summary-page{page-break-after:always;break-after:page}
+  .family-section{page-break-inside:avoid;break-inside:avoid}
+  .vol-chart-wrap{page-break-inside:avoid;break-inside:avoid}
+  .week-grid{page-break-inside:avoid;break-inside:avoid}
+  .peak-grid{page-break-inside:avoid;break-inside:avoid}
+  .stat-grid{page-break-inside:avoid;break-inside:avoid}
+  .chart-wrap{page-break-inside:avoid;break-inside:avoid}
+  .ex-block{page-break-inside:avoid;break-inside:avoid}
+}
 </style>
 </head>
 <body>
 <div class="report">
-  <div class="rpt-logo">PowerliftingLog</div>
-  <div class="rpt-title">${block.name}</div>
-  <div class="rpt-meta">
-    <span>${scopeLabel}</span><span>${dateStr}</span>${block.athleteName ? `<span>${block.athleteName}</span>` : ''}
-  </div>
-  <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
-  <div class="compliance-label">${compliancePct}% compliance · ${completedDays} of ${totalDays} days completed</div>
+  <!-- ── SUMMARY PAGE ── -->
+  <div class="summary-page">
+    <div class="rpt-logo">PowerliftingLog</div>
+    <div class="rpt-title">${block.name}</div>
+    <div class="rpt-meta">
+      <span>${scopeLabel}</span><span>${dateStr}</span>${block.athleteName ? `<span>${block.athleteName}</span>` : ''}
+    </div>
+    <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
+    <div class="compliance-label">${compliancePct}% compliance · ${completedDays} of ${totalDays} days completed</div>
 
+    <hr class="rpt-divider">
+    <div class="section-title">Block Summary</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Volume</div>
+        <div class="stat-val">${Math.round(totalVolume / 1000)}k<span class="stat-unit"> lbs</span></div>
+        <div class="stat-sub">${Math.round(totalVolume).toLocaleString()} lbs total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sets Completed</div>
+        <div class="stat-val">${totalSets}<span class="stat-unit"></span></div>
+        <div class="stat-sub">across ${completedDays} training days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Squat Volume</div>
+        <div class="stat-val">${Math.round((volumeByFamily.squat||0) / 1000)}k<span class="stat-unit"> lbs</span></div>
+        <div class="stat-sub">${Math.round(((volumeByFamily.squat||0)/totalVolume)*100)||0}% of total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Bench Volume</div>
+        <div class="stat-val">${Math.round((volumeByFamily.bench||0) / 1000)}k<span class="stat-unit"> lbs</span></div>
+        <div class="stat-sub">${Math.round(((volumeByFamily.bench||0)/totalVolume)*100)||0}% of total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Deadlift Volume</div>
+        <div class="stat-val">${Math.round((volumeByFamily.deadlift||0) / 1000)}k<span class="stat-unit"> lbs</span></div>
+        <div class="stat-sub">${Math.round(((volumeByFamily.deadlift||0)/totalVolume)*100)||0}% of total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Training Days</div>
+        <div class="stat-val">${completedDays}<span class="stat-unit"> / ${totalDays}</span></div>
+        <div class="stat-sub">${block.weeks.length}-week block</div>
+      </div>
+    </div>
+
+    <div class="section-title">Peak Sets</div>
+    <div class="peak-grid">${peakSetsHtml}</div>
+
+    <div class="section-title">Weekly Completion</div>
+    <div class="week-grid">${weekGridHtml}</div>
+  </div>
+
+  <!-- ── LIFT PROGRESSIONS ── -->
   <hr class="rpt-divider">
   <div class="section-title">1RM Projections</div>
   <div class="projections">${projectionsHtml}</div>
 
-  <div class="section-title">Tracked Lifts</div>
-  ${sortedExercises.length ? liftSectionsHtml : '<div class="empty">No tracked lifts with logged data found.</div>'}
+  <div class="section-title">Lift Progressions</div>
+  ${anyData ? familySectionsHtml : '<div class="empty">No logged data found for main lifts.</div>'}
 </div>
+<button class="save-btn" onclick="savePDF()">⬇ Save as PDF</button>
 <script>
+function savePDF(){
+  // Give charts time to fully render before print dialog
+  setTimeout(() => window.print(), 300);
+}
+
 ${chartScript}
 <\/script>
 </body>
@@ -2517,7 +2821,6 @@ ${chartScript}
 
   const blob = new Blob([html], { type: 'text/html' });
   window.open(URL.createObjectURL(blob), '_blank');
-  document.querySelectorAll('.export-scope-picker').forEach(el => el.style.display = 'none');
 }
 
 function exportReport(blockId, scope) {
