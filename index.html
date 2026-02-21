@@ -1505,21 +1505,21 @@ function renderExCard(ex, groupKeys, block, week, day) {
   function setInputsHtml(sk,sl,placeholder){
     if(placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
     if(inputMode==='bw'||inputMode==='cardio') return '';
     if(inputMode==='bw-timed') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
     return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight</div>
-                <input class="set-input" placeholder="${placeholder}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="decimal" placeholder="${placeholder}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
               <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
+                <input class="set-input rpe-input" inputmode="decimal" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
               </div>
             </div>`;
   }
