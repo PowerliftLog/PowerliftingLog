@@ -1546,6 +1546,22 @@ function renderExCard(ex, groupKeys, block, week, day) {
           <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
         </div>`;
       });
+
+      // Extra sets (+ Set button) — weighted style
+      const _extra=state.extraSets[key]||0;
+      if(_extra>0){
+        const _lastS=sets[sets.length-1]||{};
+        for(let _i=0;_i<_extra;_i++){
+          const _si=sets.length+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
+          h+=`<div class="set-row">
+            <div class="set-num">S${_si+1}</div>
+            <div class="set-reps">${_lastS.reps||'—'}</div>
+            <div class="set-weight ${_lastS.isRpe?'rpe':''}">${_lastS.isRpe?(_lastS.weight||''):(_lastS.weight?_lastS.weight+'lb':'—')}</div>
+            ${setInputsHtml(_sk,_sl,_lastS.isRpe?'lbs':(_lastS.weight?_lastS.weight+'lb':'lbs'))}
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+          </div>`;
+        }
+      }
       h+=`</div>`;
     } else if(pres&&simple){
       h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
@@ -1556,6 +1572,19 @@ function renderExCard(ex, groupKeys, block, week, day) {
           ${setInputsHtml(sk,sl,'lbs')}
           <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
         </div>`;
+      }
+
+      // Extra sets — simple style
+      const _extra=state.extraSets[key]||0;
+      if(_extra>0){
+        for(let _i=0;_i<_extra;_i++){
+          const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
+          h+=`<div class="set-row">
+            <div class="set-num">S${_si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
+            ${setInputsHtml(_sk,_sl,'lbs')}
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+          </div>`;
+        }
       }
       h+=`</div>`;
     } else if(pres&&ranged){
@@ -1569,6 +1598,20 @@ function renderExCard(ex, groupKeys, block, week, day) {
           <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
         </div>`;
       }
+
+      // Extra sets — ranged style
+      const _extra=state.extraSets[key]||0;
+      if(_extra>0){
+        const _isOpen=ranged.reps==='open';
+        for(let _i=0;_i<_extra;_i++){
+          const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
+          h+=`<div class="set-row">
+            <div class="set-num">S${_si+1}</div>${_isOpen?'':(`<div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>`)}
+            ${setInputsHtml(_sk,_sl,_isOpen?'open':'lbs')}
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+          </div>`;
+        }
+      }
       h+=`</div>`;
     } else if(bareWithRounds){
       h+=`<div class="sets-grid">`;
@@ -1579,6 +1622,19 @@ function renderExCard(ex, groupKeys, block, week, day) {
           ${setInputsHtml(sk,sl,'lbs')}
           <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
         </div>`;
+      }
+
+      // Extra sets — bare style
+      const _extra=state.extraSets[key]||0;
+      if(_extra>0){
+        for(let _i=0;_i<_extra;_i++){
+          const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
+          h+=`<div class="set-row">
+            <div class="set-num">S${_si+1}</div><div class="set-reps">${bareWithRounds.reps}</div><div class="set-weight rpe">reps</div>
+            ${setInputsHtml(_sk,_sl,'lbs')}
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+          </div>`;
+        }
       }
       h+=`</div>`;
     } else if(pres){
