@@ -889,7 +889,7 @@ function renderMetrics(){
           :`<span class="method-badge est-badge">EST</span>`;
         const label=drill?pt.session:pt.session; // cycle name or week label
         const sublabel=drill
-          ?(pt.topWeight&&pt.topReps?`${pt.topReps}×${pt.topWeight}lb`:'')
+          ?(pt.topWeight&&pt.topReps?`${pt.topWeight}lb×${pt.topReps}`:'')
           :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
         h+=`<div class="rm-row">
           <div style="display:flex;flex-direction:column;gap:1px">
