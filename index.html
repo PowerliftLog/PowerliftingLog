@@ -2376,8 +2376,138 @@ function setLogScope(scope) {
 function exportTrainingLog(blockId) {
   const overlay = document.getElementById('export-modal-overlay');
   const scope = overlay ? overlay._logScope : 'full';
-  // TODO: build Excel export — for now alert
-  alert('Training Log export coming soon. Scope: ' + scope);
+
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+
+  let weeks = block.weeks || [];
+  if (scope === 'week') {
+    const activeWeekLabel = block.weeks[state.activeWeek]?.label;
+    weeks = block.weeks.filter(w => w.label === activeWeekLabel);
+    if (!weeks.length) { alert('No data for current week.'); return; }
+  }
+
+  const blockLogs = {};
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (key.startsWith(blockId + '||')) blockLogs[key] = val;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // Style presets
+  const DAY_HEAD_STYLE = {
+    font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+    fill: { fgColor: { rgb: '111111' }, patternType: 'solid' },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+
+  for (const week of weeks) {
+    const rows = [];
+    const styleMap = {};
+    const r = () => rows.length;
+    const days = week.days || [];
+
+    for (let di = 0; di < days.length; di++) {
+      const day = days[di];
+
+      // Blank separator between day blocks (not before first)
+      if (di > 0) rows.push([]);
+
+      // Day header row: day name + column labels
+      rows.push([day.name, 'Sets × Reps @RPE', 'Record Weight & RPE', 'Coach Notes', 'Lifter Notes']);
+      styleMap[r() - 1] = DAY_HEAD_STYLE;
+
+      for (const ex of (day.exercises || [])) {
+        // Determine set count from prescription parsers
+        const sets = parseSets(ex.prescription) || [];
+        let setCount = sets.length;
+        let fallbackReps = null;
+        if (!setCount) {
+          const simple = parseSimple(ex.prescription);
+          const ranged = parseRangeSet(ex.prescription);
+          const bare = parseBarePres(ex.prescription);
+          setCount = (simple && simple.sets) || (ranged && ranged.sets) || (bare && bare.sets) || 1;
+          fallbackReps = (simple && simple.reps) || (ranged && ranged.reps) || (bare && bare.reps) || null;
+        }
+
+        // Include extra sets added via "+ Set"
+        const exKey = [blockId, week.label, day.name, ex.name].join('||');
+        const extra = state.extraSets ? (state.extraSets[exKey] || 0) : 0;
+        const totalSets = setCount + extra;
+
+        // Check if skipped
+        const exLog = blockLogs[exKey] || {};
+        let loggedStr = '';
+
+        if (exLog.skipped) {
+          loggedStr = 'SKIPPED';
+        } else {
+          // Collect logged set entries into collapsed string
+          const loggedParts = [];
+          for (let si = 0; si < totalSets; si++) {
+            const sk = exKey + '||s' + si;
+            const log = blockLogs[sk] || {};
+            if (log.actual || log.done) {
+              const weight = log.actual || (sets[si] && !sets[si].isRpe ? String(sets[si].weight) : '');
+              const repsRaw = sets[si] ? sets[si].reps : fallbackReps;
+              const reps = repsRaw === 'open' ? '?' : (repsRaw || '?');
+              let part = weight ? `${weight}x${reps}` : `${reps} reps`;
+              if (log.rpe) part += ` @${log.rpe}`;
+              loggedParts.push(part);
+            }
+          }
+          loggedStr = loggedParts.join(', ');
+        }
+
+        // Coach notes: ex.note + ex.coachNotes[]
+        const coachParts = [];
+        if (ex.note) coachParts.push(ex.note);
+        if (ex.coachNotes && ex.coachNotes.length) coachParts.push(...ex.coachNotes);
+        const coachNotesStr = coachParts.join('; ');
+
+        // Lifter notes from logs
+        const lifterNotes = exLog.notes || '';
+
+        // Single row per exercise
+        rows.push([ex.name, ex.prescription || '', loggedStr, coachNotesStr, lifterNotes]);
+      }
+    }
+
+    // Build sheet
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 32 }, // Exercise name
+      { wch: 30 }, // Prescription
+      { wch: 38 }, // Logged
+      { wch: 28 }, // Coach Notes
+      { wch: 28 }, // Lifter Notes
+    ];
+
+    // Apply styles
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      const style = styleMap[R];
+      if (!style) continue;
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+        ws[addr].s = style;
+      }
+    }
+
+    // Sheet name: "W1", "W2", etc. — XLSX sheet names max 31 chars
+    const sheetName = week.label.replace(/[:\\/?*[\]]/g, '').slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  }
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const safeName = block.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const scopeStr = scope === 'week' ? '-' + (block.weeks[state.activeWeek]?.label || 'week').toLowerCase().replace(/\s+/g, '') : '';
+  XLSX.writeFile(wb, `${safeName}-training-log${scopeStr}-${dateStr}.xlsx`, { cellStyles: true });
+
+  closeExportModal();
 }
 
 function exportHTMLReport(blockId, scope) {
