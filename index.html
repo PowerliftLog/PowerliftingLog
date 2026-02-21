@@ -426,10 +426,15 @@ function rePopulateSets(blocks){
             const sets=parseSets(ex.prescription);
             sets.forEach((s,si)=>{
               const sk=key+`||s${si}`;
-              if(state.logs[sk]) return;
+              if(state.logs[sk]){
+                // Backfill RPE onto existing set entries that were migrated without it
+                if(exLog.rpe && !state.logs[sk].rpe) state.logs[sk].rpe=exLog.rpe;
+                return;
+              }
               const setEntry={done:true};
               if(exLog.actual) setEntry.actual=exLog.actual;
               else if(!s.isRpe) setEntry.actual=String(s.weight);
+              if(exLog.rpe) setEntry.rpe=exLog.rpe;
               state.logs[sk]=setEntry;
             });
           }
