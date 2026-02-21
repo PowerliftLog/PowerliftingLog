@@ -657,8 +657,14 @@ function buildMetrics(drillBlockId){
     if(!block) continue;
 
     // Track best e1rm per exercise per week per block
+    // Prefer RPE-based results over Epley estimates; tie-break by higher e1rm
     const existing=rawPoints.find(p=>p.blockId===blockId&&p.weekLabel===weekLabel&&p.exName===exName);
-    if(existing){ if(result.value>existing.e1rm){ existing.e1rm=result.value; existing.method=result.method; existing.topWeight=weight; existing.topReps=reps; } }
+    if(existing){
+      const newIsRpe=result.method==='rpe', oldIsRpe=existing.method==='rpe';
+      if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&result.value>existing.e1rm)){
+        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=weight; existing.topReps=reps;
+      }
+    }
     else rawPoints.push({blockId,blockName:block.name,weekLabel,exName,group,e1rm:result.value,method:result.method,topWeight:weight,topReps:reps});
   }
 
@@ -680,7 +686,12 @@ function buildMetrics(drillBlockId){
       const g=groups[pt.group]||groups.other;
       if(!g.variations[pt.exName]) g.variations[pt.exName]=[];
       const existing=g.variations[pt.exName].find(p=>p.blockId===pt.blockId);
-      if(existing){ if(pt.e1rm>existing.e1rm){ existing.e1rm=pt.e1rm; existing.method=pt.method; existing.topWeight=pt.topWeight; existing.topReps=pt.topReps; existing.bestWeek=pt.weekLabel; } }
+      if(existing){
+        const newIsRpe=pt.method==='rpe', oldIsRpe=existing.method==='rpe';
+        if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&pt.e1rm>existing.e1rm)){
+          existing.e1rm=pt.e1rm; existing.method=pt.method; existing.topWeight=pt.topWeight; existing.topReps=pt.topReps; existing.bestWeek=pt.weekLabel;
+        }
+      }
       else g.variations[pt.exName].push({session:pt.blockName,blockId:pt.blockId,weekLabel:pt.weekLabel,e1rm:pt.e1rm,method:pt.method,topWeight:pt.topWeight,topReps:pt.topReps,bestWeek:pt.weekLabel,isCyclePoint:true});
     }
     // Sort by block index
@@ -889,7 +900,7 @@ function renderMetrics(){
           :`<span class="method-badge est-badge">EST</span>`;
         const label=drill?pt.session:pt.session; // cycle name or week label
         const sublabel=drill
-          ?(pt.topWeight&&pt.topReps?`${pt.topWeight}lb×${pt.topReps}`:'')
+          ?(pt.topWeight&&pt.topReps?`${pt.topReps}×${pt.topWeight}lb`:'')
           :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
         h+=`<div class="rm-row">
           <div style="display:flex;flex-direction:column;gap:1px">
@@ -1494,21 +1505,21 @@ function renderExCard(ex, groupKeys, block, week, day) {
   function setInputsHtml(sk,sl,placeholder){
     if(placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
     if(inputMode==='bw'||inputMode==='cardio') return '';
     if(inputMode==='bw-timed') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
     return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight</div>
-                <input class="set-input" inputmode="decimal" placeholder="${placeholder}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" placeholder="${placeholder}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
               <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                <input class="set-input rpe-input" inputmode="decimal" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
+                <input class="set-input rpe-input" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
               </div>
             </div>`;
   }
