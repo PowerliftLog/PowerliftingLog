@@ -46,11 +46,8 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .day-tab { flex-shrink: 0; padding: 13px 14px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: #555; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; white-space: nowrap; }
 .day-tab.active { color: #C9A84C; border-bottom-color: #C9A84C; }
 .done-dot { position: absolute; top: 3px; right: 4px; font-size: 11px; color: #4ade80; line-height: 1; }
-.progress-wrap { padding: 0 16px 4px; }
-.progress-bg { height: 2px; background: #222; border-radius: 2px; overflow: hidden; }
-.progress-fill { height: 100%; background: #4ade80; transition: width 0.3s ease; }
 .exercises { padding: 12px 16px 120px; }
-.exercise-card { background: #141414; border: 1px solid #222; border-radius: 12px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; }
+.exercise-card { background: linear-gradient(160deg, #1c1c1c 0%, #141414 60%, #111 100%); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; box-shadow: 0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); }
 .superset-group { border: 1px solid #2a2a1a; border-radius: 12px; margin-bottom: 12px; overflow: hidden; background: #0e0e0e; }
 .superset-header { display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: #161610; border-bottom: 1px solid #2a2a1a; }
 .superset-badge { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #C9A84C; background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2); border-radius: 4px; padding: 2px 8px; }
@@ -59,8 +56,8 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .superset-group .exercise-card:last-child { border-bottom: none; }
 .superset-group .exercise-card.completed { border-left-color: rgba(74,222,128,0.3); }
 .superset-group .exercise-card.skipped { border-left-color: rgba(255,255,255,0.05); }
-.exercise-card.completed { border-color: rgba(74,222,128,0.35); }
-.exercise-card.skipped { border-color: rgba(255,255,255,0.06); }
+.exercise-card.completed { border-color: rgba(74,222,128,0.25); box-shadow: 0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(74,222,128,0.06); }
+.exercise-card.skipped { border-color: rgba(255,255,255,0.04); box-shadow: none; }
 .exercise-card.skipped .ex-summary-name { text-decoration: line-through; color: #3a3a3a; }
 .exercise-card.skipped .ex-summary-pres { color: #2a2a2a; }
 .exercise-card.skipped .track-btn { color: #1e1e1e; }
@@ -76,7 +73,7 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .ex-expand-icon { color: #444; transition: transform 0.15s; line-height: 1; display: flex; align-items: center; }
 .ex-expand-icon svg { width: 14px; height: 14px; }
 .ex-expand-icon.open { transform: rotate(180deg); }
-.ex-detail { border-top: 1px solid #1e1e1e; }
+.ex-detail { border-top: 1px solid rgba(255,255,255,0.05); }
 .skip-btn { font-size: 11px; color: #666; background: none; border: 1px solid #333; border-radius: 5px; padding: 4px 8px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
 .skip-btn.active { color: #aaa; border-color: #555; background: #1a1a1a; }
 .skip-row { padding: 0 16px 14px; display: flex; justify-content: flex-end; gap: 8px; }
@@ -93,23 +90,21 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .exercise-check.done { background: #4ade80; border-color: #4ade80; color: #000; }
 .prescription { padding: 0 16px 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; color: #C9A84C; letter-spacing: 0.03em; }
 .prescription.purple { color: #C9A84C; }
-.sets-grid { padding: 2px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
-.set-row { display: flex; align-items: center; gap: 10px; }
-.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: #444; width: 22px; flex-shrink: 0; }
-.set-reps { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 19px; min-width: 32px; }
-.set-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 16px; color: #C9A84C; min-width: 50px; }
-.set-weight.rpe { color: #C9A84C; }
-.set-inputs-wrap { display: flex; flex-direction: column; gap: 4px; }
-.set-input-group { display: flex; flex-direction: column; gap: 2px; }
-.set-input-label { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.08em; padding-left: 2px; }
-.set-input { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 6px; color: #f0f0f0; font-family: 'Barlow', sans-serif; font-size: 14px; padding: 7px 10px; width: 80px; text-align: center; outline: none; }
-.set-input:focus { border-color: #C9A84C; color: #fff; }
-.set-input.rpe-input:focus { border-color: #C9A84C; }
-.set-input::placeholder { color: #333; font-size: 11px; }
+.sets-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 0; }
+.set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid #1a1a1a; }
+.set-row:last-child { border-bottom: none; }
+.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: #3a3a3a; width: 18px; flex-shrink: 0; }
+.set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; color: #c0c0c0; min-width: 70px; flex-shrink: 0; white-space: nowrap; }
+.set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
+.set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.set-input-label { font-size: 9px; color: #3a3a3a; text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
+.set-input { background: #1a1a1a; border: 1px solid #222; border-radius: 7px; color: #f0f0f0; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 7px 4px; width: 100%; text-align: center; outline: none; }
+.set-input:focus { border-color: #C9A84C; background: #1e1c15; color: #fff; }
+.set-input.rpe-input:focus { border-color: #C9A84C; background: #1e1c15; }
+.set-input::placeholder { color: #282828; font-size: 11px; font-weight: 400; }
 .prescribed-label { width: 80px; text-align: center; font-size: 12px; color: #333; }
-.set-check { width: 32px; height: 32px; border-radius: 7px; border: 1px solid #2a2a2a; background: transparent; color: #444; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-.set-check.done { background: rgba(74,222,128,0.15); border-color: #4ade80; color: #4ade80; }
-.prev-log { padding: 0 16px 10px; font-size: 13px; color: #4ade80; }
+.set-check { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #222; background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; transition: all 0.15s; }
+.set-check.done { background: rgba(74,222,128,0.12); border-color: #4ade80; color: #4ade80; }
 .coach-note { padding: 8px 16px; background: rgba(26,26,10,0.8); border-top: 1px solid #2a2a18; font-size: 12px; color: #a8a850; font-style: italic; }
 .notes-section { border-top: 1px solid #1a1a1a; }
 .notes-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
@@ -1567,10 +1562,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
           <div class="set-num">S${si+1}</div>
-          <div class="set-reps">${s.reps}</div>
-          <div class="set-weight ${s.isRpe?'rpe':''}">${s.isRpe?s.weight:s.weight+'lb'}</div>
+          <div class="set-prescribed">${s.isRpe ? s.reps+' '+s.weight : s.weight+'×'+s.reps}</div>
           ${setInputsHtml(sk,sl,s.isRpe?'lbs':s.weight+'lb')}
-          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':''}</button>
         </div>`;
       });
 
@@ -1582,10 +1576,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
           const _si=sets.length+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>
-            <div class="set-reps">${_lastS.reps||'—'}</div>
-            <div class="set-weight ${_lastS.isRpe?'rpe':''}">${_lastS.isRpe?(_lastS.weight||''):(_lastS.weight?_lastS.weight+'lb':'—')}</div>
+            <div class="set-prescribed">${_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+'×'+(_lastS.reps||'—')}</div>
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?'lbs':(_lastS.weight?_lastS.weight+'lb':'lbs'))}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':''}</button>
           </div>`;
         }
       }
@@ -1595,9 +1588,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
       for(let si=0;si<simple.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
+          <div class="set-num">S${si+1}</div><div class="set-prescribed">${simple.reps} reps</div>
           ${setInputsHtml(sk,sl,'lbs')}
-          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':''}</button>
         </div>`;
       }
 
@@ -1607,9 +1600,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
         for(let _i=0;_i<_extra;_i++){
           const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div><div class="set-reps">${simple.reps}</div><div class="set-weight rpe">reps</div>
+            <div class="set-num">S${_si+1}</div><div class="set-prescribed">${simple.reps} reps</div>
             ${setInputsHtml(_sk,_sl,'lbs')}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':''}</button>
           </div>`;
         }
       }
@@ -1620,9 +1613,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         const isOpen=ranged.reps==='open';
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div>${isOpen?'':(`<div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>`)}
+          <div class="set-num">S${si+1}</div>${isOpen?'':'<div class="set-prescribed">'+ranged.reps+' reps</div>'}
           ${setInputsHtml(sk,sl,isOpen?'open':'lbs')}
-          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':''}</button>
         </div>`;
       }
 
@@ -1633,9 +1626,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
         for(let _i=0;_i<_extra;_i++){
           const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div>${_isOpen?'':(`<div class="set-reps">${ranged.reps}</div><div class="set-weight rpe">reps</div>`)}
+            <div class="set-num">S${_si+1}</div>${_isOpen?'':'<div class="set-prescribed">'+ranged.reps+' reps</div>'}
             ${setInputsHtml(_sk,_sl,_isOpen?'open':'lbs')}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':''}</button>
           </div>`;
         }
       }
@@ -1645,9 +1638,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
       for(let si=0;si<bareWithRounds.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div><div class="set-reps">${bareWithRounds.reps}</div><div class="set-weight rpe">reps</div>
+          <div class="set-num">S${si+1}</div><div class="set-prescribed">${bareWithRounds.reps} reps</div>
           ${setInputsHtml(sk,sl,'lbs')}
-          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+          <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':''}</button>
         </div>`;
       }
 
@@ -1657,9 +1650,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
         for(let _i=0;_i<_extra;_i++){
           const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div><div class="set-reps">${bareWithRounds.reps}</div><div class="set-weight rpe">reps</div>
+            <div class="set-num">S${_si+1}</div><div class="set-prescribed">${bareWithRounds.reps} reps</div>
             ${setInputsHtml(_sk,_sl,'lbs')}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':'○'}</button>
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':''}</button>
           </div>`;
         }
       }
@@ -1668,9 +1661,9 @@ function renderExCard(ex, groupKeys, block, week, day) {
       const sk=key+`||s0`; const sl=state.logs[sk]||{};
       h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
       h+=`<div class="set-row">
-        <div class="set-num">S1</div><div class="set-reps">—</div><div class="set-weight rpe">open</div>
+        <div class="set-num">S1</div><div class="set-prescribed">open</div>
         ${setInputsHtml(sk,sl,'lbs')}
-        <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':'○'}</button>
+        <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':''}</button>
       </div>`;
       h+=`</div>`;
     }
@@ -1781,8 +1774,7 @@ function renderWorkout(){
   h+=renderWeekPills(block);
   h+=renderDayTabs(block, week);
   h+=renderNextWorkoutBanner(block);
-  h+=renderProgressBar(pct);
-  h+=`<div class="exercises">`;
+    h+=`<div class="exercises">`;
   h+=renderExerciseList(block, week, day);
   h+=`</div>`;
   main.innerHTML=h;
