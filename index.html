@@ -390,10 +390,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <!-- Add new section -->
     <div style="margin-bottom:20px">
       <div class="add-lift-group-label" style="margin-bottom:10px">Add New Program</div>
-      <div style="display:flex;gap:8px">
-        <button class="upload-btn" style="flex:1;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">UPLOAD FROM DEVICE<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-        <button class="drive-btn" style="flex:1;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();openDrivePicker()">UPLOAD FROM DRIVE<img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" style="width:15px;height:15px"></button>
-      </div>
+      <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">UPLOAD FROM DEVICE<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>
     <!-- Existing cycles -->
     <div id="program-list"></div>
@@ -1405,8 +1402,6 @@ function renderUploadScreen() {
     <div class="upload-title">Load Your Program</div>
     <div class="upload-desc">Upload the Excel file your coach sent you. Your workouts will be formatted for mobile.</div>
     <button class="upload-btn" onclick="document.getElementById('file-input').click()" style="display:flex;align-items:center;justify-content:center;gap:9px">UPLOAD FROM DEVICE<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-    <div class="upload-divider"><span>or</span></div>
-    <button class="drive-btn" onclick="openDrivePicker()" style="display:flex;align-items:center;justify-content:center;gap:9px">UPLOAD FROM DRIVE<img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" style="width:20px;height:20px"></button>
   </div>`;
 }
 
