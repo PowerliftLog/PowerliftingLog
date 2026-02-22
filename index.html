@@ -80,8 +80,8 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .set-adjust-btn { font-size: 11px; color: #666; background: none; border: 1px solid #333; border-radius: 5px; padding: 4px 8px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
 .set-adjust-btn:active { color: #C9A84C; border-color: #C9A84C; }
 .skipped-badge { font-size: 10px; color: #555; font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid #2a2a2a; border-radius: 4px; padding: 2px 6px; }
-.edit-name-btn { background: none; border: none; cursor: pointer; font-size: 12px; opacity: 0.0; padding: 2px 4px; transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
-.exercise-card:hover .edit-name-btn { opacity: 0.4; }
+.edit-name-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: #C9A84C; opacity: 0.0; padding: 2px 4px; transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
+.exercise-card:hover .edit-name-btn { opacity: 0.5; }
 .exercise-name-edit { flex: 1; background: #1e1e1e; border: 1px solid #C9A84C; border-radius: 6px; color: #f0f0f0; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; padding: 4px 8px; outline: none; min-width: 0; width: 100%; }
 .block-name-edit { background: #1e1e1e; border: 1px solid #C9A84C; border-radius: 6px; color: #f0f0f0; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 3px 8px; outline: none; width: 100%; letter-spacing: 0.04em; }
 .exercise-header { padding: 14px 16px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
@@ -94,7 +94,7 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid #1a1a1a; }
 .set-row:last-child { border-bottom: none; }
 .set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: #3a3a3a; width: 18px; flex-shrink: 0; }
-.set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; color: #c0c0c0; min-width: 70px; flex-shrink: 0; white-space: nowrap; }
+.set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: #c0c0c0; min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .set-input-label { font-size: 9px; color: #3a3a3a; text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
@@ -121,9 +121,9 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .notes-input::placeholder { color: #555; }
 .lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: #666; font-style: italic; }
 .prev-performance { border-top: 1px solid #1a1a1a; padding: 8px 16px 10px; }
-.prev-performance-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; }
+.prev-performance-label { font-size: 10px; color: #6a5a2a; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; }
 .prev-performance-sets { display: flex; flex-wrap: wrap; gap: 6px; }
-.prev-performance-set { font-size: 12px; color: #777; background: rgba(255,255,255,0.04); padding: 3px 8px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; }
+.prev-performance-set { font-size: 12px; color: #b8902a; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.15); padding: 3px 8px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; }
 .rest-msg { text-align: center; color: #333; padding-top: 60px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
 .complete-workout-btn { display: block; width: calc(100% - 32px); margin: 8px 16px 24px; padding: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; color: #777; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; }
 .complete-workout-btn:active { background: #1e1e1e; border-color: rgba(74,222,128,0.4); color: #4ade80; }
@@ -280,9 +280,9 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-total-box { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; text-align: center; }
 .calc-total-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: #C9A84C; line-height: 1; }
 .calc-total-unit { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
-.calc-bar-wrap { display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; overflow: visible; }
-.calc-bar-svg { width: 100%; height: 160px; overflow: visible; }
-.calc-plate-breakdown { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.calc-bar-wrap { display: flex; align-items: center; justify-content: center; margin: 8px 0 4px; overflow: visible; }
+.calc-bar-svg { width: 100%; height: 175px; overflow: visible; }
+.calc-bar-visual-zone { min-height: 80px; } .calc-plate-breakdown { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; min-height: 44px; }
 .calc-plate-chip { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; }
 .calc-plate-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .calc-plate-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: #f0f0f0; }
@@ -3368,12 +3368,12 @@ function renderCalcBarSVG(plates, showCollars) {
     if (kg >= 1.25) return 11; if (kg >= 0.5) return 9; return 7;
   }
   function pDiam(kg) {
-    if (kg >= 25) return 190; if (kg >= 20) return 172; if (kg >= 15) return 152;
+    if (kg >= 25) return 190; if (kg >= 20) return 190; if (kg >= 15) return 152;
     if (kg >= 10) return 130; if (kg >= 5)  return 104; if (kg >= 2.5) return 82;
     if (kg >= 1.25) return 64; if (kg >= 0.5) return 48; return 36;
   }
 
-  const SVG_H = 240;
+  const SVG_H = 260;
   const cy = SVG_H / 2 - 10;
   const barH = 10;
   const divider = 1;
@@ -3423,9 +3423,21 @@ function renderCalcBarSVG(plates, showCollars) {
     parts.push(`<rect x="${x+1}" y="${cy - ph/2 + 1}" width="${pt-2}" height="2" rx="1" fill="rgba(255,255,255,0.18)"/>`);
     parts.push(`<rect x="${x+1}" y="${cy + ph/2 - 3}" width="${pt-2}" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>`);
 
-    // Uniform label below every plate
-    const labelY = cy + ph/2 + 14;
-    parts.push(`<text x="${x + pt/2}" y="${labelY}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11">${kg}</text>`);
+    // Labels: stacked vertical chars below narrow plates (2.5kg and smaller), horizontal below wider plates
+    const labelCx = x + pt/2;
+    if (kg <= 2.5) {
+      // Stacked upright characters below the plate, starting just below bottom edge
+      const chars = String(kg).split('');
+      const charSize = 9;
+      const lineH = charSize + 2;
+      const startY = cy + ph/2 + charSize + 2;
+      chars.forEach((ch, ci) => {
+        parts.push(`<text x="${labelCx}" y="${startY + ci * lineH}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${charSize}">${ch}</text>`);
+      });
+    } else {
+      const labelY = cy + ph/2 + 14;
+      parts.push(`<text x="${labelCx}" y="${labelY}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11">${kg}</text>`);
+    }
 
     x += pt;
   }
@@ -3530,7 +3542,9 @@ function renderCalc() {
     const downLbs = (down * KG_TO_LBS).toFixed(1); const upLbs = (up * KG_TO_LBS).toFixed(1);
     const downDisplay = down % 1 === 0 ? down.toFixed(0) : down.toFixed(1);
     const upDisplay = up % 1 === 0 ? up.toFixed(0) : up.toFixed(1);
-    return `<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
+    return `<div style="margin-top:10px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:6px;text-align:center;">Valid Attempt</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
       <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
         <span style="color:#C9A84C;font-size:13px;">−</span><span>${downDisplay}kg</span><span style="color:#555;font-size:10px;">${downLbs}</span>
       </div>
@@ -3540,68 +3554,115 @@ function renderCalc() {
       <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:4px 8px;font-size:11px;color:#888;">
         <span style="color:#C9A84C;font-size:13px;">+</span><span>${upDisplay}kg</span><span style="color:#555;font-size:10px;">${upLbs}</span>
       </div>
+      </div>
     </div>`;
   })() : '';
 
   let html = `<div class="calc-screen">
 
-    <!-- ── MODE TOGGLE + INPUT (top, always visible) ── -->
+    <!-- ── MODE TOGGLE ── -->
     <div class="calc-section" style="padding:12px;">
-      <div class="calc-mode-toggle" style="margin-bottom:10px;">
+      <div class="calc-mode-toggle">
         <button class="calc-mode-btn${mode === 'target' ? ' active' : ''}" onclick="calcSetMode('target')">Target Weight</button>
         <button class="calc-mode-btn${mode === 'manual' ? ' active' : ''}" onclick="calcSetMode('manual')">Load Manually</button>
       </div>
+    </div>
 
-      ${mode === 'target' ? `
-        <div class="calc-mode-toggle" style="margin-bottom:10px;">
-          <button class="calc-mode-btn${inputUnit === 'lbs' ? ' active' : ''}" onclick="calcSetUnit('lbs')">LBS</button>
-          <button class="calc-mode-btn${inputUnit === 'kg' ? ' active' : ''}" onclick="calcSetUnit('kg')">KG</button>
-        </div>
-        <div class="calc-input-row" style="margin-bottom:0;">
-          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="width:100%;" />
+    ${mode === 'target' ? `
+
+      <!-- ── TARGET: INPUT ── -->
+      <div class="calc-section" style="padding:12px;">
+        <div style="display:flex;gap:8px;align-items:stretch;">
+          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="flex:1;" />
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+            <button onclick="calcSetUnit('lbs')" style="flex:1;padding:0 14px;border-radius:7px;border:1px solid ${inputUnit==='lbs'?'rgba(201,168,76,0.6)':'rgba(255,255,255,0.08)'};background:${inputUnit==='lbs'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)'};color:${inputUnit==='lbs'?'#C9A84C':'#555'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
+            <button onclick="calcSetUnit('kg')" style="flex:1;padding:0 14px;border-radius:7px;border:1px solid ${inputUnit==='kg'?'rgba(201,168,76,0.6)':'rgba(255,255,255,0.08)'};background:${inputUnit==='kg'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)'};color:${inputUnit==='kg'?'#C9A84C':'#555'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
+          </div>
         </div>
         ${snapHtml}
-      ` : ''}
-    </div>
+      </div>
 
-    <!-- ── BAR VISUAL + TOTALS ── -->
-    <div class="calc-section" style="padding:12px 12px 10px;">
-      <div class="calc-totals-display" style="margin-bottom:10px;">
-        <div class="calc-total-box">
-          <div class="calc-total-val">${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}</div>
-          <div class="calc-total-unit">Kilograms</div>
+      <!-- ── TARGET: BAR VISUAL + TOTALS ── -->
+      <div class="calc-section" style="padding:12px 12px 10px;">
+        <div class="calc-bar-visual-zone">
+          <div class="calc-bar-wrap">${barSVG}</div>
+          ${noSolution ? `<div class="calc-no-solution"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Weight not achievable with standard KG plates</div>` : ''}
+          ${breakdownHtml}
         </div>
-        <div class="calc-total-box">
-          <div class="calc-total-val">${totalLbs.toFixed(1)}</div>
-          <div class="calc-total-unit">Pounds</div>
+        <div class="calc-totals-display" style="margin-top:10px;margin-bottom:4px;">
+          <div class="calc-total-box">
+            <div class="calc-total-val">${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}</div>
+            <div class="calc-total-unit">Kilograms</div>
+          </div>
+          <div class="calc-total-box">
+            <div class="calc-total-val">${totalLbs.toFixed(1)}</div>
+            <div class="calc-total-unit">Pounds</div>
+          </div>
         </div>
+        <div class="calc-bar-note">${bar.label} (${bar.kg}kg)${collarNote}${plateNote || ' — bar only'}</div>
       </div>
-      <div class="calc-bar-wrap">${barSVG}</div>
-      ${noSolution ? `<div class="calc-no-solution"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Weight not achievable with standard KG plates</div>` : ''}
-      ${breakdownHtml}
-      <div class="calc-bar-note">${bar.label} (${bar.kg}kg)${collarNote}${plateNote || ' — bar only'}</div>
-    </div>
 
-    <!-- ── SECONDARY CONTROLS ── -->
-    <div class="calc-section" style="padding:12px;">
-      <div class="calc-bar-selector" style="margin-bottom:10px;">
-        ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
-          ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
-        </button>`).join('')}
-      </div>
-      <div class="calc-collar-row" style="margin-bottom:${mode === 'manual' ? '12px' : '0'};">
-        <div>
-          <div class="calc-collar-label">Collars</div>
-          <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
+      <!-- ── TARGET: BAR SELECTION + COLLARS ── -->
+      <div class="calc-section" style="padding:12px;">
+        <div class="calc-bar-selector" style="margin-bottom:10px;">
+          ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
+            ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
+          </button>`).join('')}
         </div>
-        <button class="calc-collar-toggle${state.calc.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
+        <div class="calc-collar-row">
+          <div>
+            <div class="calc-collar-label">Collars</div>
+            <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
+          </div>
+          <button class="calc-collar-toggle${state.calc.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
+        </div>
       </div>
-      ${mode === 'manual' ? `
+
+    ` : `
+
+      <!-- ── MANUAL: PLATE GRID ── -->
+      <div class="calc-section" style="padding:12px;">
         <div class="calc-section-title" style="margin-bottom:10px;">Plates (per side)</div>
         <div class="calc-plates-grid">${manualRowsHtml}</div>
         <button class="calc-reset-btn" onclick="calcReset()">Clear All Plates</button>
-      ` : ''}
-    </div>
+      </div>
+
+      <!-- ── MANUAL: BAR VISUAL + TOTALS ── -->
+      <div class="calc-section" style="padding:12px 12px 10px;">
+        <div class="calc-bar-visual-zone">
+          <div class="calc-bar-wrap">${barSVG}</div>
+          ${breakdownHtml}
+        </div>
+        <div class="calc-totals-display" style="margin-top:10px;margin-bottom:4px;">
+          <div class="calc-total-box">
+            <div class="calc-total-val">${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}</div>
+            <div class="calc-total-unit">Kilograms</div>
+          </div>
+          <div class="calc-total-box">
+            <div class="calc-total-val">${totalLbs.toFixed(1)}</div>
+            <div class="calc-total-unit">Pounds</div>
+          </div>
+        </div>
+        <div class="calc-bar-note">${bar.label} (${bar.kg}kg)${collarNote}${plateNote || ' — bar only'}</div>
+      </div>
+
+      <!-- ── MANUAL: BAR SELECTION + COLLARS ── -->
+      <div class="calc-section" style="padding:12px;">
+        <div class="calc-bar-selector" style="margin-bottom:10px;">
+          ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
+            ${b.label}<span class="calc-bar-btn-sub">${b.kg}kg / ${b.lbs}lbs</span>
+          </button>`).join('')}
+        </div>
+        <div class="calc-collar-row">
+          <div>
+            <div class="calc-collar-label">Collars</div>
+            <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
+          </div>
+          <button class="calc-collar-toggle${state.calc.collarsOn ? ' on' : ''}" onclick="calcToggleCollars()"></button>
+        </div>
+      </div>
+
+    `}
 
   </div>`;
   main.innerHTML = html;
