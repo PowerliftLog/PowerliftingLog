@@ -4,6 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>PowerliftingLog</title>
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS PWA meta tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LiftLog">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+
+<!-- Theme color for browser chrome -->
+<meta name="theme-color" content="#0a0a0a">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/PowerliftingLog/service-worker.js')
+        .catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlElEQVR4nO2X0QmAMBBDU/GrW+koDuYoOpp+FUTwwyQQlGaA3nvX3kFLrfVAMEOyeAf4F8C+zlkANhYA1t4GAADTsmUAFHsLgBoJQLWXAVrY+5cAHPYAMDoOucK87QbVgSd75iq+NwVOe4B4A/dC0UXUikfG0BUZQLGXAFyLSOqAai8DOEJvQoc9DeBM6V+zDpAGOAEoFSO7lhfbZgAAAABJRU5ErkJggg==">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
