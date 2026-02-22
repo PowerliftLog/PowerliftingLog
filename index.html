@@ -3572,11 +3572,11 @@ function renderCalc() {
 
       <!-- ── TARGET: INPUT ── -->
       <div class="calc-section" style="padding:12px;">
-        <div style="display:flex;gap:8px;align-items:stretch;">
-          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="flex:1;" />
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-            <button onclick="calcSetUnit('lbs')" style="flex:1;padding:0 14px;border-radius:7px;border:1px solid ${inputUnit==='lbs'?'rgba(201,168,76,0.6)':'rgba(255,255,255,0.08)'};background:${inputUnit==='lbs'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)'};color:${inputUnit==='lbs'?'#C9A84C':'#555'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
-            <button onclick="calcSetUnit('kg')" style="flex:1;padding:0 14px;border-radius:7px;border:1px solid ${inputUnit==='kg'?'rgba(201,168,76,0.6)':'rgba(255,255,255,0.08)'};background:${inputUnit==='kg'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)'};color:${inputUnit==='kg'?'#C9A84C':'#555'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
+        <div style="display:flex;gap:8px;align-items:stretch;height:68px;">
+          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="flex:1;min-width:0;" />
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:56px;">
+            <button onclick="calcSetUnit('lbs')" style="flex:1;border-radius:7px;border:1px solid ${inputUnit==='lbs'?'rgba(201,168,76,0.6)':'rgba(255,255,255,0.08)'};background:${inputUnit==='lbs'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)'};color:${inputUnit==='lbs'?'#C9A84C':'#555'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
+            <button onclick="calcSetUnit('kg')" style="flex:1;border-radius:7px;border:1px solid ${inputUnit==='kg'?'rgba(201,168,76,0.6)':'rgba(255,255,255,0.08)'};background:${inputUnit==='kg'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)'};color:${inputUnit==='kg'?'#C9A84C':'#555'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
           </div>
         </div>
         ${snapHtml}
