@@ -32,11 +32,12 @@ body { background: #0a0a0a; color: #f0f0f0; font-family: 'Barlow', sans-serif; m
 .block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.03em; color: #e8e8e8; }
 .block-dates { font-size: 11px; color: #666; margin-top: 3px; letter-spacing: 0.03em; }
 .cycle-select { background: rgba(255,255,255,0.05); color: #888; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.04em; outline: none; max-width: 160px; cursor: pointer; }
-.maxes-bar { display: flex; border-bottom: 1px solid #222; }
-.max-item { flex: 1; padding: 10px 0; text-align: center; border-right: 1px solid #222; }
-.max-item:last-child { border-right: none; }
-.max-lift { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
-.max-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; color: #C9A84C; }
+.maxes-bar { display: flex; gap: 8px; padding: 12px 16px 4px; }
+.max-item { flex: 1; background: linear-gradient(160deg, #1c1c1c 0%, #141414 60%, #111 100%); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 12px 8px 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04); position: relative; overflow: hidden; }
+.max-item::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 60%); pointer-events: none; }
+.max-lift { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.max-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: #C9A84C; line-height: 1; letter-spacing: -0.01em; }
+.max-label { font-size: 9px; color: #444; letter-spacing: 0.07em; text-transform: uppercase; margin-top: 4px; }
 .week-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; background: rgba(255,255,255,0.01); }
 .week-bar::-webkit-scrollbar { display: none; }
 .week-pill { flex-shrink: 0; padding: 8px 20px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #666; cursor: pointer; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
@@ -246,7 +247,10 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .no-data-msg { padding: 60px 24px; text-align: center; color: #333; font-size: 14px; line-height: 1.7; }
 
 /* Legend */
-.var-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.var-pill-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.var-pill { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #666; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.var-pill.active { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.5); color: #C9A84C; }
+.var-pill:active { opacity: 0.7; }
 .legend-item { display: flex; align-items: center; gap: 6px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legend-label { font-size: 12px; color: #999; }
@@ -393,7 +397,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <script>
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -843,9 +847,9 @@ function renderMetrics(){
   }
   if (e1rmByGroup.squat || e1rmByGroup.bench || e1rmByGroup.deadlift) {
     h += `<div class="maxes-bar">`;
-    if (e1rmByGroup.squat) h += `<div class="max-item"><div class="max-lift">Squat</div><div class="max-weight">${e1rmByGroup.squat}</div><div style="font-size:9px;color:#555;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Est. 1RM</div></div>`;
-    if (e1rmByGroup.bench) h += `<div class="max-item"><div class="max-lift">Bench</div><div class="max-weight">${e1rmByGroup.bench}</div><div style="font-size:9px;color:#555;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Est. 1RM</div></div>`;
-    if (e1rmByGroup.deadlift) h += `<div class="max-item"><div class="max-lift">Dead</div><div class="max-weight">${e1rmByGroup.deadlift}</div><div style="font-size:9px;color:#555;letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Est. 1RM</div></div>`;
+    if (e1rmByGroup.squat) h += `<div class="max-item"><div class="max-lift">Squat</div><div class="max-weight">${e1rmByGroup.squat}</div><div class="max-label">Est. 1RM</div></div>`;
+    if (e1rmByGroup.bench) h += `<div class="max-item"><div class="max-lift">Bench</div><div class="max-weight">${e1rmByGroup.bench}</div><div class="max-label">Est. 1RM</div></div>`;
+    if (e1rmByGroup.deadlift) h += `<div class="max-item"><div class="max-lift">Dead</div><div class="max-weight">${e1rmByGroup.deadlift}</div><div class="max-label">Est. 1RM</div></div>`;
     h += `</div>`;
   }
 
@@ -855,9 +859,14 @@ function renderMetrics(){
     if(vars.length===0) continue;
     hasAnyData=true;
 
-    const compVars=vars.filter(([vname])=>isCompLift(vname));
-    const bestSource=compVars.length>0?compVars:vars;
-    const best=Math.max(...bestSource.flatMap(([,pts])=>pts.map(p=>p.e1rm)));
+    // Variation pill selector — default to first var, preserve selection across re-renders
+    const activeVar = (state.metricsActiveVar[groupKey] && vars.find(([vn])=>vn===state.metricsActiveVar[groupKey]))
+      ? state.metricsActiveVar[groupKey] : vars[0][0];
+    state.metricsActiveVar[groupKey] = activeVar;
+    const activePts = vars.find(([vn])=>vn===activeVar)?.[1] || [];
+
+    // Best e1RM = best of selected variation only
+    const best = activePts.length > 0 ? Math.max(...activePts.map(p=>p.e1rm)) : null;
 
     h+=`<div class="metrics-lift-group">`;
     h+=`<div class="metrics-lift-header">
@@ -868,46 +877,37 @@ function renderMetrics(){
       </div>
     </div>`;
 
-    h+=`<div class="var-legend">`;
-    vars.forEach(([vname],vi)=>{
-      const col=VAR_COLORS[vi%VAR_COLORS.length];
-      h+=`<div class="legend-item"><span class="legend-dot" style="background:${col}"></span><span class="legend-label">${vname}</span></div>`;
-    });
-    h+=`</div>`;
+    if(vars.length > 1){
+      h+=`<div class="var-pill-row">`;
+      vars.forEach(([vname])=>{
+        const isActive = vname === activeVar;
+        h+=`<button class="var-pill${isActive?' active':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${vname}</button>`;
+      });
+      h+=`</div>`;
+    }
 
     h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${esc(groupKey)}" width="400" height="160"></canvas></div>`;
 
-    h+=`<div class="rm-datapoints">`;
-    vars.forEach(([vname,pts],vi)=>{
-      const col=VAR_COLORS[vi%VAR_COLORS.length];
-      h+=`<div class="var-section">`;
-      if(drill!=='all' && multiCycle && pts.length>0){
-        h+=`<div class="var-section-title var-section-drill" onclick="setMetricsDrill('all')"><span class="legend-dot" style="background:${col}"></span>${vname}<span style="margin-left:auto;opacity:0.5;display:flex;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>`;
-      } else {
-        h+=`<div class="var-section-title"><span class="legend-dot" style="background:${col}"></span>${vname}</div>`;
-      }
-      pts.forEach((pt,i)=>{
-        const prev=pts[i-1];
-        const delta=prev?pt.e1rm-prev.e1rm:null;
-        const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}lb</span>`:'';
-        const methodBadge=pt.method==='rpe'
-          ?`<span class="method-badge rpe-badge">RPE</span>`
-          :`<span class="method-badge est-badge">EST</span>`;
-        const label=drill?pt.session:pt.session; // cycle name or week label
-        const sublabel=drill
-          ?(pt.topWeight&&pt.topReps?`${pt.topReps}×${pt.topWeight}lb`:'')
-          :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
-        h+=`<div class="rm-row">
-          <div style="display:flex;flex-direction:column;gap:1px">
-            <div class="rm-session">${label}</div>
-            ${sublabel?`<div style="font-size:11px;color:#444">${sublabel}</div>`:''}
-          </div>
-          <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value" style="color:${col}">${pt.e1rm}lb</div></div>
-        </div>`;
-      });
-      h+=`</div>`;
+    h+=`<div class="rm-datapoints"><div class="var-section">`;
+    activePts.forEach((pt,i)=>{
+      const prev=activePts[i-1];
+      const delta=prev?pt.e1rm-prev.e1rm:null;
+      const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}lb</span>`:'';
+      const methodBadge=pt.method==='rpe'
+        ?`<span class="method-badge rpe-badge">RPE</span>`
+        :`<span class="method-badge est-badge">EST</span>`;
+      const sublabel=drill
+        ?(pt.topWeight&&pt.topReps?`${pt.topReps}×${pt.topWeight}lb`:'')
+        :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
+      h+=`<div class="rm-row">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <div class="rm-session">${pt.session}</div>
+          ${sublabel?`<div style="font-size:11px;color:#444">${sublabel}</div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}lb</div></div>
+      </div>`;
     });
-    h+=`</div>`;
+    h+=`</div></div>`;
     h+=`</div>`;
   }
 
@@ -923,14 +923,17 @@ function renderMetrics(){
     for(const [groupKey,group] of Object.entries(metrics)){
       const vars=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
       if(vars.length===0) continue;
-      drawOverlaidChart(`chart-${groupKey}`,vars,drillBlockId!==null);
+      const activeVar=state.metricsActiveVar[groupKey]||vars[0][0];
+      const activePts=vars.find(([vn])=>vn===activeVar)?.[1]||[];
+      drawSingleVarChart(`chart-${groupKey}`, activePts, drillBlockId!==null);
     }
   },0);
 }
 
 function setMetricsDrill(val){ state.metricsDrillBlock=val; renderMetrics(); }
+function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; renderMetrics(); }
 
-function drawOverlaidChart(canvasId, vars, drillMode){
+function drawSingleVarChart(canvasId, pts, drillMode){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
@@ -938,15 +941,11 @@ function drawOverlaidChart(canvasId, vars, drillMode){
   const H=160;
   canvas.width=W; canvas.height=H;
 
-  const sessionOrderMap=new Map();
-  vars.forEach(([,pts])=>pts.forEach(pt=>{ if(!sessionOrderMap.has(pt.session)) sessionOrderMap.set(pt.session, sessionOrderMap.size); }));
-  const allSessions=[...new Set(vars.flatMap(([,pts])=>pts.map(p=>p.session)))]
-    .sort((a,b)=>(sessionOrderMap.get(a)||0)-(sessionOrderMap.get(b)||0));
-  if(allSessions.length===0) return;
+  if(!pts||pts.length===0){ ctx.clearRect(0,0,W,H); return; }
 
-  const allVals=vars.flatMap(([,pts])=>pts.map(p=>p.e1rm));
-  const yMin=Math.min(...allVals)*0.95;
-  const yMax=Math.max(...allVals)*1.05;
+  const allVals=pts.map(p=>p.e1rm);
+  const yMin=Math.min(...allVals)*0.96;
+  const yMax=Math.max(...allVals)*1.04;
   const yRange=yMax-yMin||1;
 
   const pad={top:16,right:16,bottom:28,left:44};
@@ -955,6 +954,7 @@ function drawOverlaidChart(canvasId, vars, drillMode){
 
   ctx.clearRect(0,0,W,H);
 
+  // Grid lines + y labels
   ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=1;
   [0,0.5,1].forEach(t=>{
     const y=pad.top+chartH*(1-t);
@@ -963,66 +963,55 @@ function drawOverlaidChart(canvasId, vars, drillMode){
     ctx.fillText(Math.round(yMin+yRange*t)+'lb',pad.left-4,y+3);
   });
 
+  // X labels
   function shortLabel(s){ const m=s.match(/W(\d+)$/i); return m?`W${m[1]}`:s.replace(/cycle\s*/i,'C'); }
-  const step=allSessions.length>6?Math.ceil(allSessions.length/4):1;
+  const step=pts.length>6?Math.ceil(pts.length/4):1;
   ctx.fillStyle='#444'; ctx.font='9px Barlow,sans-serif'; ctx.textAlign='center';
-  allSessions.forEach((s,i)=>{
-    if(i%step!==0&&i!==allSessions.length-1) return;
-    const x=allSessions.length===1?pad.left+chartW/2:pad.left+(i/(allSessions.length-1))*chartW;
-    ctx.fillText(shortLabel(s),x,H-6);
+  pts.forEach((pt,i)=>{
+    if(i%step!==0&&i!==pts.length-1) return;
+    const x=pts.length===1?pad.left+chartW/2:pad.left+(i/(pts.length-1))*chartW;
+    ctx.fillText(shortLabel(pt.session),x,H-6);
   });
 
-  // Store dot positions for tap handling (cycle view only)
-  const dotPositions=[];
+  const coords=pts.map((pt,i)=>({
+    x:pts.length===1?pad.left+chartW/2:pad.left+(i/(pts.length-1))*chartW,
+    y:pad.top+chartH*(1-(pt.e1rm-yMin)/yRange),
+    pt
+  }));
 
-  vars.forEach(([,pts],vi)=>{
-    if(pts.length===0) return;
-    const col=VAR_COLORS[vi%VAR_COLORS.length];
-    const coords=pts.map(pt=>{
-      const si=allSessions.indexOf(pt.session);
-      const x=allSessions.length===1?pad.left+chartW/2:pad.left+(si/(allSessions.length-1))*chartW;
-      const y=pad.top+chartH*(1-(pt.e1rm-yMin)/yRange);
-      return{x,y,pt};
-    });
-    if(coords.length===1){
-      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,5,0,Math.PI*2); ctx.fill();
-      if(!drillMode) dotPositions.push({x:coords[0].x,y:coords[0].y,r:10,blockId:coords[0].pt.blockId});
-      return;
-    }
+  const col='#C9A84C';
+
+  if(coords.length===1){
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,5,0,Math.PI*2); ctx.fill();
+  } else {
+    // Subtle fill under line
+    ctx.save();
+    ctx.beginPath();
+    coords.forEach((c,i)=>i===0?ctx.moveTo(c.x,c.y):ctx.lineTo(c.x,c.y));
+    ctx.lineTo(coords[coords.length-1].x, pad.top+chartH);
+    ctx.lineTo(coords[0].x, pad.top+chartH);
+    ctx.closePath();
+    const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+chartH);
+    grad.addColorStop(0,'rgba(201,168,76,0.18)');
+    grad.addColorStop(1,'rgba(201,168,76,0)');
+    ctx.fillStyle=grad;
+    ctx.fill();
+    ctx.restore();
+
+    // Line
     ctx.strokeStyle=col; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.setLineDash([]);
     ctx.beginPath();
     coords.forEach((c,i)=>i===0?ctx.moveTo(c.x,c.y):ctx.lineTo(c.x,c.y));
     ctx.stroke();
+
+    // Dots
     coords.forEach(c=>{
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(c.x,c.y,4,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#0a0a0a'; ctx.beginPath(); ctx.arc(c.x,c.y,2,0,Math.PI*2); ctx.fill();
-      if(!drillMode) dotPositions.push({x:c.x,y:c.y,r:12,blockId:c.pt.blockId});
     });
-  });
-
-  // Tap to drill into a cycle (cycle view only)
-  if(!drillMode&&dotPositions.length>0){
-    canvas._drillHandler&&canvas.removeEventListener('click',canvas._drillHandler);
-    canvas._drillHandler=(e)=>{
-      const rect=canvas.getBoundingClientRect();
-      const scaleX=canvas.width/rect.width;
-      const scaleY=canvas.height/rect.height;
-      const cx=(e.clientX-rect.left)*scaleX;
-      const cy=(e.clientY-rect.top)*scaleY;
-      for(const dot of dotPositions){
-        if(Math.hypot(cx-dot.x,cy-dot.y)<dot.r){
-          setMetricsDrill(dot.blockId);
-          return;
-        }
-      }
-    };
-    canvas.addEventListener('click',canvas._drillHandler);
-    // Show pointer cursor on hover
-    canvas.style.cursor='pointer';
-  } else {
-    canvas.style.cursor='default';
   }
 }
+
 
 // ── ADD CUSTOM LIFT ───────────────────────────────────────────────────────────
 let selectedGroup='squat';
@@ -2552,7 +2541,6 @@ function exportTrainingLog(blockId) {
 function exportHTMLReport(blockId, scope) {
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return;
-
   const weeks = block.weeks || [];
 
   const blockLogs = {};
@@ -2560,28 +2548,17 @@ function exportHTMLReport(blockId, scope) {
     if (key.startsWith(blockId + '||')) blockLogs[key] = val;
   }
 
-  // ── Palette for multi-line charts (one color per variation) ──────────────
-  const FAMILY_COLORS = [
-    '#C9A84C', // gold
-    '#7B9FD4', // blue
-    '#7EC89A', // green
-    '#D47B7B', // red
-    '#B07BD4', // purple
-    '#D4A97B', // orange
-    '#7BD4D4', // teal
-  ];
+  const FAMILY_COLORS = ['#C9A84C','#7B9FD4','#7EC89A','#D47B7B','#B07BD4','#D4A97B','#7BD4D4'];
 
-  // ── Gather data grouped by family, then by exercise ──────────────────────
-  // Source: LIFT_GROUPS (not isTracked) — all barbell variations included
+  // ── Gather data by family → exercise → week ───────────────────────────────
   const families = { squat: {}, bench: {}, deadlift: {} };
-  const peakByGroup = { squat: null, bench: null, deadlift: null };
 
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
     const exName = parts[3];
     const group = classifyLift(exName);
-    if (!group || !families[group]) continue; // skip non-big-3
+    if (!group || !families[group]) continue;
 
     const si = parseInt(parts[4].slice(1));
     const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
@@ -2595,112 +2572,51 @@ function exportHTMLReport(blockId, scope) {
     const weekLabel = parts[1];
     if (!families[group][exName]) families[group][exName] = {};
     if (!families[group][exName][weekLabel])
-      families[group][exName][weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0, method: 'epley' };
+      families[group][exName][weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, method: 'epley' };
     const w = families[group][exName][weekLabel];
-    w.tonnage += weight * reps;
     if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
-
-    // Peak for 1RM projection — comp lifts only
-    if (isCompLift(exName)) {
-      if (!peakByGroup[group] || result.value > peakByGroup[group]) peakByGroup[group] = result.value;
-    }
   }
 
-  // ── Summary page data ─────────────────────────────────────────────────────
-  let totalSets = 0, totalVolume = 0;
+  // ── Compliance ────────────────────────────────────────────────────────────
+  let totalDays = 0, completedDays = 0, totalSets = 0, totalVolume = 0;
   const volumeByFamily = { squat: 0, bench: 0, deadlift: 0, other: 0 };
-  const volumeByWeek = {}; // { weekLabel: { squat, bench, deadlift, other, total } }
-  const peakSetByFamily = { squat: null, bench: null, deadlift: null };
 
-  for (const [key, val] of Object.entries(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const exName = parts[3];
-    const weekLabel = parts[1];
-    const si = parseInt(parts[4].slice(1));
-    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
-    if (!weight || isNaN(weight) || weight <= 0) continue;
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
-    if (!reps || isNaN(reps)) continue;
-
-    const setVol = weight * reps;
-    const group = classifyLift(exName) || 'other';
-
-    totalSets++;
-    totalVolume += setVol;
-    volumeByFamily[group] = (volumeByFamily[group] || 0) + setVol;
-
-    if (!volumeByWeek[weekLabel]) volumeByWeek[weekLabel] = { squat: 0, bench: 0, deadlift: 0, other: 0 };
-    volumeByWeek[weekLabel][group] = (volumeByWeek[weekLabel][group] || 0) + setVol;
-
-    // Track peak set per family (heaviest single set by weight)
-    if (group !== 'other') {
-      if (!peakSetByFamily[group] || weight > peakSetByFamily[group].weight) {
-        peakSetByFamily[group] = { weight, reps, name: exName };
-      }
-    }
-  }
-
-  const sortedWeekLabels = Object.keys(volumeByWeek).sort((a, b) => sessionOrder(a) - sessionOrder(b));
-  const weekVolTotals = sortedWeekLabels.map(wl =>
-    (volumeByWeek[wl].squat || 0) + (volumeByWeek[wl].bench || 0) + (volumeByWeek[wl].deadlift || 0) + (volumeByWeek[wl].other || 0)
-  );
-
-  // Week-by-week completion grid
-  let weekGridHtml = '';
-  for (const week of weeks) {
-    const daysTotal = week.days.length;
-    const daysDone = week.days.filter(d => isDayComplete(block, week, d)).length;
-    const allDone = daysDone === daysTotal;
-    const dotHtml = week.days.map(d => {
-      const done = isDayComplete(block, week, d);
-      return `<span class="day-dot${done ? ' done' : ''}"></span>`;
-    }).join('');
-    weekGridHtml += `<div class="week-row">
-      <span class="week-row-label">${week.label}</span>
-      <span class="week-row-dots">${dotHtml}</span>
-      <span class="week-row-count${allDone ? ' all-done' : ''}">${daysDone}/${daysTotal}</span>
-    </div>`;
-  }
-
-  // Peak sets html
-  let peakSetsHtml = '';
-  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-    const p = peakSetByFamily[group];
-    peakSetsHtml += `<div class="peak-card">
-      <div class="peak-label">${label}</div>
-      <div class="peak-val">${p ? p.weight + '<span class="peak-unit"> lbs</span>' : '—'}</div>
-      <div class="peak-set">${p ? `${p.weight}×${p.reps} ${p.name}` : 'No data'}</div>
-    </div>`;
-  }
-
-  // Volume by family bar
-  const famLabels = ['Squat','Bench','Deadlift','Other'];
-  const famColors = ['#C9A84C','#7B9FD4','#7EC89A','#555'];
-  const famVols = [volumeByFamily.squat||0, volumeByFamily.bench||0, volumeByFamily.deadlift||0, volumeByFamily.other||0];
-
-
-  let totalDays = 0, completedDays = 0;
   for (const week of weeks) {
     for (const day of (week.days || [])) {
       totalDays++;
       if (isDayComplete(block, week, day)) completedDays++;
     }
   }
+  for (const [key, val] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    const si = parseInt(parts[4].slice(1));
+    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps || isNaN(reps)) continue;
+    totalSets++;
+    totalVolume += weight * reps;
+    const group = classifyLift(exName) || 'other';
+    volumeByFamily[group] = (volumeByFamily[group] || 0) + weight * reps;
+  }
   const compliancePct = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
 
-  // ── 1RM Projections ───────────────────────────────────────────────────────
-  let projectionsHtml = '';
-  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-    const peak = peakByGroup[group];
-    const lbs = peak ? Math.round(peak) : null;
-    projectionsHtml += `<div class="proj-card">
-      <div class="proj-lift">${label}</div>
-      <div class="proj-val">${lbs ? lbs + '<span class="proj-unit"> lbs</span>' : '—'}</div>
+  // ── Weekly completion dots ────────────────────────────────────────────────
+  let weekGridHtml = '';
+  for (const week of weeks) {
+    const daysDone = week.days.filter(d => isDayComplete(block, week, d)).length;
+    const allDone = daysDone === week.days.length;
+    const dots = week.days.map(d => `<span class="day-dot${isDayComplete(block,week,d)?' done':''}"></span>`).join('');
+    weekGridHtml += `<div class="week-row">
+      <span class="week-row-label">${week.label}</span>
+      <span class="week-row-dots">${dots}</span>
+      <span class="week-row-count${allDone?' all-done':''}">${daysDone}/${week.days.length}</span>
     </div>`;
   }
 
-  // ── Build family sections ─────────────────────────────────────────────────
+  // ── Family sections — chart + compact table ───────────────────────────────
   const chartInits = [];
   let familySectionsHtml = '';
   let anyData = false;
@@ -2711,81 +2627,71 @@ function exportHTMLReport(blockId, scope) {
     if (!exNames.length) continue;
     anyData = true;
 
-    // Collect all week labels across all exercises in this family, sorted
     const allWeekLabels = [...new Set(
       exNames.flatMap(n => Object.keys(exercises[n]))
     )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
 
-    // Legend dots
+    // Best e1RM across all variations
+    const bestE1rm = Math.max(...exNames.flatMap(n =>
+      Object.values(exercises[n]).map(w => w.e1rm)
+    ));
+
+    // Legend
     const legendHtml = exNames.map((n, i) => {
       const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
       return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${n}</span>`;
     }).join('');
 
-    // Chart datasets — one per exercise
+    // Chart datasets
     const datasets = exNames.map((n, i) => {
       const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
       const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
       return {
-        label: n,
-        data,
+        label: n, data,
         borderColor: color,
         backgroundColor: 'transparent',
+        fill: false,
         pointBackgroundColor: color,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        tension: 0.3,
-        spanGaps: true
+        pointBorderColor: '#111',
+        pointBorderWidth: 1.5,
+        pointRadius: 4, pointHoverRadius: 6,
+        tension: 0.3, spanGaps: true,
+        borderWidth: 2
       };
     });
 
     const chartId = 'chart_' + groupKey;
     chartInits.push({ id: chartId, labels: allWeekLabels, datasets });
 
-    // Per-exercise tables
-    let tablesHtml = '';
-    for (let i = 0; i < exNames.length; i++) {
-      const exName = exNames[i];
+    // Compact summary table — one row per variation, just peak e1RM + best set
+    let summaryRows = '';
+    exNames.forEach((n, i) => {
       const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
-      const sortedWeeks = Object.entries(exercises[exName]).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
-      let prevE1rm = null;
-      let rows = '';
-      for (const [weekLabel, w] of sortedWeeks) {
-        const e1rmRounded = Math.round(w.e1rm);
-        let delta = '—';
-        if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); delta = (d >= 0 ? '+' : '') + d; }
-        const deltaClass = delta === '—' ? '' : delta.startsWith('+') ? 'pos' : 'neg';
-        const rpeStr = w.topRpe !== null ? `@${w.topRpe}` : '—';
-        const badge = w.method === 'rpe' ? '<span class="badge rpe-badge">RPE</span>' : '<span class="badge est-badge">EST</span>';
-        rows += `<tr>
-          <td class="muted">${weekLabel}</td>
-          <td>${w.topWeight}×${w.topReps}</td>
-          <td class="muted">${rpeStr}</td>
-          <td>${e1rmRounded} ${badge}</td>
-          <td class="${deltaClass}">${delta}</td>
-          <td class="muted">${Math.round(w.tonnage).toLocaleString()}</td>
-        </tr>`;
-        prevE1rm = w.e1rm;
-      }
-      tablesHtml += `
-      <div class="ex-block">
-        <div class="ex-block-name" style="border-left:3px solid ${color}">${exName}</div>
-        <table class="lift-table">
-          <thead><tr><th>Week</th><th>Top Set</th><th>RPE</th><th>e1RM (lbs)</th><th>Δ</th><th>Volume (lbs)</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
-    }
+      const weekData = Object.values(exercises[n]);
+      const peak = weekData.reduce((best, w) => w.e1rm > best.e1rm ? w : best, weekData[0]);
+      const peakE1rm = Math.round(peak.e1rm);
+      const badge = peak.method === 'rpe'
+        ? '<span class="badge rpe-badge">RPE</span>'
+        : '<span class="badge est-badge">EST</span>';
+      summaryRows += `<tr>
+        <td><span class="var-dot" style="background:${color}"></span>${n}</td>
+        <td class="num">${peakE1rm} lbs ${badge}</td>
+        <td class="muted">${peak.topWeight}×${peak.topReps}${peak.topRpe ? ' @' + peak.topRpe : ''}</td>
+      </tr>`;
+    });
 
     familySectionsHtml += `
     <div class="family-section">
       <div class="family-header">
         <span class="family-name">${groupLabel}</span>
-        <span class="family-peak">${peakByGroup[groupKey] ? Math.round(peakByGroup[groupKey]) + ' lbs est. 1RM' : ''}</span>
+        <span class="family-peak">${Math.round(bestE1rm)} lbs est. 1RM</span>
       </div>
       <div class="legend">${legendHtml}</div>
       <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
-      ${tablesHtml}
+      <table class="summary-table">
+        <thead><tr><th>Variation</th><th>Peak Est. 1RM</th><th>Best Set</th></tr></thead>
+        <tbody>${summaryRows}</tbody>
+      </table>
     </div>`;
   }
 
@@ -2793,31 +2699,27 @@ function exportHTMLReport(blockId, scope) {
   const chartScript = chartInits.map(c => `
   new Chart(document.getElementById('${c.id}'), {
     type: 'line',
-    data: {
-      labels: ${JSON.stringify(c.labels)},
-      datasets: ${JSON.stringify(c.datasets)}
-    },
+    data: { labels: ${JSON.stringify(c.labels)}, datasets: ${JSON.stringify(c.datasets)} },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', borderWidth: 1,
-          titleColor: '#aaa', bodyColor: '#aaa',
+          backgroundColor: '#141414', borderColor: '#2a2a2a', borderWidth: 1,
+          titleColor: '#888', bodyColor: '#ccc', padding: 8,
           callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' lbs' }
         }
       },
       scales: {
-        x: { ticks: { color: '#555', font: { family: 'Barlow Condensed', size: 12 } }, grid: { color: '#1a1a1a' } },
-        y: { ticks: { color: '#555', font: { family: 'Barlow Condensed', size: 12 } }, grid: { color: '#1a1a1a' } }
+        x: { ticks: { color: '#444', font: { family: 'Barlow Condensed', size: 10 } }, grid: { color: '#1a1a1a' }, border: { color: '#1a1a1a' } },
+        y: { ticks: { color: '#444', font: { family: 'Barlow Condensed', size: 10 } }, grid: { color: '#1a1a1a' }, border: { color: '#1a1a1a' } }
       }
     }
   });`).join('\n');
 
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const scopeLabel = `${block.weeks.length}-Week Program`;
 
-  // ── Full HTML ─────────────────────────────────────────────────────────────
+  // ── HTML ──────────────────────────────────────────────────────────────────
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2828,166 +2730,162 @@ function exportHTMLReport(blockId, scope) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html{background:#0a0a0a}
 html,body{background:#0a0a0a;color:#f0f0f0;font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
-.report{max-width:680px;margin:0 auto;padding:32px 20px 80px}
+.report{max-width:720px;margin:0 auto;padding:28px 20px 80px}
 
-.rpt-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;letter-spacing:.14em;color:#C9A84C;text-transform:uppercase;margin-bottom:10px}
-.rpt-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:38px;line-height:1.05;letter-spacing:.02em;margin-bottom:8px}
-.rpt-meta{font-size:13px;color:#555;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-.compliance-track{height:3px;background:#1a1a1a;border-radius:2px;margin-bottom:5px}
+/* Header */
+.rpt-header{margin-bottom:20px}
+.rpt-logo{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#C9A84C;text-transform:uppercase;margin-bottom:6px}
+.rpt-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:1;letter-spacing:.02em;margin-bottom:4px}
+.rpt-meta{font-size:12px;color:#555;display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.compliance-row{display:flex;align-items:center;gap:10px}
+.compliance-track{flex:1;height:3px;background:#1a1a1a;border-radius:2px}
 .compliance-fill{height:100%;background:#4ade80;border-radius:2px}
-.compliance-label{font-size:11px;color:#444}
-.rpt-divider{border:none;border-top:1px solid #1a1a1a;margin:28px 0}
-.section-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:12px}
+.compliance-label{font-size:11px;color:#555;white-space:nowrap}
 
-.projections{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:36px}
-.proj-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px 12px;text-align:center}
-.proj-lift{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:6px}
-.proj-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:34px;color:#C9A84C;line-height:1}
-.proj-unit{font-size:14px;font-weight:400;color:#555}
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 20px}
+.stat-chip{background:#141414;border:1px solid #1e1e1e;border-radius:10px;padding:10px 12px}
+.stat-chip-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:3px}
+.stat-chip-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:#fff;line-height:1}
+.stat-chip-unit{font-size:11px;font-weight:400;color:#555}
 
-.family-section{background:#141414;border:1px solid #1e1e1e;border-radius:12px;margin-bottom:20px;overflow:hidden}
-.family-header{display:flex;align-items:baseline;justify-content:space-between;padding:16px 16px 0}
-.family-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;letter-spacing:.02em}
-.family-peak{font-size:11px;color:#555;letter-spacing:.04em}
-.legend{display:flex;flex-wrap:wrap;gap:10px;padding:10px 16px 4px}
-.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#888;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em}
-.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.chart-wrap{height:160px;padding:8px 12px 12px}
+/* Family sections */
+.families{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.family-section{background:linear-gradient(160deg,#1c1c1c 0%,#141414 60%,#111 100%);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden}
+.family-header{display:flex;align-items:baseline;justify-content:space-between;padding:12px 12px 0}
+.family-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:.02em}
+.family-peak{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:#C9A84C}
+.legend{display:flex;flex-wrap:wrap;gap:6px 10px;padding:6px 12px 4px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#666;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.chart-wrap{height:130px;padding:4px 8px 8px}
 
-.ex-block{border-top:1px solid #1a1a1a}
-.ex-block-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#aaa;padding:10px 16px 6px;margin-left:0}
-
-.lift-table{width:100%;border-collapse:collapse;font-size:13px}
-.lift-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#333;padding:4px 16px 6px;text-align:left}
-.lift-table td{padding:6px 16px;border-top:1px solid #111;color:#ccc}
-.lift-table tr:last-child td{padding-bottom:12px}
-.muted{color:#555!important}
-.pos{color:#4ade80}
-.neg{color:#f87171}
-.badge{font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;border-radius:3px;padding:1px 4px;vertical-align:middle;margin-left:3px}
+/* Summary table */
+.summary-table{width:100%;border-collapse:collapse;font-size:11px;border-top:1px solid #1a1a1a}
+.summary-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#333;padding:6px 12px;text-align:left}
+.summary-table td{padding:5px 12px;border-top:1px solid #111;color:#aaa;vertical-align:middle}
+.summary-table tr:last-child td{padding-bottom:10px}
+.var-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle;flex-shrink:0}
+.num{color:#ddd;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600}
+.muted{color:#444!important}
+.badge{font-size:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;border-radius:3px;padding:1px 3px;vertical-align:middle;margin-left:2px}
 .rpe-badge{background:rgba(201,168,76,.15);color:#C9A84C;border:1px solid rgba(201,168,76,.25)}
-.est-badge{background:#1a1a1a;color:#444;border:1px solid #2a2a2a}
-.empty{text-align:center;padding:48px;color:#333;font-size:14px}
+.est-badge{background:#1a1a1a;color:#444;border:1px solid #222}
 
-/* Summary page */
-.summary-page{padding-bottom:40px}
-.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
-.stat-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px}
-.stat-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:6px}
-.stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;color:#fff;line-height:1}
-.stat-unit{font-size:13px;font-weight:400;color:#555}
-.stat-sub{font-size:11px;color:#444;margin-top:4px}
-
-.peak-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
-.peak-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:14px 12px;text-align:center}
-.peak-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:6px}
-.peak-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;color:#C9A84C;line-height:1}
-.peak-unit{font-size:12px;font-weight:400;color:#555}
-.peak-set{font-size:10px;color:#444;margin-top:4px}
-
-.week-grid{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:12px 16px;margin-bottom:24px}
-.week-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #111}
-.week-row:last-child{border-bottom:none}
-.week-row-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#555;width:36px;flex-shrink:0}
-.week-row-dots{display:flex;gap:5px;flex:1}
-.day-dot{width:10px;height:10px;border-radius:50%;background:#222;flex-shrink:0}
+/* Bottom row — compliance grid + footer */
+.bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.week-grid{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:10px 14px}
+.week-grid-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:8px}
+.week-row{display:flex;align-items:center;gap:8px;padding:3px 0}
+.week-row-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:#555;width:28px;flex-shrink:0}
+.week-row-dots{display:flex;gap:4px;flex:1}
+.day-dot{width:8px;height:8px;border-radius:50%;background:#1e1e1e;flex-shrink:0}
 .day-dot.done{background:#4ade80}
-.week-row-count{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#444;width:28px;text-align:right}
+.week-row-count{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:#444;width:24px;text-align:right}
 .week-row-count.all-done{color:#4ade80}
 
-.vol-chart-wrap{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px;margin-bottom:24px}
-.vol-chart-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:12px}
-.vol-chart-inner{height:160px}
+.vol-grid{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:10px 14px}
+.vol-grid-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:8px}
+.vol-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #111}
+.vol-row:last-child{border-bottom:none}
+.vol-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#555;width:60px;flex-shrink:0}
+.vol-bar-wrap{flex:1;height:4px;background:#1a1a1a;border-radius:2px;overflow:hidden}
+.vol-bar-fill{height:100%;border-radius:2px}
+.vol-val{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#777;width:48px;text-align:right;flex-shrink:0}
 
-/* Save button */
-.save-btn{position:fixed;bottom:24px;right:24px;background:#C9A84C;color:#000;border:none;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:100}
-.save-btn:active{opacity:0.85}
+.rpt-footer{margin-top:14px;font-size:10px;color:#333;display:flex;justify-content:space-between}
 
+/* Print */
+.save-btn{position:fixed;bottom:20px;right:20px;background:#C9A84C;color:#000;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;z-index:100}
 @media print{
   .save-btn{display:none}
-  .report{padding:16px;max-width:100%}
+  .report{padding:12px;max-width:100%}
+  html,body{background:#0a0a0a}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .family-section{page-break-inside:avoid;break-inside:avoid}
-  .vol-chart-wrap{page-break-inside:avoid;break-inside:avoid}
-  .week-grid{page-break-inside:avoid;break-inside:avoid}
-  .peak-grid{page-break-inside:avoid;break-inside:avoid}
-  .stat-grid{page-break-inside:avoid;break-inside:avoid}
-  .chart-wrap{page-break-inside:avoid;break-inside:avoid}
-  .ex-block{page-break-inside:avoid;break-inside:avoid}
+  .family-section{break-inside:avoid}
+  .bottom-row{break-inside:avoid}
+  @page{size:portrait;margin:10mm}
 }
 </style>
 </head>
 <body>
 <div class="report">
-  <!-- ── SUMMARY PAGE ── -->
-  <div class="summary-page">
-    <div class="rpt-logo">PowerliftingLog</div>
+
+  <!-- Header -->
+  <div class="rpt-header">
+    <div class="rpt-logo">PowerliftingLog · Coach Report</div>
     <div class="rpt-title">${block.name}</div>
     <div class="rpt-meta">
-      <span>${scopeLabel}</span><span>${dateStr}</span>${block.athleteName ? `<span>${block.athleteName}</span>` : ''}
+      <span>${block.weeks.length}-Week Block</span>
+      <span>${block.dateRange || ''}</span>
+      ${block.athleteName ? `<span>${block.athleteName}</span>` : ''}
+      <span>Generated ${dateStr}</span>
     </div>
-    <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
-    <div class="compliance-label">${compliancePct}% compliance · ${completedDays} of ${totalDays} days completed</div>
-
-    <hr class="rpt-divider">
-    <div class="section-title">Block Summary</div>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Volume</div>
-        <div class="stat-val">${Math.round(totalVolume / 1000)}k<span class="stat-unit"> lbs</span></div>
-        <div class="stat-sub">${Math.round(totalVolume).toLocaleString()} lbs total</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Sets Completed</div>
-        <div class="stat-val">${totalSets}<span class="stat-unit"></span></div>
-        <div class="stat-sub">across ${completedDays} training days</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Squat Volume</div>
-        <div class="stat-val">${Math.round((volumeByFamily.squat||0) / 1000)}k<span class="stat-unit"> lbs</span></div>
-        <div class="stat-sub">${Math.round(((volumeByFamily.squat||0)/totalVolume)*100)||0}% of total</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Bench Volume</div>
-        <div class="stat-val">${Math.round((volumeByFamily.bench||0) / 1000)}k<span class="stat-unit"> lbs</span></div>
-        <div class="stat-sub">${Math.round(((volumeByFamily.bench||0)/totalVolume)*100)||0}% of total</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Deadlift Volume</div>
-        <div class="stat-val">${Math.round((volumeByFamily.deadlift||0) / 1000)}k<span class="stat-unit"> lbs</span></div>
-        <div class="stat-sub">${Math.round(((volumeByFamily.deadlift||0)/totalVolume)*100)||0}% of total</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Training Days</div>
-        <div class="stat-val">${completedDays}<span class="stat-unit"> / ${totalDays}</span></div>
-        <div class="stat-sub">${block.weeks.length}-week block</div>
-      </div>
+    <div class="compliance-row">
+      <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
+      <div class="compliance-label">${compliancePct}% compliance · ${completedDays}/${totalDays} days</div>
     </div>
-
-    <div class="section-title">Peak Sets</div>
-    <div class="peak-grid">${peakSetsHtml}</div>
-
-    <div class="section-title">Weekly Completion</div>
-    <div class="week-grid">${weekGridHtml}</div>
   </div>
 
-  <!-- ── LIFT PROGRESSIONS ── -->
-  <hr class="rpt-divider">
-  <div class="section-title">1RM Projections</div>
-  <div class="projections">${projectionsHtml}</div>
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-chip">
+      <div class="stat-chip-label">Total Volume</div>
+      <div class="stat-chip-val">${Math.round(totalVolume/1000)}k<span class="stat-chip-unit"> lbs</span></div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-label">Sets Completed</div>
+      <div class="stat-chip-val">${totalSets}</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-label">Training Days</div>
+      <div class="stat-chip-val">${completedDays}<span class="stat-chip-unit"> / ${totalDays}</span></div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-label">Compliance</div>
+      <div class="stat-chip-val">${compliancePct}<span class="stat-chip-unit">%</span></div>
+    </div>
+  </div>
 
-  <div class="section-title">Lift Progressions</div>
-  ${anyData ? familySectionsHtml : '<div class="empty">No logged data found for main lifts.</div>'}
+  <!-- Three family charts side by side -->
+  <div class="families">
+    ${anyData ? familySectionsHtml : '<div style="color:#333;font-size:13px;padding:20px;text-align:center">No logged data found.</div>'}
+  </div>
+
+  <!-- Bottom row: weekly completion + volume breakdown -->
+  <div class="bottom-row">
+    <div class="week-grid">
+      <div class="week-grid-title">Weekly Completion</div>
+      ${weekGridHtml}
+    </div>
+    <div class="vol-grid">
+      <div class="vol-grid-title">Volume by Family</div>
+      ${[
+        ['Squat','#C9A84C',volumeByFamily.squat||0],
+        ['Bench','#7B9FD4',volumeByFamily.bench||0],
+        ['Deadlift','#7EC89A',volumeByFamily.deadlift||0],
+        ['Other','#444',volumeByFamily.other||0]
+      ].map(([label,color,vol])=>{
+        const pct = totalVolume > 0 ? Math.round(vol/totalVolume*100) : 0;
+        const k = Math.round(vol/1000);
+        return `<div class="vol-row">
+          <div class="vol-label">${label}</div>
+          <div class="vol-bar-wrap"><div class="vol-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="vol-val">${k}k lbs</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="rpt-footer">
+    <span>PowerliftingLog</span>
+    <span>${dateStr}</span>
+  </div>
+
 </div>
-<button class="save-btn" onclick="savePDF()">⬇ Save as PDF</button>
+<button class="save-btn" onclick="setTimeout(()=>window.print(),300)">⬇ Save as PDF</button>
 <script>
-function savePDF(){
-  // Give charts time to fully render before print dialog
-  setTimeout(() => window.print(), 300);
-}
-
 ${chartScript}
 <\/script>
 </body>
@@ -2997,292 +2895,7 @@ ${chartScript}
   window.open(URL.createObjectURL(blob), '_blank');
 }
 
-function exportReport(blockId, scope) {
-  const block = state.blocks.find(b => b.id === blockId);
-  if (!block) return;
 
-  // Determine which weeks to include
-  let weeks = block.weeks || [];
-  if (scope === 'week') {
-    const activeWeekLabel = block.weeks[state.activeWeek]?.label;
-    weeks = block.weeks.filter(w => w.label === activeWeekLabel);
-    if (!weeks.length) { alert('No data for current week.'); return; }
-  }
-
-  // Gather all logs for this block
-  const blockLogs = {};
-  for (const [key, val] of Object.entries(state.logs)) {
-    if (key.startsWith(blockId + '||')) blockLogs[key] = val;
-  }
-
-  if (!Object.keys(blockLogs).length) {
-    alert('No logged data found for this program.');
-    return;
-  }
-
-  const wb = XLSX.utils.book_new();
-
-  // ── SHEET 1: CYCLE SUMMARY ────────────────────────────────────────────────
-  const { rows: summaryRows, styleMap: summaryStyles } = buildSummarySheet(block, weeks, blockLogs, scope);
-  const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
-  applySheetFormatting(ws1, summaryRows, { minWidth: 12, maxWidth: 30, styleMap: summaryStyles });
-  XLSX.utils.book_append_sheet(wb, ws1, 'Dashboard');
-
-  // ── SHEET 2: WEEK-OVER-WEEK PROGRESSION ──────────────────────────────────
-  const { rows: progressRows, styleMap: progressStyles } = buildProgressionSheet(block, weeks, blockLogs);
-  const ws2 = XLSX.utils.aoa_to_sheet(progressRows);
-  applySheetFormatting(ws2, progressRows, { minWidth: 8, maxWidth: 30, styleMap: progressStyles });
-  XLSX.utils.book_append_sheet(wb, ws2, 'Progression');
-
-  // ── SHEET 3: FULL LOG ─────────────────────────────────────────────────────
-  const { rows: logRows, styleMap: logStyles } = buildFullLogSheet(block, weeks, blockLogs);
-  const ws3 = XLSX.utils.aoa_to_sheet(logRows);
-  applySheetFormatting(ws3, logRows, { minWidth: 8, maxWidth: 30, styleMap: logStyles });
-  XLSX.utils.book_append_sheet(wb, ws3, 'Full Log');
-
-  // Download
-  const dateStr = new Date().toISOString().slice(0, 10);
-  const safeName = block.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-  const scopeStr = scope === 'week' ? '-week' + (state.activeWeek + 1) : '';
-  XLSX.writeFile(wb, `liftlog-${safeName}${scopeStr}-${dateStr}.xlsx`, { cellStyles: true });
-
-  // Close picker
-  document.querySelectorAll('.export-scope-picker').forEach(el => el.style.display = 'none');
-}
-
-function buildSummarySheet(block, weeks, blockLogs, scope) {
-  const peakByGroup = { squat: null, bench: null, deadlift: null };
-  const prMap = {};
-
-  for (const [key, val] of Object.entries(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const exName = parts[3];
-    if (!isTracked(exName)) continue;
-    const si = parseInt(parts[4].slice(1));
-    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
-    if (!weight || isNaN(weight) || weight <= 0) continue;
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
-    if (!reps) continue;
-    const rpe = val.rpe ? parseFloat(val.rpe) : null;
-    const result = calc1rm(weight, reps, rpe);
-    if (!result) continue;
-    // Projections: comp lifts only (not variations)
-    const group = classifyLift(exName);
-    if (group && group !== 'other' && isCompLift(exName)) {
-      if (!peakByGroup[group] || result.value > peakByGroup[group]) peakByGroup[group] = result.value;
-    }
-    if (val.actual) {
-      const existing = prMap[exName];
-      if (!existing || result.value > existing.e1rm)
-        prMap[exName] = { weight, reps, e1rm: result.value, week: parts[1] };
-    }
-  }
-
-  let totalDays = 0, completedDays = 0;
-  const complianceRows = [];
-  for (const week of weeks) {
-    const scheduled = week.days?.length || 0;
-    let done = 0;
-    for (const day of (week.days || [])) { if (isDayComplete(block, week, day)) done++; }
-    totalDays += scheduled; completedDays += done;
-    complianceRows.push([week.label, done + ' / ' + scheduled + ' days', Math.round(done/Math.max(scheduled,1)*100) + '%']);
-  }
-  const overallPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-
-  const rows = [];
-  const styleMap = {};
-  const scopeLabel = scope === 'week' ? (weeks[0]?.label || 'Week') : block.weeks.length + '-Week Program';
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const r = () => rows.length; // current row index helper
-
-  rows.push([block.name]);                                              styleMap[r()-1] = XLS.title;
-  rows.push([scopeLabel + '  ·  ' + dateStr + '  ·  Compliance: ' + overallPct + '%']); styleMap[r()-1] = XLS.subtitle;
-  rows.push([]);
-
-  rows.push(['MEET PROJECTIONS']);                                      styleMap[r()-1] = XLS.section;
-  rows.push(['Lift', 'Peak e1RM', 'Opener (90%)', '2nd (95%)', '3rd (101%)']); styleMap[r()-1] = XLS.colHead;
-
-  let projTotal = 0;
-  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-    const peak = peakByGroup[group];
-    if (peak) {
-      const opener = Math.round(peak * 0.90 / 2.5) * 2.5;
-      const second = Math.round(peak * 0.95 / 2.5) * 2.5;
-      const third  = Math.round(peak * 1.01 / 2.5) * 2.5;
-      rows.push([label, Math.round(peak) + ' lbs', opener + ' lbs', second + ' lbs', third + ' lbs']);
-      projTotal += third;
-    } else {
-      rows.push([label, 'No data', '—', '—', '—']);
-    }
-  }
-  rows.push(['Projected Total', projTotal > 0 ? projTotal + ' lbs' : 'N/A', '', '', '']); styleMap[r()-1] = XLS.bold;
-  rows.push([]);
-
-  rows.push(['PERSONAL RECORDS']);                                      styleMap[r()-1] = XLS.section;
-  rows.push(['Exercise', 'Weight', 'Reps', 'e1RM', 'Week']);           styleMap[r()-1] = XLS.colHead;
-  const prEntries = Object.entries(prMap).sort((a, b) => b[1].e1rm - a[1].e1rm);
-  if (prEntries.length) {
-    for (const [name, pr] of prEntries)
-      rows.push([name, pr.weight + ' lbs', pr.reps + ' reps', Math.round(pr.e1rm) + ' lbs', pr.week]);
-  } else {
-    rows.push(['No logged sets with actual weights found.', '', '', '', '']);
-  }
-  rows.push([]);
-
-  rows.push(['COMPLIANCE BY WEEK']);                                    styleMap[r()-1] = XLS.section;
-  rows.push(['Week', 'Days Completed', 'Rate']);                        styleMap[r()-1] = XLS.colHead;
-  for (const cr of complianceRows) rows.push(cr);
-
-  return { rows, styleMap };
-}
-
-function buildProgressionSheet(block, weeks, blockLogs) {
-  const tracked = {};
-
-  for (const [key, val] of Object.entries(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const exName = parts[3];
-    if (!isTracked(exName)) continue;
-    const group = classifyLift(exName);
-    if (!group) continue;
-    const si = parseInt(parts[4].slice(1));
-    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
-    if (!weight || isNaN(weight) || weight <= 0) continue;
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
-    if (!reps) continue;
-    const rpe = val.rpe ? parseFloat(val.rpe) : null;
-    const result = calc1rm(weight, reps, rpe);
-    if (!result) continue;
-    if (!tracked[exName]) tracked[exName] = { group, weeks: {} };
-    const weekLabel = parts[1];
-    if (!tracked[exName].weeks[weekLabel])
-      tracked[exName].weeks[weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, tonnage: 0 };
-    const w = tracked[exName].weeks[weekLabel];
-    w.tonnage += weight * reps;
-    if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; }
-  }
-
-  if (!Object.keys(tracked).length)
-    return { rows: [['No tracked lifts with logged data found.']], styleMap: {} };
-
-  const groupOrder = { squat: 0, bench: 1, deadlift: 2, other: 3 };
-  const sortedExercises = Object.entries(tracked).sort((a, b) => {
-    const go = (groupOrder[a[1].group] || 3) - (groupOrder[b[1].group] || 3);
-    return go !== 0 ? go : a[0].localeCompare(b[0]);
-  });
-
-  const rows = [];
-  const styleMap = {};
-  const r = () => rows.length;
-
-  rows.push(['WEEK-OVER-WEEK PROGRESSION']);             styleMap[r()-1] = XLS.title;
-  rows.push(['All weights in lbs  ·  e1RM = estimated 1-rep max from top set']); styleMap[r()-1] = XLS.subtitle;
-  rows.push([]);
-
-  for (const [exName, data] of sortedExercises) {
-    const weekData = data.weeks;
-    if (!Object.keys(weekData).length) continue;
-
-    rows.push([exName]);                                 styleMap[r()-1] = XLS.section;
-    rows.push(['Week', 'Top Set', 'Reps', 'RPE', 'e1RM', '∆ e1RM', 'Volume (lbs)']); styleMap[r()-1] = XLS.colHead;
-
-    const sortedWeeks = Object.entries(weekData).sort((a, b) => sessionOrder(a[0]) - sessionOrder(b[0]));
-    let prevE1rm = null;
-    for (const [weekLabel, w] of sortedWeeks) {
-      const e1rmRounded = Math.round(w.e1rm);
-      let deltaStr = '—';
-      if (prevE1rm !== null) { const d = e1rmRounded - Math.round(prevE1rm); deltaStr = (d >= 0 ? '+' : '') + d; }
-      rows.push([weekLabel, w.topWeight, w.topReps, w.topRpe !== null ? w.topRpe : '—', e1rmRounded, deltaStr, Math.round(w.tonnage)]);
-      prevE1rm = w.e1rm;
-    }
-    rows.push([]);
-  }
-
-  return { rows, styleMap };
-}
-
-function buildFullLogSheet(block, weeks, blockLogs) {
-  const rows = [];
-  const styleMap = {};
-  const r = () => rows.length;
-
-  rows.push(['FULL TRAINING LOG']);                      styleMap[r()-1] = XLS.title;
-  rows.push([block.name + '  ·  ' + weeks.length + ' week(s)']); styleMap[r()-1] = XLS.subtitle;
-  rows.push([]);
-  rows.push(['Week', 'Day', 'Exercise', 'Set', 'Prescribed', 'Logged (lbs)', 'RPE', 'Done']); styleMap[r()-1] = XLS.colHead;
-
-  let lastWeek = null;
-  for (const week of weeks) {
-    for (const day of (week.days || [])) {
-      for (const ex of (day.exercises || [])) {
-        const sets = parseSets(ex.prescription) || [];
-        const setCount = Math.max(sets.length, 1);
-        for (let si = 0; si < setCount; si++) {
-          const setKey = [block.id, week.label, day.name, ex.name, 's' + si].join('||');
-          const log = blockLogs[setKey] || {};
-          const prescribed = sets[si]
-            ? (sets[si].isRpe ? `${sets[si].reps} @ RPE ${sets[si].rpe}` : `${sets[si].reps}×${sets[si].weight}`)
-            : (ex.prescription || '');
-          // Bold the week label cell when week changes
-          if (week.label !== lastWeek && si === 0) {
-            styleMap[r()] = XLS.bold;
-            lastWeek = week.label;
-          }
-          rows.push([week.label, day.name, ex.name, si + 1, prescribed, log.actual || '', log.rpe || '', log.done ? '✓' : (log.skipped ? 'skip' : '')]);
-        }
-      }
-    }
-  }
-
-  return { rows, styleMap };
-}
-
-function applySheetFormatting(ws, rows, opts = {}) {
-  // Column widths
-  const colWidths = [];
-  rows.forEach(row => {
-    row.forEach((cell, i) => {
-      const len = String(cell || '').length;
-      if (!colWidths[i] || colWidths[i] < len) colWidths[i] = len;
-    });
-  });
-  ws['!cols'] = colWidths.map(w => ({
-    wch: Math.min(Math.max(w + 2, opts.minWidth || 10), opts.maxWidth || 35)
-  }));
-
-  // Freeze top rows
-  if (opts.freezeRows) {
-    ws['!freeze'] = { xSplit: 0, ySplit: opts.freezeRows, topLeftCell: 'A' + (opts.freezeRows + 1), activeCell: 'A' + (opts.freezeRows + 1), sqref: 'A' + (opts.freezeRows + 1) };
-  }
-
-  // Apply cell styles based on row role markers
-  if (!opts.styleMap) return;
-  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-  for (let R = range.s.r; R <= range.e.r; R++) {
-    const style = opts.styleMap[R];
-    if (!style) continue;
-    for (let C = range.s.c; C <= range.e.c; C++) {
-      const addr = XLSX.utils.encode_cell({ r: R, c: C });
-      if (!ws[addr]) ws[addr] = { t: 's', v: '' };
-      ws[addr].s = style;
-    }
-  }
-}
-
-function styleSheetHeaders(ws, rows) { applySheetFormatting(ws, rows); }
-
-// Style presets
-const XLS = {
-  title:    { font: { bold: true, sz: 16 }, alignment: { vertical: 'center' } },
-  subtitle: { font: { bold: false, sz: 11, color: { rgb: '888888' } } },
-  section:  { font: { bold: true, sz: 12 } },
-  colHead:  { font: { bold: true, sz: 11 } },
-  bold:     { font: { bold: true, sz: 11 } },
-  normal:   { font: { sz: 11 } },
-};
 render();
 
 // ── CALCULATOR ────────────────────────────────────────────────────────────────
