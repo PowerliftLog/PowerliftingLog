@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>PowerliftingLog</title>
 
 <!-- PWA manifest -->
@@ -174,7 +174,7 @@
 html { background: var(--bg); }
 body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 'Barlow', sans-serif; min-height: 100dvh; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom); }
 .app { max-width: 480px; margin: 0 auto; min-height: 100dvh; }
-.header { padding: 18px 16px 14px; border-bottom: 1px solid var(--header-border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--header-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 100; }
+.header { padding: max(18px, env(safe-area-inset-top)) 16px 14px; border-bottom: 1px solid var(--header-border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--header-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 100; }
 .header-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: 0.04em; color: #C9A84C; }
 .header-sub { font-size: 10px; color: #666; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; }
 .new-btn { font-size: 11px; font-weight: 600; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 13px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
@@ -1843,7 +1843,7 @@ function renderUploadScreen() {
   return `<div class="upload-screen">
     <div class="upload-icon"><svg viewBox="0 0 28 40" fill="#C9A84C" width="36" height="54"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
     <div class="upload-title">PowerliftingLog</div>
-    <div class="upload-desc">Upload the Excel file your coach sent you. Your workouts will be formatted for mobile — track sets, weights, and RPE between sets.</div>
+    <div class="upload-desc">Upload your Excel training file and it will be formatted for mobile workouts.</div>
     <button class="upload-btn" onclick="document.getElementById('file-input').click()" style="display:flex;align-items:center;justify-content:center;gap:9px">
       Upload Program
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1962,11 +1962,11 @@ function renderExCard(ex, groupKeys, block, week, day) {
               </div>
             </div>`;
     return `<div class="set-inputs-wrap">
-              <div class="set-input-group"><div class="set-input-label">Weight</div>
-                <input class="set-input" inputmode="decimal" placeholder="${placeholder}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+              <div class="set-input-group"><div class="set-input-label">Weight (lbs)</div>
+                <input class="set-input" inputmode="decimal" placeholder="" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
-              <div class="set-input-group"><div class="set-input-label">RPE felt</div>
-                <input class="set-input rpe-input" inputmode="decimal" placeholder="1–10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
+              <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
+                <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
               </div>
             </div>`;
   }
