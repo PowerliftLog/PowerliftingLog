@@ -273,6 +273,23 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
 .set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: #3a3a3a; width: 18px; flex-shrink: 0; }
+
+/* ── Actual reps inline editor ───────────────────────────────────────── */
+.set-prescribed-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 3px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: #c0c0c0; min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; transition: color 0.15s; }
+.set-prescribed-btn:active { color: var(--gold); }
+.set-prescribed-chevron { font-size: 13px; opacity: 0.45; margin-left: 1px; }
+.set-prescribed-btn.has-actual { color: var(--gold); }
+.set-prescribed-btn.has-actual .set-prescribed-chevron { opacity: 0.7; }
+.set-reps-popover { display: flex; align-items: center; gap: 6px; background: var(--surface-5); border: 1px solid rgba(201,168,76,0.4); border-radius: 8px; padding: 5px 8px; margin-bottom: 4px; animation: fadeIn 0.12s ease; }
+.set-reps-popover-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+.set-reps-popover-input { width: 52px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 4px 8px; outline: none; text-align: center; }
+.set-reps-popover-input:focus { border-color: rgba(201,168,76,0.5); }
+.set-reps-popover-close { background: none; border: none; color: var(--text-faint); font-size: 16px; cursor: pointer; padding: 2px 4px; line-height: 1; }
+/* One-time rep tip tooltip */
+.rep-tip-tooltip { background: #1e1a10; border: 1px solid rgba(201,168,76,0.35); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #c8a84c; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 16px 8px; }
+.rep-tip-tooltip-text { line-height: 1.4; }
+.rep-tip-dismiss { background: none; border: none; color: #c8a84c; cursor: pointer; font-size: 16px; opacity: 0.6; padding: 2px; flex-shrink: 0; }
+
 .set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: #c0c0c0; min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
@@ -304,6 +321,41 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .prev-performance-sets { display: flex; flex-wrap: wrap; gap: 6px; }
 .prev-performance-set { font-size: 12px; color: #b8902a; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.15); padding: 3px 8px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; }
 .rest-msg { text-align: center; color: #333; padding-top: 60px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
+
+/* ── Custom Exercise ─────────────────────────────────────────────────── */
+.add-exercise-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 32px); margin: 0 16px 12px; padding: 13px 16px; background: none; border: 1px dashed var(--border); border-radius: 10px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; }
+.add-exercise-btn:active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.05); }
+.custom-ex-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(201,168,76,0.4); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; opacity: 0.8; }
+.custom-ex-actions { display: flex; gap: 8px; margin-top: 2px; }
+.custom-ex-action-btn { background: none; border: none; cursor: pointer; font-size: 11px; font-family: 'Barlow', sans-serif; font-weight: 600; letter-spacing: 0.04em; padding: 3px 0; transition: opacity 0.15s; }
+.custom-ex-action-btn.edit { color: var(--gold); opacity: 0.8; }
+.custom-ex-action-btn.delete { color: #f87171; opacity: 0.7; }
+.custom-ex-action-btn:active { opacity: 1; }
+/* Custom exercise modal */
+.custom-ex-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1100; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
+.custom-ex-sheet { background: var(--modal-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--border-2); border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 20px 16px 32px; }
+.custom-ex-sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.custom-ex-sheet-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-primary); }
+.custom-ex-close { background: none; border: none; color: var(--text-sub); cursor: pointer; padding: 4px; line-height: 1; font-size: 20px; }
+.custom-ex-field { margin-bottom: 14px; }
+.custom-ex-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.custom-ex-input { width: 100%; background: var(--surface-3); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 15px; padding: 10px 12px; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
+.custom-ex-input:focus { border-color: rgba(201,168,76,0.5); }
+.custom-ex-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.custom-ex-error { font-size: 12px; color: #f87171; margin-bottom: 12px; display: none; }
+.custom-ex-error.visible { display: block; }
+.custom-ex-save-btn { display: block; width: 100%; padding: 14px; background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4); border-radius: 10px; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; margin-top: 4px; }
+.custom-ex-save-btn:active { background: rgba(201,168,76,0.25); }
+/* Delete confirmation sheet */
+.delete-ex-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1200; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
+.delete-ex-sheet { background: var(--modal-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--border-2); border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 24px 16px 32px; }
+.delete-ex-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-primary); margin-bottom: 6px; }
+.delete-ex-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+.delete-ex-btn { display: block; width: 100%; padding: 14px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; margin-bottom: 10px; }
+.delete-ex-btn.danger { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.35); color: #f87171; }
+.delete-ex-btn.single { background: var(--surface-3); border: 1px solid var(--border); color: var(--text-sub); }
+.delete-ex-btn:active { opacity: 0.75; }
+
 .complete-workout-btn { display: block; width: calc(100% - 32px); margin: 8px 16px 24px; padding: 16px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; color: #777; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; }
 .complete-workout-btn:active { background: var(--surface-5); border-color: rgba(74,222,128,0.4); color: #4ade80; }
 .workout-complete-msg { text-align: center; color: #4ade80; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.08em; padding: 20px 16px 32px; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 10px; animation: completePulse 1.2s ease-out forwards; }
@@ -534,6 +586,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .ex-summary-name.skipped { color: var(--text-faint); }
 [data-theme="light"] .ex-summary-pres { color: var(--text-muted); }
 [data-theme="light"] .ex-expand-icon { color: var(--text-dim); }
+[data-theme="light"] .set-prescribed-btn { color: var(--text-mid); }
+[data-theme="light"] .rep-tip-tooltip { background: #fffbe8; border-color: rgba(184,146,42,0.4); color: #8a6a1a; }
 [data-theme="light"] .set-prescribed { color: var(--text-mid); }
 [data-theme="light"] .set-label { color: var(--text-muted); }
 [data-theme="light"] .prescribed-label { color: var(--text-dimmer); }
@@ -556,6 +610,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .complete-workout-btn { color: var(--text-sub); }
 [data-theme="light"] .superset-label { color: var(--text-dim); }
 [data-theme="light"] .superset-rounds { color: var(--text-faint); }
+[data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
+[data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
 [data-theme="light"] .next-workout-banner-label { color: var(--text-faint); }
 [data-theme="light"] .next-workout-banner-val { color: var(--gold); }
@@ -781,7 +837,7 @@ function cycleTheme(){
 applyTheme(loadTheme());
 
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -1913,6 +1969,7 @@ function renderProgressBar(pct) {
 function renderExCard(ex, groupKeys, block, week, day) {
   let h = '';
   const key=lk(block.id,week.label,day.name,ex.name);
+  const isCustomEx = ex.isCustom === true;
   const log=state.logs[key]||{};
   const isDone=log.done||false;
   const isSkipped=log.skipped||false;
@@ -1980,7 +2037,7 @@ function renderExCard(ex, groupKeys, block, week, day) {
 
   h+=`<div class="ex-summary" onclick="toggleExpand('${esc(key)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
-      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.name}</div>
+      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.name}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
     </div>
     <div class="ex-summary-right">
@@ -2002,9 +2059,16 @@ function renderExCard(ex, groupKeys, block, week, day) {
           onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;render();}">
       </div>`;
     } else {
-      h+=`<div style="display:flex;align-items:center;gap:6px;padding:10px 16px 4px">
-        <button class="edit-name-btn" style="opacity:0.4" onclick="startEditEx('${esc(key)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit name</button>
-      </div>`;
+      if(isCustomEx){
+        h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px 4px">
+          <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)">✏ Edit Exercise</button>
+          <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
+        </div>`;
+      } else {
+        h+=`<div style="display:flex;align-items:center;gap:6px;padding:10px 16px 4px">
+          <button class="edit-name-btn" style="opacity:0.4" onclick="startEditEx('${esc(key)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit name</button>
+        </div>`;
+      };
     }
     
 
@@ -2014,7 +2078,24 @@ function renderExCard(ex, groupKeys, block, week, day) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
           <div class="set-num">S${si+1}</div>
-          <div class="set-prescribed">${s.isRpe ? s.reps+' '+s.weight : s.weight+'×'+s.reps}</div>
+          ${(()=>{
+            const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
+            const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' lb × '+s.reps;
+            const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' lb × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
+            const _editing = state.editingRepsKey === sk;
+            if(_editing){
+              return `<div style="display:flex;flex-direction:column;gap:2px;align-self:flex-end;padding-bottom:8px">
+                <div class="set-reps-popover">
+                  <span class="set-reps-popover-label">Reps</span>
+                  <input class="set-reps-popover-input" id="reps-popover-${esc(sk)}" type="number" inputmode="numeric" value="${sl.actualReps||s.reps}" min="1"
+                    onblur="saveActualReps('${esc(sk)}',this.value,'${s.reps}')"
+                    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingRepsKey=null;renderSetRow('${esc(sk)}');}">
+                  <button class="set-reps-popover-close" onclick="state.editingRepsKey=null;renderSetRow('${esc(sk)}')">✕</button>
+                </div>
+              </div>`;
+            }
+            return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
+          })()}
           ${setInputsHtml(sk,sl,s.isRpe?'lbs':s.weight+'lb')}
           <button class="set-check ${sl.done?'done':''}" onclick="toggleSet('${esc(sk)}')">${sl.done?'✓':''}</button>
         </div>`;
@@ -2028,7 +2109,7 @@ function renderExCard(ex, groupKeys, block, week, day) {
           const _si=sets.length+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>
-            <div class="set-prescribed">${_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+'×'+(_lastS.reps||'—')}</div>
+            <div class="set-prescribed">${_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' lb × '+(_lastS.reps||'—')}</div>
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?'lbs':(_lastS.weight?_lastS.weight+'lb':'lbs'))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?'✓':''}</button>
           </div>`;
@@ -2197,6 +2278,8 @@ function renderExerciseList(block, week, day) {
   });
 
   const dayComplete=isDayComplete(block,week,day);
+  // Always show add exercise button
+  h+=`<button class="add-exercise-btn" onclick="openAddExerciseModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
   if(!dayComplete){
     h+=`<button class="complete-workout-btn" onclick="completeWorkout()">✓ Complete Workout</button>`;
   } else {
@@ -3388,6 +3471,314 @@ ${chartScript}
 
 
 render();
+
+
+// ── CUSTOM EXERCISE ───────────────────────────────────────────────────────────
+
+// Build prescription string from modal inputs
+function buildCustomPres(sets, reps, weight, rpe) {
+  sets = parseInt(sets) || 1;
+  reps = parseInt(reps) || 1;
+  weight = weight ? parseFloat(weight) : 0;
+  rpe   = rpe   ? parseFloat(rpe)   : 0;
+  // Build a prescription string compatible with existing parsers.
+  // parseSets pattern: NxM(token) where token is weight (number) or RPE string (isRpe=true)
+  // parseSimple pattern: NxM (no weight/RPE in string — show via coachNotes instead)
+  if (weight && rpe) {
+    // Both: use weight as the prescribed load token, put RPE in coachNotes at call site
+    return Array(sets).fill(`${reps}(${weight})`).join(' ');
+  }
+  if (rpe) {
+    return Array(sets).fill(`${reps}(RPE${rpe})`).join(' ');
+  }
+  if (weight) {
+    return Array(sets).fill(`${reps}(${weight})`).join(' ');
+  }
+  return `${sets}x${reps}`;
+}
+
+function buildCustomCoachNote(weight, rpe) {
+  if (weight && rpe) return `Target: ${weight}lb @ RPE ${rpe}`;
+  if (rpe) return `Target: RPE ${rpe}`;
+  if (weight) return `Target: ${weight}lb`;
+  return null;
+}
+
+// Find the current block/week/day context for modal
+function getActiveContext() {
+  const block = state.activeBlock;
+  if (!block) return null;
+  const week = block.weeks[state.activeWeek];
+  const day = week?.days[state.activeDay];
+  return { block, week, day };
+}
+
+// Check if same exercise+protocol already exists on a day
+function customExExistsOnDay(day, name, pres) {
+  return day.exercises.some(ex =>
+    ex.name.toLowerCase() === name.toLowerCase() && ex.prescription === pres
+  );
+}
+
+// Apply custom exercise forward to all uncompleted instances of same day-of-week
+function applyCustomExForward(block, fromWeekIdx, dayName, exObj) {
+  for (let wi = fromWeekIdx; wi < block.weeks.length; wi++) {
+    const week = block.weeks[wi];
+    const day = week.days.find(d => d.name === dayName);
+    if (!day) continue;
+    // Skip completed days (except the current day itself which is always added)
+    if (wi > fromWeekIdx && isDayComplete(block, week, day)) continue;
+    // Skip if exact same protocol already exists
+    if (customExExistsOnDay(day, exObj.name, exObj.prescription)) continue;
+    day.exercises.push({ ...exObj });
+  }
+}
+
+// Remove custom exercise from all weeks (or just current)
+function removeCustomEx(block, dayName, exName, allWeeks) {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  block.weeks.forEach((week, wi) => {
+    if (!allWeeks && wi !== state.activeWeek) return;
+    const day = week.days.find(d => d.name === dayName);
+    if (!day) return;
+    const idx = day.exercises.findIndex(ex => ex.name === exName && ex.isCustom === true);
+    if (idx !== -1) {
+      day.exercises.splice(idx, 1);
+      // Clean up logs
+      const k = lk(block.id, week.label, dayName, exName);
+      delete state.logs[k];
+    }
+  });
+  saveBlocks();
+  saveLogs();
+  render();
+}
+
+function openAddExerciseModal() {
+  _openCustomExModal(null);
+}
+
+function openEditExerciseModal(key, evt) {
+  if (evt) evt.stopPropagation();
+  // Parse key to get exercise info
+  const parts = key.split('||');
+  const exName = parts[3];
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const ex = ctx.day.exercises.find(e => e.name === exName && e.isCustom);
+  if (!ex) return;
+  _openCustomExModal(key, ex);
+}
+
+function _openCustomExModal(existingKey, existingEx) {
+  const existing = document.getElementById('custom-ex-overlay');
+  if (existing) existing.remove();
+
+  const isEdit = !!existingKey;
+  let prefillSets = '', prefillReps = '', prefillWeight = '', prefillRpe = '', prefillName = '';
+
+  if (isEdit && existingEx) {
+    prefillName = existingEx.name;
+    // Parse prescription back out
+    const pres = existingEx.prescription || '';
+    const m = pres.match(/^(\d+)x(\d+)/);
+    // Intentionally not pre-filling sets/reps — user should re-enter to avoid confusion
+    const wm = pres.match(/\(([\d.]+)\)/);
+    if (wm) prefillWeight = wm[1];
+    const rm = pres.match(/RPE([\d.]+)/);
+    if (rm) prefillRpe = rm[1];
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'custom-ex-overlay';
+  overlay.id = 'custom-ex-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeCustomExModal(); };
+
+  overlay.innerHTML = `
+  <div class="custom-ex-sheet">
+    <div class="custom-ex-sheet-header">
+      <span class="custom-ex-sheet-title">${isEdit ? 'Edit Exercise' : 'Add Exercise'}</span>
+      <button class="custom-ex-close" onclick="closeCustomExModal()">✕</button>
+    </div>
+    <div class="custom-ex-field">
+      <div class="custom-ex-label">Exercise Name</div>
+      <input class="custom-ex-input" id="cex-name" type="text" placeholder="e.g. Hip Thrust" value="${prefillName}" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="custom-ex-row">
+      <div class="custom-ex-field">
+        <div class="custom-ex-label">Sets</div>
+        <input class="custom-ex-input" id="cex-sets" type="number" inputmode="numeric" placeholder="3" value="${prefillSets}" min="1">
+      </div>
+      <div class="custom-ex-field">
+        <div class="custom-ex-label">Reps</div>
+        <input class="custom-ex-input" id="cex-reps" type="number" inputmode="numeric" placeholder="10" value="${prefillReps}" min="1">
+      </div>
+    </div>
+    <div class="custom-ex-row" style="grid-template-columns:1fr 1fr">
+      <div class="custom-ex-field">
+        <div class="custom-ex-label">Weight (lbs)</div>
+        <input class="custom-ex-input" id="cex-weight" type="number" inputmode="decimal" placeholder="optional" value="${prefillWeight}" min="0">
+      </div>
+      <div class="custom-ex-field">
+        <div class="custom-ex-label">RPE (1–10)</div>
+        <input class="custom-ex-input" id="cex-rpe" type="number" inputmode="decimal" placeholder="optional" value="${prefillRpe}" min="1" max="10" step="0.5">
+      </div>
+    </div>
+    <div class="custom-ex-error" id="cex-error">Weight or RPE is required.</div>
+    <button class="custom-ex-save-btn" onclick="_saveCustomEx(${isEdit ? `'${existingKey}'` : 'null'})">${isEdit ? 'Save Changes' : 'Add to Workout'}</button>
+  </div>`;
+
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('cex-name')?.focus(), 100);
+}
+
+function closeCustomExModal() {
+  const el = document.getElementById('custom-ex-overlay');
+  if (el) el.remove();
+}
+
+function _saveCustomEx(existingKey) {
+  const name = document.getElementById('cex-name')?.value.trim();
+  const sets = document.getElementById('cex-sets')?.value;
+  const reps = document.getElementById('cex-reps')?.value;
+  const weight = document.getElementById('cex-weight')?.value;
+  const rpe = document.getElementById('cex-rpe')?.value;
+  const errEl = document.getElementById('cex-error');
+
+  // Validation
+  if (!name) { errEl.textContent = 'Exercise name is required.'; errEl.classList.add('visible'); return; }
+  if (!weight && !rpe) { errEl.textContent = 'Weight or RPE is required (or both).'; errEl.classList.add('visible'); return; }
+  errEl.classList.remove('visible');
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const { block, week, day } = ctx;
+
+  const pres = buildCustomPres(sets || 3, reps || 1, weight, rpe);
+  const coachNote = buildCustomCoachNote(weight, rpe);
+  const exObj = { name, prescription: pres, isCustom: true, note: null, coachNotes: coachNote ? [coachNote] : [], supersetGroup: null };
+
+  if (existingKey) {
+    // Edit mode — update in place and propagate forward
+    const oldParts = existingKey.split('||');
+    const oldName = oldParts[3];
+    // Update all instances across weeks
+    block.weeks.forEach((w, wi) => {
+      const d = w.days.find(dd => dd.name === day.name);
+      if (!d) return;
+      const ex = d.exercises.find(e => e.name === oldName && e.isCustom);
+      if (!ex) return;
+      // Only update uncompleted weeks (and current week)
+      if (wi > state.activeWeek && isDayComplete(block, w, d)) return;
+      ex.name = name;
+      ex.prescription = pres;
+    });
+  } else {
+    // Add mode — apply to current + forward uncompleted days
+    applyCustomExForward(block, state.activeWeek, day.name, exObj);
+  }
+
+  saveBlocks();
+  closeCustomExModal();
+  render();
+}
+
+function openDeleteExerciseSheet(key, exName, evt) {
+  if (evt) evt.stopPropagation();
+  const existing = document.getElementById('delete-ex-overlay');
+  if (existing) existing.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const dayName = ctx.day.name;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-ex-overlay';
+  overlay.id = 'delete-ex-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeDeleteExSheet(); };
+
+  overlay.innerHTML = `
+  <div class="delete-ex-sheet">
+    <div class="delete-ex-title">Delete ${exName}</div>
+    <div class="delete-ex-desc">Remove this exercise from your workout. This cannot be undone.</div>
+    <button class="delete-ex-btn danger" onclick="_confirmDeleteEx('${esc(exName)}','${esc(dayName)}',true)">Delete from all weeks</button>
+    <button class="delete-ex-btn single" onclick="_confirmDeleteEx('${esc(exName)}','${esc(dayName)}',false)">Delete from this week only</button>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+function closeDeleteExSheet() {
+  const el = document.getElementById('delete-ex-overlay');
+  if (el) el.remove();
+}
+
+function _confirmDeleteEx(exName, dayName, allWeeks) {
+  closeDeleteExSheet();
+  const block = state.activeBlock;
+  if (!block) return;
+  removeCustomEx(block, dayName, exName, allWeeks);
+}
+
+
+// ── ACTUAL REPS EDITOR ────────────────────────────────────────────────────────
+
+function openRepsEditor(sk, prescReps) {
+  // Show one-time tooltip on first use
+  if (!localStorage.getItem('liftlog_rep_tip_seen')) {
+    showRepTip();
+  }
+  state.editingRepsKey = sk;
+  renderSetRow(sk);
+  // Focus the input after render
+  setTimeout(() => {
+    const input = document.getElementById('reps-popover-' + sk);
+    if (input) { input.focus(); input.select(); }
+  }, 50);
+}
+
+function saveActualReps(sk, value, prescReps) {
+  state.editingRepsKey = null;
+  const v = value ? String(parseInt(value)) : '';
+  // Only store if different from prescribed — clear if matches
+  if (v && v !== String(prescReps)) {
+    state.logs[sk] = { ...(state.logs[sk] || {}), actualReps: v };
+  } else {
+    if (state.logs[sk]) delete state.logs[sk].actualReps;
+  }
+  saveLogs();
+  renderSetRow(sk);
+}
+
+// Lightweight re-render of a single set row without full render()
+function renderSetRow(sk) {
+  // Full render is simplest and most reliable here
+  render();
+}
+
+function showRepTip() {
+  // Mark seen immediately so re-tapping another exercise never re-shows
+  localStorage.setItem('liftlog_rep_tip_seen', '1');
+  const existing = document.getElementById('rep-tip-tooltip');
+  if (existing) return;
+  // Insert above the sets-grid, inside the card
+  setTimeout(() => {
+    const grids = document.querySelectorAll('.sets-grid');
+    if (!grids.length) return;
+    const tooltip = document.createElement('div');
+    tooltip.className = 'rep-tip-tooltip';
+    tooltip.id = 'rep-tip-tooltip';
+    tooltip.innerHTML = `<span class="rep-tip-tooltip-text">Tap the prescribed weight to log a different rep count</span>
+      <button class="rep-tip-dismiss" onclick="dismissRepTip()">✕</button>`;
+    grids[0].parentNode.insertBefore(tooltip, grids[0]);
+  }, 80);
+}
+
+function dismissRepTip() {
+  const el = document.getElementById('rep-tip-tooltip');
+  if (el) el.remove();
+}
 
 // ── CALCULATOR ────────────────────────────────────────────────────────────────
 const KG_TO_LBS = 2.2046; // USPA standard conversion factor (1 kg = KG_TO_LBS lbs)
