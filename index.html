@@ -180,7 +180,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .new-btn { font-size: 11px; font-weight: 600; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 13px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
 .settings-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #C9A84C; transition: all 0.15s; padding: 0; }
 .settings-btn:active { background: rgba(201,168,76,0.1); }
-.settings-sheet { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+.settings-sheet { padding-bottom: max(32px, env(safe-area-inset-bottom)); min-height: 75vh; display: flex; flex-direction: column; }
 .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #555; margin: 18px 0 8px; }
 .settings-section-label:first-of-type { margin-top: 0; }
@@ -190,8 +190,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-row-left svg { color: #888; flex-shrink: 0; }
 .settings-row-arrow { color: #444; flex-shrink: 0; }
 .settings-theme-pills { display: flex; gap: 8px; }
-.settings-theme-pill { flex: 1; padding: 10px 8px; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 10px; color: #666; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; text-align: center; }
-.settings-theme-pill.active { border-color: #C9A84C; color: #C9A84C; background: rgba(201,168,76,0.08); }
+.settings-theme-pill { flex: 1; padding: 11px 8px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; text-align: center; text-transform: uppercase; border: 2px solid transparent; }
+.settings-theme-pill[data-theme="dark"]  { background: #0a0a0a; color: #C9A84C; border-color: #222; }
+.settings-theme-pill[data-theme="navy"]  { background: #0A0E1A; color: #C9A84C; border-color: #1a2035; }
+.settings-theme-pill[data-theme="light"] { background: #F2EDE4; color: #5a4e38; border-color: #ddd5c8; }
+.settings-theme-pill[data-theme="dark"].active  { border-color: #C9A84C; }
+.settings-theme-pill[data-theme="navy"].active  { border-color: #C9A84C; }
+.settings-theme-pill[data-theme="light"].active { border-color: #8B7A5E; }
 .theme-toggle-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.15s; padding: 0; }
 .theme-toggle-btn:active { background: rgba(255,255,255,0.08); }
 .upload-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100dvh - 70px); padding: 32px 32px 80px; text-align: center; }
@@ -222,7 +227,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-pill.active { background: rgba(201,168,76,0.1); color: #C9A84C; border-color: rgba(201,168,76,0.6); border-width: 1.5px; box-shadow: 0 1px 8px rgba(201,168,76,0.15), inset 0 1px 0 rgba(201,168,76,0.1); }
 .day-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none; background: rgba(255,255,255,0.01); }
 .day-tabs::-webkit-scrollbar { display: none; }
-.day-tab { flex-shrink: 0; padding: 12px 14px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #666; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; white-space: nowrap; transition: color 0.15s; }
+.day-tab { flex-shrink: 0; padding: 8px 12px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: #666; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; white-space: nowrap; transition: color 0.15s; line-height: 1.3; }
 .day-tab.active { color: #C9A84C; border-bottom-color: #C9A84C; background: linear-gradient(180deg, rgba(201,168,76,0.06) 0%, transparent 100%); }
 .done-dot { position: absolute; top: 3px; right: 4px; font-size: 11px; color: #4ade80; line-height: 1; }
 .exercises { padding: 12px 16px 120px; }
@@ -267,6 +272,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .exercise-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.02em; line-height: 1.15; flex: 1; }
 .exercise-check { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 2px; transition: all 0.15s; }
 .exercise-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.5); color: #4ade80; }
+.exercise-check.inferred { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.25); color: rgba(74,222,128,0.5); }
 .prescription { padding: 0 16px 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; color: #C9A84C; letter-spacing: 0.03em; }
 .prescription.purple { color: #C9A84C; }
 .sets-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 0; }
@@ -759,7 +765,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Delete Confirm Modal -->
-<div class="add-lift-modal" id=\"delete-modal" style="display:none">
+<div class="add-lift-modal" id="delete-modal" style="display:none" onclick="if(event.target===this)closeDeleteModal()">
   <div class="add-lift-sheet">
     <div class="add-lift-title" style="color:#f87171">Delete Program?</div>
     <div style="font-size:14px;color:#888;line-height:1.6;margin-bottom:20px">
@@ -789,13 +795,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
-    <div class="settings-section-label">Theme</div>
-    <div class="settings-theme-pills" id="settings-theme-pills">
-      <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
-      <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
-      <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
-    </div>
-
     <div class="settings-section-label">Export</div>
     <button class="settings-row-btn" onclick="closeSettings();openExportFromSettings()">
       <div class="settings-row-left">
@@ -804,6 +803,13 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
+
+    <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
+    <div class="settings-theme-pills" id="settings-theme-pills">
+      <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
+      <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
+      <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
+    </div>
   </div>
 </div>
 
@@ -917,7 +923,7 @@ const LIFT_GROUPS = {
 // Variation modifiers disqualify a lift from being treated as a comp lift.
 const COMP_KEYWORDS = {
   squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat'],
-  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
+  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
   deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift','competition deadlift','conventional pull','sumo pull','comp pull','competition style deadlift'],
 };
 
@@ -1672,7 +1678,7 @@ function parseASheet(sn,rows){
       if(cell===null||cell===undefined||!String(cell).trim()){ curSupersetGroup=null; continue; }
       const cs=String(cell).trim();
       const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const wNote=note?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:wNote}); } }
+      if(wm){ if(cur){ const wTrack=(note!==null&&note!==undefined)?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:null,trackingRaw:wTrack}); } }
       else{
         // Prescription patterns:
         // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
@@ -1720,14 +1726,21 @@ function parseASheet(sn,rows){
             normalizedCs=leadingRepsMatch[2]; // e.g. "Reverse Hyper" or "Plank Hold"
           }
           const correctedName=spellCorrectExerciseName(normalizedCs);
-          cur={name:correctedName,weeks:[],staticPrescription:embeddedPres||null,note:note?String(note).trim():null,coachNotes:[],supersetGroup:curSupersetGroup||null};
+          cur={name:correctedName,weeks:[],staticPrescription:embeddedPres||null,staticTrackingRaw:null,note:note?String(note).trim():null,coachNotes:[],supersetGroup:curSupersetGroup||null};
           exs.push(cur);
         } else if(cur&&(isCoachNoteLine||ln)){
           const noteText=cs.replace(/^-|-$/g,'').trim();
           if(noteText&&!cur.coachNotes.includes(noteText)) cur.coachNotes.push(noteText);
         } else if(cur&&(lp||lp2)&&!cur.staticPrescription){
           cur.staticPrescription=cs;
-          if(note) cur.note=String(note).trim();
+          if(note){
+            const noteStr=String(note).trim();
+            // Only treat as a coach display note if it looks like text, not tracking data
+            // Tracking data: x, numbers, weight@rpe, slashes → goes to staticTrackingRaw only
+            const looksLikeTracking=/^[xX✓✔️]$/.test(noteStr)||/^\d/.test(noteStr)||noteStr.toLowerCase()==='done';
+            cur.staticTrackingRaw=noteStr;
+            if(!looksLikeTracking) cur.note=noteStr;
+          }
         }
       }
     }
@@ -1742,7 +1755,8 @@ function parseASheet(sn,rows){
   for(let w=1;w<=nw;w++){
     weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
       const wd=ex.weeks.find(x=>x.week===w);
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],supersetGroup:ex.supersetGroup||null};
+      const isStatic=!wd; // no week-specific entry means this is a static prescription exercise
+      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],supersetGroup:ex.supersetGroup||null,trackingRaw:wd?wd.trackingRaw:(isStatic&&w===1?ex.staticTrackingRaw:null),isStaticPrescription:isStatic};
     })}))});
   }
 
@@ -1791,10 +1805,14 @@ function parseBSheet(sn,rows){
       // Detect column positions from this header row
       const prescIdx=rowStrs.findIndex(s=>s.includes('sets'));
       const loggedIdx=rowStrs.findIndex(s=>s.includes('record')||s.includes('weight'));
+      // Detect dedicated coach notes and lifter notes columns
+      const coachNoteIdx=rowStrs.findIndex(s=>s.includes('coach'));
+      const lifterNoteIdx=rowStrs.findIndex(s=>s.includes('lifter')||s.includes('athlete'));
       if(prescIdx>0) colPres=prescIdx;
       if(loggedIdx>colPres) colLogged=loggedIdx;
       else colLogged=colPres+1; // fallback: logged is always right after prescription
-      curDay={name:aStr,exercises:[]}; days.push(curDay);
+      curDay={name:aStr,exercises:[],_colCoachNote:coachNoteIdx>0?coachNoteIdx:null,_colLifterNote:lifterNoteIdx>0?lifterNoteIdx:null};
+      days.push(curDay);
     } else if(curDay){
       const pres=row[colPres]!=null?String(row[colPres]).trim():null;
       const rawLogged=row[colLogged];
@@ -1807,17 +1825,29 @@ function parseBSheet(sn,rows){
         if(ls&&!/^[✔️\s]+$/.test(ls)) cleanLogged=ls;
       }
 
-      // Coach note: look for non-checkmark text in remaining columns
+      // Coach note: dedicated column if present, otherwise scan remaining columns
       let note=null;
-      for(let c=colLogged+1;c<row.length;c++){
-        const v=row[c];
-        if(v==null) continue;
-        const vs=String(v).trim();
-        if(vs&&!/^[✔️\s]+$/.test(vs)){ note=vs; break; }
+      if(curDay._colCoachNote!=null&&row[curDay._colCoachNote]!=null){
+        const vs=String(row[curDay._colCoachNote]).trim();
+        if(vs&&!/^[✔️\s]+$/.test(vs)) note=vs;
+      } else {
+        for(let c=colLogged+1;c<row.length;c++){
+          const v=row[c];
+          if(v==null) continue;
+          const vs=String(v).trim();
+          if(vs&&!/^[✔️\s]+$/.test(vs)){ note=vs; break; }
+        }
+      }
+
+      // Lifter note: dedicated column if present
+      let lifterNote=null;
+      if(curDay._colLifterNote!=null&&row[curDay._colLifterNote]!=null){
+        const vs=String(row[curDay._colLifterNote]).trim();
+        if(vs&&!/^[✔️\s]+$/.test(vs)) lifterNote=vs;
       }
 
       const normName=aStr.replace(/\s+/g,' ').trim(); // collapse double spaces
-      curDay.exercises.push({name:normName,prescription:pres,note,loggedWeight:cleanLogged});
+      curDay.exercises.push({name:normName,prescription:pres,note,lifterNote,loggedWeight:cleanLogged});
     }
   }
   if(days.length===0) return null;
@@ -1839,6 +1869,319 @@ function mergeBlocks(incoming){
   }
   state.blocks=existing;
   state.activeBlock=incoming[incoming.length-1]||state.activeBlock;
+}
+
+// ── TRACKING VALUE CLASSIFIER ─────────────────────────────────────────────────
+// Classifies a raw tracking column value into a structured result.
+// Returns: { type, weight, rpe, slashWeights, lifterNote }
+// Types: 'done' | 'done_note' | 'weight_rpe' | 'weight_only' | 'slash_weights' | 'note_only' | 'set_rep_summary' | null
+function classifyTracking(raw){
+  if(raw===null||raw===undefined) return null;
+  const s=String(raw).trim();
+  if(!s) return null;
+  const sl=s.toLowerCase();
+
+  // Skip header rows
+  if(sl.includes('tracking')||sl.includes('record weight')) return null;
+
+  // Pure done markers: x, X, done, complete, ✓, ✔, checkmark variants
+  if(/^[xX✓✔️☑✅]$/.test(s)||/^(done|complete|completed|yes)$/i.test(s)){
+    return{type:'done',weight:null,rpe:null,slashWeights:null,lifterNote:null};
+  }
+
+  // "x easy", "x + note text" — done with a trailing note
+  if(/^[xX✓✔️]\s+\S/i.test(s)){
+    const noteText=s.replace(/^[xX✓✔️]\s*/,'').trim();
+    return{type:'done_note',weight:null,rpe:null,slashWeights:null,lifterNote:noteText||null};
+  }
+
+  // "weight @ RPE" — with or without spaces around @: "235 @ 7", "171@6", "315@4"
+  const atRpeMatch=s.match(/^(\d+\.?\d*)\s*@\s*(\d+\.?\d*)$/);
+  if(atRpeMatch){
+    return{type:'weight_rpe',weight:parseFloat(atRpeMatch[1]),rpe:parseFloat(atRpeMatch[2]),slashWeights:null,lifterNote:null};
+  }
+
+  // Pure number (cell stored as number or clean string like "295" or "22.5")
+  if(/^\d+\.?\d*$/.test(s)){
+    return{type:'weight_only',weight:parseFloat(s),rpe:null,slashWeights:null,lifterNote:null};
+  }
+
+  // Slash-separated weights: "140/180/210", "25/50/75x2", "90/120/140/160"
+  // Must be all digits, slashes, dots, and optional trailing "x2" multiplier
+  if(/^[\d./]+(\s*x\d+)?$/.test(s)&&s.includes('/')){
+    const parts=s.split('/').map(p=>p.trim());
+    const weights=[];
+    for(const p of parts){
+      // Handle "75x2" — last segment with multiplier
+      const mx=p.match(/^(\d+\.?\d*)\s*x(\d+)$/i);
+      if(mx){
+        const w=parseFloat(mx[1]); const times=parseInt(mx[2]);
+        for(let i=0;i<times;i++) weights.push(w);
+      } else {
+        const n=parseFloat(p);
+        if(!isNaN(n)) weights.push(n);
+      }
+    }
+    if(weights.length>0) return{type:'slash_weights',weight:null,rpe:null,slashWeights:weights,lifterNote:null};
+  }
+
+  // "NxN" set/rep summary like "2x10", "2x45" — open-rep or bodyweight tracking
+  if(/^\d+x\d+$/i.test(s)){
+    return{type:'set_rep_summary',weight:null,rpe:null,slashWeights:null,lifterNote:s};
+  }
+
+  // Weight with unit or note: "20lbs", "130 heavy", "4x12 20lbs", "Last set @8"
+  // Try to extract a leading or embedded number as weight
+  const weightNoteMatch=s.match(/^(\d+\.?\d*)\s*(lbs?|kg)?(.*)$/i);
+  if(weightNoteMatch){
+    const w=parseFloat(weightNoteMatch[1]);
+    const rest=(weightNoteMatch[3]||'').trim();
+    if(!isNaN(w)){
+      return{type:'weight_only',weight:w,rpe:null,slashWeights:null,lifterNote:rest||null};
+    }
+  }
+
+  // "Last set @8" style — RPE noted without explicit weight
+  const rpeOnlyMatch=s.match(/(?:last\s+set\s*)?@\s*(\d+\.?\d*)/i);
+  if(rpeOnlyMatch){
+    return{type:'done_note',weight:null,rpe:parseFloat(rpeOnlyMatch[1]),slashWeights:null,lifterNote:s};
+  }
+
+  // Pure text note — mark done, store as lifter note
+  return{type:'note_only',weight:null,rpe:null,slashWeights:null,lifterNote:s};
+}
+
+// ── COUNT SETS IN PRESCRIPTION ────────────────────────────────────────────────
+// Returns the expected number of sets for an exercise prescription, used
+// to distribute slash-weights or spread a single weight across all sets.
+function countPrescrSets(pres){
+  if(!pres) return 1;
+  const s=parseSets(pres);
+  if(s.length>0) return s.length;
+  const simple=parseSimple(pres);
+  if(simple) return simple.sets;
+  const range=parseRangeSet(pres);
+  if(range) return range.sets;
+  return 1;
+}
+
+// ── POPULATE LOGS FROM SHEET ──────────────────────────────────────────────────
+// Main function: reads trackingRaw from parsed block structure and writes
+// to state.logs. Never overwrites existing user-entered log keys.
+// options.onlyWeekLabels: array of week labels to restrict to (e.g. ['W3','W4'])
+// options.blockId: restrict to one block id
+function populateLogsFromSheet(blocks, options={}){
+  let populated=0;
+  const {onlyWeekLabels=null}=options;
+
+  for(const block of blocks){
+    if(options.blockId&&block.id!==options.blockId) continue;
+
+    if(block.format==='A'){
+      for(const week of block.weeks){
+        if(onlyWeekLabels&&!onlyWeekLabels.includes(week.label)) continue;
+        for(const day of week.days){
+          for(const ex of day.exercises){
+            const key=lk(block.id,week.label,day.name,ex.name);
+            // Never overwrite existing user data
+            if(state.logs[key]?.done) continue;
+
+            const cls=classifyTracking(ex.trackingRaw);
+            if(!cls) continue;
+            if(cls.type==='note_only'&&!cls.lifterNote) continue;
+
+            // Determine if bodyweight exercise — don't store weights for these
+            const isBW=getExerciseInputMode(ex.name,ex.prescription)==='bw'||
+                        getExerciseInputMode(ex.name,ex.prescription)==='bw-timed';
+
+            const setCount=countPrescrSets(ex.prescription);
+            const exEntry={done:true};
+            if(cls.lifterNote) exEntry.lifterNote=cls.lifterNote;
+
+            if(!isBW){
+              if(cls.type==='weight_rpe'||cls.type==='weight_only'){
+                exEntry.actual=String(cls.weight);
+                if(cls.rpe) exEntry.rpe=String(cls.rpe);
+              }
+            }
+
+            state.logs[key]=exEntry;
+
+            // Write individual set entries
+            if(cls.type==='slash_weights'&&cls.slashWeights){
+              for(let si=0;si<setCount;si++){
+                const sk=key+`||s${si}`;
+                if(state.logs[sk]) continue; // never overwrite
+                const w=cls.slashWeights[si]??cls.slashWeights[cls.slashWeights.length-1];
+                const setEntry={done:true};
+                if(!isBW) setEntry.actual=String(w);
+                state.logs[sk]=setEntry;
+              }
+            } else {
+              for(let si=0;si<setCount;si++){
+                const sk=key+`||s${si}`;
+                if(state.logs[sk]) continue;
+                const setEntry={done:true};
+                if(!isBW&&(cls.type==='weight_rpe'||cls.type==='weight_only')){
+                  setEntry.actual=String(cls.weight);
+                  if(cls.rpe) setEntry.rpe=String(cls.rpe);
+                }
+                state.logs[sk]=setEntry;
+              }
+            }
+            populated++;
+          }
+        }
+      }
+      // Second pass A: infer static exercise completion from week-keyed siblings (Format A specific)
+      inferStaticCompletions(block, onlyWeekLabels);
+      // Second pass B: for any day that had at least one logged exercise,
+      // mark remaining unlogged exercises as inferredComplete
+      // (coaches often skip accessory/cardio tracking even when the workout happened)
+      for(const week of block.weeks){
+        if(onlyWeekLabels&&!onlyWeekLabels.includes(week.label)) continue;
+        for(const day of week.days){
+          const hasAnyLogged=day.exercises.some(ex=>{
+            const key=lk(block.id,week.label,day.name,ex.name);
+            return state.logs[key]?.done&&!state.logs[key]?.inferredComplete;
+          });
+          if(!hasAnyLogged) continue;
+          for(const ex of day.exercises){
+            const key=lk(block.id,week.label,day.name,ex.name);
+            if(state.logs[key]?.done) continue;
+            const setCount=countPrescrSets(ex.prescription);
+            state.logs[key]={done:true,inferredComplete:true};
+            for(let si=0;si<setCount;si++){
+              if(!state.logs[key+`||s${si}`])
+                state.logs[key+`||s${si}`]={done:true,inferredComplete:true};
+            }
+          }
+        }
+      }
+
+    } else if(block.format==='B'){
+      for(const week of block.weeks){
+        if(onlyWeekLabels&&!onlyWeekLabels.includes(week.label)) continue;
+        for(const day of week.days){
+          for(const ex of day.exercises){
+            // Only populate if there is actual logged weight/completion data
+            // Lifter notes alone (e.g. equipment notes like "Cage 24/17") do NOT mark an exercise done
+            if(!ex.loggedWeight) {
+              // Still store lifter note on an existing log entry if one exists
+              if(ex.lifterNote){
+                const key=lk(block.id,week.label,day.name,ex.name);
+                if(state.logs[key]&&!state.logs[key].lifterNote){
+                  state.logs[key].lifterNote=ex.lifterNote;
+                }
+              }
+              continue;
+            }
+            const key=lk(block.id,week.label,day.name,ex.name);
+            if(state.logs[key]?.done) continue;
+
+            const cls=classifyTracking(ex.loggedWeight);
+            const isBW=getExerciseInputMode(ex.name,ex.prescription)==='bw'||
+                        getExerciseInputMode(ex.name,ex.prescription)==='bw-timed';
+            const setCount=countPrescrSets(ex.prescription);
+
+            const exEntry={done:true};
+            // Format B has dedicated lifterNote column — always capture it
+            if(ex.lifterNote) exEntry.lifterNote=ex.lifterNote;
+
+            if(cls&&!isBW){
+              if(cls.type==='weight_rpe'||cls.type==='weight_only'){
+                exEntry.actual=String(cls.weight);
+                if(cls.rpe) exEntry.rpe=String(cls.rpe);
+              }
+              if(cls.lifterNote&&!exEntry.lifterNote) exEntry.lifterNote=cls.lifterNote;
+            }
+
+            state.logs[key]=exEntry;
+
+            if(cls&&cls.type==='slash_weights'&&cls.slashWeights){
+              for(let si=0;si<setCount;si++){
+                const sk=key+`||s${si}`;
+                if(state.logs[sk]) continue;
+                const w=cls.slashWeights[si]??cls.slashWeights[cls.slashWeights.length-1];
+                const setEntry={done:true};
+                if(!isBW) setEntry.actual=String(w);
+                state.logs[sk]=setEntry;
+              }
+            } else {
+              for(let si=0;si<setCount;si++){
+                const sk=key+`||s${si}`;
+                if(state.logs[sk]) continue;
+                const setEntry={done:true};
+                if(cls&&!isBW&&(cls.type==='weight_rpe'||cls.type==='weight_only')){
+                  setEntry.actual=String(cls.weight);
+                  if(cls.rpe) setEntry.rpe=String(cls.rpe);
+                }
+                state.logs[sk]=setEntry;
+              }
+            }
+            populated++;
+          }
+        }
+        // Second pass: if any exercise in a day has logged data (day was "live"),
+        // mark all remaining unlogged exercises as inferredComplete.
+        // This handles coaches who don't track every accessory (side plank, cardio, etc.)
+        for(const day of week.days){
+          // Count how many exercises in this day have actual logged weight data
+          const hasAnyLogged=day.exercises.some(ex=>!!ex.loggedWeight);
+          if(!hasAnyLogged) continue; // fresh/future day — don't touch
+          for(const ex of day.exercises){
+            const key=lk(block.id,week.label,day.name,ex.name);
+            if(state.logs[key]?.done) continue; // already handled
+            const setCount=countPrescrSets(ex.prescription);
+            state.logs[key]={done:true,inferredComplete:true};
+            for(let si=0;si<setCount;si++){
+              if(!state.logs[key+`||s${si}`])
+                state.logs[key+`||s${si}`]={done:true,inferredComplete:true};
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if(populated>0) saveLogs();
+  return populated;
+}
+
+// ── INFER STATIC EXERCISE COMPLETIONS ────────────────────────────────────────
+// If all week-keyed exercises in a day are logged for week W, mark any
+// static-prescription exercises in that same day as done (no weight).
+function inferStaticCompletions(block, onlyWeekLabels=null){
+  for(const week of block.weeks){
+    if(onlyWeekLabels&&!onlyWeekLabels.includes(week.label)) continue;
+    for(const day of week.days){
+      // Separate exercises into week-keyed and static
+      const weekKeyed=day.exercises.filter(ex=>!ex.isStaticPrescription);
+      const statics=day.exercises.filter(ex=>ex.isStaticPrescription);
+      if(statics.length===0) continue; // nothing to infer
+
+      // Count how many week-keyed exercises have logs for this week
+      const keyedDoneCount=weekKeyed.filter(ex=>{
+        const key=lk(block.id,week.label,day.name,ex.name);
+        return !!state.logs[key]?.done;
+      }).length;
+
+      // Only infer if ALL week-keyed exercises in the day are complete
+      if(weekKeyed.length>0&&keyedDoneCount===weekKeyed.length){
+        for(const ex of statics){
+          const key=lk(block.id,week.label,day.name,ex.name);
+          if(state.logs[key]?.done) continue; // already logged
+          // Mark done with no weight — inferred completion
+          const setCount=countPrescrSets(ex.prescription);
+          state.logs[key]={done:true,inferredComplete:true};
+          for(let si=0;si<setCount;si++){
+            const sk=key+`||s${si}`;
+            if(!state.logs[sk]) state.logs[sk]={done:true,inferredComplete:true};
+          }
+        }
+      }
+    }
+  }
 }
 
 // ── SET PARSER ────────────────────────────────────────────────────────────────
@@ -1943,13 +2286,39 @@ function renderWeekPills(block) {
 
 function renderDayTabs(block, week) {
   if(!week?.days?.length) return '';
-  let h=`<div class="day-tabs">`;
+  let h=`<div class="day-tabs" id="day-tabs-bar">`;
   week.days.forEach((d,di)=>{
     const complete=isDayComplete(block,week,d);
-    h+=`<button class="day-tab ${state.activeDay===di?'active':''}" onclick="setDay(${di})">${d.name}${complete?'<span class="done-dot">✓</span>':''}</button>`;
+    const label=formatDayTabLabel(d.name);
+    h+=`<button class="day-tab ${state.activeDay===di?'active':''}" onclick="setDay(${di})">${label}${complete?'<span class="done-dot">✓</span>':''}</button>`;
   });
   h+=`</div>`;
   return h;
+}
+
+// Format a day name into a clean two-line label for the tab bar.
+// "Upper 1 (Bench ACC)" → "<span>UPPER 1</span><span>(BENCH ACC)</span>"
+// "Monday" → "MON"
+// "Tuesday" → "TUE"
+function formatDayTabLabel(name){
+  const n=name.trim();
+  // If name contains a parenthetical, split there
+  const parenIdx=n.indexOf('(');
+  if(parenIdx>0){
+    const before=n.slice(0,parenIdx).trim().toUpperCase();
+    const after=n.slice(parenIdx).trim().toUpperCase();
+    return `<span style="display:block">${before}</span><span style="display:block;opacity:0.75;font-size:10px">${after}</span>`;
+  }
+  // If name has multiple words, try to split at roughly the middle
+  const words=n.toUpperCase().split(/\s+/);
+  if(words.length>=3){
+    const mid=Math.ceil(words.length/2);
+    const line1=words.slice(0,mid).join(' ');
+    const line2=words.slice(mid).join(' ');
+    return `<span style="display:block">${line1}</span><span style="display:block;opacity:0.75;font-size:10px">${line2}</span>`;
+  }
+  // Short name — just uppercase it, single line
+  return n.toUpperCase();
 }
 
 function renderNextWorkoutBanner(block) {
@@ -1966,9 +2335,11 @@ function renderProgressBar(pct) {
   return `<div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
 }
 
-function renderExCard(ex, groupKeys, block, week, day) {
+function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   let h = '';
   const key=lk(block.id,week.label,day.name,ex.name);
+  // Expand key includes position index to disambiguate duplicate exercise names in the same day
+  const expandKey = exIdx !== undefined ? key + '||' + exIdx : key;
   const isCustomEx = ex.isCustom === true;
   const log=state.logs[key]||{};
   const isDone=log.done||false;
@@ -2028,14 +2399,13 @@ function renderExCard(ex, groupKeys, block, week, day) {
             </div>`;
   }
 
-  const isExpanded=state.expandedEx.has(key);
+  const isExpanded=state.expandedEx.has(expandKey);
   const presSum=presShortSummary(sets,simple,ranged,pres);
   const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
   const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bare?.sets||0)||(pres?1:0);
 
-  h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}">`;
-
-  h+=`<div class="ex-summary" onclick="toggleExpand('${esc(key)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
+  h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${esc(expandKey)}">`;
+  h+=`<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
       <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.name}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
@@ -2043,7 +2413,7 @@ function renderExCard(ex, groupKeys, block, week, day) {
     <div class="ex-summary-right">
       ${showTrackBtn && !tracked ? `<button class="track-btn ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="Track in metrics"><span class="track-hint-inline">Track</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>` : trackBtn}
       ${isSkipped ? `<span class="skipped-badge">SKIPPED</span>` : ''}
-      <button class="exercise-check ${isDone?'done':''}" onclick="event.stopPropagation();toggleEx('${esc(key)}')">${isDone?'✓':''}</button>
+      <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" onclick="event.stopPropagation();toggleEx('${esc(key)}')">${isDone?'✓':''}</button>
       <span class="ex-expand-icon ${isExpanded?'open':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </div>
   </div>`;
@@ -2224,8 +2594,10 @@ function renderExCard(ex, groupKeys, block, week, day) {
     }
 
     const prevNote=getPrevWeekNote(block.id,week.label,day.name,ex.name);
+    const importedNote=log.lifterNote||null;
     h+=`<div class="notes-section">
       <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> My Notes</div>
+      ${importedNote?`<div class="coach-note" style="color:#a0a0a0;border-top:1px solid #222">📋 From sheet: ${importedNote}</div>`:''}
       ${prevNote?`<div class="lifter-prev-note">Last time: "${prevNote}"</div>`:''}
       <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." oninput="setNote('${esc(key)}',this.value)">${log.notes||''}</textarea></div>
     </div>`;
@@ -2265,14 +2637,18 @@ function renderExerciseList(block, week, day) {
   }
 
   let h = '';
+  let globalExIdx = 0; // position counter across all items in the day
   renderItems.forEach(item => {
     if (item.type === 'single') {
-      h += renderExCard(item.ex, null, block, week, day);
+      h += renderExCard(item.ex, null, block, week, day, globalExIdx++);
     } else {
       const groupKeys = item.exercises.map(ex => lk(block.id, week.label, day.name, ex.name));
+      // Build index-suffixed expand keys to match what renderExCard uses for data-expand-key
+      const startIdx = globalExIdx;
+      const groupExpandKeys = item.exercises.map((ex, i) => lk(block.id, week.label, day.name, ex.name) + '||' + (startIdx + i));
       h += `<div class="superset-group">`;
-      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupKeys[0])}','${esc(groupKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${item.label}</span><span class="superset-label">${item.exercises.map(e=>e.name).join(" · ")}</span></div>`;
-      item.exercises.forEach(ex => { h += renderExCard(ex, groupKeys, block, week, day); });
+      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${item.label}</span><span class="superset-label">${item.exercises.map(e=>e.name).join(" · ")}</span></div>`;
+      item.exercises.forEach(ex => { h += renderExCard(ex, groupExpandKeys, block, week, day, globalExIdx++); });
       h += `</div>`;
     }
   });
@@ -2293,9 +2669,11 @@ function renderExerciseList(block, week, day) {
 function renderWorkout(){
   const main=document.getElementById('main-content');
   document.getElementById('athlete-name').textContent=state.activeBlock?.athleteName||'';
-  // settings gear is always visible — no header button text to update
 
   if(!state.activeBlock){ main.innerHTML=renderUploadScreen(); return; }
+
+  // Preserve scroll position — toggling exercise cards shouldn't jump to top
+  const savedScroll=main.scrollTop;
 
   const block=state.activeBlock;
   const week=block.weeks[state.activeWeek];
@@ -2313,6 +2691,11 @@ function renderWorkout(){
   h+=renderExerciseList(block, week, day);
   h+=`</div>`;
   main.innerHTML=h;
+  // Scroll active day tab into view
+  requestAnimationFrame(()=>{
+    const bar=document.getElementById('day-tabs-bar');
+    if(bar){const active=bar.querySelector('.day-tab.active');if(active) active.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
+  });
 }
 
 function abbrev(name){
@@ -2389,7 +2772,9 @@ function saveExName(key, oldName){
 function toggleEx(key){
   const l=state.logs[key]||{};
   const nowDone=!l.done;
-  state.logs[key]={...l,done:nowDone,skipped:false};
+  // When user manually interacts, clear inferredComplete — this is now a real action
+  const {inferredComplete:_,...rest}=l;
+  state.logs[key]={...rest,done:nowDone,skipped:false};
   const block=state.activeBlock;
   const week=block?.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
@@ -2673,6 +3058,12 @@ function toggleExpand(key, groupEncoded){
     else { state.expandedEx.add(key); }
   }
   render();
+  // Always anchor back to the card that was tapped — handles both open and close,
+  // and correctly accounts for other cards collapsing above/below this one.
+  requestAnimationFrame(()=>{
+    const card=document.querySelector(`.exercise-card[data-expand-key="${CSS.escape(key)}"]`);
+    if(card) card.scrollIntoView({block:'nearest',behavior:'instant'});
+  });
 }
 function findNextWorkout(block){
   if(!block) return {weekIdx:0, dayIdx:0};
@@ -2769,6 +3160,7 @@ async function pickerCallback(data){
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
     mergeBlocks(blocks); const _n=findNextWorkout(state.activeBlock); state.activeWeek=_n.weekIdx; state.activeDay=_n.dayIdx; state.screen='workout';
     autoRegisterCompLifts(blocks);
+    populateLogsFromSheet(blocks);
     saveBlocks(); saveNav();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
@@ -2791,6 +3183,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
     mergeBlocks(blocks); const _n2=findNextWorkout(state.activeBlock); state.activeWeek=_n2.weekIdx; state.activeDay=_n2.dayIdx; state.screen='workout';
     autoRegisterCompLifts(blocks);
+    populateLogsFromSheet(blocks);
     saveBlocks(); saveNav();
     document.getElementById('nav-workout').classList.add('active');
     document.getElementById('nav-metrics').classList.remove('active');
