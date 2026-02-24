@@ -619,6 +619,36 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 }
 .home-hero.done .home-hero-ex-dot { background: #4ade80; }
 
+/* Import Intent Modal */
+.import-intent-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px; border-radius: 14px;
+  border: 1.5px solid var(--glass-border); background: var(--glass-bg);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  cursor: pointer; margin-bottom: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.import-intent-card.selected {
+  border-color: var(--gold); background: rgba(201,168,76,0.06);
+}
+.import-intent-icon { width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.import-intent-body { flex: 1; }
+.import-intent-title {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 16px;
+  font-weight: 700; color: var(--text-bright); letter-spacing: 0.02em;
+  margin-bottom: 3px;
+}
+.import-intent-desc {
+  font-family: 'Barlow', sans-serif; font-size: 12px;
+  color: var(--text-sub); line-height: 1.45;
+}
+.import-intent-check {
+  font-size: 14px; color: var(--gold); flex-shrink: 0;
+  margin-top: 2px; transition: opacity 0.15s;
+}
+.import-intent-card.selected .import-intent-icon svg { fill: var(--gold); }
+.import-intent-card:not(.selected) .import-intent-icon svg { fill: var(--text-faint); transition: fill 0.15s; }
+
 /* Two-col cards row */
 .home-cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .home-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px 14px 14px; display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -1181,6 +1211,41 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
 </div>
 
+<!-- Import Intent Modal -->
+<div class="schedule-modal" id="import-intent-modal" style="display:none">
+  <div class="checkin-overlay" onclick="closeImportIntent()"></div>
+  <div class="intake-sheet" style="max-height:85vh;overflow-y:auto;background:var(--glass-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);">
+    <div class="checkin-handle"></div>
+    <div style="margin-bottom:6px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Import Program</div>
+      <div id="import-intent-name" style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px"></div>
+    </div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin:20px 0 10px">What is this program?</div>
+    <div class="import-intent-card active" id="import-card-active" onclick="selectImportIntent('active')">
+      <div class="import-intent-icon"><svg viewBox="0 0 28 40" width="22" height="32"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Active Program</div>
+        <div class="import-intent-desc">I'm currently training this. Set it as my active program and navigate to my next workout.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-active">✓</div>
+    </div>
+    <div class="import-intent-card" id="import-card-history" onclick="selectImportIntent('history')">
+      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--text-sub)" xmlns="http://www.w3.org/2000/svg"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Historical Data</div>
+        <div class="import-intent-desc">This program is already completed. Import it to fill in my metrics and progression history.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-history" style="opacity:0">✓</div>
+    </div>
+    <div id="import-history-note" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.2);border-radius:10px">
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);line-height:1.5">
+        <span style="color:var(--gold);font-weight:600">Note:</span> Your current active program won't change. All weeks will be marked complete using any logged weights from the sheet. This data will appear in your metrics charts.
+      </div>
+    </div>
+    <button class="complete-workout-btn ready" style="margin-top:20px;width:100%" onclick="confirmImportIntent()">Continue</button>
+  </div>
+</div>
+
 <!-- Schedule Editor Modal -->
 <div class="schedule-modal" id="sched-edit-modal" style="display:none">
   <div class="checkin-overlay" onclick="closeScheduleEditor()"></div>
@@ -1334,7 +1399,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
 </div>
 
-<input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
+<input type="file" id="file-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none">
 
 <script>
 // ── THEME ─────────────────────────────────────────────────────────────────────
@@ -4281,6 +4346,14 @@ function renderExerciseList(block, week, day) {
     }
   });
 
+  const isHistorical = !!block.historical;
+
+  // Historical blocks: always show locked complete, no Add Exercise, no Finish Workout
+  if (isHistorical) {
+    h+=`<div class="workout-complete-msg">✓ Workout Complete</div>`;
+    return h;
+  }
+
   // Always show add exercise button
   h+=`<button class="add-exercise-btn" onclick="openAddExerciseModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
   // Use force-complete flag specifically — not isDayComplete — so green only shows after user taps Finish Workout
@@ -4698,6 +4771,128 @@ function showCelebration(dayName, meta, onDismiss) {
   overlay.classList.add('visible');
 }
 
+// ── IMPORT INTENT ────────────────────────────────────────────────────────────
+let _pendingImportBlocks = null;
+let _importIntent = 'active'; // 'active' | 'history'
+
+function openImportIntent(blocks) {
+  _pendingImportBlocks = blocks;
+  _importIntent = 'active';
+  // Show program name
+  const names = blocks.map(b => b.name || b.id).join(', ');
+  document.getElementById('import-intent-name').textContent = names;
+  // Reset selection to active
+  selectImportIntent('active');
+  document.getElementById('import-intent-modal').style.display = 'flex';
+}
+
+function closeImportIntent() {
+  document.getElementById('import-intent-modal').style.display = 'none';
+  _pendingImportBlocks = null;
+}
+
+function selectImportIntent(intent) {
+  _importIntent = intent;
+  const activeCard = document.getElementById('import-card-active');
+  const historyCard = document.getElementById('import-card-history');
+  const activeCheck = document.getElementById('import-check-active');
+  const historyCheck = document.getElementById('import-check-history');
+  const historyNote = document.getElementById('import-history-note');
+  if (intent === 'active') {
+    activeCard.classList.add('selected');
+    historyCard.classList.remove('selected');
+    activeCheck.style.opacity = '1';
+    historyCheck.style.opacity = '0';
+    historyNote.style.display = 'none';
+  } else {
+    historyCard.classList.add('selected');
+    activeCard.classList.remove('selected');
+    historyCheck.style.opacity = '1';
+    activeCheck.style.opacity = '0';
+    historyNote.style.display = 'block';
+  }
+}
+
+function confirmImportIntent() {
+  const blocks = _pendingImportBlocks;
+  if (!blocks) return;
+  closeImportIntent();
+
+  if (_importIntent === 'active') {
+    // Standard active import flow
+    const prevActive = state.activeBlock;
+    mergeBlocks(blocks);
+    autoRegisterCompLifts(blocks);
+    populateLogsFromSheet(blocks);
+    const _n = findNextWorkout(state.activeBlock);
+    state.activeWeek = _n.weekIdx;
+    state.activeDay  = _n.dayIdx;
+    saveBlocks(); saveNav(); saveLogs();
+    setScreen('home');
+    const _nb = state.activeBlock;
+    if (_nb && !getBlockSchedule(_nb.id)) setTimeout(() => openIntake(_nb), 300);
+  } else {
+    // Historical import — add block but keep current active program
+    importHistoricalBlock(blocks);
+  }
+  render();
+}
+
+function importHistoricalBlock(blocks) {
+  const prevActive = state.activeBlock;
+
+  // Merge blocks into state (adds them, doesn't change active)
+  deduplicateExerciseNames(blocks);
+  for (const inc of blocks) {
+    const idx = state.blocks.findIndex(b => b.id === inc.id);
+    if (idx !== -1) state.blocks[idx] = inc;
+    else state.blocks.push(inc);
+  }
+  // Restore active block — historical import never changes it
+  state.activeBlock = prevActive || state.blocks[state.blocks.length - 1];
+
+  // Tag blocks as historical so renderer knows not to show Finish Workout / Add Exercise
+  blocks.forEach(b => { b.historical = true; });
+  autoRegisterCompLifts(blocks);
+  // Populate any logged weights from sheet
+  populateLogsFromSheet(blocks);
+  // Mark all remaining unlogged exercises as complete so metrics are fully populated
+  markAllBlocksComplete(blocks);
+
+  saveBlocks(); saveLogs();
+  // Navigate to metrics so user sees data land
+  setScreen('metrics');
+}
+
+function markAllBlocksComplete(blocks) {
+  for (const block of blocks) {
+    for (const week of (block.weeks || [])) {
+      for (const day of (week.days || [])) {
+        for (const ex of (day.exercises || [])) {
+          const key = lk(block.id, week.label, day.name, ex.name);
+          // Only mark if not already logged with real data
+          if (!state.logs[key]?.done || state.logs[key]?.inferredComplete) {
+            state.logs[key] = { done: true, inferredComplete: true };
+          }
+          // Mark sets
+          const setCount = countPrescrSets(ex.prescription);
+          for (let si = 0; si < setCount; si++) {
+            const sk = key + '||s' + si;
+            if (!state.logs[sk]?.done || state.logs[sk]?.inferredComplete) {
+              state.logs[sk] = { done: true, inferredComplete: true };
+            }
+          }
+        }
+        // Set force-complete flag for the day
+        const forceKey = lk(block.id, week.label, day.name, '__complete__');
+        if (!state.logs[forceKey]) {
+          state.logs[forceKey] = { done: true, completedDate: null };
+        }
+      }
+    }
+  }
+}
+
 function dismissCelebration() {
   const overlay = document.getElementById('celebration-overlay');
   if (overlay) overlay.classList.remove('visible');
@@ -4958,17 +5153,7 @@ async function pickerCallback(data){
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    mergeBlocks(blocks); const _n=findNextWorkout(state.activeBlock); state.activeWeek=_n.weekIdx; state.activeDay=_n.dayIdx; state.screen='home';
-    autoRegisterCompLifts(blocks);
-    populateLogsFromSheet(blocks);
-    saveBlocks(); saveNav();
-    document.getElementById('nav-home').classList.add('active');
-    document.getElementById('nav-workout').classList.remove('active');
-    document.getElementById('nav-metrics').classList.remove('active');
-    render();
-    // Trigger intake if new block has no schedule
-    const _newBlock = state.activeBlock;
-    if (_newBlock && !getBlockSchedule(_newBlock.id)) { setTimeout(() => openIntake(_newBlock), 300); }
+    openImportIntent(blocks);
   }catch(err){ alert('Error loading file from Drive: '+err.message); console.error(err); }
 }
 
@@ -4982,17 +5167,9 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     const wb=XLSX.read(data);
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file. See console for details."); return; }
-    // Pull athlete name from filename
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    mergeBlocks(blocks); const _n2=findNextWorkout(state.activeBlock); state.activeWeek=_n2.weekIdx; state.activeDay=_n2.dayIdx; state.screen='home';
-    autoRegisterCompLifts(blocks);
-    populateLogsFromSheet(blocks);
-    saveBlocks(); saveNav();
-    document.getElementById('nav-home').classList.add('active');
-    document.getElementById('nav-workout').classList.remove('active');
-    document.getElementById('nav-metrics').classList.remove('active');
-    render();
+    openImportIntent(blocks);
     // Trigger intake if new block has no schedule
     const _newBlock2 = state.activeBlock;
     if (_newBlock2 && !getBlockSchedule(_newBlock2.id)) { setTimeout(() => openIntake(_newBlock2), 300); }
