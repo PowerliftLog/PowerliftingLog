@@ -192,6 +192,20 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #555; margin: 18px 0 8px; }
 .settings-section-label:first-of-type { margin-top: 0; }
+.settings-athlete-form { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px; margin-bottom: 6px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; flex-direction: column; gap: 12px; }
+.settings-athlete-form.open { display: flex; }
+.settings-athlete-row { display: flex; flex-direction: column; gap: 5px; }
+.settings-athlete-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); }
+.settings-athlete-input { background: var(--input-bg); border: 1px solid var(--border-2); border-radius: 8px; padding: 9px 12px; font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-primary); width: 100%; }
+.settings-athlete-input:focus { outline: none; border-color: var(--gold); }
+.settings-athlete-gender { display: flex; gap: 8px; }
+.settings-athlete-gender-btn { flex: 1; padding: 9px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-sub); cursor: pointer; transition: all 0.15s; }
+.settings-athlete-gender-btn.active { border-color: var(--gold); background: rgba(var(--gold-rgb),0.1); color: var(--gold); }
+.settings-athlete-bw-row { display: flex; gap: 8px; align-items: center; }
+.settings-athlete-bw-row .settings-athlete-input { flex: 1; }
+.settings-athlete-unit-btn { padding: 9px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.settings-athlete-unit-btn.active { border-color: var(--gold); background: rgba(var(--gold-rgb),0.1); color: var(--gold); }
+.settings-athlete-save { width: 100%; padding: 10px; background: var(--gold); border: none; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; margin-top: 2px; }
 .settings-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 6px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .settings-row-btn:active { border-color: #C9A84C; background: var(--surface-3); }
 .settings-row-left { display: flex; align-items: center; gap: 10px; font-family: 'Barlow', sans-serif; font-size: 15px; color: #d0d0d0; }
@@ -1051,6 +1065,34 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     </button>
 
     <div class="settings-section-label">Home</div>
+    <button class="settings-row-btn" onclick="toggleAthleteProfileForm()" id="athlete-profile-row">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Athlete Profile
+      </div>
+      <svg class="settings-row-arrow" id="athlete-profile-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="settings-athlete-form" id="athlete-profile-form">
+      <div class="settings-athlete-row">
+        <div class="settings-athlete-label">Name</div>
+        <input class="settings-athlete-input" id="ap-name" type="text" placeholder="Your name" autocomplete="off">
+      </div>
+      <div class="settings-athlete-row">
+        <div class="settings-athlete-label">Gender</div>
+        <div class="settings-athlete-gender">
+          <button class="settings-athlete-gender-btn" id="ap-male" onclick="setApGender('male')">Male</button>
+          <button class="settings-athlete-gender-btn" id="ap-female" onclick="setApGender('female')">Female</button>
+        </div>
+      </div>
+      <div class="settings-athlete-row">
+        <div class="settings-athlete-label">Bodyweight</div>
+        <div class="settings-athlete-bw-row">
+          <input class="settings-athlete-input" id="ap-bw" type="number" inputmode="decimal" placeholder="0">
+          <button class="settings-athlete-unit-btn" id="ap-unit" onclick="toggleApUnit()">lbs</button>
+        </div>
+      </div>
+      <button class="settings-athlete-save" onclick="saveAthleteProfile()">Save</button>
+    </div>
     <button class="settings-row-btn" onclick="resetIntakeForTesting()" style="cursor:pointer">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
@@ -2521,6 +2563,59 @@ function saveAppSettings(s) { try { localStorage.setItem(APP_SETTINGS_KEY, JSON.
 function getShowReadiness() { const s = loadAppSettings(); return s.showReadiness !== false; } // default ON
 function getShowScores()    { const s = loadAppSettings(); return s.showScores    !== false; } // default ON
 
+function toggleAthleteProfileForm() {
+  const form = document.getElementById('athlete-profile-form');
+  const arrow = document.getElementById('athlete-profile-arrow');
+  const isOpen = form.classList.contains('open');
+  if (!isOpen) {
+    // Populate with current values
+    const a = loadAthlete() || {};
+    document.getElementById('ap-name').value = a.name || '';
+    document.getElementById('ap-bw').value = a.bodyweight || '';
+    const unit = a.bwUnit || 'lbs';
+    document.getElementById('ap-unit').textContent = unit;
+    document.getElementById('ap-unit').classList.toggle('active', true);
+    document.getElementById('ap-male').classList.toggle('active', a.gender === 'male');
+    document.getElementById('ap-female').classList.toggle('active', a.gender === 'female');
+    form.classList.add('open');
+    arrow.style.transform = 'rotate(90deg)';
+  } else {
+    form.classList.remove('open');
+    arrow.style.transform = '';
+  }
+}
+function setApGender(g) {
+  document.getElementById('ap-male').classList.toggle('active', g === 'male');
+  document.getElementById('ap-female').classList.toggle('active', g === 'female');
+  document.getElementById('ap-male').dataset.val = g === 'male' ? 'male' : '';
+  document.getElementById('ap-female').dataset.val = g === 'female' ? 'female' : '';
+}
+function toggleApUnit() {
+  const btn = document.getElementById('ap-unit');
+  const isLbs = btn.textContent === 'lbs';
+  btn.textContent = isLbs ? 'kg' : 'lbs';
+}
+function saveAthleteProfile() {
+  const name = document.getElementById('ap-name').value.trim();
+  const bw = parseFloat(document.getElementById('ap-bw').value);
+  const unit = document.getElementById('ap-unit').textContent;
+  const gender = document.getElementById('ap-male').classList.contains('active') ? 'male'
+               : document.getElementById('ap-female').classList.contains('active') ? 'female'
+               : null;
+  const existing = loadAthlete() || {};
+  const updated = {
+    ...existing,
+    ...(name && { name }),
+    ...(gender && { gender }),
+    ...(!isNaN(bw) && bw > 0 && { bodyweight: bw, bwUnit: unit })
+  };
+  saveAthlete(updated);
+  // Close form
+  document.getElementById('athlete-profile-form').classList.remove('open');
+  document.getElementById('athlete-profile-arrow').style.transform = '';
+  // Re-render home if on home screen
+  if (state.screen === 'home') render();
+}
 function toggleScoresSetting() {
   const s = loadAppSettings();
   s.showScores = !getShowScores();
@@ -2870,9 +2965,11 @@ function calcLoadSignal() {
     const week = block.weeks[wi];
     if (!week) continue;
 
-    // Approximate date
+    // Use actual timestamp if available, otherwise approximate date
     let dayDate;
-    if (block.startDate) {
+    if (val.ts) {
+      dayDate = new Date(val.ts);
+    } else if (block.startDate) {
       const start = new Date(block.startDate);
       dayDate = new Date(start.getTime() + (wi * 7 + di) * 86400000);
     } else {
@@ -3996,7 +4093,8 @@ function isDayComplete(block, week, day){
 }
 function toggleSet(key){
   const l=state.logs[key]||{};
-  state.logs[key]={...l,done:!l.done};
+  const nowDone = !l.done;
+  state.logs[key]={...l, done: nowDone, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
   autoCompleteExercise(key);
   render();
@@ -4019,10 +4117,12 @@ function adjustSets(key, delta){
   render();
 }
 function setActual(key,v){
-  state.logs[key]={...(state.logs[key]||{}),actual:v};
+  const existing = state.logs[key]||{};
+  state.logs[key]={...existing, actual:v};
   // Auto-complete set when weight is entered
   const shouldCheck=v&&v.trim()!=='';
   state.logs[key].done=shouldCheck;
+  if(shouldCheck && !existing.ts) state.logs[key].ts = Date.now();
   saveLogs();
   
   // Update set checkmark directly without full render
@@ -4403,6 +4503,11 @@ function closeSettings() {
   const modal = document.getElementById('settings-modal');
   if (!modal) return;
   modal.classList.remove('open');
+  // Close athlete profile form if open
+  const form = document.getElementById('athlete-profile-form');
+  if (form) { form.classList.remove('open'); }
+  const arrow = document.getElementById('athlete-profile-arrow');
+  if (arrow) arrow.style.transform = '';
   setTimeout(() => { modal.style.display = 'none'; }, 200);
 }
 function updateSettingsThemePills() {
