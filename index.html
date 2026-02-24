@@ -2971,13 +2971,13 @@ function calcDOTS(bwKg, totalKg, gender) {
 
 function calcWilks(bwKg, totalKg, gender) {
   if (!bwKg || !totalKg || bwKg <= 0 || totalKg <= 0) return null;
-  // Wilks 2020 (updated coefficients)
+  // Wilks formula — coefficients from Wilks 1998
   const m = gender === 'female'
     ? { a:594.31747775582, b:-27.23842536447, c:0.82112226871, d:-0.00930733913, e:0.00004731582, f:-0.00000009054 }
-    : { a:1199.72839,      b:-101.013,        c:3.3337,        d:-0.054926,      e:0.00032996,    f:-0.0000007419 };
+    : { a:-216.0475144,    b:16.2606339,      c:-0.002388645,  d:-0.00113732,    e:7.01863e-06,   f:-1.291e-08 };
   const x = bwKg;
   const poly = m.a + m.b*x + m.c*x*x + m.d*x*x*x + m.e*x*x*x*x + m.f*x*x*x*x*x;
-  return Math.round((600 / poly) * totalKg * 100) / 100;
+  return Math.round((500 / poly) * totalKg * 100) / 100;
 }
 
 function getScores() {
