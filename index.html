@@ -79,9 +79,11 @@
   --card-shadow:   0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
   --card-border:   rgba(255,255,255,0.07);
   --card-bg:       linear-gradient(160deg, var(--grad-start) 0%, var(--grad-mid) 60%, var(--grad-end) 100%);
-  --sheet-bg:      var(--surface-2);
+  --sheet-bg:      rgba(18,18,18,0.82);
   --sheet-border:  var(--border-2);
   --modal-bg:      var(--bg-2);
+  --glass-bg:      rgba(20,20,20,0.6);
+  --glass-border:  rgba(255,255,255,0.08);
 }
 [data-theme="navy"] {
   --bg:            #0A0E1A;
@@ -116,6 +118,10 @@
   --snap-chip-mid: #1a2535;
   --chart-bg:      #111827;
   --chart-bdr:     #1E2A3A;
+  --sheet-bg:      rgba(14,18,32,0.82);
+  --sheet-border:  rgba(255,255,255,0.1);
+  --glass-bg:      rgba(30,42,58,0.55);
+  --glass-border:  rgba(255,255,255,0.1);
 }
 [data-theme="light"] {
   --bg:            #F2EDE4;
@@ -165,9 +171,11 @@
   --card-shadow:   0 1px 4px rgba(0,0,0,0.06), 0 2px 16px rgba(0,0,0,0.04);
   --card-border:   rgba(255,255,255,0.8);
   --card-bg:       linear-gradient(160deg, var(--grad-start) 0%, var(--grad-mid) 60%, var(--grad-end) 100%);
-  --sheet-bg:      rgba(250,247,242,0.88);
-  --sheet-border:  rgba(255,255,255,0.7);
+  --sheet-bg:      rgba(250,247,242,0.75);
+  --sheet-border:  rgba(180,168,155,0.5);
   --modal-bg:      rgba(242,237,228,0.88);
+  --glass-bg:      rgba(255,252,246,0.38);
+  --glass-border:  rgba(180,168,155,0.45);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -184,7 +192,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #555; margin: 18px 0 8px; }
 .settings-section-label:first-of-type { margin-top: 0; }
-.settings-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 6px; }
+.settings-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 6px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .settings-row-btn:active { border-color: #C9A84C; background: var(--surface-3); }
 .settings-row-left { display: flex; align-items: center; gap: 10px; font-family: 'Barlow', sans-serif; font-size: 15px; color: #d0d0d0; }
 .settings-row-left svg { color: #888; flex-shrink: 0; }
@@ -395,7 +403,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-title { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; margin-bottom: 24px; }
 
 /* Hero card */
-.home-hero { position: relative; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-bottom: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-hero:active { transform: scale(0.98); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
 .home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
@@ -421,7 +429,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 
 /* Two-col cards row */
 .home-cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.home-card { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 18px; padding: 16px 14px 14px; display: flex; flex-direction: column; }
+.home-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px 14px 14px; display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-card-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
 
 /* Readiness card */
@@ -460,7 +468,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-schedule-hint-link { color: var(--gold); text-decoration: none; cursor: pointer; }
 
 /* e1RM + scores card */
-.home-pr-card { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
+.home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 /* e1RM rows — compact left-aligned */
 .home-pr-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
 .home-pr-row { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
@@ -822,7 +830,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .settings-row-left { color: var(--text-mid); }
 [data-theme="light"] .settings-row-left svg { color: var(--text-sub); }
 [data-theme="light"] .settings-row-arrow { color: var(--text-dim); }
-[data-theme="light"] .settings-row-btn { border-color: var(--border); }
+[data-theme="light"] .settings-row-btn { border-color: var(--glass-border); }
 [data-theme="light"] .calc-section-title { color: var(--text-muted); }
 [data-theme="light"] .calc-plate-label { color: var(--text-primary); }
 [data-theme="light"] .calc-total-unit { color: var(--text-muted); }
@@ -1063,7 +1071,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Show Readiness Score
       </div>
-      <button class="settings-toggle" id="readiness-toggle" onclick="event.stopPropagation();toggleReadinessSetting()"></button>
+      <div class="settings-toggle" id="readiness-toggle"></div>
     </button>
 
     <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
@@ -1664,11 +1672,17 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   ctx.clearRect(0,0,W,H);
 
   // Grid lines + y labels
+  ctx.save();
+  ctx.globalAlpha = 0.6;
   ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--surface-5').trim()||'#1e1e1e'; ctx.lineWidth=1;
   [0,0.5,1].forEach(t=>{
     const y=pad.top+chartH*(1-t);
     ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke();
-    ctx.fillStyle='#444'; ctx.font='10px Barlow,sans-serif'; ctx.textAlign='right';
+  });
+  ctx.restore();
+  ctx.fillStyle='#444'; ctx.font='10px Barlow,sans-serif'; ctx.textAlign='right';
+  [0,0.5,1].forEach(t=>{
+    const y=pad.top+chartH*(1-t);
     ctx.fillText(Math.round(yMin+yRange*t)+'lb',pad.left-4,y+3);
   });
 
@@ -3120,7 +3134,7 @@ function renderReadinessCard() {
         ${checkedIn ? signalRow('Readiness', r.body) : ''}
       </div>`;
   } else {
-    bodyHtml = `<div class="readiness-no-data">Log sets<br>to activate</div>`;
+    bodyHtml = ``;
   }
 
   return `<div class="home-card">
