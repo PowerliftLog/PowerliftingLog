@@ -389,6 +389,175 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .track-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
 .track-hint-inline { font-size: 10px; color: #444; font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-style: normal; }
 
+/* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
+.home-screen { padding: 52px 16px 100px; overflow-y: auto; }
+.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+.home-title { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; margin-bottom: 24px; }
+
+/* Hero card */
+.home-hero { position: relative; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-bottom: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+.home-hero:active { transform: scale(0.98); }
+.home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
+.home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
+.home-hero-inner { position: relative; z-index: 1; padding: 20px; }
+.home-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.home-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: 4px; }
+.home-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 16px; }
+.home-hero-exercises { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.home-hero-ex { display: flex; align-items: center; gap: 10px; }
+.home-hero-ex-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+.home-hero-ex-name { font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 500; color: var(--text-mid); flex: 1; }
+.home-hero-ex-pres { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--text-faint); }
+.home-hero-more { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); padding-left: 15px; }
+.home-hero-cta { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--border-2); }
+.home-hero-cta-text { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.home-hero-cta-arrow { color: var(--gold); font-size: 18px; }
+.home-hero.done { border-color: rgba(74,222,128,0.25); }
+.home-hero.done .home-hero-bg { background: linear-gradient(135deg, rgba(74,222,128,0.06) 0%, transparent 60%); }
+.home-hero.done .home-hero-label { color: #4ade80; }
+.home-hero.done .home-hero-cta-text { color: #4ade80; }
+.home-hero.done .home-hero-cta-arrow { color: #4ade80; }
+.home-hero.done .home-hero-ex-dot { background: #4ade80; }
+
+/* Two-col cards row */
+.home-cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.home-card { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 18px; padding: 16px 14px 14px; display: flex; flex-direction: column; }
+.home-card-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
+
+/* Readiness card */
+.readiness-arc-wrap { display: flex; justify-content: center; margin-bottom: 2px; }
+.readiness-score-num { font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 900; text-align: center; line-height: 1; }
+.readiness-score-label { font-family: 'Barlow', sans-serif; font-size: 11px; text-align: center; color: var(--text-faint); margin-top: 2px; margin-bottom: 10px; }
+.readiness-signals { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.readiness-signal-row { display: flex; align-items: center; gap: 6px; }
+.readiness-signal-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); width: 52px; flex-shrink: 0; }
+.readiness-signal-bar-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.readiness-signal-bar { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.readiness-signal-val { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: var(--text-sub); width: 22px; text-align: right; flex-shrink: 0; }
+.readiness-no-data { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); text-align: center; padding: 10px 0 8px; line-height: 1.5; flex: 1; display: flex; align-items: center; justify-content: center; }
+.readiness-checkin-btn { width: 100%; margin-top: auto; padding: 8px 0; background: rgba(var(--gold-rgb),0.1); border: 1px solid rgba(var(--gold-rgb),0.2); border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); cursor: pointer; transition: background 0.15s; }
+.readiness-checkin-btn:active { background: rgba(var(--gold-rgb),0.18); }
+.readiness-checkin-btn.checked { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); color: #4ade80; }
+
+/* Week card */
+.week-progress-card { }
+.week-fraction { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); line-height: 1; margin-bottom: 1px; }
+.week-fraction-denom { font-size: 14px; color: var(--text-faint); font-weight: 400; }
+.week-fraction-sub { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 12px; }
+.week-training-dots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.week-progress-card.full-width { margin-bottom: 14px; }
+.week-progress-card.full-width .week-training-dots { gap: 10px; }
+.week-progress-card.full-width .week-training-dot { width: 36px; height: 36px; font-size: 12px; }
+.week-training-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.week-training-dot-wrap:active .week-training-dot { transform: scale(0.92); }
+.week-training-dot { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--bg); font-weight: 700; transition: all 0.15s; position: relative; }
+.week-training-dot.done { background: #4ade80; border-color: #4ade80; color: var(--bg); }
+.week-training-dot.current { border-color: var(--gold); border-width: 2px; }
+.week-training-dot.done.current { background: #4ade80; border-color: #4ade80; }
+.week-training-dot-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); }
+.week-training-dot-label.assigned { color: var(--gold); }
+.week-schedule-hint { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); line-height: 1.4; margin-top: auto; }
+.week-schedule-hint-link { color: var(--gold); text-decoration: none; cursor: pointer; }
+
+/* e1RM + scores card */
+.home-pr-card { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
+/* e1RM rows — compact left-aligned */
+.home-pr-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+.home-pr-row { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.home-pr-row:last-child { border-bottom: none; }
+.home-pr-lift { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text-bright); flex: 1; }
+.home-pr-val-wrap { display: flex; align-items: baseline; gap: 3px; margin-right: 8px; }
+.home-pr-val { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--gold); line-height: 1; }
+.home-pr-unit { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); }
+.home-pr-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 100px; background: rgba(var(--gold-rgb),0.1); color: rgba(201,168,76,0.7); border: 1px solid rgba(var(--gold-rgb),0.15); }
+/* DOTS / Wilks scores — two-column stat pills */
+.home-scores-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-2); }
+.home-scores-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.home-score-pill { background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 1px; }
+.home-score-pill-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); }
+.home-score-pill-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
+.home-score-pill-level { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--gold); }
+.home-score-est { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 400; color: var(--text-dim); vertical-align: middle; letter-spacing: 0; }
+.home-score-note { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.home-score-missing { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 5px; }
+
+/* No-program state */
+.home-empty { text-align: center; padding: 60px 24px; }
+.home-empty-icon { margin: 0 auto 20px; opacity: 0.15; }
+.home-empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 8px; letter-spacing: 0.04em; }
+.home-empty-desc { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-faint); line-height: 1.6; margin-bottom: 24px; }
+.home-upload-btn { padding: 14px 28px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; }
+
+/* Check-in modal */
+.checkin-modal { position: fixed; inset: 0; z-index: 500; display: flex; align-items: flex-end; justify-content: center; }
+.checkin-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.checkin-sheet { position: relative; z-index: 1; background: var(--surface-2); border: 1px solid var(--border); border-top: 1px solid var(--border-3); border-radius: 28px 28px 0 0; padding: 28px 20px calc(env(safe-area-inset-bottom) + 32px); width: 100%; max-width: 480px; animation: slideUpCheckin 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes slideUpCheckin { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.checkin-handle { width: 36px; height: 4px; background: var(--border-3); border-radius: 2px; margin: 0 auto 20px; }
+.checkin-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 4px; }
+.checkin-sub { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-faint); margin-bottom: 24px; }
+.checkin-question { margin-bottom: 20px; }
+.checkin-q-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 10px; }
+.checkin-options { display: flex; gap: 8px; }
+.checkin-opt { flex: 1; padding: 11px 6px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-sub); text-align: center; cursor: pointer; transition: all 0.15s; }
+.checkin-opt.selected { border-color: var(--gold); background: rgba(var(--gold-rgb),0.1); color: var(--gold); }
+.checkin-submit { width: 100%; padding: 15px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; margin-top: 8px; opacity: 0.4; transition: opacity 0.15s; }
+.checkin-submit.ready { opacity: 1; }
+.checkin-skip { width: 100%; padding: 10px; background: none; border: none; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); cursor: pointer; margin-top: 4px; }
+
+/* Schedule / intake modals */
+.schedule-modal { position: fixed; inset: 0; z-index: 600; display: flex; align-items: flex-end; justify-content: center; }
+.schedule-clear-btn { width: 100%; padding: 12px; background: none; border: 1px solid var(--border); border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--text-sub); cursor: pointer; }
+
+/* Intake sheet */
+.intake-sheet { position: relative; z-index: 1; background: var(--surface-2); border: 1px solid var(--border); border-top: 1px solid var(--border-3); border-radius: 28px 28px 0 0; padding: 28px 20px calc(env(safe-area-inset-bottom) + 28px); width: 100%; max-width: 480px; animation: slideUpCheckin 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.intake-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.intake-title { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); margin-bottom: 4px; }
+.intake-sub { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-faint); margin-bottom: 24px; }
+.intake-dow-grid { display: flex; gap: 6px; margin-bottom: 10px; }
+.intake-dow-pill { flex: 1; padding: 12px 4px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--text-sub); cursor: pointer; transition: all 0.12s; text-align: center; position: relative; }
+.intake-dow-pill.selected { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.1); }
+.intake-dow-num { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--gold); color: #0a0a0a; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.intake-count-hint { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-bottom: 20px; }
+.intake-next-btn { width: 100%; padding: 15px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; margin-bottom: 10px; opacity: 0.35; transition: opacity 0.15s; }
+.intake-next-btn.ready { opacity: 1; }
+.intake-skip-btn { width: 100%; padding: 10px; background: none; border: none; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+.intake-field-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 8px; margin-top: 16px; }
+.intake-gender-row { display: flex; gap: 8px; }
+.intake-gender-btn { flex: 1; padding: 12px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; }
+.intake-gender-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.1); }
+.intake-input { width: 100%; padding: 12px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; font-family: 'Barlow', sans-serif; font-size: 16px; color: var(--text-bright); box-sizing: border-box; outline: none; }
+.intake-input:focus { border-color: var(--gold); }
+.intake-bw-row { display: flex; gap: 8px; }
+.intake-bw-input { flex: 1; }
+.intake-unit-toggle { display: flex; flex-direction: column; gap: 4px; }
+.intake-unit-btn { flex: 1; padding: 6px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; }
+.intake-unit-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
+
+/* Schedule editor */
+.sched-edit-slots-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 16px 20px 8px; }
+.sched-edit-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.12s; }
+.sched-edit-slot.active { border-color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
+.sched-edit-slot.rest { opacity: 0.5; }
+.sched-edit-dow { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-sub); }
+.sched-edit-slot.active .sched-edit-dow { color: var(--gold); }
+.sched-edit-num { width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #0a0a0a; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.sched-edit-num-empty { width: 20px; height: 20px; }
+.sched-edit-hint { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); text-align: center; padding: 8px 20px 4px; }
+
+/* Settings toggle */
+.settings-toggle { width: 44px; height: 26px; border-radius: 13px; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; background: var(--border-3); }
+.settings-toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.settings-toggle.on { background: #C9A84C; }
+.settings-toggle.on::after { transform: translateX(18px); }
+
+/* Schedule manager (full week view) */
+.schedule-mgr-sheet { position: relative; z-index: 1; background: var(--surface-2); border: 1px solid var(--border); border-top: 1px solid var(--border-3); border-radius: 28px 28px 0 0; padding: 28px 0 calc(env(safe-area-inset-bottom) + 24px); width: 100%; max-width: 480px; animation: slideUpCheckin 0.3s cubic-bezier(0.34,1.56,0.64,1); max-height: 88dvh; overflow-y: auto; }
+.schedule-mgr-header { padding: 0 20px 16px; border-bottom: 1px solid var(--border-2); margin-bottom: 4px; }
+.schedule-mgr-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 3px; }
+.schedule-mgr-sub { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-faint); }
+.schedule-mgr-done-badge { width: 18px; height: 18px; border-radius: 50%; background: #4ade80; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #0a0a0a; font-weight: 700; }
+
 /* Bottom nav */
 .bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; border-radius: 100px; cursor: pointer; color: #4a4a4a; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
@@ -668,6 +837,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .calc-unit-btn { color: var(--text-sub); }
 [data-theme="light"] .calc-unit-btn.active { color: var(--gold); }
 [data-theme="light"] .rest-msg { color: var(--text-dimmer); }
+/* Home screen light theme */
+[data-theme="light"] .home-upload-btn { color: #fff; }
+[data-theme="light"] .checkin-submit { color: #fff; }
+[data-theme="light"] .checkin-overlay { background: rgba(0,0,0,0.35); }
+[data-theme="light"] .schedule-dow-btn span { color: var(--text-dim); }
 /* gold accent elements */
 [data-theme="light"] .week-pill.active,
 [data-theme="light"] .day-tab.active,
@@ -716,16 +890,80 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
   <div id="main-content"></div>
   <nav class="bottom-nav">
-    <button class="nav-btn active" id="nav-workout" onclick="setScreen('workout')">
+    <button class="nav-btn" id="nav-home" onclick="setScreen('home')">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
+    </button>
+    <button class="nav-btn" id="nav-workout" onclick="setScreen('workout')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg></span>Workout
     </button>
     <button class="nav-btn" id="nav-metrics" onclick="setScreen('metrics')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></span>Metrics
     </button>
     <button class="nav-btn" id="nav-calc" onclick="setScreen('calc')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg></span>Calculator
+      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg></span>Calc
     </button>
   </nav>
+</div>
+
+<!-- Daily Check-In Modal -->
+<div class="checkin-modal" id="checkin-modal" style="display:none">
+  <div class="checkin-overlay" onclick="closeCheckin()"></div>
+  <div class="checkin-sheet">
+    <div class="checkin-handle"></div>
+    <div class="checkin-title">Daily Check-In</div>
+    <div class="checkin-sub">How are you feeling today?</div>
+    <div class="checkin-question">
+      <div class="checkin-q-label">Sleep</div>
+      <div class="checkin-options">
+        <button class="checkin-opt" onclick="ciPick('sleep',-1,this)">Poor</button>
+        <button class="checkin-opt" onclick="ciPick('sleep',0,this)">OK</button>
+        <button class="checkin-opt" onclick="ciPick('sleep',1,this)">Good</button>
+      </div>
+    </div>
+    <div class="checkin-question">
+      <div class="checkin-q-label">Stress</div>
+      <div class="checkin-options">
+        <button class="checkin-opt" onclick="ciPick('stress',-1,this)">High</button>
+        <button class="checkin-opt" onclick="ciPick('stress',0,this)">Moderate</button>
+        <button class="checkin-opt" onclick="ciPick('stress',1,this)">Low</button>
+      </div>
+    </div>
+    <div class="checkin-question">
+      <div class="checkin-q-label">Physical Readiness</div>
+      <div class="checkin-options">
+        <button class="checkin-opt" onclick="ciPick('body',-1,this)">Poor</button>
+        <button class="checkin-opt" onclick="ciPick('body',0,this)">OK</button>
+        <button class="checkin-opt" onclick="ciPick('body',1,this)">Good</button>
+      </div>
+    </div>
+    <button class="checkin-submit" id="checkin-submit-btn" disabled onclick="submitCheckin()">Log Check-In</button>
+    <button class="checkin-skip" onclick="closeCheckin()">Skip for today</button>
+  </div>
+</div>
+
+<!-- Intake Modal -->
+<div class="schedule-modal" id="intake-modal" style="display:none">
+  <div class="checkin-overlay" onclick="skipIntake()"></div>
+  <div class="intake-sheet">
+    <div class="checkin-handle"></div>
+    <div id="intake-body"></div>
+  </div>
+</div>
+
+<!-- Schedule Editor Modal -->
+<div class="schedule-modal" id="sched-edit-modal" style="display:none">
+  <div class="checkin-overlay" onclick="closeScheduleEditor()"></div>
+  <div class="schedule-mgr-sheet">
+    <div class="checkin-handle"></div>
+    <div class="schedule-mgr-header">
+      <div class="schedule-mgr-title">Training Schedule</div>
+      <div class="schedule-mgr-sub">Tap a day to assign or remove a session</div>
+    </div>
+    <div id="sched-edit-slots" class="sched-edit-slots-grid"></div>
+    <div style="padding: 16px 20px 0;">
+      <button class="schedule-clear-btn" onclick="closeScheduleEditor();setTimeout(()=>openIntake(state.activeBlock),200)">Clear training schedule</button>
+    </div>
+  </div>
 </div>
 <div class="add-lift-modal" id="add-lift-modal" style="display:none" onclick="if(event.target===this)closeAddLift()">
   <div class="add-lift-sheet">
@@ -804,6 +1042,30 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
+    <div class="settings-section-label">Home</div>
+    <button class="settings-row-btn" onclick="resetIntakeForTesting()" style="cursor:pointer">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
+        Reset Intake (Testing)
+      </div>
+    </button>
+
+    <button id="scores-settings-row" class="settings-row-btn" onclick="toggleScoresSetting()" style="cursor:pointer">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        DOTS / Wilks Scores
+      </div>
+      <div class="settings-toggle on" id="scores-toggle"></div>
+    </button>
+
+    <button id="readiness-settings-row" class="settings-row-btn" onclick="toggleReadinessSetting()" style="cursor:pointer">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Show Readiness Score
+      </div>
+      <button class="settings-toggle" id="readiness-toggle" onclick="event.stopPropagation();toggleReadinessSetting()"></button>
+    </button>
+
     <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
     <div class="settings-theme-pills" id="settings-theme-pills">
       <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
@@ -843,7 +1105,7 @@ function cycleTheme(){
 applyTheme(loadTheme());
 
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'workout', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -905,6 +1167,7 @@ function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function setScreen(s){
   state.screen=s;
   if(s==='metrics') state.metricsDrillBlock=null;
+  document.getElementById('nav-home').classList.toggle('active',s==='home');
   document.getElementById('nav-workout').classList.toggle('active',s==='workout');
   document.getElementById('nav-metrics').classList.toggle('active',s==='metrics');
   document.getElementById('nav-calc').classList.toggle('active',s==='calc');
@@ -2229,8 +2492,847 @@ function parseBarePres(pres){
   return null;
 }
 
+
+// ── HOME SCREEN ───────────────────────────────────────────────────────────────
+
+// ── Storage keys ─────────────────────────────────────────────────────────────
+const CHECKIN_KEY          = 'liftlog_checkin';
+const SCHEDULE_KEY         = 'liftlog_schedule';       // { blockId: [dow0, dow1, ...] } ordered array matching training day order
+const ATHLETE_KEY          = 'liftlog_athlete';         // { gender, age, bodyweight, bwUnit }
+const READINESS_HISTORY_KEY= 'liftlog_readiness_hist'; // [{ date, score, load, sleep, stress, body }]
+const APP_SETTINGS_KEY     = 'liftlog_app_settings';   // { showReadiness: bool, showScores: bool }
+
+function loadAppSettings()  { try { return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch { return {}; } }
+function saveAppSettings(s) { try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); } }
+function getShowReadiness() { const s = loadAppSettings(); return s.showReadiness !== false; } // default ON
+function getShowScores()    { const s = loadAppSettings(); return s.showScores    !== false; } // default ON
+
+function toggleScoresSetting() {
+  const s = loadAppSettings();
+  s.showScores = !getShowScores();
+  saveAppSettings(s);
+  const t = document.getElementById('scores-toggle');
+  if (t) t.classList.toggle('on', s.showScores);
+  if (state.screen === 'home') renderHome();
+}
+
+
+function toggleReadinessSetting() {
+  const s = loadAppSettings();
+  s.showReadiness = !getShowReadiness();
+  saveAppSettings(s);
+  // Update toggle button state
+  const btn = document.getElementById('readiness-toggle');
+  if (btn) btn.classList.toggle('on', s.showReadiness);
+  // Re-render home if we're on it
+  if (state.screen === 'home') renderHome();
+}
+
+function resetIntakeForTesting() {
+  const block = state.activeBlock;
+  if (!block) { alert('No active block.'); return; }
+  const s = loadSchedule();
+  delete s[block.id];
+  saveSchedule(s);
+  saveAthlete(null);
+  closeSettings();
+  setTimeout(() => openIntake(block), 200);
+}
+
+function updateSettingsToggles() {
+  const btn = document.getElementById('readiness-toggle');
+  if (btn) btn.classList.toggle('on', getShowReadiness());
+}
+
+// ── Persistence helpers ───────────────────────────────────────────────────────
+function loadCheckin()  { try { return JSON.parse(localStorage.getItem(CHECKIN_KEY)||'null'); } catch { return null; } }
+function saveCheckin(d) { try { localStorage.setItem(CHECKIN_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+
+function loadSchedule()  { try { return JSON.parse(localStorage.getItem(SCHEDULE_KEY)||'{}'); } catch { return {}; } }
+function saveSchedule(d) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+
+// Schedule: simple ordered array — scheduleForBlock[i] = dow for training day i
+function getBlockSchedule(blockId) {
+  const s = loadSchedule();
+  return s[blockId] || null; // null = not set
+}
+function setBlockSchedule(blockId, dowArray) {
+  const s = loadSchedule();
+  s[blockId] = dowArray;
+  saveSchedule(s);
+}
+
+// Athlete profile
+function loadAthlete()  { try { return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
+function saveAthlete(d) { try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+
+function loadReadinessHistory()  { try { return JSON.parse(localStorage.getItem(READINESS_HISTORY_KEY)||'[]'); } catch { return []; } }
+function saveReadinessHistory(h) { try { localStorage.setItem(READINESS_HISTORY_KEY, JSON.stringify(h)); } catch(e) { console.error(e); } }
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getTodayCheckin() {
+  const ci = loadCheckin();
+  return (ci && ci.date === getTodayStr()) ? ci : null;
+}
+
+// ── Check-in modal ────────────────────────────────────────────────────────────
+let _ciState = { sleep: null, stress: null, body: null };
+
+function openCheckinModal() {
+  _ciState = { sleep: null, stress: null, body: null };
+  const modal = document.getElementById('checkin-modal');
+  modal.style.display = 'flex';
+  modal.querySelectorAll('.checkin-opt').forEach(b => b.classList.remove('selected'));
+  const btn = document.getElementById('checkin-submit-btn');
+  btn.disabled = true;
+  btn.classList.remove('ready');
+}
+function closeCheckin() { document.getElementById('checkin-modal').style.display = 'none'; }
+
+function ciPick(q, v, el) {
+  _ciState[q] = v;
+  el.closest('.checkin-options').querySelectorAll('.checkin-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  const ready = _ciState.sleep !== null && _ciState.stress !== null && _ciState.body !== null;
+  const btn = document.getElementById('checkin-submit-btn');
+  btn.disabled = !ready;
+  btn.classList.toggle('ready', ready);
+}
+
+function submitCheckin() {
+  if (_ciState.sleep === null || _ciState.stress === null || _ciState.body === null) return;
+  const data = { date: getTodayStr(), sleep: _ciState.sleep, stress: _ciState.stress, body: _ciState.body };
+  saveCheckin(data);
+  // Store readiness history snapshot after check-in
+  storeReadinessSnapshot();
+  closeCheckin();
+  render();
+}
+
+// ── Schedule modal ────────────────────────────────────────────────────────────
+let _scheduleTargetDayIdx = null; // which training day index in current week we're assigning
+
+const DOW_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DOW_FULL   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+// ── Intake flow ───────────────────────────────────────────────────────────────
+// Triggered after a new block loads. Two steps: day selection, then athlete info.
+// State lives only in the modal; nothing is persisted until confirmed.
+
+let _intakeBlock   = null;  // block being configured
+let _intakeDowSel  = [];    // selected DOWs in order (length must equal training day count)
+
+function getTrainingDayCount(block) {
+  if (!block) return 0;
+  // Count distinct training days across week 0 (representative)
+  const week = block.weeks[0];
+  if (!week) return 0;
+  return week.days.filter(d => d.exercises && d.exercises.length > 0).length;
+}
+
+function openIntake(block) {
+  _intakeBlock  = block;
+  _intakeDowSel = [];
+  _renderIntakeStep1();
+  document.getElementById('intake-modal').style.display = 'flex';
+}
+
+function closeIntake() {
+  document.getElementById('intake-modal').style.display = 'none';
+  _intakeBlock  = null;
+  _intakeDowSel = [];
+}
+
+function skipIntake() {
+  closeIntake();
+  render();
+}
+
+function _renderIntakeStep1() {
+  const n     = getTrainingDayCount(_intakeBlock);
+  const DOW_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  const pills = DOW_SHORT.map((lbl, i) => {
+    const pos = _intakeDowSel.indexOf(i);
+    const sel = pos !== -1;
+    return `<button class="intake-dow-pill${sel ? ' selected' : ''}" onclick="intakeToggleDow(${i})">
+      ${lbl}
+      ${sel ? `<span class="intake-dow-num">${pos + 1}</span>` : ''}
+    </button>`;
+  }).join('');
+
+  const ready = _intakeDowSel.length === n;
+
+  document.getElementById('intake-body').innerHTML = `
+    <div class="intake-step-label">Step 1 of 2</div>
+    <div class="intake-title">When do you train?</div>
+    <div class="intake-sub">Select ${n} day${n !== 1 ? 's' : ''} in the order your sessions run</div>
+    <div class="intake-dow-grid">${pills}</div>
+    <div class="intake-count-hint">${_intakeDowSel.length} of ${n} selected</div>
+    <button class="intake-next-btn${ready ? ' ready' : ''}" ${ready ? '' : 'disabled'} onclick="intakeStep2()">Next →</button>
+    <button class="intake-skip-btn" onclick="skipIntake()">Skip setup</button>
+  `;
+}
+
+function intakeToggleDow(dow) {
+  const idx = _intakeDowSel.indexOf(dow);
+  const n   = getTrainingDayCount(_intakeBlock);
+  if (idx !== -1) {
+    _intakeDowSel.splice(idx, 1);
+  } else if (_intakeDowSel.length < n) {
+    _intakeDowSel.push(dow);
+  }
+  _renderIntakeStep1();
+}
+
+function intakeStep2() {
+  if (!_intakeBlock || _intakeDowSel.length !== getTrainingDayCount(_intakeBlock)) return;
+  // Save schedule immediately
+  setBlockSchedule(_intakeBlock.id, [..._intakeDowSel]);
+
+  const athlete = loadAthlete() || {};
+  document.getElementById('intake-body').innerHTML = `
+    <div class="intake-step-label">Step 2 of 2</div>
+    <div class="intake-title">About you</div>
+    <div class="intake-sub">Used for DOTS & WILKS scores on your metrics</div>
+
+    <div class="intake-field-label">Name</div>
+    <input class="intake-input" id="intake-name" type="text" placeholder="Your name"
+      value="${esc(athlete.name || '')}" autocomplete="given-name">
+
+    <div class="intake-field-label">Gender</div>
+    <div class="intake-gender-row">
+      <button class="intake-gender-btn${athlete.gender === 'male' ? ' selected' : ''}" onclick="intakeSetGender('male',this)">Male</button>
+      <button class="intake-gender-btn${athlete.gender === 'female' ? ' selected' : ''}" onclick="intakeSetGender('female',this)">Female</button>
+    </div>
+
+    <div class="intake-field-label">Age</div>
+    <input class="intake-input" id="intake-age" type="number" min="10" max="99" placeholder="Years"
+      value="${athlete.age || ''}" inputmode="numeric">
+
+    <div class="intake-field-label">Bodyweight</div>
+    <div class="intake-bw-row">
+      <input class="intake-input intake-bw-input" id="intake-bw" type="number" min="30" max="400" placeholder="Weight"
+        value="${athlete.bodyweight || ''}" inputmode="decimal">
+      <div class="intake-unit-toggle">
+        <button class="intake-unit-btn${(athlete.bwUnit||'lbs')==='lbs'?' active':''}" onclick="intakeSetUnit('lbs',this)">lbs</button>
+        <button class="intake-unit-btn${(athlete.bwUnit||'lbs')==='kg'?' active':''}" onclick="intakeSetUnit('kg',this)">kg</button>
+      </div>
+    </div>
+
+    <button class="intake-next-btn ready" onclick="intakeFinish()">Done</button>
+    <button class="intake-skip-btn" onclick="skipIntake()">Skip for now</button>
+  `;
+}
+
+let _intakeGender = null;
+let _intakeUnit   = 'lbs';
+
+function intakeSetGender(g, el) {
+  _intakeGender = g;
+  el.closest('.intake-gender-row').querySelectorAll('.intake-gender-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function intakeSetUnit(u, el) {
+  _intakeUnit = u;
+  el.closest('.intake-unit-toggle').querySelectorAll('.intake-unit-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function intakeFinish() {
+  const name = document.getElementById('intake-name')?.value.trim() || null;
+  const age  = parseInt(document.getElementById('intake-age')?.value) || null;
+  const bw   = parseFloat(document.getElementById('intake-bw')?.value) || null;
+  const existing = loadAthlete() || {};
+  const athlete = {
+    name:       name              || existing.name       || null,
+    gender:     _intakeGender     || existing.gender     || null,
+    age:        age               ?? existing.age        ?? null,
+    bodyweight: bw                ?? existing.bodyweight ?? null,
+    bwUnit:     _intakeUnit       || existing.bwUnit     || 'lbs',
+  };
+  saveAthlete(athlete);
+  closeIntake();
+  render();
+}
+
+// ── Schedule editor (from This Week card) ─────────────────────────────────────
+// Simple: shows 7 day slots, N of them are active (training days).
+// Tapping an active slot cycles which session fills it.
+
+function openScheduleEditor() {
+  const block = state.activeBlock;
+  if (!block) { return; }
+  const sched = getBlockSchedule(block.id);
+  if (!sched) { openIntake(block); return; }
+  _renderScheduleEditor();
+  document.getElementById('sched-edit-modal').style.display = 'flex';
+}
+
+function closeScheduleEditor() {
+  document.getElementById('sched-edit-modal').style.display = 'none';
+}
+
+function _renderScheduleEditor() {
+  const block = state.activeBlock;
+  if (!block) return;
+  const sched = getBlockSchedule(block.id) || [];
+  const n     = getTrainingDayCount(block);
+  const DOW_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  const slotHtml = DOW_SHORT.map((lbl, dow) => {
+    const sessionIdx = sched.indexOf(dow); // -1 if not a training day
+    const isActive   = sessionIdx !== -1;
+    return '<div class="sched-edit-slot' + (isActive ? ' active' : ' rest') + '"'
+      + (isActive || sched.length < n ? ' onclick="schedToggleDay(' + dow + ')"' : '')
+      + '>'
+      + '<div class="sched-edit-dow">' + lbl + '</div>'
+      + (isActive
+        ? '<div class="sched-edit-num">' + (sessionIdx + 1) + '</div>'
+        : '<div class="sched-edit-num-empty"></div>')
+      + '</div>';
+  }).join('');
+
+  const hint = sched.length < n
+    ? '<div class="sched-edit-hint">Select ' + (n - sched.length) + ' more day' + (n - sched.length !== 1 ? 's' : '') + '</div>'
+    : '<div class="sched-edit-hint">Tap a day to remove it</div>';
+
+  document.getElementById('sched-edit-slots').innerHTML = slotHtml + hint;
+}
+
+function schedToggleDay(dow) {
+  const block = state.activeBlock;
+  if (!block) return;
+  const sched = [...(getBlockSchedule(block.id) || [])];
+  const n     = getTrainingDayCount(block);
+  const idx   = sched.indexOf(dow);
+
+  if (idx !== -1) {
+    // Remove this day
+    sched.splice(idx, 1);
+  } else if (sched.length < n) {
+    // Add this day (append to end — next available session slot)
+    sched.push(dow);
+  }
+  // Keep sorted by day of week for display consistency
+  sched.sort((a, b) => a - b);
+  setBlockSchedule(block.id, sched);
+  _renderScheduleEditor();
+  if (state.screen === 'home') renderHome();
+}
+
+// ── Readiness: multi-signal composite score ───────────────────────────────────
+// Returns { score, load, sleep, stress, body, hasLoad, hasCheckin }
+// All sub-scores 0–100. Final = weighted avg.
+// Weights: load=40%, sleep=20%, stress=20%, body=20%
+
+function calcSignalFromCheckin(val) {
+  // val: -1=bad, 0=neutral, 1=good → 30, 65, 95
+  if (val === null || val === undefined) return null;
+  return val === -1 ? 30 : val === 0 ? 65 : 95;
+}
+
+function calcLoadSignal() {
+  // RPE×Sets ACWR: acute (7d) vs chronic (28d avg weekly)
+  // Each logged set contributes: RPE (or 7 default) as load unit
+  const block = state.activeBlock;
+  if (!block) return null;
+
+  const dayLoad = {}; // 'YYYY-MM-DD' => total RPE load
+  const today = new Date();
+
+  for (const [key, val] of Object.entries(state.logs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || parts[0] !== block.id) continue;
+    if (!parts[4].startsWith('s')) continue;
+    if (!val.actual || parseFloat(val.actual) <= 0) continue;
+
+    const wi = parseInt(parts[1]);
+    const di = parseInt(parts[2]);
+    const week = block.weeks[wi];
+    if (!week) continue;
+
+    // Approximate date
+    let dayDate;
+    if (block.startDate) {
+      const start = new Date(block.startDate);
+      dayDate = new Date(start.getTime() + (wi * 7 + di) * 86400000);
+    } else {
+      const daysAgo = (block.weeks.length - 1 - wi) * 7 + (week.days.length - 1 - di);
+      dayDate = new Date(today.getTime() - daysAgo * 86400000);
+    }
+    const dstr = `${dayDate.getFullYear()}-${String(dayDate.getMonth()+1).padStart(2,'0')}-${String(dayDate.getDate()).padStart(2,'0')}`;
+    const rpeLoad = val.rpe ? parseFloat(val.rpe) : 7; // default RPE 7 if not entered
+    dayLoad[dstr] = (dayLoad[dstr] || 0) + rpeLoad;
+  }
+
+  if (Object.keys(dayLoad).length === 0) return null;
+
+  const acuteCutoff  = new Date(today.getTime() -  7 * 86400000);
+  const chronicCutoff= new Date(today.getTime() - 28 * 86400000);
+  let acuteLoad = 0, chronicLoad = 0;
+  for (const [d, n] of Object.entries(dayLoad)) {
+    const dt = new Date(d);
+    if (dt >= acuteCutoff)  acuteLoad  += n;
+    if (dt >= chronicCutoff) chronicLoad += n;
+  }
+
+  const chronicAvg = chronicLoad / 4;
+  if (chronicAvg === 0) return null;
+  const acwr = acuteLoad / chronicAvg;
+
+  // Map ACWR to 0–100: optimal 0.8–1.3 → 85–100, tails off
+  let score;
+  if      (acwr >= 0.8 && acwr <= 1.3) score = 85 + ((acwr - 0.8) / 0.5) * 15;
+  else if (acwr < 0.8)                 score = Math.max(20, 40 + (acwr / 0.8) * 45);
+  else                                 score = Math.max(20, 100 - ((acwr - 1.3) / 0.7) * 80);
+  return Math.round(Math.min(100, Math.max(0, score)));
+}
+
+function calcReadiness() {
+  const loadScore = calcLoadSignal();
+  const ci = getTodayCheckin();
+  const sleepScore  = ci ? calcSignalFromCheckin(ci.sleep)  : null;
+  const stressScore = ci ? calcSignalFromCheckin(ci.stress) : null;
+  const bodyScore   = ci ? calcSignalFromCheckin(ci.body)   : null;
+
+  const hasLoad    = loadScore !== null;
+  const hasCheckin = ci !== null;
+
+  let finalScore = null;
+  if (hasLoad && hasCheckin) {
+    finalScore = Math.round(0.40 * loadScore + 0.20 * sleepScore + 0.20 * stressScore + 0.20 * bodyScore);
+  } else if (hasLoad) {
+    finalScore = loadScore;
+  } else if (hasCheckin) {
+    finalScore = Math.round((sleepScore + stressScore + bodyScore) / 3);
+  }
+
+  return { score: finalScore, load: loadScore, sleep: sleepScore, stress: stressScore, body: bodyScore, hasLoad, hasCheckin };
+}
+
+function storeReadinessSnapshot() {
+  const r = calcReadiness();
+  if (r.score === null) return;
+  const today = getTodayStr();
+  const history = loadReadinessHistory();
+  const existing = history.findIndex(h => h.date === today);
+  const entry = { date: today, score: r.score, load: r.load, sleep: r.sleep, stress: r.stress, body: r.body };
+  if (existing >= 0) history[existing] = entry;
+  else history.push(entry);
+  // Keep last 90 days
+  history.sort((a, b) => a.date.localeCompare(b.date));
+  while (history.length > 90) history.shift();
+  saveReadinessHistory(history);
+}
+
+function readinessColor(score) {
+  if (score >= 80) return '#4ade80';
+  if (score >= 60) return '#C9A84C';
+  return '#f87171';
+}
+function readinessLabel(score) {
+  if (score >= 80) return 'Ready';
+  if (score >= 60) return 'Moderate';
+  return 'Fatigued';
+}
+
+// ── Next workout info ─────────────────────────────────────────────────────────
+function getNextWorkoutInfo() {
+  const block = state.activeBlock;
+  if (!block) return null;
+  const nw = findNextWorkout(block);
+  const week = block.weeks[nw.weekIdx];
+  const day = week?.days[nw.dayIdx];
+  if (!day) return null;
+  const allDone = isDayComplete(block, week, day);
+  const metaParts = [];
+  if (block.weeks.length > 1) metaParts.push(`W${nw.weekIdx + 1}`);
+  if (block.name) metaParts.push(block.name);
+  return { day, week, weekIdx: nw.weekIdx, dayIdx: nw.dayIdx, allDone, meta: metaParts.join(' · ') };
+}
+
+// ── e1RM peaks ────────────────────────────────────────────────────────────────
+// ── DOTS & Wilks score calculations ──────────────────────────────────────────
+// All inputs in kg, total in kg, returns numeric score
+function calcDOTS(bwKg, totalKg, gender) {
+  if (!bwKg || !totalKg || bwKg <= 0 || totalKg <= 0) return null;
+  const m = gender === 'female'
+    ? { a:-57.96288,    b:13.6175032,   c:-0.1126655495, d:0.0005158568,  e:-0.0000010706 }
+    : { a:-307.75076,   b:24.0900756,   c:-0.1918759221, d:0.0007391293,  e:-0.0000010930 };
+  const x = bwKg;
+  const coeff = 500 / (m.a + m.b*x + m.c*x*x + m.d*x*x*x + m.e*x*x*x*x);
+  return Math.round(coeff * totalKg * 100) / 100;
+}
+
+function calcWilks(bwKg, totalKg, gender) {
+  if (!bwKg || !totalKg || bwKg <= 0 || totalKg <= 0) return null;
+  // Wilks 2020 (updated coefficients)
+  const m = gender === 'female'
+    ? { a:594.31747775582, b:-27.23842536447, c:0.82112226871, d:-0.00930733913, e:0.00004731582, f:-0.00000009054 }
+    : { a:1199.72839,      b:-101.013,        c:3.3337,        d:-0.054926,      e:0.00032996,    f:-0.0000007419 };
+  const x = bwKg;
+  const poly = m.a + m.b*x + m.c*x*x + m.d*x*x*x + m.e*x*x*x*x + m.f*x*x*x*x*x;
+  return Math.round((600 / poly) * totalKg * 100) / 100;
+}
+
+function getScores() {
+  const athlete = loadAthlete();
+  if (!athlete || !athlete.bodyweight || !athlete.gender) return null;
+
+  // Convert BW to kg
+  const bwKg = athlete.bwUnit === 'kg'
+    ? athlete.bodyweight
+    : athlete.bodyweight / 2.20462;
+
+  // Use e1RM peaks for squat/bench/deadlift, convert lbs→kg
+  const prs = getHomePRs();
+  const squat    = prs.find(p => p.lift === 'Squat')?.val    || 0;
+  const bench    = prs.find(p => p.lift === 'Bench')?.val    || 0;
+  const deadlift = prs.find(p => p.lift === 'Deadlift')?.val || 0;
+
+  if (squat + bench + deadlift === 0) return null;
+
+  // Total in kg (logged weights are in lbs)
+  const totalKg = (squat + bench + deadlift) / 2.20462;
+
+  const gender = athlete.gender; // 'male' | 'female'
+  return {
+    dots:  calcDOTS(bwKg, totalKg, gender),
+    wilks: calcWilks(bwKg, totalKg, gender),
+    total: Math.round(squat + bench + deadlift),
+    squat, bench, deadlift,
+    missing: { squat: !squat, bench: !bench, deadlift: !deadlift }
+  };
+}
+
+function dotsLevel(score) {
+  if (!score) return null;
+  if (score >= 550) return 'Elite';
+  if (score >= 500) return 'Advanced';
+  if (score >= 400) return 'Intermediate';
+  if (score >= 300) return 'Novice';
+  return 'Beginner';
+}
+
+function getHomePRs() {
+  const block = state.activeBlock;
+  if (!block) return [];
+  const peaks = { squat: null, bench: null, deadlift: null };
+  for (const [key, val] of Object.entries(state.logs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || parts[0] !== block.id) continue;
+    if (!parts[4].startsWith('s')) continue;
+    if (!isCompLift(parts[3])) continue;
+    const group = classifyLift(parts[3]);
+    if (!group || group === 'other') continue;
+    const weight = val.actual ? parseFloat(val.actual) : null;
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const si = parseInt(parts[4].slice(1));
+    const reps = getSetReps(parts[0], parts[1], parts[2], parts[3], si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    if (!peaks[group] || result.value > peaks[group]) peaks[group] = Math.round(result.value);
+  }
+  const out = [];
+  if (peaks.squat)    out.push({ lift:'Squat',    val:peaks.squat,    unit:'lbs' });
+  if (peaks.bench)    out.push({ lift:'Bench',     val:peaks.bench,    unit:'lbs' });
+  if (peaks.deadlift) out.push({ lift:'Deadlift',  val:peaks.deadlift, unit:'lbs' });
+  return out;
+}
+
+// ── Week progress dots ────────────────────────────────────────────────────────
+function getWeekDots() {
+  const block = state.activeBlock;
+  if (!block) return null;
+  const week = block.weeks[state.activeWeek];
+  if (!week) return null;
+
+  const trainingDayIndices = week.days.reduce((acc, d, i) => {
+    if (d.exercises && d.exercises.length > 0) acc.push(i);
+    return acc;
+  }, []);
+  if (trainingDayIndices.length === 0) return null;
+
+  const sched      = getBlockSchedule(block.id); // ordered dow array or null
+  const todayDow   = (new Date().getDay() + 6) % 7;
+  const nw         = findNextWorkout(block);
+
+  const dots = trainingDayIndices.map((di, sessionIdx) => {
+    const d         = week.days[di];
+    const isDone    = isDayComplete(block, week, d);
+    const assignedDow = sched ? sched[sessionIdx] : undefined;
+    const isToday   = assignedDow !== undefined && assignedDow === todayDow;
+    const isCurrent = (state.activeWeek === block.weeks.indexOf(week) && di === nw.dayIdx && !isDone);
+    return { di, sessionIdx, name: d.name, done: isDone, assignedDow, isToday, isCurrent };
+  });
+
+  const done = dots.filter(d => d.done).length;
+  return { dots, done, total: dots.length, hasSchedule: sched !== null };
+}
+
+// ── Renderers ─────────────────────────────────────────────────────────────────
+function renderReadinessCard() {
+  const r = calcReadiness();
+  const ci = getTodayCheckin();
+  const checkedIn = !!ci;
+
+  // Signal rows helper
+  function signalRow(label, score) {
+    if (score === null) return '';
+    const col = readinessColor(score);
+    return `<div class="readiness-signal-row">
+      <span class="readiness-signal-label">${label}</span>
+      <div class="readiness-signal-bar-wrap">
+        <div class="readiness-signal-bar" style="width:${score}%;background:${col}"></div>
+      </div>
+      <span class="readiness-signal-val" style="color:${col}">${score}</span>
+    </div>`;
+  }
+
+  let bodyHtml = '';
+  if (r.score !== null) {
+    const col = readinessColor(r.score);
+    // Arc gauge — semicircle: R=38, arc length = π*R ≈ 119.4
+    const R = 38, ARC = Math.PI * R;
+    const offset = (ARC * (1 - r.score / 100)).toFixed(1);
+    // cx=52, cy=56, arc from (8,56) to (96,56)
+    bodyHtml = `
+      <div class="readiness-arc-wrap">
+        <svg viewBox="0 0 104 62" width="100" height="56">
+          <path d="M8,56 A38,38 0 0,1 96,56" fill="none" stroke="var(--border)" stroke-width="7" stroke-linecap="round"/>
+          <path d="M8,56 A38,38 0 0,1 96,56" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="${ARC.toFixed(1)}" stroke-dashoffset="${offset}"/>
+        </svg>
+      </div>
+      <div class="readiness-score-num" style="color:${col}">${r.score}</div>
+      <div class="readiness-score-label">${readinessLabel(r.score)}</div>
+      <div class="readiness-signals">
+        ${signalRow('Load', r.load)}
+        ${checkedIn ? signalRow('Sleep', r.sleep) : ''}
+        ${checkedIn ? signalRow('Stress', r.stress) : ''}
+        ${checkedIn ? signalRow('Readiness', r.body) : ''}
+      </div>`;
+  } else {
+    bodyHtml = `<div class="readiness-no-data">Log sets<br>to activate</div>`;
+  }
+
+  return `<div class="home-card">
+    <div class="home-card-label" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Readiness</span>
+      <span onclick="openSettings('readiness-settings-row')" style="font-family:Barlow,sans-serif;font-size:10px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--text-dim);cursor:pointer;padding:2px 0 2px 8px">Hide</span>
+    </div>
+    ${bodyHtml}
+    <button class="readiness-checkin-btn ${checkedIn ? 'checked' : ''}" onclick="${checkedIn ? '' : 'openCheckinModal()'}">
+      ${checkedIn ? '✓ Checked in' : '+ Check In'}
+    </button>
+  </div>`;
+}
+
+function renderWeekCard() {
+  const wp = getWeekDots();
+  if (!wp) return '';
+
+  const DOW_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const todayDow  = (new Date().getDay() + 6) % 7;
+
+  const dotRows = wp.dots.map(dot => {
+    const assigned   = dot.assignedDow !== undefined;
+    const label      = assigned ? DOW_SHORT[dot.assignedDow] : '—';
+    const isToday    = assigned && dot.assignedDow === todayDow;
+    let dotClass     = 'week-training-dot';
+    let dotContent   = '';
+    if (dot.done)                      { dotClass += ' done'; dotContent = '\u2713'; }
+    else if (isToday || dot.isCurrent) { dotClass += ' current'; }
+
+    return '<div class="week-training-dot-wrap">'
+      + '<div class="' + dotClass + '">' + dotContent + '</div>'
+      + '<div class="week-training-dot-label' + (assigned ? ' assigned' : '') + '">' + label + '</div>'
+      + '</div>';
+  }).join('');
+
+  const fullWidth = !getShowReadiness();
+  const hintRow = wp.hasSchedule
+    ? '<div class="week-schedule-hint" onclick="openScheduleEditor()" style="cursor:pointer">Edit schedule <span class="week-schedule-hint-link">→</span></div>'
+    : '<div class="week-schedule-hint"><span class="week-schedule-hint-link" onclick="openIntake(state.activeBlock)">Set training days →</span></div>';
+
+  return '<div class="home-card week-progress-card' + (fullWidth ? ' full-width' : '') + '">'
+    + '<div class="home-card-label" onclick="openScheduleEditor()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+    + '<span>This Week</span>'
+    + '<svg width="12" height="12" viewBox="0 0 12 12" fill="var(--text-dim)"><path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
+    + '</div>'
+    + '<div class="week-fraction">' + wp.done + '<span class="week-fraction-denom">/' + wp.total + '</span></div>'
+    + '<div class="week-fraction-sub">days done</div>'
+    + '<div class="week-training-dots">' + dotRows + '</div>'
+    + hintRow
+    + '</div>';
+}
+
+function renderHome() {
+  const block = state.activeBlock;
+  const content = document.getElementById('main-content');
+
+  // No program loaded
+  if (!block || !block.weeks || block.weeks.length === 0) {
+    content.innerHTML = `<div class="home-screen">
+      <div class="home-greeting">${getGreeting()}</div>
+      <div class="home-empty">
+        <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
+        <div class="home-empty-title">No Program Loaded</div>
+        <div class="home-empty-desc">Upload your Excel training file to get started. All data stays on your device.</div>
+        <button class="home-upload-btn" onclick="document.getElementById('file-input').click()">Upload Program</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const _athlete = loadAthlete();
+  const athleteName = (_athlete && _athlete.name)
+    ? _athlete.name
+    : (block.athleteName && block.athleteName !== 'Athlete' ? block.athleteName : null);
+
+  // Hero card
+  const nwInfo = getNextWorkoutInfo();
+  let heroHtml = '';
+  if (nwInfo) {
+    const { day, weekIdx, dayIdx, allDone, meta } = nwInfo;
+    const heroClass = allDone ? 'home-hero done' : 'home-hero';
+    const label     = allDone ? '✓ All Weeks Complete' : 'Up Next';
+    const ctaText   = allDone ? 'View Workout' : 'Start Workout';
+    const exs       = day.exercises || [];
+    const showCount = Math.min(3, exs.length);
+    const more      = exs.length - showCount;
+    const exRows    = exs.slice(0, showCount).map(ex => {
+      const pres = (ex.prescription || '').slice(0, 20) + (ex.prescription?.length > 20 ? '…' : '');
+      return `<div class="home-hero-ex">
+        <div class="home-hero-ex-dot"></div>
+        <div class="home-hero-ex-name">${esc(ex.name)}</div>
+        <div class="home-hero-ex-pres">${esc(pres)}</div>
+      </div>`;
+    }).join('');
+    heroHtml = `<div class="${heroClass}" onclick="goToWorkout(${weekIdx},${dayIdx})">
+      <div class="home-hero-bg"></div>
+      <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+      <div class="home-hero-inner">
+        <div class="home-hero-label">${label}</div>
+        <div class="home-hero-day">${esc(day.name || 'Workout')}</div>
+        <div class="home-hero-meta">${esc(meta)}</div>
+        <div class="home-hero-exercises">
+          ${exRows}
+          ${more > 0 ? `<div class="home-hero-more">+${more} more</div>` : ''}
+        </div>
+        <div class="home-hero-cta">
+          <span class="home-hero-cta-text">${ctaText}</span>
+          <span class="home-hero-cta-arrow">→</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Two-col cards — readiness is optional
+  const showReadiness = getShowReadiness();
+  const readinessHtml = showReadiness ? renderReadinessCard() : '';
+  const weekHtml      = renderWeekCard();
+
+  // e1RM peaks + scores
+  const prs = getHomePRs();
+  const showScores = getShowScores();
+  const scores = showScores ? getScores() : null;
+
+  const noPrMsg = `<div style="font-family:Barlow,sans-serif;font-size:13px;color:var(--text-dim);text-align:center;padding:8px 0">Log sets to see projections</div>`;
+
+  let scoresSectionHtml = '';
+  if (showScores) {
+    const athlete = loadAthlete();
+    const hasProfile = athlete && athlete.gender && athlete.bodyweight;
+    if (!hasProfile) {
+      scoresSectionHtml = '<div class="home-scores-section">'
+        + '<div class="home-card-label">DOTS / Wilks</div>'
+        + '<div class="home-score-note">Add gender &amp; bodyweight in Settings to see scores</div>'
+        + '</div>';
+    } else if (!scores) {
+      scoresSectionHtml = '<div class="home-scores-section">'
+        + '<div class="home-card-label">DOTS / Wilks</div>'
+        + '<div class="home-score-note">Log comp lifts to calculate scores</div>'
+        + '</div>';
+    } else {
+      const missing = [
+        scores.missing.squat    ? 'Squat'    : null,
+        scores.missing.bench    ? 'Bench'    : null,
+        scores.missing.deadlift ? 'Deadlift' : null,
+      ].filter(Boolean);
+      const missingNote = missing.length
+        ? '<div class="home-score-missing">Est. from available lifts — missing: ' + missing.join(', ') + '</div>'
+        : '';
+      scoresSectionHtml = '<div class="home-scores-section">'
+        + '<div class="home-card-label">DOTS / Wilks <span style="font-weight:400;color:var(--text-dim);letter-spacing:0;font-size:11px">· ' + scores.total + ' lb total</span></div>'
+        + '<div class="home-scores-row">'
+        + '<div class="home-score-pill"><div class="home-score-pill-label">DOTS</div><div class="home-score-pill-val">' + (scores.dots?.toFixed(1)||'—') + ' <span class="home-score-est">est</span></div><div class="home-score-pill-level">' + (dotsLevel(scores.dots)||'') + '</div></div>'
+        + '<div class="home-score-pill"><div class="home-score-pill-label">Wilks</div><div class="home-score-pill-val">' + (scores.wilks?.toFixed(1)||'—') + ' <span class="home-score-est">est</span></div><div class="home-score-pill-level">' + (dotsLevel(scores.wilks)||'') + '</div></div>'
+        + '</div>'
+        + missingNote
+        + '</div>';
+    }
+  }
+
+  const prListHtml = prs.length > 0
+    ? prs.map(p =>
+        '<div class="home-pr-row">'
+        + '<div class="home-pr-lift">' + p.lift + '</div>'
+        + '<div class="home-pr-val-wrap"><div class="home-pr-val">' + p.val + '</div><div class="home-pr-unit">' + p.unit + '</div></div>'
+        + '<div class="home-pr-badge">e1RM</div>'
+        + '</div>'
+      ).join('')
+    : '<div style="font-family:Barlow,sans-serif;font-size:13px;color:var(--text-dim);padding:6px 0 2px">Log sets to see projections</div>';
+
+  const prHtml = '<div class="home-pr-card">'
+    + '<div class="home-card-label">Est. 1RM Peaks · ' + esc(block.name || 'Current Cycle') + '</div>'
+    + '<div class="home-pr-list">' + prListHtml + '</div>'
+    + scoresSectionHtml
+    + '</div>';
+
+  content.innerHTML = `<div class="home-screen">
+    <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + esc(athleteName) : ''}</div>
+    ${heroHtml}
+    ${showReadiness
+      ? `<div class="home-cards-row">${readinessHtml}${weekHtml}</div>`
+      : weekHtml
+    }
+    ${prHtml}
+  </div>`;
+
+  // Store today's readiness snapshot after render (non-blocking)
+  setTimeout(storeReadinessSnapshot, 0);
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function goToWorkout(weekIdx, dayIdx) {
+  state.activeWeek = weekIdx;
+  state.activeDay  = dayIdx;
+  state.expandedEx = new Set();
+  saveNav();
+  setScreen('workout');
+}
+
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
+  ['home','workout','metrics','calc'].forEach(s=>{
+    const el=document.getElementById('nav-'+s);
+    if(el) el.classList.toggle('active', state.screen===s);
+  });
+  if(state.screen==='home'){ renderHome(); return; }
   if(state.screen==='metrics'){ renderMetrics(); return; }
   if(state.screen==='calc'){ renderCalc(); return; }
   renderWorkout();
@@ -3158,13 +4260,17 @@ async function pickerCallback(data){
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    mergeBlocks(blocks); const _n=findNextWorkout(state.activeBlock); state.activeWeek=_n.weekIdx; state.activeDay=_n.dayIdx; state.screen='workout';
+    mergeBlocks(blocks); const _n=findNextWorkout(state.activeBlock); state.activeWeek=_n.weekIdx; state.activeDay=_n.dayIdx; state.screen='home';
     autoRegisterCompLifts(blocks);
     populateLogsFromSheet(blocks);
     saveBlocks(); saveNav();
-    document.getElementById('nav-workout').classList.add('active');
+    document.getElementById('nav-home').classList.add('active');
+    document.getElementById('nav-workout').classList.remove('active');
     document.getElementById('nav-metrics').classList.remove('active');
     render();
+    // Trigger intake if new block has no schedule
+    const _newBlock = state.activeBlock;
+    if (_newBlock && !getBlockSchedule(_newBlock.id)) { setTimeout(() => openIntake(_newBlock), 300); }
   }catch(err){ alert('Error loading file from Drive: '+err.message); console.error(err); }
 }
 
@@ -3181,13 +4287,17 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     // Pull athlete name from filename
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    mergeBlocks(blocks); const _n2=findNextWorkout(state.activeBlock); state.activeWeek=_n2.weekIdx; state.activeDay=_n2.dayIdx; state.screen='workout';
+    mergeBlocks(blocks); const _n2=findNextWorkout(state.activeBlock); state.activeWeek=_n2.weekIdx; state.activeDay=_n2.dayIdx; state.screen='home';
     autoRegisterCompLifts(blocks);
     populateLogsFromSheet(blocks);
     saveBlocks(); saveNav();
-    document.getElementById('nav-workout').classList.add('active');
+    document.getElementById('nav-home').classList.add('active');
+    document.getElementById('nav-workout').classList.remove('active');
     document.getElementById('nav-metrics').classList.remove('active');
     render();
+    // Trigger intake if new block has no schedule
+    const _newBlock2 = state.activeBlock;
+    if (_newBlock2 && !getBlockSchedule(_newBlock2.id)) { setTimeout(() => openIntake(_newBlock2), 300); }
   }catch(err){ alert('Error reading file: '+err.message); console.error(err); }
   e.target.value='';
 });
@@ -3261,12 +4371,19 @@ function confirmDeleteBlock(){
 document.getElementById('new-btn') && document.getElementById('new-btn').addEventListener('click', openProgramModal);
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
-function openSettings() {
+function openSettings(scrollTo) {
   const modal = document.getElementById('settings-modal');
   if (!modal) return;
   updateSettingsThemePills();
+  updateSettingsToggles();
   modal.style.display = 'flex';
-  requestAnimationFrame(() => modal.classList.add('open'));
+  requestAnimationFrame(() => {
+    modal.classList.add('open');
+    if (scrollTo) {
+      const el = document.getElementById(scrollTo);
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 180);
+    }
+  });
 }
 function closeSettings() {
   const modal = document.getElementById('settings-modal');
@@ -3697,7 +4814,7 @@ function exportHTMLReport(blockId, scope) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:${tv('--bg')};color:${tv('--text-primary')||'#f0f0f0'};font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
+html,body{background:${tv('--bg')};color:${tv('--text-primary')||'#f0f0f0'};font-family:Barlow,sans-serif;-webkit-font-smoothing:antialiased}
 .report{max-width:720px;margin:0 auto;padding:28px 20px 80px}
 
 /* Header */
