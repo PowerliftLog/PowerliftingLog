@@ -384,8 +384,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .delete-ex-btn.single { background: var(--surface-3); border: 1px solid var(--border); color: var(--text-sub); }
 .delete-ex-btn:active { opacity: 0.75; }
 
-.complete-workout-btn { display: block; width: calc(100% - 32px); margin: 8px 16px 24px; padding: 16px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; color: #777; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; }
-.complete-workout-btn:active { background: var(--surface-5); border-color: rgba(74,222,128,0.4); color: #4ade80; }
+.complete-workout-btn { display: block; width: calc(100% - 32px); margin: 8px 16px 24px; padding: 16px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; cursor: default; text-align: center; transition: all 0.2s; opacity: 0.45; }
+.complete-workout-btn:disabled { pointer-events: none; }
+.complete-workout-btn.ready { background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.35); color: var(--gold); opacity: 1; cursor: pointer; }
+.complete-workout-btn.ready:active { background: rgba(201,168,76,0.18); transform: scale(0.98); }
+.workout-done-row { display: flex; align-items: center; gap: 10px; margin: 8px 16px 24px; }
+.workout-done-row .complete-workout-btn { margin: 0; flex: 1; }
+.workout-done-row .clear-workout-btn { flex-shrink: 0; }
 .workout-complete-msg { text-align: center; color: #4ade80; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.08em; padding: 20px 16px 32px; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 10px; animation: completePulse 1.2s ease-out forwards; }
 @keyframes completePulse {
   0%   { opacity: 0; text-shadow: 0 0 0px rgba(74,222,128,0); }
@@ -439,6 +444,179 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-hero.done .home-hero-label { color: #4ade80; }
 .home-hero.done .home-hero-cta-text { color: #4ade80; }
 .home-hero.done .home-hero-cta-arrow { color: #4ade80; }
+
+/* Session Summary Hero Card */
+.session-hero { position: relative; background: var(--glass-bg); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; overflow: hidden; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.session-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, transparent 55%); pointer-events: none; }
+.session-hero-inner { position: relative; z-index: 1; padding: 18px 20px 20px; }
+.session-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4ade80; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+.session-hero-label-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
+.session-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: 3px; }
+.session-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 16px; }
+
+/* Comp lift rows */
+.session-lift-rows { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+.session-lift-row { display: flex; align-items: center; gap: 0; }
+.session-lift-name { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); width: 76px; flex-shrink: 0; }
+.session-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
+.session-lift-set .rpe-val { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+.session-lift-pr { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--gold); background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3); border-radius: 6px; padding: 2px 7px; flex-shrink: 0; }
+.session-lift-none { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); font-style: italic; flex: 1; }
+
+/* Stat tiles */
+.session-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border-2); }
+.session-stat { text-align: center; }
+.session-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
+.session-stat-val .session-stat-unit { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
+.session-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+.session-next-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 20px; border-top: 1px solid rgba(74,222,128,0.15);
+  background: rgba(201,168,76,0.06);
+}
+.session-next-label {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold);
+}
+.session-next-arrow {
+  font-size: 14px; color: var(--gold); opacity: 0.7;
+}
+
+/* Workout Celebration Overlay */
+#celebration-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+  overflow: hidden;
+}
+#celebration-overlay.visible { opacity: 1; pointer-events: all; }
+.cel-scroll {
+  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: flex; justify-content: center;
+  padding: env(safe-area-inset-top, 48px) 20px env(safe-area-inset-bottom, 60px);
+  padding-top: max(env(safe-area-inset-top), 48px);
+  padding-bottom: max(env(safe-area-inset-bottom), 60px);
+}
+.cel-inner {
+  width: 100%; max-width: 420px;
+  display: flex; flex-direction: column; align-items: center;
+  transform: translateY(32px);
+  transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+#celebration-overlay.visible .cel-inner { transform: translateY(0); }
+.cel-check {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(74,222,128,0.1);
+  border: 1.5px solid rgba(74,222,128,0.35);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 18px;
+  animation: cel-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+@keyframes cel-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.cel-check svg { color: #4ade80; }
+.cel-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 40px; font-weight: 900; letter-spacing: 0.02em;
+  color: var(--text-bright); line-height: 1;
+  margin-bottom: 6px; text-align: center;
+}
+.cel-day {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--gold); text-transform: uppercase; margin-bottom: 3px;
+}
+.cel-meta {
+  font-family: 'Barlow', sans-serif; font-size: 12px;
+  color: var(--text-sub); margin-bottom: 24px;
+}
+/* Glass cards */
+.cel-card {
+  width: 100%;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 14px 16px; margin-bottom: 10px;
+}
+.cel-card-label {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 10px;
+  font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 10px;
+}
+/* Lift rows */
+.cel-lift-row {
+  display: flex; align-items: center; padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cel-lift-row:last-child { border-bottom: none; }
+.cel-lift-name {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 11px;
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-sub); width: 64px; flex-shrink: 0;
+}
+.cel-lift-set {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 20px;
+  font-weight: 900; color: var(--text-bright); flex: 1; letter-spacing: 0.01em; line-height: 1;
+}
+.cel-lift-sub {
+  font-family: 'Barlow', sans-serif; font-size: 12px;
+  color: var(--text-sub); margin-left: 2px;
+}
+.cel-lift-rpe {
+  font-family: 'Barlow', sans-serif; font-size: 11px;
+  color: var(--gold); margin-left: 6px;
+}
+.cel-lift-pr {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; color: var(--gold);
+  background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 5px; padding: 2px 6px; flex-shrink: 0; margin-left: 6px;
+}
+.cel-lift-none { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); flex: 1; }
+/* Stats row */
+.cel-stats {
+  width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; margin-bottom: 10px;
+}
+.cel-stat {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 12px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 12px 8px; text-align: center;
+}
+.cel-stat-val {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 22px;
+  font-weight: 900; color: var(--text-bright); line-height: 1;
+}
+.cel-stat-unit { font-size: 11px; color: var(--text-sub); }
+.cel-stat-label {
+  font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;
+}
+/* Exercise list */
+.cel-ex-row {
+  display: flex; align-items: baseline; padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cel-ex-row:last-child { border-bottom: none; }
+.cel-ex-name {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 14px;
+  font-weight: 700; color: var(--text-primary); flex: 1; letter-spacing: 0.02em;
+}
+.cel-ex-done { color: var(--text-sub); }
+.cel-ex-sets {
+  font-family: 'Barlow', sans-serif; font-size: 12px;
+  color: var(--text-sub); flex-shrink: 0; margin-left: 8px;
+}
+.cel-hint {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-faint); margin-top: 28px; margin-bottom: 8px;
+}
 .home-hero.done .home-hero-ex-dot { background: #4ade80; }
 
 /* Two-col cards row */
@@ -911,6 +1089,37 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     </button>
   </div>
   <div id="main-content"></div>
+  <!-- Workout Celebration Overlay -->
+  <div id="celebration-overlay" onclick="dismissCelebration()">
+    <div class="cel-scroll">
+      <div class="cel-inner">
+        <!-- Header -->
+        <div class="cel-check">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="cel-title">Session Complete.</div>
+        <div class="cel-day" id="cel-day"></div>
+        <div class="cel-meta" id="cel-meta"></div>
+
+        <!-- Lift summary card -->
+        <div class="cel-card" id="cel-lifts-card">
+          <div class="cel-card-label">Top Sets</div>
+          <div id="cel-lifts"></div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="cel-stats" id="cel-stats"></div>
+
+        <!-- All exercises -->
+        <div class="cel-card" id="cel-exercises-card">
+          <div class="cel-card-label">All Exercises</div>
+          <div id="cel-exercises"></div>
+        </div>
+
+        <div class="cel-hint">tap anywhere to dismiss</div>
+      </div>
+    </div>
+  </div>
   <nav class="bottom-nav">
     <button class="nav-btn" id="nav-home" onclick="setScreen('home')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
@@ -1155,7 +1364,7 @@ function cycleTheme(){
 applyTheme(loadTheme());
 
 const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', homeHeroView:'session', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 // Restore nav position from last session
 (function restoreNav(){
   const nav=loadNav();
@@ -2118,7 +2327,7 @@ function parseBSheet(sn,rows){
     const rowStrs=row.map(c=>String(c||'').toLowerCase());
     const hasSetsHeader=rowStrs.some(s=>s.includes('sets x') || s.includes('sets/') || (s.includes('sets') && s.includes('rpe')));
     const hasRecordHeader=rowStrs.some(s=>s.includes('record weight') || s.includes('record'));
-    const isDayHeader=(hasSetsHeader||hasRecordHeader) && aStr.length < 25;
+    const isDayHeader=(hasSetsHeader||hasRecordHeader) && aStr.length < 40;
 
     if(isDayHeader){
       // Detect column positions from this header row
@@ -2166,6 +2375,28 @@ function parseBSheet(sn,rows){
       }
 
       const normName=aStr.replace(/\s+/g,' ').trim(); // collapse double spaces
+
+      // ── Circuit detection (Format B) ─────────────────────────────────────────
+      // Triggers when name starts with "Circuit " OR has 2+ commas (multiple exercises listed).
+      const isCircuitRow = /^circuit\s/i.test(normName) || (normName.match(/,/g)||[]).length >= 2;
+      if(isCircuitRow){
+        const stripped = normName.replace(/^circuit\s+/i,'').trim();
+        const parts = stripped.split(/,\s*/);
+        if(parts.length >= 2){
+          const _circuitIdx = curDay.exercises.length;
+          const supersetGroup = { label:`circuit_${_circuitIdx}`, rounds:1, startIdx:_circuitIdx };
+          // Distribute prescription parts to exercises if counts match, otherwise share the full pres
+          const presStr = pres || '';
+          const presParts = presStr.split(/,\s*/);
+          parts.forEach((exName, idx) => {
+            const exPres = (presParts.length >= parts.length) ? (presParts[idx]||'').trim() : presStr;
+            curDay.exercises.push({name:exName.trim(), prescription:exPres||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
+          });
+          continue;
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
       curDay.exercises.push({name:normName,prescription:pres,note,lifterNote,loggedWeight:cleanLogged});
     }
   }
@@ -2179,7 +2410,28 @@ function parseWorkbook(wb){
 }
 
 // ── BLOCK MERGE ───────────────────────────────────────────────────────────────
+// Append "#2", "#3" etc. to duplicate exercise names within the same day so log keys never collide.
+function deduplicateExerciseNames(blocks) {
+  for (const block of blocks) {
+    for (const week of (block.weeks || [])) {
+      for (const day of (week.days || [])) {
+        const seen = {};
+        for (const ex of (day.exercises || [])) {
+          const base = ex.name;
+          if (seen[base] === undefined) {
+            seen[base] = 1;
+          } else {
+            seen[base]++;
+            ex.name = base + ' #' + seen[base];
+          }
+        }
+      }
+    }
+  }
+}
+
 function mergeBlocks(incoming){
+  deduplicateExerciseNames(incoming);
   const existing=state.blocks;
   for(const inc of incoming){
     const idx=existing.findIndex(b=>b.id===inc.id);
@@ -2663,7 +2915,9 @@ function saveSchedule(d) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringi
 // Schedule: simple ordered array — scheduleForBlock[i] = dow for training day i
 function getBlockSchedule(blockId) {
   const s = loadSchedule();
-  return s[blockId] || null; // null = not set
+  const val = s[blockId];
+  if (!val || !Array.isArray(val)) return null; // null = not set or corrupt
+  return val;
 }
 function setBlockSchedule(blockId, dowArray) {
   const s = loadSchedule();
@@ -3158,6 +3412,163 @@ function getHomePRs() {
   return out;
 }
 
+// ── Session Summary (for completed-today hero card) ───────────────────────────
+function getSessionSummary(block, week, day) {
+  if (!block || !week || !day) return null;
+  const bid = block.id;
+  const wl  = week.label;
+  const dn  = day.name;
+
+  let totalVolume = 0;
+  let totalSets   = 0;
+  let totalRpe    = 0;
+  let rpeCount    = 0;
+  let maxRpe      = 0;
+
+  // Comp lift best sets: { squat, bench, deadlift } → { weight, reps, rpe, e1rm, isPR }
+  const compBest = { squat: null, bench: null, deadlift: null };
+  // All-time peaks for PR comparison
+  const allTimePeaks = { squat: null, bench: null, deadlift: null };
+  for (const [key, val] of Object.entries(state.logs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || parts[0] !== bid) continue;
+    if (!parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    const group  = classifyLift(exName);
+    if (!group || group === 'other') continue;
+    if (!isCompLift(exName)) continue;
+    const weight = val.actual ? parseFloat(val.actual) : null;
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const si   = parseInt(parts[4].slice(1));
+    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe    = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    // Track all-time peaks
+    if (!allTimePeaks[group] || result.value > allTimePeaks[group].e1rm) {
+      allTimePeaks[group] = { e1rm: result.value };
+    }
+  }
+
+  // Now scan only today's session
+  for (const ex of (day.exercises || [])) {
+    const exKey = lk(bid, wl, dn, ex.name);
+    const exLog = state.logs[exKey];
+    if (!exLog) continue;
+    const group = classifyLift(ex.name);
+    const isComp = isCompLift(ex.name);
+
+    // Determine how many sets are prescribed so we don't scan indefinitely
+    const pres = ex.prescription || '';
+    const parsedSets = parseSets(pres);
+    const simpleP = parseSimple(pres);
+    const rangedP = (!parsedSets.length && !simpleP) ? parseRangeSet(pres) : null;
+    const prescribedCount = parsedSets.length || simpleP?.sets || rangedP?.sets || 1;
+    // Also account for extra sets added this session
+    const extraCount = (state.extraSets && state.extraSets[exKey]) ? state.extraSets[exKey] : 0;
+    const maxSi = prescribedCount + extraCount;
+
+    for (let si = 0; si < maxSi; si++) {
+      const sk  = exKey + '||s' + si;
+      const sv  = state.logs[sk];
+      if (!sv) continue;
+      if (sv.inferredComplete) continue;
+      if (!sv.done) continue; // only count completed sets
+
+      const weight = sv.actual ? parseFloat(sv.actual) : null;
+      if (!weight || isNaN(weight) || weight <= 0) continue;
+      const rpe = sv.rpe ? parseFloat(sv.rpe) : null;
+
+      // Volume: use prescribed reps, fall back to 1
+      const reps = getSetReps(bid, wl, dn, ex.name, si) || sv.actualReps || 1;
+      const repsNum = typeof reps === 'string' ? (parseInt(reps) || 1) : (reps || 1);
+      totalVolume += weight * repsNum;
+      totalSets++;
+      if (rpe && rpe > 0) {
+        totalRpe += rpe;
+        rpeCount++;
+        if (rpe > maxRpe) maxRpe = rpe;
+      }
+
+      // Comp lift best set
+      if (isComp && group && group !== 'other') {
+        const result = calc1rm(weight, repsNum, rpe);
+        if (result) {
+          const cur = compBest[group];
+          if (!cur || result.value > cur.e1rm) {
+            compBest[group] = { weight, reps: repsNum, rpe, e1rm: result.value, method: result.method };
+          }
+        }
+      }
+    }
+  }
+
+  // Flag PRs: is today's e1rm the all-time best?
+  for (const g of ['squat','bench','deadlift']) {
+    if (!compBest[g]) continue;
+    const peak = allTimePeaks[g];
+    // It's a PR if today's e1rm equals or exceeds the all-time peak
+    // (all-time includes today, so within ~1lb they're equal means it's a PR)
+    compBest[g].isPR = peak && (compBest[g].e1rm >= peak.e1rm - 0.5);
+  }
+
+  return {
+    compBest,
+    totalVolume: Math.round(totalVolume),
+    totalSets,
+    avgRpe: rpeCount > 0 ? Math.round(totalRpe / rpeCount * 10) / 10 : null,
+    maxRpe: maxRpe > 0 ? maxRpe : null,
+  };
+}
+
+// Determine if today's scheduled workout was just completed this session.
+// Returns { week, day, weekIdx, dayIdx } or null.
+function getTodayCompletedWorkout() {
+  const block = state.activeBlock;
+  if (!block) return null;
+
+  // Helper: check if a completed day was finished today (not a previous calendar day)
+  function completedToday(b, w, d) {
+    const fk = lk(b.id, w.label, d.name, '__complete__');
+    const entry = state.logs[fk];
+    if (!entry?.done) return false;
+    if (!entry.completedDate) return true; // legacy entries without date — show them
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+    return entry.completedDate === todayStr;
+  }
+
+  // First check: is the currently active day complete AND completed today?
+  const week = block.weeks[state.activeWeek];
+  if (week) {
+    const day = week.days[state.activeDay];
+    if (day && isDayComplete(block, week, day) && completedToday(block, week, day)) {
+      return { week, day, weekIdx: state.activeWeek, dayIdx: state.activeDay };
+    }
+  }
+
+  // Fallback: check today's DOW against schedule to find the matching day
+  const sched = getBlockSchedule(block.id);
+  if (!sched) return null;
+  const todayDow = (new Date().getDay() + 6) % 7; // Mon=0
+  const sessionIdx = sched.indexOf(todayDow);
+  if (sessionIdx === -1) return null;
+
+  // Check active week only for today's session
+  if (week) {
+    const trainingDays = week.days.map((d, di) => ({ d, di }))
+      .filter(({ d }) => d.exercises && d.exercises.length > 0);
+    if (sessionIdx < trainingDays.length) {
+      const { d: day, di: dayIdx } = trainingDays[sessionIdx];
+      if (isDayComplete(block, week, day)) {
+        return { week, day, weekIdx: state.activeWeek, dayIdx };
+      }
+    }
+  }
+  return null;
+}
+
 // ── Week progress dots ────────────────────────────────────────────────────────
 function getWeekDots() {
   const block = state.activeBlock;
@@ -3308,10 +3719,13 @@ function renderHome() {
     ? _athlete.name
     : (block.athleteName && block.athleteName !== 'Athlete' ? block.athleteName : null);
 
-  // Hero card
-  const nwInfo = getNextWorkoutInfo();
-  let heroHtml = '';
+  // Hero card — show session summary if today's scheduled workout was just completed
+  const todayDone = getTodayCompletedWorkout();
+  const nwInfo    = getNextWorkoutInfo();
+  let heroHtml    = '';
+
   if (nwInfo) {
+    // ── Standard "Up Next" hero ──
     const { day, weekIdx, dayIdx, allDone, meta } = nwInfo;
     const heroClass = allDone ? 'home-hero done' : 'home-hero';
     const label     = allDone ? '✓ All Weeks Complete' : 'Up Next';
@@ -3860,18 +4274,29 @@ function renderExerciseList(block, week, day) {
       const startIdx = globalExIdx;
       const groupExpandKeys = item.exercises.map((ex, i) => lk(block.id, week.label, day.name, ex.name) + '||' + (startIdx + i));
       h += `<div class="superset-group">`;
-      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${item.label}</span><span class="superset-label">${item.exercises.map(e=>e.name).join(" · ")}</span></div>`;
+      const _displayLabel = item.label.replace(/_\d+$/, '');
+      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${_displayLabel}</span><span class="superset-label">${item.exercises.map(e=>e.name).join(" · ")}</span></div>`;
       item.exercises.forEach(ex => { h += renderExCard(ex, groupExpandKeys, block, week, day, globalExIdx++); });
       h += `</div>`;
     }
   });
 
-  const dayComplete=isDayComplete(block,week,day);
   // Always show add exercise button
   h+=`<button class="add-exercise-btn" onclick="openAddExerciseModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
-  if(!dayComplete){
-    h+=`<button class="complete-workout-btn" onclick="completeWorkout()">✓ Complete Workout</button>`;
+  // Use force-complete flag specifically — not isDayComplete — so green only shows after user taps Finish Workout
+  const forceComplete = !!state.logs[lk(block.id,week.label,day.name,'__complete__')]?.done;
+  const totalEx = day.exercises.length;
+  const resolvedEx = day.exercises.filter(ex => {
+    const log = state.logs[lk(block.id,week.label,day.name,ex.name)] || {};
+    return log.done || log.skipped;
+  }).length;
+  const allResolved = resolvedEx === totalEx && totalEx > 0;
+
+  if(!forceComplete){
+    // User hasn't tapped Finish Workout yet — gold when all resolved, gray when not
+    h+=`<button class="complete-workout-btn${allResolved?' ready':''}" onclick="completeWorkout()" ${allResolved?'':'disabled'}>Finish Workout</button>`;
   } else {
+    // User explicitly finished — non-tappable green confirmation + clear option
     h+=`<div class="workout-complete-msg">✓ Workout Complete <button class="clear-workout-btn" onclick="clearWorkout()" title="Clear workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div>`;
   }
 
@@ -4012,6 +4437,10 @@ function toggleEx(key){
     }
   }
   saveLogs(); render();
+  // If this tap completed the day, scroll finish button into view
+  if(nowDone && block && week && day){
+    checkAndActivateFinishButton(block, week, day);
+  }
 }
 
 function completeWorkout(){
@@ -4042,11 +4471,28 @@ function completeWorkout(){
       }
     }
   });
-  // Set force-complete flag so isDayComplete() returns true
+  // Set force-complete flag so isDayComplete() returns true (include today's date for expiry)
   const forceKey=lk(block.id,week.label,day.name,'__complete__');
-  state.logs[forceKey]={done:true};
+  const _today = new Date(); 
+  const _dateStr = `${_today.getFullYear()}-${_today.getMonth()+1}-${_today.getDate()}`;
+  state.logs[forceKey]={done:true, completedDate: _dateStr};
   saveLogs();
+  // Reset hero view so session summary shows on home after completion
+  state.homeHeroView = 'session';
+  // Capture celebration data before render() (render may mutate references)
+  const _dayName = day.name;
+  const _weekNum = block.weeks.findIndex(w => w.label === week.label);
+  const _blockName = block.name || '';
   render();
+  // Fire celebration after render settles
+  const metaParts = [];
+  if (block.weeks.length > 1 && _weekNum !== -1) metaParts.push('W' + (_weekNum + 1));
+  if (_blockName) metaParts.push(_blockName);
+  setTimeout(() => {
+    showCelebration(_dayName, metaParts.join(' · '), () => {
+      setScreen('home');
+    });
+  }, 50);
 }
 function clearWorkout(){
   const block=state.activeBlock;
@@ -4146,6 +4592,122 @@ function updateSetCheckmark(key,isDone){
     btn.textContent=isDone?'✓':'○';
   }
 }
+// ── WORKOUT CELEBRATION ───────────────────────────────────────────────────────
+let _celebrationCallback = null;
+
+function showCelebration(dayName, meta, onDismiss) {
+  const overlay = document.getElementById('celebration-overlay');
+  if (!overlay) return;
+
+  _celebrationCallback = onDismiss || null;
+
+  // Populate header
+  document.getElementById('cel-day').textContent  = dayName || 'Workout';
+  document.getElementById('cel-meta').textContent = meta    || '';
+
+  // Get session data
+  const block = state.activeBlock;
+  const week  = block?.weeks[state.activeWeek];
+  const day   = week?.days[state.activeDay];
+  const summary = (block && week && day) ? getSessionSummary(block, week, day) : null;
+
+  // ── Comp lift top sets ──────────────────────────────────────────────────────
+  const liftsEl = document.getElementById('cel-lifts');
+  const liftsCard = document.getElementById('cel-lifts-card');
+  const liftGroups = ['squat','bench','deadlift'];
+  const liftLabels = { squat:'Squat', bench:'Bench', deadlift:'Dead' };
+  const hasAnyLift = liftGroups.some(g => summary?.compBest?.[g]);
+
+  if (hasAnyLift) {
+    liftsCard.style.display = '';
+    liftsEl.innerHTML = liftGroups.map(g => {
+      const best = summary.compBest[g];
+      if (!best) return `<div class="cel-lift-row">
+        <div class="cel-lift-name">${liftLabels[g]}</div>
+        <div class="cel-lift-none">—</div>
+      </div>`;
+      const rpeStr = best.rpe ? `@${best.rpe}` : '';
+      const prBadge = best.isPR ? `<div class="cel-lift-pr">PR</div>` : '';
+      return `<div class="cel-lift-row">
+        <div class="cel-lift-name">${liftLabels[g]}</div>
+        <div class="cel-lift-set">${best.weight}<span class="cel-lift-sub"> lbs × ${best.reps}</span>${rpeStr ? `<span class="cel-lift-rpe">${rpeStr}</span>` : ''}</div>
+        ${prBadge}
+      </div>`;
+    }).join('');
+  } else {
+    liftsCard.style.display = 'none';
+  }
+
+  // ── Stats row ───────────────────────────────────────────────────────────────
+  const statsEl = document.getElementById('cel-stats');
+  const vol = summary?.totalVolume
+    ? (summary.totalVolume >= 1000 ? (summary.totalVolume/1000).toFixed(1)+'k' : summary.totalVolume)
+    : '—';
+  const sets   = summary?.totalSets  || '—';
+  const avgRpe = summary?.avgRpe     != null ? summary.avgRpe : '—';
+  const maxRpe = summary?.maxRpe     || '—';
+
+  statsEl.innerHTML = `
+    <div class="cel-stat">
+      <div class="cel-stat-val">${vol}<span class="cel-stat-unit">${typeof summary?.totalVolume === 'number' && summary.totalVolume >= 1000 ? '' : summary?.totalVolume ? ' lbs' : ''}</span></div>
+      <div class="cel-stat-label">Tonnage</div>
+    </div>
+    <div class="cel-stat">
+      <div class="cel-stat-val">${sets}</div>
+      <div class="cel-stat-label">Sets</div>
+    </div>
+    <div class="cel-stat">
+      <div class="cel-stat-val">${avgRpe}</div>
+      <div class="cel-stat-label">Avg RPE</div>
+    </div>`;
+
+  // ── All exercises ───────────────────────────────────────────────────────────
+  const exEl   = document.getElementById('cel-exercises');
+  const exCard = document.getElementById('cel-exercises-card');
+  const exs    = day?.exercises || [];
+  if (exs.length) {
+    exCard.style.display = '';
+    exEl.innerHTML = exs.map(ex => {
+      const exKey = lk(block.id, week.label, day.name, ex.name);
+      const exLog = state.logs[exKey] || {};
+      const isDone    = !!exLog.done;
+      const isSkipped = !!exLog.skipped;
+      // Count completed sets
+      let setsDone = 0;
+      for (let si = 0; si < 20; si++) {
+        const sv = state.logs[exKey + '||s' + si];
+        if (!sv) break;
+        if (sv.done && !sv.inferredComplete) setsDone++;
+      }
+      const statusStr = isSkipped ? 'skipped'
+        : setsDone > 0 ? `${setsDone} set${setsDone > 1 ? 's' : ''}`
+        : '';
+      const nameClass = isSkipped ? 'cel-ex-name cel-ex-done' : 'cel-ex-name';
+      return `<div class="cel-ex-row">
+        <div class="${nameClass}">${esc(ex.name)}</div>
+        <div class="cel-ex-sets">${statusStr}</div>
+      </div>`;
+    }).join('');
+  } else {
+    exCard.style.display = 'none';
+  }
+
+  // Reset scroll and show
+  const scroll = overlay.querySelector('.cel-scroll');
+  if (scroll) scroll.scrollTop = 0;
+  overlay.classList.add('visible');
+}
+
+function dismissCelebration() {
+  const overlay = document.getElementById('celebration-overlay');
+  if (overlay) overlay.classList.remove('visible');
+  if (_celebrationCallback) {
+    const cb = _celebrationCallback;
+    _celebrationCallback = null;
+    setTimeout(cb, 200);
+  }
+}
+
 function autoCompleteExercise(setKey){
   // Extract exercise key from set key: blockId||week||day||exercise||sN → blockId||week||day||exercise
   const parts=setKey.split('||');
@@ -4181,6 +4743,8 @@ function autoCompleteExercise(setKey){
     saveLogs();
     // Update main exercise checkmark without full render
     updateExerciseCheckmark(exKey,true);
+    // Check if whole day is now resolved — activate finish button and scroll it into view
+    checkAndActivateFinishButton(block, week, day);
   } else if(!allDone&&state.logs[exKey]?.done){
     // If sets were unchecked, uncheck exercise and clear force-complete flag
     state.logs[exKey]={...(state.logs[exKey]||{}),done:false};
@@ -4188,6 +4752,26 @@ function autoCompleteExercise(setKey){
     if(_d){ const fk=lk(_b.id,_w.label,_d.name,'__complete__'); delete state.logs[fk]; }
     saveLogs();
     updateExerciseCheckmark(exKey,false);
+  }
+}
+function checkAndActivateFinishButton(block, week, day) {
+  if (!block || !week || !day) return;
+  const totalEx = day.exercises.length;
+  const resolvedEx = day.exercises.filter(ex => {
+    const log = state.logs[lk(block.id, week.label, day.name, ex.name)] || {};
+    return log.done || log.skipped;
+  }).length;
+  if (resolvedEx === totalEx && totalEx > 0) {
+    const btn = document.querySelector('.complete-workout-btn');
+    if (btn && !btn.classList.contains('ready')) {
+      btn.classList.add('ready');
+      btn.disabled = false;
+      btn.textContent = 'Finish Workout';
+      // Scroll into view after last checkmark animation settles
+      setTimeout(() => {
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
   }
 }
 function updateExerciseCheckmark(exKey,isDone){
