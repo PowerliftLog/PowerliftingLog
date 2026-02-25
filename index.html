@@ -774,6 +774,81 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .intake-unit-btn { flex: 1; padding: 6px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; }
 .intake-unit-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
 
+/* Onboarding */
+.onboarding-overlay { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.onboarding-container { width: 100%; max-width: 400px; padding: 0 24px; text-align: center; animation: onboardFadeIn 0.4s ease; }
+@keyframes onboardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.onboard-icon { margin-bottom: 28px; }
+.onboard-title { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 900; color: var(--text-bright); margin-bottom: 8px; letter-spacing: -0.01em; }
+.onboard-sub { font-family: 'Barlow', sans-serif; font-size: 15px; color: var(--text-faint); line-height: 1.6; margin-bottom: 32px; }
+.onboard-features { display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; text-align: left; }
+.onboard-feature { display: flex; align-items: flex-start; gap: 12px; }
+.onboard-feature-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(var(--gold-rgb),0.1); border: 1px solid rgba(var(--gold-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.onboard-feature-icon svg { width: 18px; height: 18px; color: var(--gold); }
+.onboard-feature-text { padding-top: 2px; }
+.onboard-feature-label { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-bright); letter-spacing: 0.02em; }
+.onboard-feature-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+.onboard-primary-btn { width: 100%; padding: 16px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; transition: opacity 0.15s; }
+.onboard-primary-btn:active { opacity: 0.85; }
+.onboard-primary-btn.disabled { opacity: 0.35; pointer-events: none; }
+.onboard-skip-btn { width: 100%; padding: 12px; background: none; border: none; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); cursor: pointer; margin-top: 4px; }
+.onboard-form { text-align: left; margin-bottom: 28px; }
+.onboard-form .intake-field-label:first-child { margin-top: 0; }
+
+/* Upload option cards */
+.upload-options { display: flex; flex-direction: column; gap: 0; width: 100%; text-align: left; }
+.upload-option-card { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 10px; }
+.upload-option-card:active { background: var(--surface-3); }
+.upload-option-card.expanded { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
+.upload-option-card.expanded .upload-option-arrow { transform: rotate(180deg); }
+.upload-option-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(var(--gold-rgb),0.1); border: 1px solid rgba(var(--gold-rgb),0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--gold); }
+.upload-option-icon-sheets { background: rgba(52,168,83,0.1); border-color: rgba(52,168,83,0.15); color: #34a853; }
+.upload-option-body { flex: 1; min-width: 0; }
+.upload-option-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-bright); letter-spacing: 0.01em; }
+.upload-option-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.upload-option-arrow { flex-shrink: 0; color: var(--text-dim); transition: transform 0.2s; }
+
+/* Google Sheets expand section */
+.upload-sheets-expand { display: none; background: var(--surface-2); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 14px 14px; padding: 0 16px 16px; margin-bottom: 10px; }
+.upload-sheets-expand.open { display: block; }
+.upload-sheets-instructions { margin-bottom: 14px; }
+.upload-sheets-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.upload-sheets-step { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-sub); line-height: 1.7; }
+.upload-sheets-step strong { color: var(--text-bright); }
+.upload-sheets-input-row { display: flex; gap: 8px; align-items: stretch; }
+.upload-sheets-input { flex: 1; background: var(--surface-3); border: 1px solid var(--border-3); border-radius: 8px; padding: 10px 12px; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-primary); outline: none; min-width: 0; box-sizing: border-box; }
+.upload-sheets-input:focus { border-color: var(--gold); }
+.upload-sheets-import-btn { background: var(--gold); color: #000; border: none; border-radius: 8px; padding: 10px 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; cursor: pointer; opacity: 0.4; pointer-events: none; white-space: nowrap; transition: opacity 0.15s; }
+.upload-sheets-error { margin-top: 8px; font-size: 12px; color: #f87171; font-family: 'Barlow', sans-serif; }
+
+/* Format example viewer */
+.format-example-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: flex-end; justify-content: center; }
+.format-example-sheet { position: relative; z-index: 1; background: var(--surface-2); border: 1px solid var(--border); border-top: 1px solid var(--border-3); border-radius: 28px 28px 0 0; padding: 24px 20px calc(env(safe-area-inset-bottom) + 20px); width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; animation: slideUpCheckin 0.3s cubic-bezier(0.34,1.56,0.64,1); -webkit-overflow-scrolling: touch; }
+.format-example-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 4px; }
+.format-example-sub { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-faint); margin-bottom: 20px; line-height: 1.5; }
+.format-tab-row { display: flex; gap: 6px; margin-bottom: 16px; }
+.format-tab { flex: 1; padding: 10px 8px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; text-align: center; transition: all 0.15s; }
+.format-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
+.format-grid { border: 1px solid var(--border-3); border-radius: 10px; overflow: hidden; margin-bottom: 14px; font-family: 'Barlow', sans-serif; font-size: 12px; }
+.format-grid-header { display: flex; background: rgba(var(--gold-rgb),0.1); border-bottom: 1px solid var(--border-3); }
+.format-grid-header span { flex: 1; padding: 8px 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+.format-grid-row { display: flex; border-bottom: 1px solid var(--border); }
+.format-grid-row:last-child { border-bottom: none; }
+.format-grid-row span { flex: 1; padding: 7px 10px; color: var(--text-sub); line-height: 1.4; }
+.format-grid-row.section-header span { color: var(--text-bright); font-weight: 600; background: rgba(255,255,255,0.03); }
+.format-note { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; padding: 12px; background: var(--surface-3); border-radius: 10px; border: 1px solid var(--border); }
+.format-note strong { color: var(--text-bright); }
+
+/* Parse error modal */
+.parse-error-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.parse-error-card { position: relative; z-index: 1; background: var(--surface-2); border: 1px solid var(--border-3); border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px; text-align: center; animation: onboardFadeIn 0.3s ease; }
+.parse-error-icon { margin-bottom: 16px; }
+.parse-error-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 6px; }
+.parse-error-msg { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-faint); line-height: 1.6; margin-bottom: 24px; }
+.parse-error-actions { display: flex; flex-direction: column; gap: 8px; }
+.parse-error-btn-primary { width: 100%; padding: 14px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; }
+.parse-error-btn-secondary { width: 100%; padding: 12px; background: none; border: 1px solid var(--border); border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-sub); cursor: pointer; }
+.parse-error-btn-dismiss { width: 100%; padding: 10px; background: none; border: none; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); cursor: pointer; }
 
 /* Settings toggle */
 .settings-toggle { width: 44px; height: 26px; border-radius: 13px; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; background: var(--border-3); }
@@ -1068,6 +1143,26 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </nav>
 </div>
 
+<!-- Format Example Modal -->
+<div class="format-example-modal" id="format-example-modal" style="display:none">
+  <div class="checkin-overlay" onclick="closeFormatExample()"></div>
+  <div class="format-example-sheet">
+    <div class="checkin-handle"></div>
+    <div id="format-example-body"></div>
+  </div>
+</div>
+
+<!-- Parse Error Modal -->
+<div class="parse-error-modal" id="parse-error-modal" style="display:none">
+  <div class="checkin-overlay" onclick="closeParseError()"></div>
+  <div class="parse-error-card" id="parse-error-card"></div>
+</div>
+
+<!-- Onboarding Overlay -->
+<div class="onboarding-overlay" id="onboarding-overlay" style="display:none">
+  <div class="onboarding-container" id="onboarding-body"></div>
+</div>
+
 <!-- Intake Modal -->
 <div class="schedule-modal" id="intake-modal" style="display:none">
   <div class="checkin-overlay" onclick="skipIntake()"></div>
@@ -1179,9 +1274,9 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <div style="display:flex;gap:8px;align-items:stretch">
           <input id="sheets-url-input" type="url" placeholder="Paste Google Sheets link…"
             style="flex:1;background:var(--surface-3);border:1px solid var(--border-3);border-radius:8px;padding:9px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);outline:none;min-width:0"
-            oninput="onSheetsUrlInput(this.value)"
-            onkeydown="if(event.key==='Enter')importFromSheetsUrl()" />
-          <button id="sheets-url-btn" onclick="importFromSheetsUrl()"
+            oninput="onSheetsUrlInput(this.value,'')"
+            onkeydown="if(event.key==='Enter')importFromSheetsUrl('')" />
+          <button id="sheets-url-btn" onclick="importFromSheetsUrl('')"
             style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.05em;cursor:pointer;opacity:0.4;pointer-events:none;white-space:nowrap;transition:opacity 0.15s">
             IMPORT
           </button>
@@ -1267,6 +1362,12 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
         Reset Intake (Testing)
+      </div>
+    </button>
+    <button class="settings-row-btn" onclick="resetOnboarding()" style="cursor:pointer">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Reset Onboarding (Testing)
       </div>
     </button>
 
@@ -1485,17 +1586,24 @@ function classifyLift(name){
 // ── EXERCISE INPUT MODE ───────────────────────────────────────────────────────
 const CARDIO_KEYWORDS = ['treadmill','bike','cycling','rowing machine','elliptical','stairmaster','stair master','cardio','walk','jog','run','sprint'];
 const BODYWEIGHT_KEYWORDS = [
-  'plank','sit up','situp','sit-up','crunch','leg raise','hanging leg','v-up','ab wheel','ab rollout',
+  'sit up','situp','sit-up','crunch','leg raise','hanging leg','v-up','ab wheel','ab rollout',
   'dead bug','bird dog','pallof','push up','pushup','push-up','pull up','pullup','pull-up',
   'chin up','chinup','chin-up','dip','bodyweight','stretch','foam roll','mobility',
   'yoga','jumping jack','burpee','mountain climber','glute bridge','hip thrust bodyweight',
-  'lunge bodyweight','pike','handstand','muscle up','muscle-up'
+  'lunge bodyweight','pike','handstand','muscle up','muscle-up','flutter kick'
 ];
+const ISOMETRIC_KEYWORDS = ['plank','wall sit','iso hold','isometric','dead hang','l-sit','hollow hold'];
+const WEIGHTED_OVERRIDES = ['db ','db\t','dumbbell','bb ','bb\t','barbell','cable','machine','kettlebell','kb ','band','weighted','smith','ez ','ez-'];
 const TIMED_PATTERN=/\d+\s*(min|sec|s|m)\b/i;
 function getExerciseInputMode(name,pres){
   const n=name.toLowerCase().trim();
-  if(n.includes('weighted')) return 'weighted';
+  // Explicit weighted overrides — DB, BB, cable, machine, kettlebell etc.
+  if(WEIGHTED_OVERRIDES.some(k=>n.includes(k))) return 'weighted';
   if(CARDIO_KEYWORDS.some(k=>n.includes(k))) return 'cardio';
+  // Isometric exercises — just need a checkmark (or time field if timed pres)
+  if(ISOMETRIC_KEYWORDS.some(k=>n.includes(k))){
+    return (TIMED_PATTERN.test(n)||(pres&&TIMED_PATTERN.test(pres))) ? 'bw-timed' : 'bw';
+  }
   if(BODYWEIGHT_KEYWORDS.some(k=>n.includes(k))){
     return (TIMED_PATTERN.test(n)||(pres&&TIMED_PATTERN.test(pres))) ? 'bw-timed' : 'bw';
   }
@@ -2380,13 +2488,40 @@ function parseBSheet(sn,rows){
         if(parts.length >= 2){
           const _circuitIdx = curDay.exercises.length;
           const supersetGroup = { label:`circuit_${_circuitIdx}`, rounds:1, startIdx:_circuitIdx };
-          // Distribute prescription parts to exercises if counts match, otherwise share the full pres
+          // Distribute prescription parts to exercises
           const presStr = pres || '';
           const presParts = presStr.split(/,\s*/);
-          parts.forEach((exName, idx) => {
-            const exPres = (presParts.length >= parts.length) ? (presParts[idx]||'').trim() : presStr;
-            curDay.exercises.push({name:exName.trim(), prescription:exPres||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
-          });
+          if (presParts.length >= parts.length) {
+            // Happy path: comma counts match, assign 1:1
+            parts.forEach((exName, idx) => {
+              curDay.exercises.push({name:exName.trim(), prescription:(presParts[idx]||'').trim()||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
+            });
+          } else {
+            // Mismatch: use name-matching to assign prescriptions
+            const exNames = parts.map(p => p.trim().toLowerCase());
+            const assigned = new Array(parts.length).fill(null);
+            let defaultPres = null;
+            presParts.forEach(seg => {
+              const segLower = seg.toLowerCase().trim();
+              // Extract prescription portion (everything from first digit onward)
+              const presMatch = segLower.match(/(\d[\dx\-\s@.secminrep]*\S*)/i);
+              const presOnly = presMatch ? presMatch[0].trim() : seg.trim();
+              const matched = [];
+              exNames.forEach((en, i) => {
+                const words = en.split(/\s+/).filter(w => w.length >= 3);
+                if (words.some(w => segLower.includes(w))) matched.push(i);
+              });
+              if (matched.length > 0) {
+                matched.forEach(i => { if (!assigned[i]) assigned[i] = presOnly; });
+              } else {
+                if (!defaultPres) defaultPres = presOnly;
+              }
+            });
+            const fallback = defaultPres || assigned.filter(Boolean)[0] || presStr;
+            parts.forEach((exName, idx) => {
+              curDay.exercises.push({name:exName.trim(), prescription:assigned[idx]||fallback||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
+            });
+          }
           continue;
         }
       }
@@ -2785,20 +2920,20 @@ function parseSets(pres){
 }
 function parseSimple(pres){
   if(!pres) return null;
-  const m=pres.match(/^(\d+)x([\d\-]+)/i);
+  const m=pres.match(/^(\d+)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(!m) return null;
   // Exclude range-set patterns like "3-4x15" — those go to parseRangeSet
   if(pres.match(/^\d+[\-–]\d+x/i)) return null;
-  return{sets:parseInt(m[1]),reps:m[2]};
+  return{sets:parseInt(m[1]),reps:m[2].trim()};
 }
 // Handles "3-4x15 (M)", "3x12-15", range-set patterns with no specific weight
 function parseRangeSet(pres){
   if(!pres) return null;
-  // Standard: "3x10", "3-4x10", "3x8-12"
-  const m=pres.match(/^(\d+)[\-–]?(\d*)x([\d\-]+)/i);
+  // Standard: "3x10", "3-4x10", "3x8-12", "2x 45 sec"
+  const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(m){
     const sets=parseInt(m[1]); // use lower bound of set range
-    const reps=m[3];
+    const reps=m[3].trim();
     return{sets,reps};
   }
   // "2-3 sets" or "2-3 sets (pick reps)" — sets range, open reps
@@ -2825,6 +2960,7 @@ function parseBarePres(pres){
 const SCHEDULE_KEY         = 'liftlog_schedule';       // { blockId: [dow0, dow1, ...] } ordered array matching training day order
 const ATHLETE_KEY          = 'liftlog_athlete';         // { gender, age, bodyweight, bwUnit }
 const APP_SETTINGS_KEY     = 'liftlog_app_settings';   // { showScores: bool }
+const ONBOARDED_KEY        = 'liftlog_onboarded';      // '1' after onboarding complete
 
 function loadAppSettings()  { try { return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch { return {}; } }
 function saveAppSettings(s) { try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); } }
@@ -2900,8 +3036,16 @@ function resetIntakeForTesting() {
   delete s[block.id];
   saveSchedule(s);
   saveAthlete(null);
+  localStorage.removeItem(ONBOARDED_KEY);
   closeSettings();
   setTimeout(() => openIntake(block), 200);
+}
+
+function resetOnboarding() {
+  localStorage.removeItem(ONBOARDED_KEY);
+  saveAthlete(null);
+  closeSettings();
+  location.reload();
 }
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
@@ -3443,8 +3587,8 @@ function renderHome() {
       <div class="home-empty">
         <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
         <div class="home-empty-title">No Program Loaded</div>
-        <div class="home-empty-desc">Upload your Excel training file to get started. All data stays on your device.</div>
-        <button class="home-upload-btn" onclick="document.getElementById('file-input').click()">Upload Program</button>
+        <div class="home-empty-desc">Upload your training program to get started.</div>
+        ${renderUploadOptions('home-')}
       </div>
     </div>`;
     return;
@@ -3700,16 +3844,69 @@ function render(){
 
 // ── renderWorkout sub-functions ───────────────────────────────────────────────
 
+function renderUploadOptions(prefix) {
+  prefix = prefix || 'up-';
+  return `<div class="upload-options">
+    <div class="upload-option-card" onclick="document.getElementById('file-input').click()">
+      <div class="upload-option-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      <div class="upload-option-body">
+        <div class="upload-option-title">Upload Excel File</div>
+        <div class="upload-option-desc">Select a .xlsx or .xls file from your device</div>
+      </div>
+      <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+    <div class="upload-option-card" onclick="this.querySelector('.upload-sheets-expand').classList.toggle('open');this.classList.toggle('expanded')">
+      <div class="upload-option-icon upload-option-icon-sheets">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="upload-option-body">
+        <div class="upload-option-title">Import from Google Sheets</div>
+        <div class="upload-option-desc">Paste a link to your shared spreadsheet</div>
+      </div>
+      <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="upload-sheets-expand" onclick="event.stopPropagation()">
+      <div class="upload-sheets-instructions">
+        <div class="upload-sheets-step-label">How to share your sheet:</div>
+        <div class="upload-sheets-step">1. Open your program in Google Sheets</div>
+        <div class="upload-sheets-step">2. Click <strong>Share</strong> → General access → <strong>Anyone with the link</strong></div>
+        <div class="upload-sheets-step">3. Copy the link and paste it below</div>
+      </div>
+      <div class="upload-sheets-input-row">
+        <input id="${prefix}sheets-url-input" type="url" placeholder="Paste Google Sheets link…"
+          class="upload-sheets-input"
+          oninput="onSheetsUrlInput(this.value,'${prefix}')"
+          onkeydown="if(event.key==='Enter')importFromSheetsUrl('${prefix}')"
+          onclick="event.stopPropagation()" />
+        <button id="${prefix}sheets-url-btn" onclick="event.stopPropagation();importFromSheetsUrl('${prefix}')"
+          class="upload-sheets-import-btn">IMPORT</button>
+      </div>
+      <div id="${prefix}sheets-url-error" class="upload-sheets-error" style="display:none"></div>
+    </div>
+    <div style="text-align:center;padding-top:4px">
+      <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
+    </div>
+  </div>`;
+}
+
 function renderUploadScreen() {
   return `<div class="upload-screen">
     <div class="upload-icon"><svg viewBox="0 0 28 40" fill="#C9A84C" width="36" height="54"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
     <div class="upload-title">PowerliftingLog</div>
-    <div class="upload-desc">Upload your Excel training file and it will be formatted for mobile workouts.</div>
-    <button class="upload-btn" onclick="document.getElementById('file-input').click()" style="display:flex;align-items:center;justify-content:center;gap:9px">
-      Upload Program
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    </button>
-    <div class="upload-hint">Supports coach Excel formats · No account needed · All data stays on your device</div>
+    <div class="upload-desc">Upload your training program to get started.</div>
+    ${renderUploadOptions('wo-')}
+    <div class="upload-hint">No account needed · All data stays on your device</div>
   </div>`;
 }
 
@@ -3846,10 +4043,15 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
                 <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
-    if(inputMode==='bw'||inputMode==='cardio') return '';
-    if(inputMode==='bw-timed') return `<div class="set-inputs-wrap">
+    if(inputMode==='bw') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="numeric" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+              </div>
+            </div>`;
+    if(inputMode==='cardio') return '';
+    if(inputMode==='bw-timed') return `<div class="set-inputs-wrap" style="max-width:120px">
+              <div class="set-input-group"><div class="set-input-label">Time</div>
+                <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
     return `<div class="set-inputs-wrap">
@@ -3864,6 +4066,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
 
   // Tappable reps button — used across all set rendering paths (simple, ranged, bare)
   function repsButtonHtml(sk, sl, prescReps, label) {
+    // Strip " reps" suffix for timed prescriptions (e.g. "45 sec reps" → "45 sec")
+    if (/\d+\s*(sec|min|s|m)\b/i.test(String(prescReps))) label = String(prescReps);
     const _hasActual = sl.actualReps && sl.actualReps !== String(prescReps);
     const _display = _hasActual ? `<span style="color:var(--gold)">${sl.actualReps}</span> reps` : label;
     const _editing = state.editingRepsKey === sk;
@@ -4701,27 +4905,26 @@ function extractSheetsId(url) {
   return m ? m[1] : null;
 }
 
-function onSheetsUrlInput(val) {
-  const btn = document.getElementById('sheets-url-btn');
-  const err = document.getElementById('sheets-url-error');
-  err.style.display = 'none';
+function onSheetsUrlInput(val, prefix) {
+  prefix = prefix || '';
+  const btn = document.getElementById(prefix + 'sheets-url-btn');
+  const err = document.getElementById(prefix + 'sheets-url-error');
+  if (err) err.style.display = 'none';
   const id = extractSheetsId(val.trim());
-  if (id) {
-    btn.style.opacity = '1';
-    btn.style.pointerEvents = 'auto';
-  } else {
-    btn.style.opacity = '0.4';
-    btn.style.pointerEvents = 'none';
+  if (btn) {
+    btn.style.opacity = id ? '1' : '0.4';
+    btn.style.pointerEvents = id ? 'auto' : 'none';
   }
 }
 
-async function importFromSheetsUrl() {
-  const input = document.getElementById('sheets-url-input');
-  const btn   = document.getElementById('sheets-url-btn');
-  const err   = document.getElementById('sheets-url-error');
+async function importFromSheetsUrl(prefix) {
+  prefix = prefix || '';
+  const input = document.getElementById(prefix + 'sheets-url-input');
+  const btn   = document.getElementById(prefix + 'sheets-url-btn');
+  const err   = document.getElementById(prefix + 'sheets-url-error');
   const url   = input.value.trim();
   const id    = extractSheetsId(url);
-  err.style.display = 'none';
+  if (err) err.style.display = 'none';
 
   if (!id) {
     err.textContent = "Couldn't find a valid Google Sheets link. Make sure you copied the full URL.";
@@ -4749,11 +4952,20 @@ async function importFromSheetsUrl() {
     wb._plFilename = id; // use sheet ID as stable filename key
     const blocks = parseWorkbook(wb);
     if (!blocks || blocks.length === 0) {
-      throw new Error("Couldn't parse this sheet. Make sure it's a supported program format.");
+      throw new Error("Couldn't find exercises in this sheet. Tap \"What should my spreadsheet look like?\" below to see supported formats.");
     }
-    closeProgramModal();
+    // Close any open modals
+    try { closeProgramModal(); } catch(ex) {}
+    // Close onboarding if open
+    const onboardEl = document.getElementById('onboarding-overlay');
+    if (onboardEl && onboardEl.style.display !== 'none') {
+      markOnboarded();
+      onboardEl.style.display = 'none';
+      document.querySelector('.bottom-nav').style.display = '';
+      document.querySelector('.header').style.display = '';
+    }
     input.value = '';
-    onSheetsUrlInput('');
+    onSheetsUrlInput('', prefix);
     openImportIntent(blocks);
   } catch (e) {
     err.textContent = e.message || 'Something went wrong. Please try again.';
@@ -5169,16 +5381,24 @@ function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const 
 
 document.getElementById('file-input').addEventListener('change',async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
+  // Close onboarding if open (so import intent modal is visible)
+  const onboardEl = document.getElementById('onboarding-overlay');
+  if (onboardEl && onboardEl.style.display !== 'none') {
+    markOnboarded();
+    onboardEl.style.display = 'none';
+    document.querySelector('.bottom-nav').style.display = '';
+    document.querySelector('.header').style.display = '';
+  }
   try{
     const data=await file.arrayBuffer();
     const wb=XLSX.read(data);
     wb._plFilename = file.name;
     const blocks=parseWorkbook(wb);
-    if(!blocks||blocks.length===0){ alert("Couldn't parse this file. See console for details."); return; }
+    if(!blocks||blocks.length===0){ showParseError('parse'); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; if(b.name==='Training Program') b.name=namePart; });
     openImportIntent(blocks);
-  }catch(err){ alert('Error reading file: '+err.message); console.error(err); }
+  }catch(err){ showParseError('error', err.message); console.error(err); }
   e.target.value='';
 });
 
@@ -5863,8 +6083,340 @@ ${chartScript}
   window.open(URL.createObjectURL(blob), '_blank');
 }
 
+// ── TEMPLATE DOWNLOAD ─────────────────────────────────────────────────────────
+const TEMPLATE_XLSX_B64 = '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';
 
-render();
+function downloadTemplate() {
+  const byteChars = atob(TEMPLATE_XLSX_B64);
+  const byteArr = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+  const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'PowerliftingLog_Template.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+}
+
+// ── FORMAT EXAMPLE VIEWER ─────────────────────────────────────────────────────
+let _formatExampleTab = 'A';
+
+function openFormatExample() {
+  _formatExampleTab = 'A';
+  renderFormatExample();
+  document.getElementById('format-example-modal').style.display = 'flex';
+}
+
+function closeFormatExample() {
+  document.getElementById('format-example-modal').style.display = 'none';
+}
+
+function setFormatTab(tab) {
+  _formatExampleTab = tab;
+  renderFormatExample();
+}
+
+function renderFormatExample() {
+  const body = document.getElementById('format-example-body');
+  const tabA = _formatExampleTab === 'A' ? ' active' : '';
+  const tabB = _formatExampleTab === 'B' ? ' active' : '';
+
+  let content = `
+    <div class="format-example-title">Supported Formats</div>
+    <div class="format-example-sub">The app reads two common coaching spreadsheet layouts and auto-detects which one you're using.</div>
+    <div class="format-tab-row">
+      <button class="format-tab${tabA}" onclick="setFormatTab('A')">Format A</button>
+      <button class="format-tab${tabB}" onclick="setFormatTab('B')">Format B</button>
+    </div>
+  `;
+
+  if (_formatExampleTab === 'A') {
+    content += `
+      <div class="format-note" style="margin-bottom:12px">
+        Each sheet is a full training block. Days run left-to-right as columns. Each exercise lists its weekly prescriptions vertically.
+      </div>
+
+      <div class="format-grid">
+        <div class="format-grid-header"><span>Monday</span><span>Track</span><span>Thursday</span><span>Track</span></div>
+        <div class="format-grid-row section-header"><span>Comp Squat</span><span></span><span>Larson Press</span><span></span></div>
+        <div class="format-grid-row"><span>W1: 3x5(315)</span><span style="color:var(--green)">315</span><span>W1: 4x6 @7</span><span style="color:var(--green)">135</span></div>
+        <div class="format-grid-row"><span>W2: 4x4(335)</span><span></span><span>W2: 4x5 @7.5</span><span></span></div>
+        <div class="format-grid-row"><span>W3: 5x3(355)</span><span></span><span>W3: 3x4 @8</span><span></span></div>
+        <div class="format-grid-row section-header"><span>Pause Squat</span><span></span><span>Weighted Dip</span><span></span></div>
+        <div class="format-grid-row"><span>W1: 3x3(275)</span><span></span><span>W1: 3x8</span><span></span></div>
+      </div>
+
+      <div class="format-note" style="margin-top:14px">
+        <strong style="display:block;margin-bottom:6px">How it works</strong>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:13px">
+          <div>Each <strong>column pair</strong> is a training day + a tracking column</div>
+          <div>Prescriptions are prefixed by week: <strong>W1:</strong>, <strong>W2:</strong>, etc.</div>
+          <div>The tracking column records what was actually lifted</div>
+          <div>Blank rows separate exercises or supersets</div>
+        </div>
+      </div>
+
+      <div class="format-note">
+        <strong style="display:block;margin-bottom:6px">Prescription examples</strong>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3x5(315)</code> &mdash; 3 sets of 5 at 315 lbs</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">4x3 @8</code> &mdash; 4 sets of 3 at RPE 8</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">5x2(405) @9</code> &mdash; weight and RPE together</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">8(L) 8(M) 8(H)</code> &mdash; intensity scale</div>
+        </div>
+      </div>
+    `;
+  } else {
+    content += `
+      <div class="format-note" style="margin-bottom:12px">
+        Each sheet is one week. Days appear as section headers within the sheet. Each exercise is a single row with its prescription beside it.
+      </div>
+
+      <div class="format-grid">
+        <div class="format-grid-header"><span>Exercise</span><span>Prescription</span><span>Record</span></div>
+        <div class="format-grid-row section-header"><span>Upper 1</span><span style="font-size:10px;font-weight:400;opacity:0.5">sets, reps, weight, RPE</span><span style="font-size:10px;font-weight:400;opacity:0.5">logged weight</span></div>
+        <div class="format-grid-row"><span>Comp Bench</span><span>4x3 @8</span><span style="color:var(--green)">225</span></div>
+        <div class="format-grid-row"><span>Close Grip Bench</span><span>3x6(185)</span><span></span></div>
+        <div class="format-grid-row"><span>Cable Fly</span><span>3x12</span><span></span></div>
+        <div class="format-grid-row section-header"><span>Lower 1</span><span></span><span></span></div>
+        <div class="format-grid-row"><span>Comp Squat</span><span>5x2(405) @9</span><span style="color:var(--green)">405</span></div>
+        <div class="format-grid-row"><span>Pause Squat</span><span>3x3 @7.5</span><span></span></div>
+      </div>
+
+      <div class="format-note" style="margin-top:14px">
+        <strong style="display:block;margin-bottom:6px">How it works</strong>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:13px">
+          <div><strong>Column A:</strong> Exercise name</div>
+          <div><strong>Column B:</strong> Prescription &mdash; can include weight, RPE, or both</div>
+          <div><strong>Column C:</strong> What you actually lifted (read on import)</div>
+          <div>Day headers are detected automatically from keywords in the row</div>
+          <div>Name each sheet by week: "Week 1", "Week 2", etc.</div>
+        </div>
+      </div>
+
+      <div class="format-note">
+        <strong style="display:block;margin-bottom:6px">Prescription examples</strong>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3x5</code> &mdash; 3 sets of 5</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">4x3 @8</code> &mdash; 4 sets of 3 at RPE 8</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3x6(185)</code> &mdash; 3 sets of 6 at 185 lbs</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">5x2(405) @9</code> &mdash; weight and RPE together</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3-4x10</code> &mdash; 3 to 4 sets of 10</div>
+          <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">2-3 sets (pick reps)</code> &mdash; open rep range</div>
+        </div>
+      </div>
+    `;
+  }
+
+  content += `
+    <button class="parse-error-btn-primary" onclick="closeFormatExample()" style="margin-top:4px">Got It</button>
+    <button class="parse-error-btn-secondary" onclick="downloadTemplate()" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Blank Template
+    </button>
+  `;
+
+  body.innerHTML = content;
+}
+
+// ── PARSE ERROR MODAL ─────────────────────────────────────────────────────────
+function showParseError(errorType, details) {
+  const card = document.getElementById('parse-error-card');
+  let title, msg;
+
+  if (errorType === 'empty') {
+    title = 'Could Not Read File';
+    msg = details || 'The file appears to be empty or in an unsupported format. Make sure you\'re uploading an Excel file (.xlsx or .xls).';
+  } else if (errorType === 'parse') {
+    title = 'Unrecognized Format';
+    msg = 'PowerliftingLog couldn\'t find exercises in this file. The spreadsheet may use a layout we don\'t support yet.';
+  } else {
+    title = 'Something Went Wrong';
+    msg = details || 'There was an error reading this file. Please try again.';
+  }
+
+  card.innerHTML = `
+    <div class="parse-error-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div class="parse-error-title">${title}</div>
+    <div class="parse-error-msg">${msg}</div>
+    <div class="parse-error-actions">
+      <button class="parse-error-btn-primary" onclick="closeParseError();document.getElementById('file-input').click()">Try Another File</button>
+      <button class="parse-error-btn-secondary" onclick="closeParseError();openFormatExample()">View Supported Formats</button>
+      <button class="parse-error-btn-secondary" onclick="downloadTemplate()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Blank Template
+      </button>
+      <button class="parse-error-btn-dismiss" onclick="closeParseError()">Dismiss</button>
+    </div>
+  `;
+
+  document.getElementById('parse-error-modal').style.display = 'flex';
+}
+
+function closeParseError() {
+  document.getElementById('parse-error-modal').style.display = 'none';
+}
+
+// ── ONBOARDING ────────────────────────────────────────────────────────────────
+let _onboardGender = null;
+let _onboardUnit = 'lbs';
+
+function isOnboarded() { return localStorage.getItem(ONBOARDED_KEY) === '1'; }
+function markOnboarded() { localStorage.setItem(ONBOARDED_KEY, '1'); }
+
+function checkOnboarding() {
+  // Show onboarding only for brand new users: no programs AND never onboarded
+  if (isOnboarded() || state.blocks.length > 0) {
+    markOnboarded(); // auto-mark existing users
+    render();
+    return;
+  }
+  showOnboardingStep(1);
+}
+
+function showOnboardingStep(step) {
+  const overlay = document.getElementById('onboarding-overlay');
+  const body = document.getElementById('onboarding-body');
+  overlay.style.display = 'flex';
+
+  // Hide chrome during onboarding
+  document.querySelector('.bottom-nav').style.display = 'none';
+  document.querySelector('.header').style.display = 'none';
+
+  if (step === 1) {
+    body.innerHTML = `
+      <div class="onboard-icon">
+        <svg viewBox="0 0 28 40" fill="var(--gold)" width="56" height="80"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+      </div>
+      <div class="onboard-title">PowerliftingLog</div>
+      <div class="onboard-sub">Your training program, formatted for the platform.</div>
+      <div class="onboard-features">
+        <div class="onboard-feature">
+          <div class="onboard-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></div>
+          <div class="onboard-feature-text">
+            <div class="onboard-feature-label">Track sets and RPE</div>
+            <div class="onboard-feature-desc">Log weights and effort on every set, right from the gym floor</div>
+          </div>
+        </div>
+        <div class="onboard-feature">
+          <div class="onboard-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="onboard-feature-text">
+            <div class="onboard-feature-label">Monitor progress</div>
+            <div class="onboard-feature-desc">Estimated 1RM tracking across all your comp and accessory lifts</div>
+          </div>
+        </div>
+        <div class="onboard-feature">
+          <div class="onboard-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="onboard-feature-text">
+            <div class="onboard-feature-label">Works offline</div>
+            <div class="onboard-feature-desc">No account needed. All data stays on your device.</div>
+          </div>
+        </div>
+      </div>
+      <button class="onboard-primary-btn" onclick="showOnboardingStep(2)">Get Started</button>
+    `;
+    body.style.animation = 'none';
+    body.offsetHeight;
+    body.style.animation = 'onboardFadeIn 0.4s ease';
+  }
+
+  else if (step === 2) {
+    const athlete = loadAthlete() || {};
+    _onboardGender = athlete.gender || null;
+    _onboardUnit = athlete.bwUnit || 'lbs';
+    body.innerHTML = `
+      <div class="onboard-title" style="font-size:26px;margin-bottom:4px">About You</div>
+      <div class="onboard-sub" style="margin-bottom:20px">Used for DOTS & Wilks scores. All fields optional.</div>
+      <div class="onboard-form">
+        <div class="intake-field-label">Name</div>
+        <input class="intake-input" id="onboard-name" type="text" placeholder="Your name"
+          value="${esc(athlete.name || '')}" autocomplete="given-name">
+
+        <div class="intake-field-label">Gender</div>
+        <div class="intake-gender-row">
+          <button class="intake-gender-btn${athlete.gender === 'male' ? ' selected' : ''}" onclick="onboardSetGender('male',this)">Male</button>
+          <button class="intake-gender-btn${athlete.gender === 'female' ? ' selected' : ''}" onclick="onboardSetGender('female',this)">Female</button>
+        </div>
+
+        <div class="intake-field-label">Bodyweight</div>
+        <div class="intake-bw-row">
+          <input class="intake-input intake-bw-input" id="onboard-bw" type="number" min="30" max="400" placeholder="Weight"
+            value="${athlete.bodyweight || ''}" inputmode="decimal">
+          <div class="intake-unit-toggle">
+            <button class="intake-unit-btn${_onboardUnit==='lbs'?' active':''}" onclick="onboardSetUnit('lbs',this)">lbs</button>
+            <button class="intake-unit-btn${_onboardUnit==='kg'?' active':''}" onclick="onboardSetUnit('kg',this)">kg</button>
+          </div>
+        </div>
+      </div>
+      <button class="onboard-primary-btn" onclick="onboardSaveProfile()">Continue</button>
+      <button class="onboard-skip-btn" onclick="showOnboardingStep(3)">Skip for now</button>
+    `;
+    body.style.animation = 'none';
+    body.offsetHeight;
+    body.style.animation = 'onboardFadeIn 0.4s ease';
+  }
+
+  else if (step === 3) {
+    body.innerHTML = `
+      <div class="onboard-title" style="font-size:26px;margin-bottom:4px">Upload Your Program</div>
+      <div class="onboard-sub" style="margin-bottom:24px">Get your coach's program into the app.</div>
+      ${renderUploadOptions('ob-')}
+      <button class="onboard-skip-btn" onclick="finishOnboarding()" style="margin-top:12px">I'll do this later</button>
+    `;
+    body.style.animation = 'none';
+    body.offsetHeight;
+    body.style.animation = 'onboardFadeIn 0.4s ease';
+  }
+}
+
+function onboardSetGender(g, el) {
+  _onboardGender = g;
+  el.closest('.intake-gender-row').querySelectorAll('.intake-gender-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function onboardSetUnit(u, el) {
+  _onboardUnit = u;
+  el.closest('.intake-unit-toggle').querySelectorAll('.intake-unit-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function onboardSaveProfile() {
+  const name = document.getElementById('onboard-name')?.value.trim() || null;
+  const bw = parseFloat(document.getElementById('onboard-bw')?.value) || null;
+  const existing = loadAthlete() || {};
+  const athlete = {
+    name:       name              || existing.name       || null,
+    gender:     _onboardGender    || existing.gender     || null,
+    bodyweight: bw                ?? existing.bodyweight ?? null,
+    bwUnit:     _onboardUnit      || existing.bwUnit     || 'lbs',
+  };
+  saveAthlete(athlete);
+  showOnboardingStep(3);
+}
+
+function onboardUpload() {
+  document.getElementById('file-input').click();
+}
+
+function finishOnboarding() {
+  markOnboarded();
+  document.getElementById('onboarding-overlay').style.display = 'none';
+  document.querySelector('.bottom-nav').style.display = '';
+  document.querySelector('.header').style.display = '';
+  render();
+}
+
+// ── END ONBOARDING ────────────────────────────────────────────────────────────
+
+checkOnboarding();
 
 
 // ── CUSTOM EXERCISE ───────────────────────────────────────────────────────────
@@ -6125,10 +6677,10 @@ function openRepsEditor(sk, prescReps) {
   }
   state.editingRepsKey = sk;
   renderSetRow(sk);
-  // Focus the input after render
+  // Focus the input after render — preventScroll stops browser from jumping
   setTimeout(() => {
     const input = document.getElementById('reps-popover-' + sk);
-    if (input) { input.focus(); input.select(); }
+    if (input) { input.focus({preventScroll:true}); input.select(); }
   }, 50);
 }
 
