@@ -619,6 +619,18 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 }
 .home-hero.done .home-hero-ex-dot { background: #4ade80; }
 
+/* Import confirm button */
+.import-confirm-btn {
+  display: block; width: 100%; margin-top: 20px;
+  padding: 15px; background: var(--gold);
+  border: none; border-radius: 12px;
+  color: #0a0a0a; font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 17px; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer; text-align: center;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.import-confirm-btn:active { opacity: 0.85; transform: scale(0.98); }
+
 /* Import Intent Modal */
 .import-intent-card {
   display: flex; align-items: flex-start; gap: 14px;
@@ -1224,7 +1236,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <div class="import-intent-card active" id="import-card-active" onclick="selectImportIntent('active')">
       <div class="import-intent-icon"><svg viewBox="0 0 28 40" width="22" height="32"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
       <div class="import-intent-body">
-        <div class="import-intent-title">Active Program</div>
+        <div class="import-intent-title">Start New Program</div>
         <div class="import-intent-desc">I'm currently training this. Set it as my active program and navigate to my next workout.</div>
       </div>
       <div class="import-intent-check" id="import-check-active">✓</div>
@@ -1237,12 +1249,24 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <div class="import-intent-check" id="import-check-history" style="opacity:0">✓</div>
     </div>
-    <div id="import-history-note" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.2);border-radius:10px">
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);line-height:1.5">
-        <span style="color:var(--gold);font-weight:600">Note:</span> Your current active program won't change. All weeks will be marked complete using any logged weights from the sheet. This data will appear in your metrics charts.
+    <div class="import-intent-card" id="import-card-merge" onclick="selectImportIntent('merge')" style="display:none">
+      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Add Weeks to Existing Program</div>
+        <div class="import-intent-desc">Append these weeks to a program you've already started. Your completed workouts stay intact.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-merge" style="opacity:0">✓</div>
+    </div>
+    <div id="import-merge-select" style="display:none;margin-bottom:10px">
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
+      <select id="import-merge-target" style="width:100%;background:var(--surface-3);border:1px solid var(--border-3);border-radius:8px;padding:9px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);outline:none"></select>
+    </div>
+    <div id="import-history-note" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.6">
+        <span style="color:var(--gold);font-weight:700">Note: </span>Your current active program won't change. All weeks will be marked complete using any logged weights from the sheet. This data will appear in your metrics charts.
       </div>
     </div>
-    <button class="complete-workout-btn ready" style="margin-top:20px;width:100%" onclick="confirmImportIntent()">Continue</button>
+    <button class="import-confirm-btn" onclick="confirmImportIntent()">Continue</button>
   </div>
 </div>
 
@@ -2396,7 +2420,9 @@ function parseB(wb){
     }catch(e){ console.error(`[parseB] Error parsing sheet "${sn}":`,e); }
   }
   if(weeks.length===0) return [];
-  const blocks=[{id:'program',name:'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
+  // Use first sheet name as stable ID so week-by-week uploads don't collide
+  const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i,'').trim() : wb.SheetNames[0];
+  const blocks=[{id:bId,name:bId||'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
   return blocks;
 }
 
@@ -2407,6 +2433,11 @@ function parseBSheet(sn,rows){
   // Column indices can shift between sheets — detect from header row per day section
   // We track the current header columns dynamically
   let colPres=1, colLogged=2; // defaults
+
+  // Track seen day names to detect repeated day sections (multiple weeks in one sheet)
+  // e.g. "Upper 1" appears twice — first is W1 (completed), second is W2 (future)
+  const seenDayNames={};
+  let weekOffset=0; // increments each time we detect a full week cycle repeating
 
   for(let i=0;i<rows.length;i++){
     const row=rows[i]; if(!row) continue;
@@ -2432,7 +2463,18 @@ function parseBSheet(sn,rows){
       if(prescIdx>0) colPres=prescIdx;
       if(loggedIdx>colPres) colLogged=loggedIdx;
       else colLogged=colPres+1; // fallback: logged is always right after prescription
-      curDay={name:aStr,exercises:[],_colCoachNote:coachNoteIdx>0?coachNoteIdx:null,_colLifterNote:lifterNoteIdx>0?lifterNoteIdx:null};
+
+      // Detect repeated day name — signals a new week cycle within the same sheet
+      if(seenDayNames[aStr]!==undefined){
+        weekOffset++;
+        // Reset seen names for new cycle
+        Object.keys(seenDayNames).forEach(k=>delete seenDayNames[k]);
+      }
+      seenDayNames[aStr]=true;
+
+      // Unique day name includes week offset so logs don't collide
+      const uniqueDayName = weekOffset > 0 ? `${aStr} (W${weekOffset+1})` : aStr;
+      curDay={name:uniqueDayName,exercises:[],_colCoachNote:coachNoteIdx>0?coachNoteIdx:null,_colLifterNote:lifterNoteIdx>0?lifterNoteIdx:null};
       days.push(curDay);
     } else if(curDay){
       const pres=row[colPres]!=null?String(row[colPres]).trim():null;
@@ -2513,9 +2555,19 @@ function deduplicateExerciseNames(blocks) {
           const base = ex.name;
           if (seen[base] === undefined) {
             seen[base] = 1;
+            // First occurrence — no change needed, no displayName set
           } else {
+            // Duplicate — keep display name as the base, disambiguate log key via prescription
             seen[base]++;
-            ex.name = base + ' #' + seen[base];
+            ex.displayName = base; // what the user sees
+            // Use prescription as disambiguator if available, otherwise fall back to index
+            const disambig = ex.prescription
+              ? ex.prescription.replace(/\s+/g,' ').trim().substring(0, 30)
+              : ('#' + seen[base]);
+            ex.name = base + ' [' + disambig + ']'; // unique key for localStorage
+            // Also set displayName on the first occurrence so it renders cleanly
+            const firstEx = day.exercises.find(e => e !== ex && (e.displayName || e.name) === base);
+            if (firstEx && !firstEx.displayName) firstEx.displayName = base;
           }
         }
       }
@@ -2547,6 +2599,13 @@ function classifyTracking(raw){
 
   // Skip header rows
   if(sl.includes('tracking')||sl.includes('record weight')) return null;
+
+  // Reject prescription-like strings — these are program data, not logged weights.
+  // Patterns: "3x5(315)", "W2: 3x5", "4x8 @ 7", "3x5(L)", "2-3 sets"
+  // This prevents misread when tracking column offset is wrong and lands on a prescription cell.
+  if(/^\d+x\d+\s*[\(@(]/i.test(s)) return null;   // "3x5(315)", "4x8 @ 7"
+  if(/^W\d+:/i.test(s)) return null;               // "W2: 3x5"
+  if(/^\d+-\d+\s*(sets|x)/i.test(s)) return null;  // "2-3 sets", "3-4x8"
 
   // Pure done markers: x, X, done, complete, ✓, ✔, checkmark variants
   if(/^[xX✓✔️☑✅]$/.test(s)||/^(done|complete|completed|yes)$/i.test(s)){
@@ -2720,6 +2779,9 @@ function populateLogsFromSheet(blocks, options={}){
                 state.logs[key+`||s${si}`]={done:true,inferredComplete:true};
             }
           }
+          // Set __complete__ flag for days with real logged data — shows green card, no Finish Workout
+          const forceKey=lk(block.id,week.label,day.name,'__complete__');
+          if(!state.logs[forceKey]) state.logs[forceKey]={done:true,importedComplete:true};
         }
       }
 
@@ -2803,6 +2865,9 @@ function populateLogsFromSheet(blocks, options={}){
                 state.logs[key+`||s${si}`]={done:true,inferredComplete:true};
             }
           }
+          // Set __complete__ flag for days with real logged data — shows green card, no Finish Workout
+          const forceKey=lk(block.id,week.label,day.name,'__complete__');
+          if(!state.logs[forceKey]) state.logs[forceKey]={done:true,importedComplete:true};
         }
       }
     }
@@ -4127,7 +4192,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${esc(expandKey)}">`;
   h+=`<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
-      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.name}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
+      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.displayName||ex.name}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
     </div>
     <div class="ex-summary-right">
@@ -4144,7 +4209,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     const editingThis=state.editingExKey===key;
     if(editingThis){
       h+=`<div class="exercise-header" style="padding:10px 16px 4px">
-        <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${ex.name.trim()}"
+        <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${(ex.displayName||ex.name).trim()}"
           onblur="saveExName('${esc(key)}','${esc(ex.name)}')"
           onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;render();}">
       </div>`;
@@ -4376,30 +4441,38 @@ function renderExerciseList(block, week, day) {
 
   const isHistorical = !!block.historical;
 
-  // Historical blocks: always show locked complete, no Add Exercise, no Finish Workout
+  // Historical blocks: locked green, no controls
   if (isHistorical) {
     h+=`<div class="workout-complete-msg">✓ Workout Complete</div>`;
     return h;
   }
 
-  // Always show add exercise button
+  const forceLog = state.logs[lk(block.id,week.label,day.name,'__complete__')];
+  const forceComplete = !!forceLog?.done;
+  const isImportedComplete = forceComplete && (forceLog?.importedComplete === true);
+  const isLiveComplete = forceComplete && !forceLog?.importedComplete && !forceLog?.historical;
+
+  // Imported completed workout — green card, no Finish Workout, no trash
+  if (isImportedComplete) {
+    h+=`<div class="workout-complete-msg">✓ Workout Complete</div>`;
+    return h;
+  }
+
+  // Live workout — user explicitly tapped Finish Workout
+  if (isLiveComplete) {
+    h+=`<div class="workout-complete-msg">✓ Workout Complete <button class="clear-workout-btn" onclick="clearWorkout()" title="Clear workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div>`;
+    return h;
+  }
+
+  // Active workout — show Add Exercise + gold Finish Workout button
   h+=`<button class="add-exercise-btn" onclick="openAddExerciseModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
-  // Use force-complete flag specifically — not isDayComplete — so green only shows after user taps Finish Workout
-  const forceComplete = !!state.logs[lk(block.id,week.label,day.name,'__complete__')]?.done;
   const totalEx = day.exercises.length;
   const resolvedEx = day.exercises.filter(ex => {
     const log = state.logs[lk(block.id,week.label,day.name,ex.name)] || {};
     return log.done || log.skipped;
   }).length;
   const allResolved = resolvedEx === totalEx && totalEx > 0;
-
-  if(!forceComplete){
-    // User hasn't tapped Finish Workout yet — gold when all resolved, gray when not
-    h+=`<button class="complete-workout-btn${allResolved?' ready':''}" onclick="completeWorkout()" ${allResolved?'':'disabled'}>Finish Workout</button>`;
-  } else {
-    // User explicitly finished — non-tappable green confirmation + clear option
-    h+=`<div class="workout-complete-msg">✓ Workout Complete <button class="clear-workout-btn" onclick="clearWorkout()" title="Clear workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div>`;
-  }
+  h+=`<button class="complete-workout-btn${allResolved?' ready':''}" onclick="completeWorkout()" ${allResolved?'':'disabled'}>Finish Workout</button>`;
 
   return h;
 }
@@ -4852,13 +4925,11 @@ async function importFromSheetsUrl() {
       throw new Error(`Failed to fetch sheet (status ${resp.status}). Check that the sharing link is correct.`);
     }
     const buffer = await resp.arrayBuffer();
-    const wb = XLSX.read(buffer);
+    wb._plFilename = id; // use sheet ID as stable filename key
     const blocks = parseWorkbook(wb);
     if (!blocks || blocks.length === 0) {
       throw new Error("Couldn't parse this sheet. Make sure it's a supported program format.");
     }
-    // Use sheet title from URL as fallback name
-    blocks.forEach(b => { if (b.athleteName === 'Athlete') b.athleteName = 'Athlete'; });
     closeProgramModal();
     input.value = '';
     onSheetsUrlInput('');
@@ -4879,10 +4950,22 @@ let _importIntent = 'active'; // 'active' | 'history'
 function openImportIntent(blocks) {
   _pendingImportBlocks = blocks;
   _importIntent = 'active';
-  // Show program name
   const names = blocks.map(b => b.name || b.id).join(', ');
   document.getElementById('import-intent-name').textContent = names;
-  // Reset selection to active
+
+  // Show merge option if there are existing programs to merge into
+  const mergeCard = document.getElementById('import-card-merge');
+  const mergeSelect = document.getElementById('import-merge-target');
+  const existingBlocks = state.blocks || [];
+  if (existingBlocks.length > 0) {
+    mergeCard.style.display = 'flex';
+    mergeSelect.innerHTML = existingBlocks.map(b =>
+      `<option value="${b.id}">${b.name || b.id}</option>`
+    ).join('');
+  } else {
+    mergeCard.style.display = 'none';
+  }
+
   selectImportIntent('active');
   document.getElementById('import-intent-modal').style.display = 'flex';
 }
@@ -4894,24 +4977,21 @@ function closeImportIntent() {
 
 function selectImportIntent(intent) {
   _importIntent = intent;
-  const activeCard = document.getElementById('import-card-active');
-  const historyCard = document.getElementById('import-card-history');
-  const activeCheck = document.getElementById('import-check-active');
-  const historyCheck = document.getElementById('import-check-history');
-  const historyNote = document.getElementById('import-history-note');
-  if (intent === 'active') {
-    activeCard.classList.add('selected');
-    historyCard.classList.remove('selected');
-    activeCheck.style.opacity = '1';
-    historyCheck.style.opacity = '0';
-    historyNote.style.display = 'none';
-  } else {
-    historyCard.classList.add('selected');
-    activeCard.classList.remove('selected');
-    historyCheck.style.opacity = '1';
-    activeCheck.style.opacity = '0';
-    historyNote.style.display = 'block';
-  }
+  const cards = ['active','history','merge'];
+  cards.forEach(c => {
+    const card = document.getElementById('import-card-'+c);
+    const check = document.getElementById('import-check-'+c);
+    if (!card) return;
+    if (c === intent) {
+      card.classList.add('selected');
+      if (check) check.style.opacity = '1';
+    } else {
+      card.classList.remove('selected');
+      if (check) check.style.opacity = '0';
+    }
+  });
+  document.getElementById('import-history-note').style.display = intent === 'history' ? 'block' : 'none';
+  document.getElementById('import-merge-select').style.display = intent === 'merge' ? 'block' : 'none';
 }
 
 function confirmImportIntent() {
@@ -4920,7 +5000,6 @@ function confirmImportIntent() {
   closeImportIntent();
 
   if (_importIntent === 'active') {
-    // Standard active import flow
     const prevActive = state.activeBlock;
     mergeBlocks(blocks);
     autoRegisterCompLifts(blocks);
@@ -4932,11 +5011,47 @@ function confirmImportIntent() {
     setScreen('home');
     const _nb = state.activeBlock;
     if (_nb && !getBlockSchedule(_nb.id)) setTimeout(() => openIntake(_nb), 300);
+  } else if (_importIntent === 'merge') {
+    mergeWeeksIntoBlock(blocks);
   } else {
-    // Historical import — add block but keep current active program
     importHistoricalBlock(blocks);
   }
   render();
+}
+
+function mergeWeeksIntoBlock(incomingBlocks) {
+  const targetId = document.getElementById('import-merge-target').value;
+  const target = state.blocks.find(b => b.id === targetId);
+  if (!target) return;
+
+  for (const inc of incomingBlocks) {
+    for (const incomingWeek of (inc.weeks || [])) {
+      // Only add weeks that don't already exist in the target block
+      const exists = target.weeks.some(w => w.label === incomingWeek.label);
+      if (!exists) {
+        target.weeks.push(incomingWeek);
+      }
+      // NOTE: intentionally no populateLogsFromSheet here — these are future weeks
+      // with no training history. Log population would trigger inference and auto-complete them.
+      // Only populate if the incoming week has actual tracking data in the sheet.
+      const hasAnyTracking = incomingWeek.days.some(d =>
+        d.exercises.some(ex => ex.loggedWeight || ex.trackingRaw)
+      );
+      if (hasAnyTracking) {
+        populateLogsFromSheet([{ ...target, weeks: [incomingWeek] }],
+          { onlyWeekLabels: [incomingWeek.label] });
+      }
+    }
+  }
+
+  state.activeBlock = state.blocks.find(b => b.id === targetId) || state.activeBlock;
+  const _n = findNextWorkout(state.activeBlock);
+  state.activeWeek = _n.weekIdx;
+  state.activeDay  = _n.dayIdx;
+
+  autoRegisterCompLifts([target]);
+  saveBlocks(); saveNav(); saveLogs();
+  setScreen('workout');
 }
 
 function importHistoricalBlock(blocks) {
@@ -4987,7 +5102,7 @@ function markAllBlocksComplete(blocks) {
         // Set force-complete flag for the day
         const forceKey = lk(block.id, week.label, day.name, '__complete__');
         if (!state.logs[forceKey]) {
-          state.logs[forceKey] = { done: true, completedDate: null };
+          state.logs[forceKey] = { done: true, historical: true };
         }
       }
     }
@@ -5266,10 +5381,11 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
   try{
     const data=await file.arrayBuffer();
     const wb=XLSX.read(data);
+    wb._plFilename = file.name;
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ alert("Couldn't parse this file. See console for details."); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
-    blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
+    blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; if(b.name==='Training Program') b.name=namePart; });
     openImportIntent(blocks);
     // Trigger intake if new block has no schedule
     const _newBlock2 = state.activeBlock;
