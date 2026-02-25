@@ -774,29 +774,12 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .intake-unit-btn { flex: 1; padding: 6px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; }
 .intake-unit-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
 
-/* Schedule editor */
-.sched-edit-slots-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 16px 20px 8px; }
-.sched-edit-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.12s; }
-.sched-edit-slot.active { border-color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
-.sched-edit-slot.rest { opacity: 0.5; }
-.sched-edit-dow { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-sub); }
-.sched-edit-slot.active .sched-edit-dow { color: var(--gold); }
-.sched-edit-num { width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #0a0a0a; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
-.sched-edit-num-empty { width: 20px; height: 20px; }
-.sched-edit-hint { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); text-align: center; padding: 8px 20px 4px; }
 
 /* Settings toggle */
 .settings-toggle { width: 44px; height: 26px; border-radius: 13px; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; background: var(--border-3); }
 .settings-toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 .settings-toggle.on { background: #C9A84C; }
 .settings-toggle.on::after { transform: translateX(18px); }
-
-/* Schedule manager (full week view) */
-.schedule-mgr-sheet { position: relative; z-index: 1; background: var(--surface-2); border: 1px solid var(--border); border-top: 1px solid var(--border-3); border-radius: 28px 28px 0 0; padding: 28px 0 calc(env(safe-area-inset-bottom) + 24px); width: 100%; max-width: 480px; animation: slideUpCheckin 0.3s cubic-bezier(0.34,1.56,0.64,1); max-height: 88dvh; overflow-y: auto; }
-.schedule-mgr-header { padding: 0 20px 16px; border-bottom: 1px solid var(--border-2); margin-bottom: 4px; }
-.schedule-mgr-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 3px; }
-.schedule-mgr-sub { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-faint); }
-.schedule-mgr-done-badge { width: 18px; height: 18px; border-radius: 50%; background: #4ade80; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #0a0a0a; font-weight: 700; }
 
 /* Bottom nav */
 .bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -1146,20 +1129,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Schedule Editor Modal -->
-<div class="schedule-modal" id="sched-edit-modal" style="display:none">
-  <div class="checkin-overlay" onclick="closeScheduleEditor()"></div>
-  <div class="schedule-mgr-sheet">
-    <div class="checkin-handle"></div>
-    <div class="schedule-mgr-header">
-      <div class="schedule-mgr-title">Training Schedule</div>
-      <div class="schedule-mgr-sub">Tap a day to assign or remove a session</div>
-    </div>
-    <div id="sched-edit-slots" class="sched-edit-slots-grid"></div>
-    <div style="padding: 16px 20px 0;">
-      <button class="schedule-clear-btn" onclick="closeScheduleEditor();setTimeout(()=>openIntake(state.activeBlock),200)">Clear training schedule</button>
-    </div>
-  </div>
-</div>
 <div class="add-lift-modal" id="add-lift-modal" style="display:none" onclick="if(event.target===this)closeAddLift()">
   <div class="add-lift-sheet">
     <div class="add-lift-title">Track a Lift</div>
@@ -1337,12 +1306,6 @@ function applyTheme(t){
   saveTheme(t);
 }
 
-function cycleTheme(){
-  const cur = loadTheme();
-  const idx = THEMES.indexOf(cur);
-  const next = THEMES[(idx+1) % THEMES.length];
-  applyTheme(next);
-}
 
 // Apply on load
 applyTheme(loadTheme());
@@ -1359,7 +1322,7 @@ const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.lengt
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
-function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch{ return {}; } }
+function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>alert('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
 let _saveLogsTimer=null;
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(()=>{ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); } },300); }
 function rePopulateSets(blocks){
@@ -1395,7 +1358,7 @@ function rePopulateSets(blocks){
   }catch(e){ console.error('[liftlog] rePopulateSets error:',e); }
 }
 if(_savedBlocks.length>0) rePopulateSets(_savedBlocks);
-function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); return null; } }
+function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>alert('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
 function saveBlocks(){ try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
 function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
 function saveCustomLifts(){ try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); } }
@@ -2963,10 +2926,6 @@ function setBlockSchedule(blockId, dowArray) {
 function loadAthlete()  { try { return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
 function saveAthlete(d) { try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
 
-function getTodayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
 
 // ── Schedule modal ────────────────────────────────────────────────────────────
 let _scheduleTargetDayIdx = null; // which training day index in current week we're assigning
@@ -3118,72 +3077,6 @@ function intakeFinish() {
 
 // ── Schedule editor (from This Week card) ─────────────────────────────────────
 // Simple: shows 7 day slots, N of them are active (training days).
-// Tapping an active slot cycles which session fills it.
-
-function openScheduleEditor() {
-  const block = state.activeBlock;
-  if (!block) { return; }
-  const sched = getBlockSchedule(block.id);
-  if (!sched) { openIntake(block); return; }
-  _renderScheduleEditor();
-  document.getElementById('sched-edit-modal').style.display = 'flex';
-}
-
-function closeScheduleEditor() {
-  document.getElementById('sched-edit-modal').style.display = 'none';
-}
-
-function _renderScheduleEditor() {
-  const block = state.activeBlock;
-  if (!block) return;
-  const sched = getBlockSchedule(block.id) || [];
-  const n     = getTrainingDayCount(block);
-  const DOW_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-
-  const slotHtml = DOW_SHORT.map((lbl, dow) => {
-    const sessionIdx = sched.indexOf(dow); // -1 if not a training day
-    const isActive   = sessionIdx !== -1;
-    return '<div class="sched-edit-slot' + (isActive ? ' active' : ' rest') + '"'
-      + (isActive || sched.length < n ? ' onclick="schedToggleDay(' + dow + ')"' : '')
-      + '>'
-      + '<div class="sched-edit-dow">' + lbl + '</div>'
-      + (isActive
-        ? '<div class="sched-edit-num">' + (sessionIdx + 1) + '</div>'
-        : '<div class="sched-edit-num-empty"></div>')
-      + '</div>';
-  }).join('');
-
-  const hint = sched.length < n
-    ? '<div class="sched-edit-hint">Select ' + (n - sched.length) + ' more day' + (n - sched.length !== 1 ? 's' : '') + '</div>'
-    : '<div class="sched-edit-hint">Tap a day to remove it</div>';
-
-  document.getElementById('sched-edit-slots').innerHTML = slotHtml + hint;
-}
-
-function schedToggleDay(dow) {
-  const block = state.activeBlock;
-  if (!block) return;
-  const sched = [...(getBlockSchedule(block.id) || [])];
-  const n     = getTrainingDayCount(block);
-  const idx   = sched.indexOf(dow);
-
-  if (idx !== -1) {
-    // Remove this day
-    sched.splice(idx, 1);
-  } else if (sched.length < n) {
-    // Add this day (append to end — next available session slot)
-    sched.push(dow);
-  }
-  // Keep sorted by day of week for display consistency
-  sched.sort((a, b) => a - b);
-  setBlockSchedule(block.id, sched);
-  _renderScheduleEditor();
-  if (state.screen === 'home') renderHome();
-}
-
-// ── Readiness: multi-signal composite score ───────────────────────────────────
-// Returns { score, load, sleep, stress, body, hasLoad, hasCheckin }
-// All sub-scores 0–100. Final = weighted avg.
 // ── Next workout info ─────────────────────────────────────────────────────────
 function getNextWorkoutInfo() {
   const block = state.activeBlock;
@@ -3905,10 +3798,6 @@ function renderNextWorkoutBanner(block) {
   </div>`;
 }
 
-function renderProgressBar(pct) {
-  return `<div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
-}
-
 function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   let h = '';
   const key=lk(block.id,week.label,day.name,ex.name);
@@ -4316,16 +4205,6 @@ function renderWorkout(){
     const bar=document.getElementById('day-tabs-bar');
     if(bar){const active=bar.querySelector('.day-tab.active');if(active) active.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
   });
-}
-
-function abbrev(name){
-  const n=name.trim();
-  const m=n.match(/^(upper|lower|push|pull|squat|bench|dead)\s*(\d*)/i);
-  if(m){
-    const map={upper:'UPR',lower:'LWR',push:'PSH',pull:'PUL',squat:'SQT',bench:'BCH',dead:'DL'};
-    return (map[m[1].toLowerCase()]||m[1].substring(0,3).toUpperCase())+(m[2]?' '+m[2]:'');
-  }
-  return n.substring(0,3).toUpperCase();
 }
 
 function saveBlockName(){
@@ -4866,6 +4745,7 @@ async function importFromSheetsUrl() {
       throw new Error(`Failed to fetch sheet (status ${resp.status}). Check that the sharing link is correct.`);
     }
     const buffer = await resp.arrayBuffer();
+    const wb = XLSX.read(buffer);
     wb._plFilename = id; // use sheet ID as stable filename key
     const blocks = parseWorkbook(wb);
     if (!blocks || blocks.length === 0) {
@@ -5286,89 +5166,6 @@ function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=n
 function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); } }
 
-// ── GOOGLE DRIVE PICKER ───────────────────────────────────────────────────────
-const GAPI_KEY = 'AIzaSyAyDMjaar1LL7u8CbAiVx6RInQA_p2RrtM';
-const OAUTH_CLIENT_ID = '868418344070-756bh89t1d5ms7d50e0ofvo3tuent9kl.apps.googleusercontent.com';
-const PICKER_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
-
-let gapiReady = false;
-let tokenClient = null;
-let accessToken = null;
-let apisLoading = false;
-let apisLoaded = false;
-
-// Preload APIs as soon as page loads so they're ready when user taps
-function preloadDriveApis(){
-  if(apisLoading||apisLoaded) return;
-  apisLoading=true;
-  const s1=document.createElement('script'); s1.src='https://apis.google.com/js/api.js';
-  s1.onload=()=>{ gapi.load('picker',()=>{ gapiReady=true; checkApisReady(); }); };
-  document.head.appendChild(s1);
-  const s2=document.createElement('script'); s2.src='https://accounts.google.com/gsi/client';
-  s2.onload=()=>{ checkApisReady(); };
-  document.head.appendChild(s2);
-}
-
-function checkApisReady(){
-  if(gapiReady && typeof google !== 'undefined' && google.accounts){
-    apisLoaded=true;
-    tokenClient=google.accounts.oauth2.initTokenClient({
-      client_id: OAUTH_CLIENT_ID,
-      scope: PICKER_SCOPE,
-      callback:(resp)=>{
-        if(resp.error){ alert('Google sign-in failed: '+resp.error); return; }
-        accessToken=resp.access_token;
-        showPicker();
-      }
-    });
-  }
-}
-
-// Called directly on tap — must be synchronous to avoid popup blocker
-function openDrivePicker(){
-  if(!apisLoaded){
-    // APIs not ready yet — show loading state and retry
-    alert('Google Drive is loading, please try again in a moment.');
-    preloadDriveApis();
-    return;
-  }
-  if(accessToken){ showPicker(); return; }
-  // This must happen synchronously on user tap
-  tokenClient.requestAccessToken({prompt:'select_account'});
-}
-
-function showPicker(){
-  const picker=new google.picker.PickerBuilder()
-    .addView(new google.picker.DocsView()
-      .setIncludeFolders(true)
-      .setMimeTypes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel'))
-    .setOAuthToken(accessToken)
-    .setDeveloperKey(GAPI_KEY)
-    .setCallback(pickerCallback)
-    .build();
-  picker.setVisible(true);
-}
-
-async function pickerCallback(data){
-  if(data.action!==google.picker.Action.PICKED) return;
-  const file=data.docs[0];
-  try{
-    const resp=await fetch(
-      `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-      {headers:{Authorization:`Bearer ${accessToken}`}}
-    );
-    if(!resp.ok) throw new Error('Download failed: '+resp.status);
-    const wb=XLSX.read(await resp.arrayBuffer());
-    const blocks=parseWorkbook(wb);
-    if(!blocks||blocks.length===0){ alert("Couldn't parse this file."); return; }
-    const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
-    blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; });
-    openImportIntent(blocks);
-  }catch(err){ alert('Error loading file from Drive: '+err.message); console.error(err); }
-}
-
-// Start preloading immediately
-window.addEventListener('load', preloadDriveApis);
 
 document.getElementById('file-input').addEventListener('change',async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
@@ -6412,7 +6209,6 @@ const COLLAR_KG = 5; // pair
 
 function lbsToKg(lbs) { return lbs / KG_TO_LBS; }
 function kgToLbs(kg) { return kg * KG_TO_LBS; }
-function roundToNearest(val, step) { return Math.round(val / step) * step; }
 // Snap a kg value to nearest valid USPA attempt (multiples of 2.5kg per side)
 function snapToAttempt(kg, direction) {
   const base = getBaseKg();
