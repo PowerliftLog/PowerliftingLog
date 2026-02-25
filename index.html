@@ -1407,7 +1407,10 @@ function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
 // ── SCREEN NAV ────────────────────────────────────────────────────────────────
+let _workoutScrollY = 0;
 function setScreen(s){
+  // Save workout scroll position when leaving workout tab
+  if(state.screen==='workout') _workoutScrollY = window.scrollY;
   state.screen=s;
   if(s==='metrics') state.metricsDrillBlock=null;
   document.getElementById('nav-home').classList.toggle('active',s==='home');
@@ -1415,6 +1418,9 @@ function setScreen(s){
   document.getElementById('nav-metrics').classList.toggle('active',s==='metrics');
   document.getElementById('nav-calc').classList.toggle('active',s==='calc');
   render();
+  // Restore workout scroll; all other tabs start at top
+  if(s==='workout'){ requestAnimationFrame(()=>window.scrollTo(0, _workoutScrollY)); }
+  else { window.scrollTo(0, 0); }
 }
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
@@ -1470,7 +1476,18 @@ function toggleTracked(name, event){
   const current=isTracked(name);
   state.trackedLifts[n]=!current;
   saveTrackedLifts();
+  // Preserve scroll — find the closest exercise card to anchor against
+  const btn=event?.target?.closest('.exercise-card');
+  let anchorOffset=null;
+  if(btn){ anchorOffset=btn.getBoundingClientRect().top; }
   render();
+  if(btn && anchorOffset!==null){
+    const expandKey=btn.dataset.expandKey;
+    if(expandKey){
+      const newCard=document.querySelector(`.exercise-card[data-expand-key="${CSS.escape(expandKey)}"]`);
+      if(newCard){ window.scrollBy(0, newCard.getBoundingClientRect().top - anchorOffset); }
+    }
+  }
 }
 
 // Auto-register comp lifts when a program is loaded
@@ -4006,7 +4023,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     } else {
       if(isCustomEx){
         h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px 4px">
-          <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)">✏ Edit Exercise</button>
+          <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Exercise</button>
           <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
         </div>`;
       } else {
@@ -4176,7 +4193,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     const importedNote=log.lifterNote||null;
     h+=`<div class="notes-section">
       <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> My Notes</div>
-      ${importedNote?`<div class="coach-note" style="color:var(--text-sub);border-top:1px solid #222">📋 From sheet: ${importedNote}</div>`:''}
+      ${importedNote?`<div class="coach-note" style="color:var(--text-sub);border-top:1px solid #222"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px;margin-right:4px;opacity:0.6"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>From sheet: ${importedNote}</div>`:''}
       ${prevNote?`<div class="lifter-prev-note">Last time: "${prevNote}"</div>`:''}
       <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." oninput="setNote('${esc(key)}',this.value)">${log.notes||''}</textarea></div>
     </div>`;
@@ -4278,9 +4295,6 @@ function renderWorkout(){
 
   if(!state.activeBlock){ main.innerHTML=renderUploadScreen(); return; }
 
-  // Preserve scroll position — toggling exercise cards shouldn't jump to top
-  const savedScroll=main.scrollTop;
-
   const block=state.activeBlock;
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
@@ -4297,8 +4311,6 @@ function renderWorkout(){
   h+=renderExerciseList(block, week, day);
   h+=`</div>`;
   main.innerHTML=h;
-  // Restore scroll position — prevents jump when checking sets or toggling cards
-  main.scrollTop = savedScroll;
   // Scroll active day tab into view
   requestAnimationFrame(()=>{
     const bar=document.getElementById('day-tabs-bar');
@@ -4492,6 +4504,41 @@ function clearWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
+  // Count logged sets to show in warning
+  let loggedSets=0;
+  day.exercises.forEach(ex=>{
+    const key=lk(block.id,week.label,day.name,ex.name);
+    for(let si=0;si<20;si++){
+      const sk=key+`||s${si}`;
+      if(state.logs[sk]?.done) loggedSets++;
+    }
+  });
+  const msg=loggedSets>0
+    ? `This will erase all logged data for ${day.name} (${loggedSets} completed set${loggedSets===1?'':'s'}). This cannot be undone.`
+    : `This will clear all data for ${day.name}. This cannot be undone.`;
+  // Show confirmation overlay
+  const existing=document.getElementById('clear-workout-overlay');
+  if(existing) existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='clear-workout-overlay';
+  overlay.className='delete-ex-overlay';
+  overlay.onclick=(e)=>{if(e.target===overlay)overlay.remove();};
+  overlay.innerHTML=`
+  <div class="delete-ex-sheet">
+    <div class="delete-ex-title" style="color:#f87171">Clear Workout Data?</div>
+    <div class="delete-ex-desc">${msg}</div>
+    <button class="delete-ex-btn danger" onclick="confirmClearWorkout()">Clear All Data</button>
+    <button class="delete-ex-btn single" onclick="document.getElementById('clear-workout-overlay').remove()">Cancel</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function confirmClearWorkout(){
+  const overlay=document.getElementById('clear-workout-overlay');
+  if(overlay) overlay.remove();
+  const block=state.activeBlock;
+  const week=block.weeks[state.activeWeek];
+  const day=week?.days[state.activeDay];
+  if(!day) return;
   // Delete all log keys for this day
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
@@ -4584,7 +4631,19 @@ function adjustSets(key, delta){
     }
   }
   state.extraSets[key]=next;
+  // Preserve scroll position across render
+  const escaped=key.replace(/'/g,"\\'");
+  const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+  let scrollAnchorOffset=null;
+  if(card){ scrollAnchorOffset=card.getBoundingClientRect().top; }
   render();
+  if(card && scrollAnchorOffset!==null){
+    const newCard=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+    if(newCard){
+      const newTop=newCard.getBoundingClientRect().top;
+      window.scrollBy(0, newTop - scrollAnchorOffset);
+    }
+  }
 }
 function setActual(key,v){
   const existing = state.logs[key]||{};
@@ -5223,9 +5282,9 @@ function findNextWorkout(block){
   const lastWi=block.weeks.length-1;
   return {weekIdx:lastWi, dayIdx:(block.weeks[lastWi]?.days.length||1)-1};
 }
-function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); saveNav(); render(); }
-function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); saveNav(); render(); }
-function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; saveNav(); render(); } }
+function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); } }
 
 // ── GOOGLE DRIVE PICKER ───────────────────────────────────────────────────────
 const GAPI_KEY = 'AIzaSyAyDMjaar1LL7u8CbAiVx6RInQA_p2RrtM';
@@ -5996,7 +6055,7 @@ html,body{background:${tv('--bg')};color:${tv('--text-primary')||'#f0f0f0'};font
   </div>
 
 </div>
-<button class="save-btn" onclick="setTimeout(()=>window.print(),300)">⬇ Save as PDF</button>
+<button class="save-btn" onclick="setTimeout(()=>window.print(),300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save as PDF</button>
 <script>
 ${chartScript}
 <\/script>
@@ -6291,10 +6350,17 @@ function saveActualReps(sk, value, prescReps) {
 
 // Lightweight re-render of a single set row without scroll disruption
 function renderSetRow(sk) {
-  const main = document.querySelector('.main-scroll');
-  const savedScroll = main ? main.scrollTop : 0;
+  // Extract exercise key from set key (remove ||sN suffix) to find anchor card
+  const exKey = sk.replace(/\|\|s\d+$/, '');
+  const escaped = exKey.replace(/'/g, "\\'");
+  const card = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+  let anchorOffset = null;
+  if (card) { anchorOffset = card.getBoundingClientRect().top; }
   render();
-  if (main) main.scrollTop = savedScroll;
+  if (card && anchorOffset !== null) {
+    const newCard = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+    if (newCard) { window.scrollBy(0, newCard.getBoundingClientRect().top - anchorOffset); }
+  }
 }
 
 function showRepTip() {
