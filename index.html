@@ -858,7 +858,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 0; right: 0; margin: 0 auto; width: calc(100% - 32px); max-width: 420px; background: var(--bg); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: calc(100% - 32px); max-width: 420px; background: var(--bg); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)); gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; border-radius: 100px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(201,168,76,0.14); box-shadow: inset 0 1px 0 rgba(201,168,76,0.15); }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
@@ -1083,6 +1083,80 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] [style*="color: #C9A84C"] { color: var(--gold) !important; }
 [data-theme="light"] [style*="color:rgba(201,168,76"],
 [data-theme="light"] [style*="color: rgba(201,168,76"] { color: var(--gold) !important; }
+
+/* ── COLUMN MAPPER WIZARD ──────────────────────────────────────────────────── */
+.colmap-modal { position:fixed;inset:0;z-index:10001;display:none;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch; }
+.colmap-header { padding:16px 20px 0;display:flex;justify-content:space-between;align-items:center; }
+.colmap-header-title { font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--gold);letter-spacing:0.02em; }
+.colmap-header-sub { font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-top:1px; }
+.colmap-close { width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-sub); }
+.colmap-step-bar { display:flex;gap:6px;padding:14px 20px 16px;align-items:center; }
+.colmap-step-pill { height:3px;flex:1;border-radius:2px;background:var(--border);transition:background 0.25s; }
+.colmap-step-pill.active { background:var(--gold); }
+.colmap-step-pill.done { background:var(--green); }
+.colmap-step-label { font-size:11px;color:var(--text-faint);margin-left:8px;white-space:nowrap;font-weight:500; }
+.colmap-content { padding:0 20px 120px; }
+.colmap-section-title { font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:var(--text-bright);margin-bottom:4px; }
+.colmap-section-sub { font-size:13px;color:var(--text-faint);margin-bottom:16px;line-height:1.4; }
+.colmap-step { display:none;animation:onboardFadeIn 0.2s ease; }
+.colmap-step.active { display:block; }
+
+/* Sheet preview table */
+.colmap-preview { background:var(--surface-2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px; }
+.colmap-preview-hdr { padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center; }
+.colmap-preview-label { font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em; }
+.colmap-sheet-name { font-size:12px;color:var(--gold);font-weight:600; }
+.colmap-table-wrap { overflow-x:auto;-webkit-overflow-scrolling:touch; }
+.colmap-table { min-width:100%;font-size:12px;border-collapse:collapse; }
+.colmap-table th { text-align:left;padding:8px 10px;color:var(--text-faint);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);background:var(--surface-3);white-space:nowrap; }
+.colmap-table td { padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text-sub);font-size:12px;white-space:nowrap; }
+.colmap-table tr.cm-hdr-row td { color:var(--gold);font-weight:600;background:rgba(201,168,76,0.05); }
+.colmap-table tr.cm-data-row td { color:var(--text-primary); }
+.colmap-table td.cm-hl-exercise { border-left:2px solid var(--gold);background:rgba(201,168,76,0.06); }
+.colmap-table td.cm-hl-pres { border-left:2px solid #7B9FD4;background:rgba(123,159,212,0.06); }
+.colmap-table td.cm-hl-logged { border-left:2px solid var(--green);background:rgba(74,222,128,0.06); }
+.colmap-table td.cm-hl-notes { border-left:2px solid #B07BD4;background:rgba(176,123,212,0.06); }
+
+/* Column mapper rows */
+.colmap-grid { display:flex;flex-direction:column;gap:8px;margin-bottom:20px; }
+.colmap-row { display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px; }
+.colmap-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+.colmap-dot.gold { background:var(--gold); }
+.colmap-dot.blue { background:#7B9FD4; }
+.colmap-dot.green { background:var(--green); }
+.colmap-dot.purple { background:#B07BD4; }
+.colmap-dot.grey { background:var(--text-dim); }
+.colmap-select { background:var(--surface-3);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:'Barlow',sans-serif;font-size:13px;padding:7px 28px 7px 10px;min-width:100px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer; }
+.colmap-select.assigned { border-color:var(--gold);color:var(--gold); }
+.colmap-label { font-size:13px;font-weight:600;color:var(--text-primary);flex:1; }
+.colmap-label span { font-size:11px;color:var(--text-faint);font-weight:400;display:block;margin-top:1px; }
+.colmap-optional { font-size:9px;color:var(--text-dim);background:var(--surface-3);padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.05em;margin-left:4px; }
+
+/* Day detection cards */
+.colmap-card { background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px; }
+.colmap-card-title { font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-primary); }
+.colmap-option { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer; }
+.colmap-option:last-child { border-bottom:none; }
+.colmap-radio { width:18px;height:18px;border-radius:50%;border:2px solid var(--text-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color 0.15s; }
+.colmap-radio.selected { border-color:var(--gold); }
+.colmap-radio.selected::after { content:'';width:8px;height:8px;border-radius:50%;background:var(--gold); }
+.colmap-option-text { font-size:13px;color:var(--text-sub);line-height:1.4; }
+.colmap-option-text strong { color:var(--text-primary);font-weight:600; }
+.colmap-found-days { display:flex;flex-wrap:wrap;gap:6px;margin-top:12px; }
+.colmap-day-chip { background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:var(--gold);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px; }
+
+/* Summary */
+.colmap-summary { background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px; }
+.colmap-summary-row { display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px; }
+.colmap-summary-label { color:var(--text-faint); }
+.colmap-summary-value { color:var(--gold);font-weight:600; }
+.colmap-summary-value.green { color:var(--green); }
+
+/* Buttons */
+.colmap-btn-primary { width:100%;padding:14px;border:none;border-radius:100px;background:var(--gold);color:#0a0a0a;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;margin-bottom:8px; }
+.colmap-btn-primary:disabled { opacity:0.4;cursor:default; }
+.colmap-btn-secondary { width:100%;padding:12px;border:1px solid var(--border);border-radius:100px;background:none;color:var(--text-sub);font-family:'Barlow',sans-serif;font-size:13px;cursor:pointer; }
+
 </style>
 </head>
 <body>
@@ -1157,6 +1231,30 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="parse-error-modal" id="parse-error-modal" style="display:none">
   <div class="checkin-overlay" onclick="closeParseError()"></div>
   <div class="parse-error-card" id="parse-error-card"></div>
+</div>
+
+<!-- Column Mapper Wizard -->
+<div class="colmap-modal" id="colmap-modal">
+  <div class="colmap-header">
+    <div>
+      <div class="colmap-header-title">Map Your Spreadsheet</div>
+      <div class="colmap-header-sub">Customize how your file is read</div>
+    </div>
+    <div class="colmap-close" onclick="closeColumnMapper()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+  </div>
+  <div class="colmap-step-bar">
+    <div class="colmap-step-pill" id="cm-pill-1"></div>
+    <div class="colmap-step-pill" id="cm-pill-2"></div>
+    <div class="colmap-step-pill" id="cm-pill-3"></div>
+    <span class="colmap-step-label" id="cm-step-label">Step 1 of 3</span>
+  </div>
+  <div class="colmap-content">
+    <div class="colmap-step" id="cm-step-1"></div>
+    <div class="colmap-step" id="cm-step-2"></div>
+    <div class="colmap-step" id="cm-step-3"></div>
+  </div>
 </div>
 
 <!-- Onboarding Overlay -->
@@ -1470,6 +1568,7 @@ function loadNav(){ try{ return JSON.parse(localStorage.getItem('liftlog_nav')||
 function saveNav(){ try{ localStorage.setItem('liftlog_nav', JSON.stringify({blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay})); }catch(e){ console.error('[liftlog] saveNav error:',e); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML; }
 
 // ── SCREEN NAV ────────────────────────────────────────────────────────────────
 let _workoutScrollY = 0;
@@ -4953,7 +5052,21 @@ async function importFromSheetsUrl(prefix) {
     wb._plFilename = id; // use sheet ID as stable filename key
     const blocks = parseWorkbook(wb);
     if (!blocks || blocks.length === 0) {
-      throw new Error("Couldn't find exercises in this sheet. Tap \"What should my spreadsheet look like?\" below to see supported formats.");
+      // Fall back to column mapper
+      btn.textContent = origText;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+      // Close modals before opening mapper
+      try { closeProgramModal(); } catch(ex) {}
+      const onboardEl = document.getElementById('onboarding-overlay');
+      if (onboardEl && onboardEl.style.display !== 'none') {
+        markOnboarded();
+        onboardEl.style.display = 'none';
+        document.querySelector('.bottom-nav').style.display = '';
+        document.querySelector('.header').style.display = '';
+      }
+      openColumnMapper(wb);
+      return;
     }
     // Close any open modals
     try { closeProgramModal(); } catch(ex) {}
@@ -5395,7 +5508,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     const wb=XLSX.read(data);
     wb._plFilename = file.name;
     const blocks=parseWorkbook(wb);
-    if(!blocks||blocks.length===0){ showParseError('parse'); return; }
+    if(!blocks||blocks.length===0){ openColumnMapper(wb); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; if(b.name==='Training Program') b.name=namePart; });
     openImportIntent(blocks);
@@ -6734,6 +6847,561 @@ function showRepTip() {
 function dismissRepTip() {
   const el = document.getElementById('rep-tip-tooltip');
   if (el) el.remove();
+}
+
+// ── COLUMN MAPPER WIZARD ──────────────────────────────────────────────────────
+const COLMAP_STORAGE_KEY = 'liftlog_colmaps';
+let _cmWb = null;          // the workbook being mapped
+let _cmStep = 1;           // current wizard step
+let _cmSheetRows = {};     // {sheetName: rows[][]} — raw data cache
+let _cmMapping = {         // user's column assignments
+  exercise: -1,
+  prescription: -1,
+  logged: -1,
+  coachNotes: -1,
+  lifterNotes: -1
+};
+let _cmDayMode = 'sections'; // 'sections' | 'sheets'
+let _cmSheetMode = 'week';   // 'week' | 'block'
+let _cmDetectedDays = [];    // discovered day names
+let _cmDataStartRow = 0;     // first data row (after header)
+let _cmExcludedSections = new Set(); // day names user toggled off
+
+function loadSavedMappings() {
+  try { return JSON.parse(localStorage.getItem(COLMAP_STORAGE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveMappingForFile(fingerprint, mapping) {
+  const all = loadSavedMappings();
+  all[fingerprint] = mapping;
+  try { localStorage.setItem(COLMAP_STORAGE_KEY, JSON.stringify(all)); } catch(e) {}
+}
+function getFileFingerprint(wb) {
+  // Use column headers from first sheet as fingerprint so same coach format auto-maps
+  try {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null});
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const strs = row.filter(c => c != null).map(c => String(c).trim().toLowerCase()).filter(Boolean);
+      if (strs.length >= 2) return strs.join('|');
+    }
+  } catch(e) {}
+  return null;
+}
+
+function openColumnMapper(wb) {
+  _cmWb = wb;
+  _cmStep = 1;
+  _cmSheetRows = {};
+  _cmDetectedDays = [];
+  _cmExcludedSections = new Set();
+  _cmDayMode = 'sections';
+  _cmSheetMode = 'week';
+  _cmMapping = { exercise: -1, prescription: -1, logged: -1, coachNotes: -1, lifterNotes: -1 };
+
+  // Cache all sheet rows
+  for (const sn of wb.SheetNames) {
+    try {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
+      const clean = rows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+      _cmSheetRows[sn] = clean;
+    } catch(e) { _cmSheetRows[sn] = []; }
+  }
+
+  // Auto-detect column assignments from header row
+  autoDetectColumns();
+
+  // Check for saved mapping
+  const fp = getFileFingerprint(wb);
+  if (fp) {
+    const saved = loadSavedMappings()[fp];
+    if (saved) {
+      _cmMapping = { ...saved };
+      // If we have a saved mapping, try to parse directly with it
+      const blocks = parseCWorkbook(wb);
+      if (blocks && blocks.length > 0) {
+        openImportIntent(blocks);
+        return;
+      }
+    }
+  }
+
+  document.getElementById('colmap-modal').style.display = 'block';
+  cmGoStep(1);
+}
+
+function closeColumnMapper() {
+  document.getElementById('colmap-modal').style.display = 'none';
+  _cmWb = null;
+}
+
+function cmGoStep(n) {
+  _cmStep = n;
+  document.querySelectorAll('.colmap-step').forEach(s => s.classList.remove('active'));
+  for (let i = 1; i <= 3; i++) {
+    const pill = document.getElementById('cm-pill-' + i);
+    pill.className = 'colmap-step-pill';
+    if (i < n) pill.classList.add('done');
+    if (i === n) pill.classList.add('active');
+  }
+  document.getElementById('cm-step-label').textContent = `Step ${n} of 3`;
+
+  if (n === 1) renderCmStep1();
+  else if (n === 2) renderCmStep2();
+  else renderCmStep3();
+
+  document.getElementById('colmap-modal').scrollTop = 0;
+}
+
+function autoDetectColumns() {
+  // Scan first few rows of first sheet for header keywords
+  const firstSheet = _cmSheetRows[_cmWb.SheetNames[0]] || [];
+  let bestRow = -1;
+  for (let i = 0; i < Math.min(8, firstSheet.length); i++) {
+    const row = firstSheet[i]; if (!row) continue;
+    const strs = row.map(c => String(c || '').toLowerCase());
+    // A header row has recognizable keywords
+    const hasKeywords = strs.some(s => s.includes('sets') || s.includes('reps') || s.includes('exercise') || s.includes('record') || s.includes('weight'));
+    if (hasKeywords) { bestRow = i; break; }
+  }
+
+  if (bestRow >= 0) {
+    _cmDataStartRow = bestRow + 1;
+    const row = firstSheet[bestRow];
+    const strs = row.map(c => String(c || '').toLowerCase());
+
+    strs.forEach((s, idx) => {
+      // Exercise name column
+      if (_cmMapping.exercise < 0 && (s.includes('exercise') || s.includes('movement') || s.includes('lift'))) _cmMapping.exercise = idx;
+      // Prescription column  
+      if (_cmMapping.prescription < 0 && (s.includes('sets') || s.includes('reps') || s.includes('prescription') || s.includes('scheme'))) _cmMapping.prescription = idx;
+      // Logged weight
+      if (_cmMapping.logged < 0 && (s.includes('record') || s.includes('actual') || s.includes('logged') || s.includes('result'))) _cmMapping.logged = idx;
+      // Coach notes
+      if (_cmMapping.coachNotes < 0 && s.includes('coach')) _cmMapping.coachNotes = idx;
+      // Lifter notes
+      if (_cmMapping.lifterNotes < 0 && (s.includes('lifter') || s.includes('athlete') || s.includes('my note'))) _cmMapping.lifterNotes = idx;
+    });
+
+    // If no exercise column found, guess: the column with longest text strings is likely exercise
+    if (_cmMapping.exercise < 0 && _cmMapping.prescription < 0) {
+      // Try Format B-style: col 0 = exercise, col 1 = prescription, col 2 = logged
+      // Heuristic: look at data rows below header
+      for (let ri = _cmDataStartRow; ri < Math.min(_cmDataStartRow + 5, firstSheet.length); ri++) {
+        const dr = firstSheet[ri]; if (!dr) continue;
+        for (let ci = 0; ci < dr.length; ci++) {
+          const val = String(dr[ci] || '');
+          if (val.length > 5 && /[a-zA-Z]{3,}/.test(val) && _cmMapping.exercise < 0) { _cmMapping.exercise = ci; }
+          if (/\d+x\d+|\d+\s*@\s*\d+|sets/i.test(val) && _cmMapping.prescription < 0 && ci !== _cmMapping.exercise) { _cmMapping.prescription = ci; }
+        }
+        if (_cmMapping.exercise >= 0) break;
+      }
+    }
+
+    // If exercise found but not prescription, guess next column
+    if (_cmMapping.exercise >= 0 && _cmMapping.prescription < 0) {
+      _cmMapping.prescription = _cmMapping.exercise + 1;
+    }
+    // If prescription found but not logged, guess next column after prescription
+    if (_cmMapping.prescription >= 0 && _cmMapping.logged < 0) {
+      const candidate = _cmMapping.prescription + 1;
+      if (candidate < (row.length || 10)) _cmMapping.logged = candidate;
+    }
+  } else {
+    // No header found — assume row 0 is header or data
+    _cmDataStartRow = 0;
+    // Try col 0 = exercise, col 1 = pres, col 2 = logged
+    _cmMapping.exercise = 0;
+    _cmMapping.prescription = 1;
+    _cmMapping.logged = 2;
+  }
+}
+
+function cmColLetter(idx) { return idx >= 0 ? String.fromCharCode(65 + idx) : '—'; }
+
+function renderCmStep1() {
+  const firstSheetName = _cmWb.SheetNames[0];
+  const rows = _cmSheetRows[firstSheetName] || [];
+  const maxCols = rows.reduce((m, r) => r ? Math.max(m, r.length) : m, 0);
+  const previewRows = rows.slice(0, Math.min(12, rows.length));
+
+  // Build column options
+  const colOpts = (selected, allowNone) => {
+    let h = allowNone ? '<option value="-1">None</option>' : '';
+    for (let c = 0; c < maxCols; c++) {
+      h += `<option value="${c}"${c === selected ? ' selected' : ''}>Col ${cmColLetter(c)}</option>`;
+    }
+    return h;
+  };
+
+  // Build table preview
+  let tableH = '<table class="colmap-table"><tr>';
+  for (let c = 0; c < maxCols; c++) tableH += `<th>${cmColLetter(c)}</th>`;
+  tableH += '</tr>';
+  previewRows.forEach((row, ri) => {
+    if (!row) return;
+    const isHdr = ri < _cmDataStartRow;
+    tableH += `<tr class="${isHdr ? 'cm-hdr-row' : 'cm-data-row'}">`;
+    for (let c = 0; c < maxCols; c++) {
+      let cls = '';
+      if (!isHdr) {
+        if (c === _cmMapping.exercise) cls = 'cm-hl-exercise';
+        else if (c === _cmMapping.prescription) cls = 'cm-hl-pres';
+        else if (c === _cmMapping.logged) cls = 'cm-hl-logged';
+        else if (c === _cmMapping.coachNotes || c === _cmMapping.lifterNotes) cls = 'cm-hl-notes';
+      }
+      const val = row[c] != null ? String(row[c]).substring(0, 30) : '';
+      tableH += `<td${cls ? ` class="${cls}"` : ''}>${escH(val)}</td>`;
+    }
+    tableH += '</tr>';
+  });
+  tableH += '</table>';
+
+  const el = document.getElementById('cm-step-1');
+  el.innerHTML = `
+    <div class="colmap-section-title">Which columns have your data?</div>
+    <div class="colmap-section-sub">We couldn't auto-detect your format. Assign the columns below so we can read your program.</div>
+    <div class="colmap-preview">
+      <div class="colmap-preview-hdr">
+        <span class="colmap-preview-label">Preview</span>
+        <span class="colmap-sheet-name">${escH(firstSheetName)}</span>
+      </div>
+      <div class="colmap-table-wrap">${tableH}</div>
+    </div>
+    <div class="colmap-grid">
+      <div class="colmap-row">
+        <div class="colmap-dot gold"></div>
+        <div class="colmap-label">Exercise Name<span>Which column has the exercise?</span></div>
+        <select class="colmap-select${_cmMapping.exercise>=0?' assigned':''}" onchange="_cmMapping.exercise=+this.value;renderCmStep1()">
+          ${colOpts(_cmMapping.exercise, false)}
+        </select>
+      </div>
+      <div class="colmap-row">
+        <div class="colmap-dot blue"></div>
+        <div class="colmap-label">Prescription<span>Sets, reps, and/or RPE</span></div>
+        <select class="colmap-select${_cmMapping.prescription>=0?' assigned':''}" onchange="_cmMapping.prescription=+this.value;renderCmStep1()">
+          ${colOpts(_cmMapping.prescription, false)}
+        </select>
+      </div>
+      <div class="colmap-row">
+        <div class="colmap-dot green"></div>
+        <div class="colmap-label">Logged Weight <span class="colmap-optional">Optional</span><span>What you actually lifted</span></div>
+        <select class="colmap-select${_cmMapping.logged>=0?' assigned':''}" onchange="_cmMapping.logged=+this.value;renderCmStep1()">
+          ${colOpts(_cmMapping.logged, true)}
+        </select>
+      </div>
+      <div class="colmap-row">
+        <div class="colmap-dot purple"></div>
+        <div class="colmap-label">Coach Notes <span class="colmap-optional">Optional</span><span>Coaching cues or instructions</span></div>
+        <select class="colmap-select${_cmMapping.coachNotes>=0?' assigned':''}" onchange="_cmMapping.coachNotes=+this.value;renderCmStep1()">
+          ${colOpts(_cmMapping.coachNotes, true)}
+        </select>
+      </div>
+      <div class="colmap-row">
+        <div class="colmap-dot grey"></div>
+        <div class="colmap-label">Lifter Notes <span class="colmap-optional">Optional</span><span>Your own training notes</span></div>
+        <select class="colmap-select${_cmMapping.lifterNotes>=0?' assigned':''}" onchange="_cmMapping.lifterNotes=+this.value;renderCmStep1()">
+          ${colOpts(_cmMapping.lifterNotes, true)}
+        </select>
+      </div>
+    </div>
+    <button class="colmap-btn-primary" onclick="cmGoStep(2)"${_cmMapping.exercise<0||_cmMapping.prescription<0?' disabled':''}>Next</button>
+    <button class="colmap-btn-secondary" onclick="closeColumnMapper()">Cancel</button>
+  `;
+}
+
+function renderCmStep2() {
+  // Detect days based on mode
+  detectDays();
+
+  let daysH = '';
+  if (_cmDetectedDays.length > 0) {
+    daysH = `<div class="colmap-card">
+      <div class="colmap-card-title">We found ${_cmDetectedDays.length} training day${_cmDetectedDays.length===1?'':'s'}</div>
+      <div class="colmap-found-days">${_cmDetectedDays.map(d => `<div class="colmap-day-chip">${escH(d)}</div>`).join('')}</div>
+    </div>`;
+  } else {
+    daysH = `<div class="colmap-card">
+      <div class="colmap-card-title" style="color:var(--text-faint)">No training days detected</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">Try switching the day boundary option above. If your sheet doesn't have day headers, all exercises will be grouped into one day per sheet.</div>
+    </div>`;
+  }
+
+  const el = document.getElementById('cm-step-2');
+  el.innerHTML = `
+    <div class="colmap-section-title">How are training days organized?</div>
+    <div class="colmap-section-sub">Tell us where one day ends and the next begins in your spreadsheet.</div>
+    <div class="colmap-card">
+      <div class="colmap-card-title">Day boundaries</div>
+      <div class="colmap-option" onclick="cmSelectRadio(this,'sections')">
+        <div class="colmap-radio${_cmDayMode==='sections'?' selected':''}"></div>
+        <div class="colmap-option-text"><strong>Days are sections within each sheet</strong><br>Rows like "Day 1", "Upper 1" mark where each day starts</div>
+      </div>
+      <div class="colmap-option" onclick="cmSelectRadio(this,'sheets')">
+        <div class="colmap-radio${_cmDayMode==='sheets'?' selected':''}"></div>
+        <div class="colmap-option-text"><strong>Each sheet is one training day</strong><br>Sheet tabs represent individual days</div>
+      </div>
+    </div>
+    <div class="colmap-card">
+      <div class="colmap-card-title">Sheet organization</div>
+      <div class="colmap-option" onclick="cmSelectSheetRadio(this,'week')">
+        <div class="colmap-radio${_cmSheetMode==='week'?' selected':''}"></div>
+        <div class="colmap-option-text"><strong>Each sheet is one week</strong></div>
+      </div>
+      <div class="colmap-option" onclick="cmSelectSheetRadio(this,'block')">
+        <div class="colmap-radio${_cmSheetMode==='block'?' selected':''}"></div>
+        <div class="colmap-option-text"><strong>Each sheet is a full training block</strong><br>All weeks are contained in one sheet</div>
+      </div>
+    </div>
+    ${daysH}
+    <button class="colmap-btn-primary" onclick="cmGoStep(3)">Next</button>
+    <button class="colmap-btn-secondary" onclick="cmGoStep(1)">Back</button>
+  `;
+}
+
+function renderCmStep3() {
+  // Do a trial parse to get stats
+  const blocks = parseCWorkbook(_cmWb);
+  const totalExercises = blocks ? blocks.reduce((sum, b) => sum + b.weeks.reduce((ws, w) => ws + w.days.reduce((ds, d) => ds + d.exercises.length, 0), 0), 0) : 0;
+  const totalWeeks = blocks ? blocks.reduce((m, b) => Math.max(m, b.weeks?.length || 0), 0) : 0;
+  const totalDays = blocks ? blocks.reduce((sum, b) => sum + b.weeks.reduce((ws, w) => ws + w.days.length, 0), 0) : 0;
+  const daysPerWeek = totalWeeks > 0 ? Math.round(totalDays / totalWeeks) : totalDays;
+
+  // Count logged data
+  let loggedSets = 0;
+  if (blocks) {
+    blocks.forEach(b => b.weeks.forEach(w => w.days.forEach(d => d.exercises.forEach(ex => {
+      if (ex.loggedWeight) loggedSets++;
+    }))));
+  }
+
+  const el = document.getElementById('cm-step-3');
+  el.innerHTML = `
+    <div style="text-align:center;padding-top:12px">
+      <div style="width:48px;height:48px;border-radius:50%;background:rgba(74,222,128,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="colmap-section-title" style="text-align:center">Ready to Import</div>
+      <div class="colmap-section-sub" style="text-align:center">Here's what we'll pull from your spreadsheet.</div>
+    </div>
+    <div class="colmap-summary">
+      <div class="colmap-summary-row">
+        <span class="colmap-summary-label">Sheets found</span>
+        <span class="colmap-summary-value">${_cmWb.SheetNames.length} sheet${_cmWb.SheetNames.length===1?'':'s'}</span>
+      </div>
+      <div class="colmap-summary-row">
+        <span class="colmap-summary-label">Weeks detected</span>
+        <span class="colmap-summary-value">${totalWeeks} week${totalWeeks===1?'':'s'}</span>
+      </div>
+      <div class="colmap-summary-row">
+        <span class="colmap-summary-label">Training days${totalWeeks>1?' per week':''}</span>
+        <span class="colmap-summary-value">${daysPerWeek} day${daysPerWeek===1?'':'s'}</span>
+      </div>
+      <div class="colmap-summary-row">
+        <span class="colmap-summary-label">Total exercises</span>
+        <span class="colmap-summary-value">${totalExercises}</span>
+      </div>
+      ${loggedSets>0?`<div class="colmap-summary-row">
+        <span class="colmap-summary-label">Logged data found</span>
+        <span class="colmap-summary-value green">${loggedSets} exercises pre-filled</span>
+      </div>`:''}
+    </div>
+    <div class="colmap-summary">
+      <div class="colmap-card-title" style="margin-bottom:8px">Column Mapping</div>
+      <div class="colmap-summary-row">
+        <span class="colmap-summary-label">Exercise</span>
+        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.exercise)}</span>
+      </div>
+      <div class="colmap-summary-row">
+        <span class="colmap-summary-label">Prescription</span>
+        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.prescription)}</span>
+      </div>
+      ${_cmMapping.logged >= 0 ? `<div class="colmap-summary-row">
+        <span class="colmap-summary-label">Logged Weight</span>
+        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.logged)}</span>
+      </div>` : ''}
+      ${_cmMapping.coachNotes >= 0 ? `<div class="colmap-summary-row">
+        <span class="colmap-summary-label">Coach Notes</span>
+        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.coachNotes)}</span>
+      </div>` : ''}
+    </div>
+    <div style="padding:12px 14px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:10px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">This mapping will be saved so future uploads from the same format import automatically.</div>
+    </div>
+    ${totalExercises > 0 ? `
+      <button class="colmap-btn-primary" onclick="confirmColumnMapper()">Import Program</button>
+    ` : `
+      <button class="colmap-btn-primary" disabled>No exercises found</button>
+      <div style="font-size:12px;color:var(--red);text-align:center;margin-top:4px">Try adjusting your column assignments or day detection settings.</div>
+    `}
+    <button class="colmap-btn-secondary" onclick="cmGoStep(2)">Back</button>
+  `;
+}
+
+function cmSelectRadio(el, mode) {
+  _cmDayMode = mode;
+  renderCmStep2();
+}
+function cmSelectSheetRadio(el, mode) {
+  _cmSheetMode = mode;
+  renderCmStep2();
+}
+
+function detectDays() {
+  _cmDetectedDays = [];
+  const exCol = _cmMapping.exercise;
+  const presCol = _cmMapping.prescription;
+
+  if (_cmDayMode === 'sheets') {
+    // Each sheet = one day
+    _cmDetectedDays = _cmWb.SheetNames.slice();
+    return;
+  }
+
+  // Sections mode: scan for rows that look like day headers
+  // A day header row: has text in exercise col and the prescription col contains a keyword like "sets", "reps", "record"
+  // OR: the exercise col text is short (<30 chars) and the row has recognizable header words
+  const seen = new Set();
+  for (const sn of _cmWb.SheetNames) {
+    const rows = _cmSheetRows[sn] || [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      const exVal = String(row[exCol] || '').trim();
+      if (!exVal || exVal.length > 40) continue;
+
+      const rowStrs = row.map(c => String(c || '').toLowerCase());
+      const hasSetsHdr = rowStrs.some(s => s.includes('sets') || s.includes('record') || s.includes('reps'));
+
+      if (hasSetsHdr && !seen.has(exVal)) {
+        seen.add(exVal);
+        _cmDetectedDays.push(exVal);
+      }
+    }
+  }
+}
+
+// ── FORMAT C PARSER (uses column mapper mapping) ──────────────────────────────
+function parseCWorkbook(wb) {
+  if (_cmMapping.exercise < 0 || _cmMapping.prescription < 0) return [];
+
+  if (_cmSheetMode === 'block') {
+    // All weeks in one sheet (or treat all sheets as one block)
+    const allWeeks = [];
+    for (const sn of wb.SheetNames) {
+      const rows = _cmSheetRows[sn] || [];
+      const parsed = parseCSheetAsBlock(sn, rows);
+      allWeeks.push(...parsed);
+    }
+    if (allWeeks.length === 0) return [];
+    const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i, '').trim() : wb.SheetNames[0];
+    return [{ id: bId, name: bId || 'Training Program', dateRange: '', athleteName: 'Athlete', maxes: {}, weeks: allWeeks, format: 'C' }];
+  } else {
+    // Each sheet = one week (default)
+    const weeks = [];
+    for (const sn of wb.SheetNames) {
+      const rows = _cmSheetRows[sn] || [];
+      const week = parseCSheet(sn, rows);
+      if (week) weeks.push(week);
+    }
+    if (weeks.length === 0) return [];
+    const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i, '').trim() : wb.SheetNames[0];
+    return [{ id: bId, name: bId || 'Training Program', dateRange: '', athleteName: 'Athlete', maxes: {}, weeks, format: 'C' }];
+  }
+}
+
+function parseCSheet(sn, rows) {
+  // Parse one sheet as one week with day sections
+  if (!rows || rows.length === 0) return null;
+  const exCol = _cmMapping.exercise;
+  const presCol = _cmMapping.prescription;
+  const logCol = _cmMapping.logged;
+  const coachCol = _cmMapping.coachNotes;
+  const lifterCol = _cmMapping.lifterNotes;
+
+  const days = [];
+  let curDay = null;
+
+  if (_cmDayMode === 'sheets') {
+    // Entire sheet is one day
+    curDay = { name: sn, exercises: [] };
+    days.push(curDay);
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      const exVal = String(row[exCol] || '').trim();
+      if (!exVal) continue;
+      // Skip header rows
+      const rowStrs = row.map(c => String(c || '').toLowerCase());
+      if (rowStrs.some(s => s.includes('sets') || s.includes('record') || s.includes('exercise'))) continue;
+      const pres = presCol >= 0 && row[presCol] != null ? String(row[presCol]).trim() : null;
+      const logged = logCol >= 0 && row[logCol] != null ? String(row[logCol]).trim() || null : null;
+      const note = coachCol >= 0 && row[coachCol] != null ? String(row[coachCol]).trim() || null : null;
+      const lifterNote = lifterCol >= 0 && row[lifterCol] != null ? String(row[lifterCol]).trim() || null : null;
+      curDay.exercises.push({ name: exVal.replace(/\s+/g, ' '), prescription: pres, note, lifterNote, loggedWeight: logged });
+    }
+  } else {
+    // Sections mode — detect day header rows
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      const exVal = String(row[exCol] || '').trim();
+      if (!exVal) continue;
+
+      const rowStrs = row.map(c => String(c || '').toLowerCase());
+      const hasSetsHdr = rowStrs.some(s => s.includes('sets') || s.includes('record') || s.includes('reps'));
+      const isDayHeader = hasSetsHdr && exVal.length < 40;
+
+      if (isDayHeader) {
+        if (!_cmExcludedSections.has(exVal)) {
+          curDay = { name: exVal, exercises: [] };
+          days.push(curDay);
+        } else {
+          curDay = null; // skip this section
+        }
+      } else if (curDay) {
+        // Skip pure numbers
+        if (/^\d+\.?\d*\s*$/.test(exVal)) continue;
+        const pres = presCol >= 0 && row[presCol] != null ? String(row[presCol]).trim() : null;
+        if (!pres && !exVal) continue; // skip empty rows
+        const logged = logCol >= 0 && row[logCol] != null ? String(row[logCol]).trim() || null : null;
+        const note = coachCol >= 0 && row[coachCol] != null ? String(row[coachCol]).trim() || null : null;
+        const lifterNote = lifterCol >= 0 && row[lifterCol] != null ? String(row[lifterCol]).trim() || null : null;
+        curDay.exercises.push({ name: exVal.replace(/\s+/g, ' '), prescription: pres, note, lifterNote, loggedWeight: logged });
+      }
+    }
+  }
+
+  if (days.length === 0) return null;
+  return { label: sn, days };
+}
+
+function parseCSheetAsBlock(sn, rows) {
+  // Parse one sheet that contains an entire block (multiple weeks)
+  // Returns array of week objects
+  const week = parseCSheet(sn, rows);
+  if (!week) return [];
+  // For a block-in-one-sheet, the whole thing is one "week" — user can split later
+  return [week];
+}
+
+function confirmColumnMapper() {
+  const blocks = parseCWorkbook(_cmWb);
+  if (!blocks || blocks.length === 0) return;
+
+  // Save mapping for future use
+  const fp = getFileFingerprint(_cmWb);
+  if (fp) {
+    saveMappingForFile(fp, { ..._cmMapping });
+  }
+
+  closeColumnMapper();
+
+  // Apply filename cleanup
+  const filename = _cmWb._plFilename || '';
+  const namePart = filename.replace(/\.xlsx?$/i, '').replace(/_/g, ' ').trim();
+  blocks.forEach(b => {
+    if (b.athleteName === 'Athlete') b.athleteName = namePart;
+    if (b.name === 'Training Program') b.name = namePart;
+  });
+
+  openImportIntent(blocks);
 }
 
 // ── CALCULATOR ────────────────────────────────────────────────────────────────
