@@ -1292,6 +1292,34 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <div style="margin-bottom:20px">
       <div class="add-lift-group-label" style="margin-bottom:10px">Add New Program</div>
       <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">UPLOAD FROM DEVICE<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+
+      <!-- Google Sheets URL import -->
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or import from Google Sheets</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);line-height:1.6;margin-bottom:10px">
+          <strong style="color:var(--gold);display:block;margin-bottom:4px">How to share your program:</strong>
+          1. Open your program in Google Sheets<br>
+          2. Make a copy: <strong style="color:var(--text-primary)">File → Make a copy</strong><br>
+          3. Open the copy, click <strong style="color:var(--text-primary)">Share</strong> (top right)<br>
+          4. Under "General access" select <strong style="color:var(--text-primary)">Anyone with the link → Viewer</strong><br>
+          5. Copy the link and paste it below
+        </div>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input id="sheets-url-input" type="url" placeholder="Paste Google Sheets link…"
+            style="flex:1;background:var(--surface-3);border:1px solid var(--border-3);border-radius:8px;padding:9px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);outline:none;min-width:0"
+            oninput="onSheetsUrlInput(this.value)"
+            onkeydown="if(event.key==='Enter')importFromSheetsUrl()" />
+          <button id="sheets-url-btn" onclick="importFromSheetsUrl()"
+            style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.05em;cursor:pointer;opacity:0.4;pointer-events:none;white-space:nowrap;transition:opacity 0.15s">
+            IMPORT
+          </button>
+        </div>
+        <div id="sheets-url-error" style="display:none;margin-top:8px;font-size:12px;color:#f87171;font-family:'Barlow',sans-serif"></div>
+      </div>
     </div>
     <!-- Existing cycles -->
     <div id="program-list"></div>
@@ -4769,6 +4797,79 @@ function showCelebration(dayName, meta, onDismiss) {
   const scroll = overlay.querySelector('.cel-scroll');
   if (scroll) scroll.scrollTop = 0;
   overlay.classList.add('visible');
+}
+
+// ── GOOGLE SHEETS URL IMPORT ─────────────────────────────────────────────────
+function extractSheetsId(url) {
+  // Handles formats:
+  // https://docs.google.com/spreadsheets/d/SHEET_ID/edit...
+  // https://docs.google.com/spreadsheets/d/SHEET_ID/view...
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
+  return m ? m[1] : null;
+}
+
+function onSheetsUrlInput(val) {
+  const btn = document.getElementById('sheets-url-btn');
+  const err = document.getElementById('sheets-url-error');
+  err.style.display = 'none';
+  const id = extractSheetsId(val.trim());
+  if (id) {
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+  } else {
+    btn.style.opacity = '0.4';
+    btn.style.pointerEvents = 'none';
+  }
+}
+
+async function importFromSheetsUrl() {
+  const input = document.getElementById('sheets-url-input');
+  const btn   = document.getElementById('sheets-url-btn');
+  const err   = document.getElementById('sheets-url-error');
+  const url   = input.value.trim();
+  const id    = extractSheetsId(url);
+  err.style.display = 'none';
+
+  if (!id) {
+    err.textContent = "Couldn't find a valid Google Sheets link. Make sure you copied the full URL.";
+    err.style.display = 'block';
+    return;
+  }
+
+  // Swap button to loading state
+  const origText = btn.textContent;
+  btn.textContent = 'LOADING…';
+  btn.style.opacity = '0.6';
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`;
+    const resp = await fetch(exportUrl);
+    if (!resp.ok) {
+      if (resp.status === 401 || resp.status === 403) {
+        throw new Error('This sheet is not publicly accessible. Make sure sharing is set to "Anyone with the link → Viewer".');
+      }
+      throw new Error(`Failed to fetch sheet (status ${resp.status}). Check that the sharing link is correct.`);
+    }
+    const buffer = await resp.arrayBuffer();
+    const wb = XLSX.read(buffer);
+    const blocks = parseWorkbook(wb);
+    if (!blocks || blocks.length === 0) {
+      throw new Error("Couldn't parse this sheet. Make sure it's a supported program format.");
+    }
+    // Use sheet title from URL as fallback name
+    blocks.forEach(b => { if (b.athleteName === 'Athlete') b.athleteName = 'Athlete'; });
+    closeProgramModal();
+    input.value = '';
+    onSheetsUrlInput('');
+    openImportIntent(blocks);
+  } catch (e) {
+    err.textContent = e.message || 'Something went wrong. Please try again.';
+    err.style.display = 'block';
+    btn.textContent = origText;
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+  }
 }
 
 // ── IMPORT INTENT ────────────────────────────────────────────────────────────
