@@ -884,7 +884,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .program-item-actions { display: flex; gap: 8px; align-items: center; }
 .program-select-btn { font-size: 11px; padding: 5px 12px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; cursor: pointer; letter-spacing: 0.04em; }
 .program-select-btn.current { border-color: var(--gold); color: var(--gold); }
-.program-delete-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 4px 6px; transition: color 0.15s; line-height: 1; }
+.program-delete-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 8px 10px; transition: color 0.15s; line-height: 1; }
 .program-delete-btn:active { color: #f87171; }
 .export-scope-picker { display: none; gap: 6px; margin-top: 6px; padding: 6px 0 2px; }
 .export-scope-btn { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: none; color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
@@ -1184,6 +1184,17 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .intake-section-label { font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin:20px 0 10px; }
 .intake-skip-link { font-size:12px;color:var(--text-dim);text-align:center;cursor:pointer;padding:8px 0; }
 
+/* ── Import Review Step ────────────────────────────────────────────────── */
+.review-day-list { display:flex;flex-direction:column;gap:12px;margin:16px 0; }
+.review-day-card { background:var(--surface-3);border-radius:12px;overflow:hidden; }
+.review-day-header { font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;color:var(--gold);padding:10px 14px 6px;border-bottom:1px solid var(--border); }
+.review-ex-row { padding:8px 14px;border-bottom:1px solid var(--border); }
+.review-ex-row:last-child { border-bottom:none; }
+.review-ex-name { font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:var(--text-primary); }
+.review-ex-pres { font-family:'Barlow',sans-serif;font-size:12px;color:var(--gold);margin-top:2px; }
+.review-ex-note { font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);font-style:italic;margin-top:2px; }
+.review-wrong-link { font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px; }
+
 /* Editable metadata fields */
 .colmap-field { margin-bottom:12px; }
 .colmap-field-label { font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px;font-family:'Barlow Condensed',sans-serif; }
@@ -1385,7 +1396,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Delete Confirm Modal -->
-<div class="add-lift-modal" id="delete-modal" style="display:none" onclick="if(event.target===this)closeDeleteModal()">
+<div class="add-lift-modal" id="delete-modal" style="display:none;z-index:400" onclick="if(event.target===this)closeDeleteModal()">
   <div class="add-lift-sheet">
     <div class="add-lift-title" style="color:#f87171">Delete Program?</div>
     <div style="font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:20px">
@@ -1453,12 +1464,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <button class="settings-athlete-save" onclick="saveAthleteProfile()">Save</button>
     </div>
-    <button class="settings-row-btn" onclick="resetIntakeForTesting()" style="cursor:pointer">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
-        Reset Intake (Testing)
-      </div>
-    </button>
     <button class="settings-row-btn" onclick="resetOnboarding()" style="cursor:pointer">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -2329,6 +2334,26 @@ function detectFormat(wb){
       if(hits.length>=2) return 'A';
     }
 
+    // Check Format D: horizontal week layout — "WEEK N" labels across top row + repeating Sets/Reps headers
+    // Must check BEFORE Format C since both have split Sets/Reps headers
+    // Check multiple sheets since first sheet may be a metadata/maxes sheet
+    for (let si = 0; si < Math.min(3, wb.SheetNames.length); si++) {
+      const wsD = wb.Sheets[wb.SheetNames[si]];
+      const rowsD = XLSX.utils.sheet_to_json(wsD, {header:1, defval:null}).map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
+      let dWeekLabels = 0, dSetsCount = 0, dHasDaySection = false;
+      for(let i=0;i<Math.min(15,rowsD.length);i++){
+        const row=rowsD[i]; if(!row) continue;
+        let wkCount = 0;
+        row.forEach(c => { if(c && /^WEEK\s*\d/i.test(String(c).trim())) wkCount++; });
+        if(wkCount >= 2) dWeekLabels = wkCount;
+        const strs = row.map(c=>String(c||'').toLowerCase().trim());
+        const sc = strs.filter(s => s === 'sets').length;
+        if(sc >= 2) dSetsCount = sc;
+        if(row[0] && /^WEEK\s*\d/i.test(String(row[0]).trim())) dHasDaySection = true;
+      }
+      if(dWeekLabels >= 2 && dSetsCount >= 2 && dHasDaySection) return 'D';
+    }
+
     // Check Format C: split columns with "Sets"/"Reps"/"Load" headers + "Day N" labels in col A
     let hasSplitHeaders = false;
     let hasDayLabel = false;
@@ -2655,6 +2680,7 @@ function parseWorkbook(wb){
   const fmt = detectFormat(wb);
   if (fmt === 'A') return parseA(wb);
   if (fmt === 'C') return parseCAutoFormat(wb);
+  if (fmt === 'D') return parseD(wb);
   return parseB(wb);
 }
 
@@ -2864,6 +2890,311 @@ function parseCAutoSheet(sn, rows) {
   const filtered = days.filter(d => d.exercises.length > 0);
   if (filtered.length === 0) return null;
   return { label: sn, days: filtered };
+}
+
+// ── FORMAT D PARSER (horizontal week layout — Calgary Barbell style) ──────────
+// Weeks run across columns (repeating Sets/Reps/Load groups), days are vertical
+// sections within each sheet. Multiple sheets span multi-week blocks.
+function parseD(wb) {
+  const skipSheets = new Set();
+  // Identify non-training sheets (Training Maxes, instructions, copies, empty sheets)
+  for (const sn of wb.SheetNames) {
+    const s = sn.toLowerCase();
+    if (s.includes('max') || s.includes('instruction') || s.includes('note') || s.includes('info')
+        || s.startsWith('copy of') || s.startsWith('sheet')) skipSheets.add(sn);
+  }
+
+  // Extract block name from sheet names
+  let blockMeta = { name: '', athlete: '' };
+  const trainingSheets = wb.SheetNames.filter(sn => !skipSheets.has(sn));
+  if (trainingSheets.length > 0) {
+    // Try to derive a program name from sheet names pattern
+    const firstSheet = trainingSheets[0];
+    if (/week/i.test(firstSheet)) {
+      blockMeta.name = 'Training Block'; // Generic but clean
+    } else {
+      blockMeta.name = firstSheet;
+    }
+  }
+  if (!blockMeta.name) blockMeta.name = 'Training Block';
+
+  const allWeeks = []; // array of {label, days}
+  let globalWeekNum = 0;
+
+  for (const sn of wb.SheetNames) {
+    if (skipSheets.has(sn)) continue;
+    const ws = wb.Sheets[sn];
+    const rawRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+    if (!rows.length) continue;
+
+    // Parse this sheet into day sections, each with exercises across week columns
+    const sheetResult = parseDSheet(sn, rows);
+    if (!sheetResult || !sheetResult.daySections.length) continue;
+
+    const numWeeks = sheetResult.numWeeks;
+
+    // Build week objects: for each week column, collect exercises from all day sections
+    for (let w = 0; w < numWeeks; w++) {
+      globalWeekNum++;
+      const weekDays = [];
+      for (const daySection of sheetResult.daySections) {
+        const dayExercises = [];
+        for (const ex of daySection.exercises) {
+          if (!ex.weekData[w]) continue;
+          const wd = ex.weekData[w];
+          if (!wd.sets && !wd.reps) continue; // empty week cell
+          dayExercises.push({
+            name: ex.name,
+            prescription: wd.prescription,
+            note: wd.note || '',
+            lifterNote: '',
+            loggedWeight: ''
+          });
+        }
+        if (dayExercises.length > 0) {
+          weekDays.push({ name: daySection.dayName, exercises: dayExercises });
+        }
+      }
+      if (weekDays.length > 0) {
+        allWeeks.push({ label: 'Week ' + globalWeekNum, days: weekDays });
+      }
+    }
+  }
+
+  if (allWeeks.length === 0) return parseB(wb); // fallback
+
+  return [{
+    name: blockMeta.name,
+    weeks: allWeeks,
+    athlete: blockMeta.athlete
+  }];
+}
+
+// Parse a single Format D sheet into day sections with per-week exercise data
+function parseDSheet(sheetName, rows) {
+  // 1. Find day section boundaries: rows with "WEEK N, Day N" or taper-style headers
+  const daySections = []; // {dayName, headerRowIdx, exercises[]}
+  const dayStartRows = [];
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r]; if (!row) continue;
+    const colA = String(row[0] || '').trim();
+    // Match "WEEK N, Day N", "WEEK N" (implicit Day 1), or "N Days from Competition"
+    const wkDayMatch = colA.match(/^WEEK\s*\d+(?:\s*,\s*Day\s*(\d+))?$/i);
+    const taperMatch = colA.match(/^(\d+)\s*Days?\s*(from|before)\s*Competition$/i);
+    if (wkDayMatch || taperMatch) {
+      let dayName;
+      if (taperMatch) {
+        dayName = colA; // Keep as-is: "5 Days from Competition"
+      } else if (wkDayMatch[1]) {
+        dayName = 'Day ' + wkDayMatch[1];
+      } else {
+        // "WEEK 1" without Day suffix — check if it's first day section in the sheet
+        dayName = 'Day 1';
+      }
+      dayStartRows.push({ rowIdx: r, dayName });
+    }
+  }
+
+  if (dayStartRows.length === 0) return null;
+
+  // 2. Determine number of week columns from the first header row after first day section
+  let numWeeks = 0;
+  let firstHeaderRow = null;
+  for (let r = dayStartRows[0].rowIdx + 1; r < Math.min(dayStartRows[0].rowIdx + 3, rows.length); r++) {
+    const row = rows[r]; if (!row) continue;
+    const strs = row.map(c => String(c || '').toLowerCase().trim());
+    const setsCount = strs.filter(s => s === 'sets').length;
+    if (setsCount >= 1) {
+      numWeeks = setsCount;
+      firstHeaderRow = r;
+      break;
+    }
+  }
+  if (numWeeks === 0) return null;
+
+  // 3. Parse each day section
+  for (let d = 0; d < dayStartRows.length; d++) {
+    const startRow = dayStartRows[d].rowIdx;
+    const endRow = d + 1 < dayStartRows.length ? dayStartRows[d + 1].rowIdx : rows.length;
+
+    // Find the column header row for this day section
+    let colHeaderIdx = -1;
+    let weekColGroups = []; // [{setsCol, repsCol, intensityCol, loadCol, tempoCol, restCol}]
+
+    for (let r = startRow + 1; r < Math.min(startRow + 4, endRow); r++) {
+      const row = rows[r]; if (!row) continue;
+      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      if (strs.includes('sets')) {
+        colHeaderIdx = r;
+        // Find all "Sets" positions → each starts a week group
+        for (let c = 0; c < strs.length; c++) {
+          if (strs[c] === 'sets') {
+            const group = { setsCol: c, repsCol: -1, loadCol: -1, intensityCol: -1, tempoCol: -1, restCol: -1 };
+            // Scan forward from setsCol to find the other columns in this group
+            for (let cc = c + 1; cc < Math.min(c + 8, strs.length); cc++) {
+              const h = strs[cc];
+              if (h === 'reps' && group.repsCol === -1) group.repsCol = cc;
+              else if ((h === 'load' || h === 'weight') && group.loadCol === -1) group.loadCol = cc;
+              else if (h === 'intensity' && group.intensityCol === -1) group.intensityCol = cc;
+              else if (h === 'tempo' && group.tempoCol === -1) group.tempoCol = cc;
+              else if (h.startsWith('rest') && group.restCol === -1) group.restCol = cc;
+              else if (h === 'performed' && group.loadCol === -1) { /* skip Performed col */ }
+              else if (h === 'sets') break; // next group
+            }
+            weekColGroups.push(group);
+          }
+        }
+        break;
+      }
+    }
+
+    if (colHeaderIdx === -1 || weekColGroups.length === 0) continue;
+
+    // Parse exercise rows
+    const exercises = [];
+    let lastExName = '';
+    for (let r = colHeaderIdx + 1; r < endRow; r++) {
+      const row = rows[r]; if (!row) continue;
+      let exName = String(row[0] || '').trim();
+      if (!exName) {
+        // Continuation row — check if it has data (sets/reps in first week group)
+        const hasSets = row[weekColGroups[0].setsCol] != null;
+        if (hasSets && lastExName) {
+          exName = lastExName; // inherit name; deduplicateExerciseNames appends "#2" later
+        } else {
+          continue; // truly empty row
+        }
+      } else {
+        lastExName = exName;
+      }
+      // Skip if it's another day header or column header
+      if (/^WEEK\s*\d/i.test(exName) || /^\d+\s*Days?\s*(from|before)/i.test(exName)) break;
+      if (exName.toLowerCase() === 'exercise') continue;
+
+      const weekData = [];
+      for (let w = 0; w < weekColGroups.length; w++) {
+        const g = weekColGroups[w];
+        const sets = row[g.setsCol];
+        const reps = row[g.repsCol];
+        const loadRaw = g.loadCol >= 0 ? row[g.loadCol] : null;
+        const intensity = g.intensityCol >= 0 ? row[g.intensityCol] : null;
+        const tempo = g.tempoCol >= 0 ? row[g.tempoCol] : null;
+        const rest = g.restCol >= 0 ? row[g.restCol] : null;
+
+        // Detect when "Load" column actually holds RPE/intensity and real weight is next col
+        let load = loadRaw;
+        let effectiveIntensity = intensity;
+        if (g.loadCol >= 0) {
+          const nextColVal = row[g.loadCol + 1];
+          const loadStr = String(loadRaw || '').trim();
+          const isRPE = /rpe/i.test(loadStr);
+          const isPct = typeof loadRaw === 'number' && loadRaw > 0 && loadRaw <= 1;
+          const isOpener = /opener/i.test(loadStr);
+          if (isRPE || isPct || isOpener) {
+            effectiveIntensity = loadRaw;
+            if (typeof nextColVal === 'number' && nextColVal > 1) {
+              load = nextColVal; // Next col has computed weight
+            } else {
+              load = null; // No computed weight available — show pres without load
+            }
+          }
+        }
+
+        weekData.push(buildDPrescription(sets, reps, load, effectiveIntensity, tempo, rest));
+      }
+
+      exercises.push({ name: exName.replace(/\s+/g,' ').trim(), weekData });
+    }
+
+    daySections.push({
+      dayName: dayStartRows[d].dayName,
+      exercises
+    });
+  }
+
+  return { daySections, numWeeks };
+}
+
+// Build a prescription string from Format D columns
+function buildDPrescription(sets, reps, load, intensity, tempo, rest) {
+  if (sets == null && reps == null) return { sets: 0, reps: '', prescription: '', note: '' };
+
+  const setsStr = String(sets || '').trim();
+  const repsStr = String(reps || '').trim();
+  const loadVal = load != null ? load : null;
+  const intensityStr = intensity != null ? String(intensity).trim() : '';
+  const tempoStr = tempo != null ? String(tempo).trim() : '';
+  const restVal = rest != null ? rest : null;
+
+  // Parse special set notation: "1+2F" = 1 top set + 2 fatigue sets = 3 total
+  let totalSets = 0;
+  const plusMatch = setsStr.match(/^(\d+)\+(\d+)[FR]$/i);
+  if (plusMatch) {
+    totalSets = parseInt(plusMatch[1]) + parseInt(plusMatch[2]);
+  } else {
+    totalSets = parseInt(setsStr) || 0;
+  }
+
+  // Handle reps: can be number, "x" (timed), or other
+  let repsDisplay = repsStr;
+  if (repsStr.toLowerCase() === 'x') {
+    // Timed exercise — check if intensity has time value like "30s"
+    if (/^\d+s$/i.test(intensityStr)) {
+      repsDisplay = intensityStr; // e.g. "30s"
+    }
+  }
+
+  // Build prescription string
+  let pres = '';
+  if (totalSets > 0 && repsDisplay) {
+    if (typeof loadVal === 'number' && loadVal > 0) {
+      pres = totalSets + 'x' + repsDisplay + '(' + loadVal + ')';
+    } else {
+      pres = totalSets + 'x' + repsDisplay;
+    }
+  } else if (totalSets > 0) {
+    pres = totalSets + ' sets';
+  }
+
+  // Add RPE/intensity as note context
+  const notes = [];
+
+  // Intensity: decimal (percentage), "8RPE" string, or "Opener"
+  if (intensityStr && !/^\d+s$/i.test(intensityStr) && intensityStr.toLowerCase() !== 'x') {
+    const numIntensity = parseFloat(intensityStr);
+    if (/opener/i.test(intensityStr)) {
+      notes.push('Opener');
+    } else if (/rpe/i.test(intensityStr)) {
+      // "8RPE" → "@8"
+      const rpeNum = parseFloat(intensityStr);
+      if (!isNaN(rpeNum)) notes.push('@' + rpeNum);
+    } else if (!isNaN(numIntensity) && numIntensity > 0 && numIntensity <= 1) {
+      notes.push(Math.round(numIntensity * 100) + '%');
+    }
+  }
+
+  // Special set notation explanation
+  if (plusMatch) {
+    const topSets = plusMatch[1];
+    const extraSets = plusMatch[2];
+    const fOrR = setsStr.slice(-1).toUpperCase();
+    const label = fOrR === 'F' ? 'fatigue' : 'rep';
+    notes.push(topSets + ' top + ' + extraSets + ' ' + label);
+  }
+
+  // Tempo
+  if (tempoStr && tempoStr.toLowerCase() !== 'x') {
+    notes.push('Tempo: ' + tempoStr);
+  }
+
+  return {
+    sets: totalSets,
+    reps: repsDisplay,
+    prescription: pres,
+    note: notes.join(' · ')
+  };
 }
 
 // ── BLOCK MERGE ───────────────────────────────────────────────────────────────
@@ -3381,18 +3712,6 @@ function toggleScoresSetting() {
   if (state.screen === 'home') renderHome();
 }
 
-
-function resetIntakeForTesting() {
-  const block = state.activeBlock;
-  if (!block) { alert('No active block.'); return; }
-  const s = loadSchedule();
-  delete s[block.id];
-  saveSchedule(s);
-  saveAthlete(null);
-  localStorage.removeItem(ONBOARDED_KEY);
-  closeSettings();
-  setTimeout(() => openIntake(block), 200);
-}
 
 function resetOnboarding() {
   localStorage.removeItem(ONBOARDED_KEY);
@@ -5374,7 +5693,8 @@ function renderIntakeStep() {
   const body = document.getElementById('import-intake-body');
   if (_intakeStep === 1) renderIntakeStep1(body);
   else if (_intakeStep === 2) renderIntakeStep2(body);
-  else renderIntakeStep3(body);
+  else if (_intakeStep === 3) renderIntakeStep3(body);
+  else renderIntakeStep4(body);
   // scroll sheet to top
   body.closest('.intake-sheet').scrollTop = 0;
 }
@@ -5479,7 +5799,7 @@ function renderIntakeStep2(body) {
         <label class="intake-field-label">Bodyweight</label>
         <input class="intake-field-input" id="intake-bw" type="number" inputmode="decimal" placeholder="—" value="${preBw}">
       </div>
-      <button class="intake-unit-toggle" id="intake-bw-unit" onclick="this.textContent=this.textContent==='lbs'?'kg':'lbs'">${esc(preBwUnit)}</button>
+      <button class="intake-unit-toggle" id="intake-bw-unit" onclick="this.textContent=this.textContent==='lbs'?'kg':'lbs'" style="align-self:flex-end;padding:10px 14px;background:var(--surface-5);border:1px solid var(--border-3);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);cursor:pointer;letter-spacing:0.06em;min-width:44px;text-align:center">${esc(preBwUnit)}</button>
     </div>
     <div class="intake-field-label" style="margin-bottom:6px">Gender</div>
     <div class="intake-gender-row">
@@ -5574,9 +5894,74 @@ function renderIntakeStep3(body) {
     </div>
     <div style="display:flex;gap:10px">
       <button class="colmap-btn-secondary" style="flex:1" onclick="intakeBack()">Back</button>
-      <button class="import-confirm-btn" style="flex:2;margin:0" onclick="confirmImportIntent()">Import Program</button>
+      <button class="import-confirm-btn" style="flex:2;margin:0" onclick="intakeNext()">Next</button>
     </div>
   `;
+}
+
+// ── Step 4: Program Review ───────────────────────────────────────────────
+function renderIntakeStep4(body) {
+  const blocks = _pendingImportBlocks || [];
+  const b0 = blocks[0] || {};
+  const week1 = b0.weeks?.[0];
+
+  if (!week1 || !week1.days?.length) {
+    // Edge case: no week data — skip review
+    confirmImportIntent();
+    return;
+  }
+
+  let dayCardsHtml = '';
+  for (const day of week1.days) {
+    const exRows = (day.exercises || []).map(ex => {
+      const name = ex.name || 'Unnamed';
+      const pres = ex.prescription || '';
+      const note = ex.note || '';
+      return `
+        <div class="review-ex-row">
+          <div class="review-ex-name">${esc(name)}</div>
+          <div class="review-ex-pres">${esc(pres)}</div>
+          ${note ? `<div class="review-ex-note">${esc(note)}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    dayCardsHtml += `
+      <div class="review-day-card">
+        <div class="review-day-header">${esc(day.name || 'Day')}</div>
+        ${exRows || '<div style="padding:8px 12px;font-size:12px;color:var(--text-dim)">No exercises found</div>'}
+      </div>`;
+  }
+
+  body.innerHTML = `
+    <div style="margin-bottom:6px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Review Week 1</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px">Check that your exercises and prescriptions look right</div>
+    </div>
+    <div class="review-day-list">
+      ${dayCardsHtml}
+    </div>
+    <button class="import-confirm-btn" onclick="confirmImportIntent()">Looks Good — Import</button>
+    <div style="margin-top:10px;text-align:center">
+      <span class="review-wrong-link" onclick="showReviewHelp()">Something doesn't look right</span>
+    </div>
+    <div id="review-help-msg" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);line-height:1.6">
+        The parser may not support your spreadsheet's layout. You can:
+      </div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <button class="colmap-btn-secondary" onclick="closeImportIntent()">Try a Different File</button>
+        <button class="colmap-btn-secondary" onclick="confirmImportIntent()">Import Anyway</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center;margin-top:8px">
+      <span class="intake-skip-link" onclick="intakeBack()">← Back</span>
+    </div>
+  `;
+}
+
+function showReviewHelp() {
+  const el = document.getElementById('review-help-msg');
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function formatIntakeDate(iso) {
@@ -5619,6 +6004,8 @@ function intakeNext() {
   } else if (_intakeStep === 2) {
     readIntakeFields(); // cache values before switching
     _intakeStep = 3;
+  } else if (_intakeStep === 3) {
+    _intakeStep = 4;
   } else {
     confirmImportIntent();
     return;
@@ -5627,7 +6014,8 @@ function intakeNext() {
 }
 
 function intakeBack() {
-  if (_intakeStep === 3) { readIntakeFields(); _intakeStep = 2; }
+  if (_intakeStep === 4) { _intakeStep = 3; }
+  else if (_intakeStep === 3) { readIntakeFields(); _intakeStep = 2; }
   else if (_intakeStep === 2) { readIntakeFields(); _intakeStep = 1; }
   renderIntakeStep();
 }
@@ -6044,7 +6432,7 @@ function renderProgramList(){
       </div>
       <div class="program-item-actions">
         <button class="program-select-btn${isCurrent?' current':''}" onclick="selectBlock('${esc(block.id)}')">${isCurrent?'ACTIVE':'SELECT'}</button>
-        <button class="program-delete-btn" onclick="promptDeleteBlock('${esc(block.id)}')" title="Delete program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        <button class="program-delete-btn" onclick="event.stopPropagation();promptDeleteBlock('${esc(block.id)}')" title="Delete program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
     </div>`;
   });
