@@ -769,11 +769,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .intake-gender-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.1); }
 .intake-input { width: 100%; padding: 12px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; font-family: 'Barlow', sans-serif; font-size: 16px; color: var(--text-bright); box-sizing: border-box; outline: none; }
 .intake-input:focus { border-color: var(--gold); }
-.intake-bw-row { display: flex; gap: 8px; }
+.intake-bw-row { display: flex; gap: 10px; align-items: stretch; }
 .intake-bw-input { flex: 1; }
 .intake-unit-toggle { display: flex; flex-direction: column; gap: 4px; }
-.intake-unit-btn { flex: 1; padding: 6px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; }
-.intake-unit-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.08); }
+.intake-unit-btn { flex: 1; padding: 8px 16px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; text-transform: lowercase; }
+.intake-unit-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
 
 /* Onboarding */
 .onboarding-overlay { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -858,7 +858,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5, var(--bg)); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; border-radius: 100px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(201,168,76,0.14); box-shadow: inset 0 1px 0 rgba(201,168,76,0.15); }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
@@ -1116,10 +1116,22 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .colmap-table td.cm-hl-pres { border-left:2px solid #7B9FD4;background:rgba(123,159,212,0.06); }
 .colmap-table td.cm-hl-logged { border-left:2px solid var(--green);background:rgba(74,222,128,0.06); }
 .colmap-table td.cm-hl-notes { border-left:2px solid #B07BD4;background:rgba(176,123,212,0.06); }
+.colmap-table td.cm-row-num { color:var(--text-faint);font-size:10px;text-align:center;padding:7px 6px;width:28px;min-width:28px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:all 0.15s; }
+.colmap-table tr.cm-hdr-row td.cm-row-num { color:var(--text-faint);opacity:0.5; }
+.colmap-table tr.cm-start-row td { border-top:2px solid var(--gold); }
+.colmap-table tr.cm-start-row td.cm-row-num { color:var(--gold);font-weight:700; }
+.colmap-table tr.cm-skip-row td { opacity:0.3; }
+.cm-start-hint { font-size:11px;color:var(--text-faint);padding:6px 0 2px;font-style:italic; }
+.cm-tap-cell { cursor:pointer;transition:background 0.1s; }
+.cm-tap-cell:active { background:rgba(201,168,76,0.15); }
+.cm-selected-cell { background:rgba(201,168,76,0.25);border:2px solid var(--gold);font-weight:600;color:var(--gold); }
 
 /* Column mapper rows */
 .colmap-grid { display:flex;flex-direction:column;gap:8px;margin-bottom:20px; }
 .colmap-row { display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px; }
+.colmap-sub-row { margin-left:20px;background:var(--surface-3);border-color:rgba(255,255,255,0.04); }
+.colmap-toggle-btn { margin-left:auto;padding:5px 12px;border-radius:100px;border:1px solid var(--border);background:none;color:var(--text-sub);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.04em;cursor:pointer;white-space:nowrap;transition:all 0.15s; }
+.colmap-toggle-btn:active { border-color:var(--gold);color:var(--gold); }
 .colmap-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
 .colmap-dot.gold { background:var(--gold); }
 .colmap-dot.blue { background:#7B9FD4; }
@@ -1165,9 +1177,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .intake-field-input::placeholder { color:var(--text-dim); }
 .intake-maxes-row { display:flex;gap:8px; }
 .intake-maxes-row .intake-field { flex:1; }
-.intake-bw-row { display:flex;gap:8px;align-items:flex-end; }
 .intake-bw-row .intake-field { flex:1; }
-.intake-unit-toggle { padding:10px 14px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);cursor:pointer;white-space:nowrap;margin-bottom:14px; }
 .intake-gender-row { display:flex;gap:8px;margin-bottom:14px; }
 .intake-gender-btn { flex:1;padding:10px;background:var(--surface-3);border:1.5px solid var(--border);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-sub);cursor:pointer;transition:all 0.12s;text-align:center; }
 .intake-gender-btn.selected { border-color:var(--gold);color:var(--gold);background:rgba(var(--gold-rgb),0.1); }
@@ -1523,6 +1533,7 @@ function rePopulateSets(blocks){
             if(!exLog?.done) continue;
             if(!ex.prescription) continue;
             const sets=parseSets(ex.prescription);
+            if(!sets.length) { const wu=parseWarmupSets(ex.prescription); if(wu.length) sets.push(...wu); }
             sets.forEach((s,si)=>{
               const sk=key+`||s${si}`;
               if(state.logs[sk]){
@@ -2310,10 +2321,29 @@ function detectFormat(wb){
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rawRows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
     const rows = rawRows.map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
+
+    // Check Format A: multiple day columns in header rows
     for(let i=0;i<Math.min(10,rows.length);i++){
       const row=rows[i]; if(!row) continue;
       const hits=row.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)));
       if(hits.length>=2) return 'A';
+    }
+
+    // Check Format C: split columns with "Sets"/"Reps"/"Load" headers + "Day N" labels in col A
+    let hasSplitHeaders = false;
+    let hasDayLabel = false;
+    for(let i=0;i<Math.min(40,rows.length);i++){
+      const row=rows[i]; if(!row) continue;
+      const strs = row.map(c=>String(c||'').toLowerCase().trim());
+      // Look for row with "Sets" and "Reps" and "Load" as separate cells
+      if (strs.includes('sets') && strs.includes('reps') && (strs.includes('load') || strs.includes('weight'))) {
+        hasSplitHeaders = true;
+      }
+      // Look for "Day N" in col A
+      if (row[0] && /^day\s*\d/i.test(String(row[0]).trim())) {
+        hasDayLabel = true;
+      }
+      if (hasSplitHeaders && hasDayLabel) return 'C';
     }
   }catch(e){ console.error('[liftlog] detectFormat error:',e); }
   return 'B';
@@ -2622,7 +2652,218 @@ function parseBSheet(sn,rows){
 
 // ── UNIFIED ───────────────────────────────────────────────────────────────────
 function parseWorkbook(wb){
-  return detectFormat(wb)==='A' ? parseA(wb) : parseB(wb);
+  const fmt = detectFormat(wb);
+  if (fmt === 'A') return parseA(wb);
+  if (fmt === 'C') return parseCAutoFormat(wb);
+  return parseB(wb);
+}
+
+// ── FORMAT C PARSER (split Sets/Reps/Load columns with Day N headers) ────────
+function parseCAutoFormat(wb) {
+  const blocks = [];
+  // Each sheet = one week
+  for (const sn of wb.SheetNames) {
+    try {
+      const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
+      const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+      const week = parseCAutoSheet(sn, rows);
+      if (week) blocks.push(week);
+    } catch(e) { console.error(`[parseCAutoFormat] Error parsing sheet "${sn}":`, e); }
+  }
+  if (blocks.length === 0) return [];
+
+  // Extract metadata from first sheet
+  const firstRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null})
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+  const meta = extractCAutoMeta(firstRows);
+
+  // Build single block with all weeks
+  const blockName = meta.blockName || wb._plFilename || 'Program';
+  const id = 'c_' + blockName.replace(/\s+/g,'_').substring(0,30) + '_' + Date.now();
+  return [{
+    id, name: blockName, weeks: blocks, athlete: meta.athlete || '',
+    maxes: meta.maxes || {}, dateRange: meta.dateRange || '',
+    startDate: meta.startDate || null
+  }];
+}
+
+function extractCAutoMeta(rows) {
+  const meta = { maxes: {}, athlete: '', blockName: '', dateRange: '', startDate: null };
+  // Scan first ~20 rows for metadata
+  for (let i = 0; i < Math.min(20, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const a = String(row[0] || '').trim();
+    const al = a.toLowerCase();
+    // Maxes: "Squat: 415", "Bench Press: 255"
+    const maxMatch = a.match(/^(squat|bench\s*press?|sumo\s*deadlift|conventional\s*deadlift|deadlift)\s*[:=]\s*(\d+)/i);
+    if (maxMatch) {
+      const lift = maxMatch[1].toLowerCase();
+      const val = parseInt(maxMatch[2]);
+      if (lift.includes('squat')) meta.maxes.squat = val;
+      else if (lift.includes('bench')) meta.maxes.bench = val;
+      else if (lift.includes('deadlift')) meta.maxes.deadlift = val;
+    }
+    // Date + block name from row 1: "January 12, 2026 1RM's Bo..." or "Hypertrophy Block:1/12-2/..."
+    if (i === 0 && a) {
+      // Try to find date
+      const dateMatch = a.match(/((?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4})/i);
+      if (dateMatch) meta.dateRange = dateMatch[1];
+      // Check other cells for block name
+      for (let c = 1; c < (row.length || 0); c++) {
+        const v = String(row[c] || '').trim();
+        const blockMatch = v.match(/(?:block|phase|cycle)\s*[:\-]?\s*(.+)/i);
+        if (blockMatch) meta.blockName = blockMatch[0].substring(0, 50);
+      }
+    }
+  }
+  return meta;
+}
+
+function parseCAutoSheet(sn, rows) {
+  if (!rows || rows.length === 0) return null;
+
+  // Find column indices from the first "Day N" header row
+  let setsIdx = -1, repsIdx = -1, loadIdx = -1, exIdx = -1;
+  let coachIdx = -1, loggedIdx = -1, rpeIdx = -1, notesIdx = -1;
+  let dataStartRow = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    const strs = row.map(c => String(c || '').toLowerCase().trim());
+    if (strs.includes('sets') && strs.includes('reps')) {
+      setsIdx = strs.indexOf('sets');
+      repsIdx = strs.indexOf('reps');
+      loadIdx = strs.indexOf('load'); if (loadIdx < 0) loadIdx = strs.indexOf('weight');
+      coachIdx = strs.indexOf('coach notes'); if (coachIdx < 0) strs.forEach((s, ci) => { if (s.includes('coach') && coachIdx < 0) coachIdx = ci; });
+      loggedIdx = strs.findIndex(s => s.includes('weight used'));
+      rpeIdx = strs.findIndex(s => s.includes('overall rpe') || s === 'rpe');
+      notesIdx = strs.findIndex(s => s.includes('athlete notes') || s.includes('lifter notes'));
+      // Exercise name col is typically the one with "Warm Up" / "Main Exercise" text
+      exIdx = strs.findIndex(s => s === 'warm up' || s === 'main exercise');
+      if (exIdx < 0) exIdx = setsIdx > 0 ? setsIdx - 1 : 1; // default: one col before sets
+      // The day label row is this row or one before it
+      dataStartRow = (rows[i][0] && /^day\s*\d/i.test(String(rows[i][0]).trim())) ? i : 
+                     (i > 0 && rows[i-1] && rows[i-1][0] && /^day\s*\d/i.test(String(rows[i-1][0]).trim())) ? i - 1 : i;
+      break;
+    }
+  }
+
+  if (setsIdx < 0 || repsIdx < 0) return null;
+
+  // Parse days
+  const days = [];
+  let curDay = null;
+  const SUB_SECTIONS = ['warm up','main exercise','accessories','finisher','abs','recovery','cool down','cardio'];
+
+  for (let i = dataStartRow; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    const colA = String(row[0] || '').trim();
+    const exVal = String(row[exIdx] || '').trim();
+    const strs = row.map(c => String(c || '').toLowerCase().trim());
+
+    // Day header: "Day N" in col A
+    if (/^day\s*\d/i.test(colA)) {
+      // Next row might have the weekday name
+      let dayName = colA;
+      if (i + 1 < rows.length && rows[i+1]) {
+        const nextA = String(rows[i+1][0] || '').trim();
+        if (/^(mon|tue|wed|thu|fri|sat|sun)/i.test(nextA)) {
+          dayName = nextA + ' (' + colA + ')';
+        }
+      }
+      curDay = { name: dayName, exercises: [] };
+      days.push(curDay);
+      continue;
+    }
+
+    // Weekday row right after Day header — skip (already captured)
+    if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(colA)) continue;
+
+    // Sub-section header row (has "Sets"/"Reps" keywords) — skip
+    if (strs.includes('sets') && strs.includes('reps')) continue;
+
+    // No current day yet — skip metadata rows
+    if (!curDay) continue;
+
+    // Skip empty exercise name
+    if (!exVal) continue;
+
+    // Skip sub-section labels that aren't exercises
+    if (SUB_SECTIONS.some(s => exVal.toLowerCase() === s)) continue;
+
+    // Build prescription from split columns
+    const setsRaw = row[setsIdx] != null ? String(row[setsIdx]).trim() : '';
+    const repsRaw = row[repsIdx] != null ? String(row[repsIdx]).trim() : '';
+    const loadVal = loadIdx >= 0 && row[loadIdx] != null ? String(row[loadIdx]).trim() : '';
+
+    // Detect if "sets" col contains a full prescription or description, not a simple number
+    // Full prescriptions: "135x8,225x6,275x3,315x1", "BARx20, 135x8,185x4"
+    // Descriptions: "Quadruped arm swings, Scorpions(front & back) 5 mins", "90/90 hips, pigeon pose"
+    const isSimpleNum = (v) => /^\d+\.?\d*$/.test(v);
+    const isFullPrescription = (v) => !isSimpleNum(v) && v.length > 0 && (
+      /\d+x\d+/.test(v) ||           // contains NxN pattern (warmup sets)
+      /,/.test(v) ||                   // contains commas (list of items)
+      /[a-zA-Z]{3,}/.test(v) ||       // contains words (description text)
+      /bar/i.test(v)                   // "BARx20" pattern
+    );
+
+    let pres = '';
+    const setsVal = setsRaw.replace(/\.0$/, '');
+    const repsVal = repsRaw.replace(/\.0$/, '');
+
+    if (isFullPrescription(setsRaw)) {
+      // Sets col has a full prescription or description — use it directly
+      // Concatenate reps/load cols if they also have text (spanning description)
+      pres = setsRaw;
+      if (repsRaw && !isSimpleNum(repsRaw)) pres += ' ' + repsRaw;
+      if (loadVal && !isSimpleNum(loadVal) && !/rpe/i.test(loadVal)) pres += ' ' + loadVal;
+    } else if (setsVal && repsVal) {
+      pres = setsVal + 'x' + repsVal;
+    } else if (setsVal) {
+      pres = setsVal;
+    } else if (repsVal) {
+      pres = repsVal;
+    }
+
+    // Add load if it's a specific weight or RPE (only when not already a full prescription)
+    if (loadVal && !isFullPrescription(setsRaw)) {
+      const cleanLoad = loadVal.replace(/\.0$/, '');
+      if (/^\d+/.test(cleanLoad)) {
+        pres += '(' + cleanLoad + ')';
+      } else if (/rpe/i.test(cleanLoad)) {
+        pres += ' ' + cleanLoad;
+      } else if (cleanLoad) {
+        pres += ' ' + cleanLoad;
+      }
+    }
+
+    // Logged weight
+    const logged = loggedIdx >= 0 && row[loggedIdx] != null ? String(row[loggedIdx]).trim().replace(/\.0$/, '') || null : null;
+    // Coach notes  
+    const note = coachIdx >= 0 && row[coachIdx] != null ? String(row[coachIdx]).trim() || null : null;
+    // RPE logged
+    const rpeLogged = rpeIdx >= 0 && row[rpeIdx] != null ? String(row[rpeIdx]).trim().replace(/\.0$/, '') || null : null;
+    // Athlete notes
+    const lifterNote = notesIdx >= 0 && row[notesIdx] != null ? String(row[notesIdx]).trim() || null : null;
+
+    // Combine logged RPE into loggedWeight if present
+    let logStr = logged || null;
+    if (rpeLogged && logStr) logStr += ' @' + rpeLogged;
+    else if (rpeLogged && !logStr) logStr = '@' + rpeLogged;
+
+    curDay.exercises.push({
+      name: exVal.replace(/\s+/g, ' '),
+      prescription: pres.trim() || null,
+      note,
+      lifterNote,
+      loggedWeight: logStr
+    });
+  }
+
+  // Remove empty days
+  const filtered = days.filter(d => d.exercises.length > 0);
+  if (filtered.length === 0) return null;
+  return { label: sn, days: filtered };
 }
 
 // ── BLOCK MERGE ───────────────────────────────────────────────────────────────
@@ -2762,6 +3003,8 @@ function countPrescrSets(pres){
   if(!pres) return 1;
   const s=parseSets(pres);
   if(s.length>0) return s.length;
+  const wu=parseWarmupSets(pres);
+  if(wu.length>0) return wu.length;
   const simple=parseSimple(pres);
   if(simple) return simple.sets;
   const range=parseRangeSet(pres);
@@ -3010,7 +3253,10 @@ function parseSimple(pres){
   if(!m) return null;
   // Exclude range-set patterns like "3-4x15" — those go to parseRangeSet
   if(pres.match(/^\d+[\-–]\d+x/i)) return null;
-  return{sets:parseInt(m[1]),reps:m[2].trim()};
+  const sets = parseInt(m[1]);
+  // Reject unreasonable set counts — likely a warmup weight (e.g. "135x8" = 135lb x 8 reps)
+  if(sets > 20) return null;
+  return{sets,reps:m[2].trim()};
 }
 // Handles "3-4x15 (M)", "3x12-15", range-set patterns with no specific weight
 function parseRangeSet(pres){
@@ -3037,6 +3283,27 @@ function parseBarePres(pres){
   // time format: "1:00", "0:30"
   if(/^\d+:\d{2}$/.test(p)) return{sets:1,reps:p};
   return null;
+}
+
+// Handles comma-separated warmup notation: "135x8,225x6,275x3,315x1" or "BARx20,135x8,185x4"
+// Returns parseSets-compatible array: [{reps, weight, isRpe:false}]
+function parseWarmupSets(pres){
+  if(!pres) return [];
+  const p=pres.trim();
+  // Must contain at least one comma and multiple NxN patterns
+  if(!p.includes(',')) return [];
+  const parts=p.split(',').map(s=>s.trim()).filter(Boolean);
+  const sets=[];
+  for(const part of parts){
+    const m=part.match(/^(\w+)\s*x\s*(\d+)$/i);
+    if(m){
+      sets.push({reps:parseInt(m[2]),weight:m[1],isRpe:false});
+    } else {
+      // If any part doesn't match NxN, bail — not a warmup sequence
+      return [];
+    }
+  }
+  return sets.length>=2 ? sets : [];
 }
 
 
@@ -3463,6 +3730,7 @@ function getSessionSummary(block, week, day) {
     // Determine how many sets are prescribed so we don't scan indefinitely
     const pres = ex.prescription || '';
     const parsedSets = parseSets(pres);
+    if(!parsedSets.length) { const wu=parseWarmupSets(pres); if(wu.length) parsedSets.push(...wu); }
     const simpleP = parseSimple(pres);
     const rangedP = (!parsedSets.length && !simpleP) ? parseRangeSet(pres) : null;
     const prescribedCount = parsedSets.length || simpleP?.sets || rangedP?.sets || 1;
@@ -4092,6 +4360,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   const isSkipped=log.skipped||false;
   const pres=ex.prescription;
   const sets=pres?parseSets(pres):[];
+  // Try comma-separated warmup notation: "135x8,225x6,275x3,315x1"
+  if(!sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
   const hasSets=sets.length>0;
   const simple=parseSimple(pres);
   const ranged=(!hasSets&&!simple)?parseRangeSet(pres):null;
@@ -4490,10 +4760,12 @@ function renderWorkout(){
   h+=renderExerciseList(block, week, day);
   h+=`</div>`;
   main.innerHTML=h;
-  // Scroll active day tab into view
+  // Scroll active day tab and week pill into view
   requestAnimationFrame(()=>{
     const bar=document.getElementById('day-tabs-bar');
     if(bar){const active=bar.querySelector('.day-tab.active');if(active) active.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
+    const wbar=document.querySelector('.week-bar');
+    if(wbar){const activeW=wbar.querySelector('.week-pill.active');if(activeW) activeW.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
   });
 }
 
@@ -4574,6 +4846,7 @@ function toggleEx(key){
   if(ex){
     const pres=ex.prescription;
     const sets=pres?parseSets(pres):[];
+    if(!sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
     const simple=parseSimple(pres);
     const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
     numSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
@@ -4630,6 +4903,7 @@ function completeWorkout(){
     const pres=ex.prescription;
     if(pres){
       const sets=parseSets(pres);
+      if(!sets.length) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
       const simple=parseSimple(pres);
       const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
       const numSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||1;
@@ -5558,6 +5832,7 @@ function autoCompleteExercise(setKey){
   
   const pres=ex.prescription;
   const sets=pres?parseSets(pres):[];
+  if(!sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
   const simple=parseSimple(pres);
   const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
   const totalSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
@@ -7085,15 +7360,20 @@ let _cmStep = 1;           // current wizard step
 let _cmSheetRows = {};     // {sheetName: rows[][]} — raw data cache
 let _cmMapping = {         // user's column assignments
   exercise: -1,
-  prescription: -1,
+  prescription: -1,        // combined prescription column (e.g. "3x5 @RPE 8")
+  setsCol: -1,             // split mode: separate sets column
+  repsCol: -1,             // split mode: separate reps column
+  loadCol: -1,             // split mode: separate load/intensity column
   logged: -1,
   coachNotes: -1,
   lifterNotes: -1
 };
+let _cmSplitPres = false;  // true = split Sets/Reps/Load columns
 let _cmDayMode = 'sections'; // 'sections' | 'sheets'
 let _cmSheetMode = 'week';   // 'week' | 'block'
 let _cmDetectedDays = [];    // discovered day names
 let _cmDataStartRow = 0;     // first data row (after header)
+let _cmSelCol = -1;          // column user tapped
 let _cmExcludedSections = new Set(); // day names user toggled off
 let _cmMeta = {}; // user-entered metadata from step 3
 
@@ -7127,7 +7407,9 @@ function openColumnMapper(wb) {
   _cmMeta = {};
   _cmDayMode = 'sections';
   _cmSheetMode = 'week';
-  _cmMapping = { exercise: -1, prescription: -1, logged: -1, coachNotes: -1, lifterNotes: -1 };
+  _cmMapping = { exercise: -1, prescription: -1, setsCol: -1, repsCol: -1, loadCol: -1, logged: -1, coachNotes: -1, lifterNotes: -1 };
+  _cmSplitPres = false;
+  _cmSelCol = -1;
 
   // Cache all sheet rows
   for (const sn of wb.SheetNames) {
@@ -7168,6 +7450,8 @@ function closeColumnMapper() {
 function cmGoStep(n) {
   _cmStep = n;
   document.querySelectorAll('.colmap-step').forEach(s => s.classList.remove('active'));
+  const stepEl = document.getElementById('cm-step-' + n);
+  if (stepEl) stepEl.classList.add('active');
   for (let i = 1; i <= 3; i++) {
     const pill = document.getElementById('cm-pill-' + i);
     pill.className = 'colmap-step-pill';
@@ -7184,39 +7468,71 @@ function cmGoStep(n) {
 }
 
 function autoDetectColumns() {
-  // Scan first few rows of first sheet for header keywords
+  // Scan all rows of first sheet for header keywords
   const firstSheet = _cmSheetRows[_cmWb.SheetNames[0]] || [];
   let bestRow = -1;
-  for (let i = 0; i < Math.min(8, firstSheet.length); i++) {
+
+  // Find first row with training-data header keywords (Sets, Reps, Load, etc.)
+  for (let i = 0; i < firstSheet.length; i++) {
     const row = firstSheet[i]; if (!row) continue;
     const strs = row.map(c => String(c || '').toLowerCase());
-    // A header row has recognizable keywords
-    const hasKeywords = strs.some(s => s.includes('sets') || s.includes('reps') || s.includes('exercise') || s.includes('record') || s.includes('weight'));
-    if (hasKeywords) { bestRow = i; break; }
+    const hasTrainingHdr = strs.some(s => s.includes('sets') || s.includes('reps') || s.includes('exercise') || s.includes('record') || s.includes('weight') || s.includes('load'));
+    if (hasTrainingHdr) { bestRow = i; break; }
   }
 
   if (bestRow >= 0) {
-    _cmDataStartRow = bestRow + 1;
+    // Look backward from the header row for a day label row
+    // A day label is a short string like "Day 1", "Monday", "Upper 1" in a row
+    // that doesn't have header keywords itself
+    let dayLabelRow = bestRow;
+    for (let i = bestRow - 1; i >= Math.max(0, bestRow - 3); i--) {
+      const row = firstSheet[i]; if (!row) continue;
+      const vals = row.filter(c => c != null && String(c).trim() !== '');
+      if (vals.length === 0) continue;
+      const firstVal = String(vals[0]).trim();
+      // Day label: short text, few filled cells, looks like a day name
+      const isDayLabel = firstVal.length > 0 && firstVal.length < 30 && vals.length <= 3 &&
+        (/day\s*\d/i.test(firstVal) || /^(mon|tue|wed|thu|fri|sat|sun)/i.test(firstVal) ||
+         /^(upper|lower|push|pull|full|leg)/i.test(firstVal) || /^week/i.test(firstVal));
+      if (isDayLabel) { dayLabelRow = i; break; }
+    }
+
+    _cmDataStartRow = dayLabelRow;
     const row = firstSheet[bestRow];
     const strs = row.map(c => String(c || '').toLowerCase());
 
     strs.forEach((s, idx) => {
       // Exercise name column
       if (_cmMapping.exercise < 0 && (s.includes('exercise') || s.includes('movement') || s.includes('lift'))) _cmMapping.exercise = idx;
-      // Prescription column  
-      if (_cmMapping.prescription < 0 && (s.includes('sets') || s.includes('reps') || s.includes('prescription') || s.includes('scheme'))) _cmMapping.prescription = idx;
+      // Check for split columns: separate Sets, Reps, Load headers
+      if (s === 'sets' || s === 'set') _cmMapping.setsCol = idx;
+      if (s === 'reps' || s === 'rep') _cmMapping.repsCol = idx;
+      if (s === 'load' || s === 'intensity' || s === 'weight') _cmMapping.loadCol = idx;
+      // Combined prescription column  
+      if (_cmMapping.prescription < 0 && (s.includes('prescription') || s.includes('scheme'))) _cmMapping.prescription = idx;
       // Logged weight
-      if (_cmMapping.logged < 0 && (s.includes('record') || s.includes('actual') || s.includes('logged') || s.includes('result'))) _cmMapping.logged = idx;
+      if (_cmMapping.logged < 0 && (s.includes('record') || s.includes('actual') || s.includes('logged') || s.includes('result') || s.includes('weight used'))) _cmMapping.logged = idx;
       // Coach notes
       if (_cmMapping.coachNotes < 0 && s.includes('coach')) _cmMapping.coachNotes = idx;
       // Lifter notes
       if (_cmMapping.lifterNotes < 0 && (s.includes('lifter') || s.includes('athlete') || s.includes('my note'))) _cmMapping.lifterNotes = idx;
     });
 
-    // If no exercise column found, guess: the column with longest text strings is likely exercise
-    if (_cmMapping.exercise < 0 && _cmMapping.prescription < 0) {
-      // Try Format B-style: col 0 = exercise, col 1 = prescription, col 2 = logged
-      // Heuristic: look at data rows below header
+    // If we found separate Sets + Reps columns, use split mode
+    if (_cmMapping.setsCol >= 0 && _cmMapping.repsCol >= 0) {
+      _cmSplitPres = true;
+      _cmMapping.prescription = -1; // clear combined
+    } else if (_cmMapping.prescription < 0) {
+      // Check if "sets" matched but reps didn't — might be combined column
+      // Only use split if we have at least sets + reps
+      _cmSplitPres = false;
+      _cmMapping.setsCol = -1;
+      _cmMapping.repsCol = -1;
+      _cmMapping.loadCol = -1;
+    }
+
+    // If no exercise column found, guess from data rows
+    if (_cmMapping.exercise < 0 && !_cmSplitPres && _cmMapping.prescription < 0) {
       for (let ri = _cmDataStartRow; ri < Math.min(_cmDataStartRow + 5, firstSheet.length); ri++) {
         const dr = firstSheet[ri]; if (!dr) continue;
         for (let ci = 0; ci < dr.length; ci++) {
@@ -7228,8 +7544,8 @@ function autoDetectColumns() {
       }
     }
 
-    // If exercise found but not prescription, guess next column
-    if (_cmMapping.exercise >= 0 && _cmMapping.prescription < 0) {
+    // If exercise found but not prescription (and not split mode), guess next column
+    if (_cmMapping.exercise >= 0 && _cmMapping.prescription < 0 && !_cmSplitPres) {
       _cmMapping.prescription = _cmMapping.exercise + 1;
     }
     // If prescription found but not logged, guess next column after prescription
@@ -7240,7 +7556,6 @@ function autoDetectColumns() {
   } else {
     // No header found — assume row 0 is header or data
     _cmDataStartRow = 0;
-    // Try col 0 = exercise, col 1 = pres, col 2 = logged
     _cmMapping.exercise = 0;
     _cmMapping.prescription = 1;
     _cmMapping.logged = 2;
@@ -7249,96 +7564,136 @@ function autoDetectColumns() {
 
 function cmColLetter(idx) { return idx >= 0 ? String.fromCharCode(65 + idx) : '—'; }
 
+function cmSetDataStart(rowIdx) {
+  _cmDataStartRow = rowIdx;
+  renderCmStep1();
+}
+
 function renderCmStep1() {
   const firstSheetName = _cmWb.SheetNames[0];
   const rows = _cmSheetRows[firstSheetName] || [];
   const maxCols = rows.reduce((m, r) => r ? Math.max(m, r.length) : m, 0);
-  const nonEmptyRows = rows.filter(r => r && r.some(c => c != null && String(c).trim() !== ''));
-  const previewRows = nonEmptyRows.slice(0, Math.min(12, nonEmptyRows.length));
+  const previewLimit = Math.min(50, rows.length);
 
-  // Build column options
-  const colOpts = (selected, allowNone) => {
-    let h = allowNone ? '<option value="-1">None</option>' : '';
-    for (let c = 0; c < maxCols; c++) {
-      h += `<option value="${c}"${c === selected ? ' selected' : ''}>Col ${cmColLetter(c)}</option>`;
-    }
-    return h;
-  };
-
-  // Build table preview
-  let tableH = '<table class="colmap-table"><tr>';
+  // Build table preview — every cell is tappable
+  let tableH = '<table class="colmap-table"><tr><th>#</th>';
   for (let c = 0; c < maxCols; c++) tableH += `<th>${cmColLetter(c)}</th>`;
   tableH += '</tr>';
-  previewRows.forEach((row, ri) => {
-    if (!row) return;
-    const isHdr = ri < _cmDataStartRow;
-    tableH += `<tr class="${isHdr ? 'cm-hdr-row' : 'cm-data-row'}">`;
+  for (let ri = 0; ri < previewLimit; ri++) {
+    const row = rows[ri];
+    if (!row || !row.some(c => c != null && String(c).trim() !== '')) continue;
+    const isSelected = _cmDataStartRow > 0 && ri >= _cmDataStartRow;
+    const isStart = ri === _cmDataStartRow;
+    const isDimmed = _cmDataStartRow > 0 && ri < _cmDataStartRow;
+    let trCls = isDimmed ? 'cm-skip-row' : (isStart ? 'cm-start-row cm-data-row' : (isSelected ? 'cm-data-row' : ''));
+    tableH += `<tr class="${trCls}">`;
+    tableH += `<td class="cm-row-num">${ri + 1}</td>`;
     for (let c = 0; c < maxCols; c++) {
-      let cls = '';
-      if (!isHdr) {
-        if (c === _cmMapping.exercise) cls = 'cm-hl-exercise';
-        else if (c === _cmMapping.prescription) cls = 'cm-hl-pres';
-        else if (c === _cmMapping.logged) cls = 'cm-hl-logged';
-        else if (c === _cmMapping.coachNotes || c === _cmMapping.lifterNotes) cls = 'cm-hl-notes';
-      }
       const val = row[c] != null ? String(row[c]).substring(0, 30) : '';
-      tableH += `<td${cls ? ` class="${cls}"` : ''}>${escH(val)}</td>`;
+      const isTapTarget = !isDimmed && val.trim();
+      tableH += `<td class="cm-tap-cell${isStart && c === _cmSelCol ? ' cm-selected-cell' : ''}" ${isTapTarget ? `onclick="cmTapCell(${ri},${c})"` : ''}>${escH(val)}</td>`;
     }
     tableH += '</tr>';
-  });
+  }
   tableH += '</table>';
+
+  const hasSelection = _cmDataStartRow > 0;
+  const canProceed = hasSelection && _cmMapping.exercise >= 0 && (_cmMapping.prescription >= 0 || _cmSplitPres);
 
   const el = document.getElementById('cm-step-1');
   el.innerHTML = `
-    <div class="colmap-section-title">Which columns have your data?</div>
-    <div class="colmap-section-sub">We couldn't auto-detect your format. Assign the columns below so we can read your program.</div>
+    <div class="colmap-section-title">${hasSelection ? 'Does this look right?' : 'Tap your first exercise'}</div>
+    <div class="colmap-section-sub">${hasSelection ? 'We\'ll read everything highlighted below. Tap a different cell to change.' : 'Find the first exercise in your program and tap it. We\'ll figure out the rest.'}</div>
     <div class="colmap-preview">
       <div class="colmap-preview-hdr">
         <span class="colmap-preview-label">Preview</span>
         <span class="colmap-sheet-name">${escH(firstSheetName)}</span>
       </div>
       <div class="colmap-table-wrap">${tableH}</div>
+      ${hasSelection ? `<div class="cm-start-hint">↓ Reading from row ${_cmDataStartRow + 1} · Exercise in Col ${cmColLetter(_cmMapping.exercise)}${_cmSplitPres ? ' · Sets/Reps/Load split' : _cmMapping.prescription >= 0 ? ' · Prescription in Col ' + cmColLetter(_cmMapping.prescription) : ''}</div>` : ''}
     </div>
-    <div class="colmap-grid">
-      <div class="colmap-row">
-        <div class="colmap-dot gold"></div>
-        <div class="colmap-label">Exercise Name<span>Which column has the exercise?</span></div>
-        <select class="colmap-select${_cmMapping.exercise>=0?' assigned':''}" onchange="_cmMapping.exercise=+this.value;renderCmStep1()">
-          ${colOpts(_cmMapping.exercise, false)}
-        </select>
-      </div>
-      <div class="colmap-row">
-        <div class="colmap-dot blue"></div>
-        <div class="colmap-label">Prescription<span>Sets, reps, and/or RPE</span></div>
-        <select class="colmap-select${_cmMapping.prescription>=0?' assigned':''}" onchange="_cmMapping.prescription=+this.value;renderCmStep1()">
-          ${colOpts(_cmMapping.prescription, false)}
-        </select>
-      </div>
-      <div class="colmap-row">
-        <div class="colmap-dot green"></div>
-        <div class="colmap-label">Logged Weight <span class="colmap-optional">Optional</span><span>What you actually lifted</span></div>
-        <select class="colmap-select${_cmMapping.logged>=0?' assigned':''}" onchange="_cmMapping.logged=+this.value;renderCmStep1()">
-          ${colOpts(_cmMapping.logged, true)}
-        </select>
-      </div>
-      <div class="colmap-row">
-        <div class="colmap-dot purple"></div>
-        <div class="colmap-label">Coach Notes <span class="colmap-optional">Optional</span><span>Coaching cues or instructions</span></div>
-        <select class="colmap-select${_cmMapping.coachNotes>=0?' assigned':''}" onchange="_cmMapping.coachNotes=+this.value;renderCmStep1()">
-          ${colOpts(_cmMapping.coachNotes, true)}
-        </select>
-      </div>
-      <div class="colmap-row">
-        <div class="colmap-dot grey"></div>
-        <div class="colmap-label">Lifter Notes <span class="colmap-optional">Optional</span><span>Your own training notes</span></div>
-        <select class="colmap-select${_cmMapping.lifterNotes>=0?' assigned':''}" onchange="_cmMapping.lifterNotes=+this.value;renderCmStep1()">
-          ${colOpts(_cmMapping.lifterNotes, true)}
-        </select>
-      </div>
-    </div>
-    <button class="colmap-btn-primary" onclick="cmGoStep(2)"${_cmMapping.exercise<0||_cmMapping.prescription<0?' disabled':''}>Next</button>
+    ${canProceed ? `<button class="colmap-btn-primary" onclick="cmGoStep(2)">Next</button>` : ''}
     <button class="colmap-btn-secondary" onclick="closeColumnMapper()">Cancel</button>
   `;
+}
+
+// When user taps a cell, set that as the exercise column + data start row
+// Then auto-detect other columns from the header row above
+function cmTapCell(rowIdx, colIdx) {
+  _cmDataStartRow = rowIdx;
+  _cmSelCol = colIdx;
+  _cmMapping.exercise = colIdx;
+
+  // Reset other mappings
+  _cmMapping.prescription = -1;
+  _cmMapping.setsCol = -1;
+  _cmMapping.repsCol = -1;
+  _cmMapping.loadCol = -1;
+  _cmMapping.logged = -1;
+  _cmMapping.coachNotes = -1;
+  _cmMapping.lifterNotes = -1;
+  _cmSplitPres = false;
+
+  const firstSheetName = _cmWb.SheetNames[0];
+  const rows = _cmSheetRows[firstSheetName] || [];
+
+  // Look at the header row above the selected row (or a few rows above)
+  for (let hri = rowIdx - 1; hri >= Math.max(0, rowIdx - 5); hri--) {
+    const hrow = rows[hri]; if (!hrow) continue;
+    const strs = hrow.map(c => String(c || '').toLowerCase().trim());
+
+    // Check for split columns (Sets + Reps as separate headers)
+    const setsI = strs.findIndex(s => s === 'sets' || s === 'set');
+    const repsI = strs.findIndex(s => s === 'reps' || s === 'rep');
+    if (setsI >= 0 && repsI >= 0) {
+      _cmSplitPres = true;
+      _cmMapping.setsCol = setsI;
+      _cmMapping.repsCol = repsI;
+      const loadI = strs.findIndex(s => s === 'load' || s === 'intensity' || s === 'weight');
+      if (loadI >= 0) _cmMapping.loadCol = loadI;
+      // Logged weight
+      const logI = strs.findIndex(s => s.includes('weight used') || s.includes('logged') || s.includes('actual') || s.includes('record'));
+      if (logI >= 0) _cmMapping.logged = logI;
+      // Coach notes
+      const coachI = strs.findIndex(s => s.includes('coach'));
+      if (coachI >= 0) _cmMapping.coachNotes = coachI;
+      // Athlete notes
+      const noteI = strs.findIndex(s => s.includes('athlete') || s.includes('lifter') || s.includes('my note'));
+      if (noteI >= 0) _cmMapping.lifterNotes = noteI;
+      break;
+    }
+
+    // Check for combined prescription header
+    const presI = strs.findIndex(s => s.includes('prescription') || s.includes('scheme'));
+    if (presI >= 0) {
+      _cmMapping.prescription = presI;
+      break;
+    }
+
+    // Check for any recognizable header keywords
+    const hasKeywords = strs.some(s => s.includes('sets') || s.includes('reps') || s.includes('exercise') || s.includes('record'));
+    if (hasKeywords) {
+      // Try to assign columns from this header
+      strs.forEach((s, idx) => {
+        if (s.includes('sets') || s.includes('reps') || s.includes('prescription')) {
+          if (_cmMapping.prescription < 0) _cmMapping.prescription = idx;
+        }
+        if (s.includes('record') || s.includes('actual') || s.includes('logged') || s.includes('weight used')) {
+          if (_cmMapping.logged < 0) _cmMapping.logged = idx;
+        }
+        if (s.includes('coach') && _cmMapping.coachNotes < 0) _cmMapping.coachNotes = idx;
+        if ((s.includes('lifter') || s.includes('athlete')) && _cmMapping.lifterNotes < 0) _cmMapping.lifterNotes = idx;
+      });
+      break;
+    }
+  }
+
+  // Fallback: if no header found, guess prescription is next column after exercise
+  if (!_cmSplitPres && _cmMapping.prescription < 0) {
+    _cmMapping.prescription = colIdx + 1;
+  }
+
+  renderCmStep1();
 }
 
 function renderCmStep2() {
@@ -7517,7 +7872,7 @@ function detectDays() {
   const seen = new Set();
   for (const sn of _cmWb.SheetNames) {
     const rows = _cmSheetRows[sn] || [];
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = _cmDataStartRow; i < rows.length; i++) {
       const row = rows[i]; if (!row) continue;
       const exVal = String(row[exCol] || '').trim();
       if (!exVal || exVal.length > 40) continue;
@@ -7631,10 +7986,22 @@ function cmIsJunkRow(exVal, row, presCol) {
   if (!/[a-zA-Z]/.test(exVal)) return true;
   // Standalone metadata keywords (already extracted)
   if (/^(exercise|movement|lift|name|day|week|date|athlete|coach|program|block|notes?|warm\s*up|cool\s*down)$/i.test(exVal)) return true;
+  // Goal/tracking metadata rows
+  if (/^(goals?\s*(this\s*week)?!?|daily\s*total|total|execution|diet|cardio|other|compliance)$/i.test(exVal)) return true;
+  // Standalone short metadata that aren't exercises (only if no prescription data)
+  if (presCol >= 0 && (row[presCol] == null || String(row[presCol]).trim() === '')) {
+    if (/^(squat|bench|deadlift)\s*$/i.test(exVal) && exVal.length < 12) return true;
+  }
   // Labeled metadata rows (e.g. "Athlete: Joe", "Squat Max: 450")
-  if (/^(athlete|name|lifter|client|coach|program|block|cycle|phase)\s*[:\-=]/i.test(exVal)) return true;
+  if (/^(athlete|name|lifter|client|coach|program|block|cycle|phase)\\s*[:\-=]/i.test(exVal)) return true;
   if (/(?:1\s*rm|max)\s*[:\-=]?\s*\d/i.test(exVal)) return true;
   if (/^(squat|bench|deadlift)\s*(?:max|1rm|1\s*rm)?\s*[:\-=]\s*\d/i.test(exVal)) return true;
+  // Lift specs rows (grip width, stance width, etc.)
+  if (/(?:grip|stance|width|inches?|in\b)/i.test(exVal) && /width/i.test(exVal)) return true;
+  // Macros/nutrition rows
+  if (/(?:protien|protein|carbs?|fat|calories|macros)/i.test(exVal)) return true;
+  // Instruction/note rows
+  if (/^(main\s*lifts|accessories)\s*[=:]/i.test(exVal)) return true;
   // Date ranges
   if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*[\-–—to]+\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(exVal)) return true;
   // Duplicate header rows mid-sheet
@@ -7656,6 +8023,34 @@ function parseCSheet(sn, rows) {
   const coachCol = _cmMapping.coachNotes;
   const lifterCol = _cmMapping.lifterNotes;
 
+  // Helper: build prescription from split or combined columns
+  function getPres(row) {
+    if (_cmSplitPres) {
+      const sets = _cmMapping.setsCol >= 0 && row[_cmMapping.setsCol] != null ? String(row[_cmMapping.setsCol]).trim() : '';
+      const reps = _cmMapping.repsCol >= 0 && row[_cmMapping.repsCol] != null ? String(row[_cmMapping.repsCol]).trim() : '';
+      const load = _cmMapping.loadCol >= 0 && row[_cmMapping.loadCol] != null ? String(row[_cmMapping.loadCol]).trim() : '';
+      if (!sets && !reps) return null;
+      const isSimple = (v) => /^\d+\.?\d*$/.test(v);
+      // If sets col has a full prescription (NxN patterns, commas, words), use directly
+      if (sets && !isSimple(sets) && (/\d+x\d+/.test(sets) || /,/.test(sets) || /[a-zA-Z]{3,}/.test(sets))) {
+        let p = sets;
+        if (reps && !isSimple(reps)) p += ' ' + reps;
+        if (load && !isSimple(load) && !/rpe/i.test(load)) p += ' ' + load;
+        return p.trim() || null;
+      }
+      let p = '';
+      if (sets && reps) p = sets.replace(/\.0$/, '') + 'x' + reps.replace(/\.0$/, '');
+      else if (sets) p = sets.replace(/\.0$/, '');
+      else if (reps) p = reps;
+      if (load) p += ' ' + load;
+      return p.trim() || null;
+    }
+    return presCol >= 0 && row[presCol] != null ? String(row[presCol]).trim() : null;
+  }
+
+  // Helper: get effective presCol for junk detection
+  const junkPresCol = _cmSplitPres ? _cmMapping.setsCol : presCol;
+
   const days = [];
   let curDay = null;
 
@@ -7663,7 +8058,7 @@ function parseCSheet(sn, rows) {
     // Entire sheet is one day
     curDay = { name: sn, exercises: [] };
     days.push(curDay);
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = _cmDataStartRow; i < rows.length; i++) {
       const row = rows[i]; if (!row) continue;
       const exVal = String(row[exCol] || '').trim();
       // Skip header rows
@@ -7679,7 +8074,7 @@ function parseCSheet(sn, rows) {
     }
   } else {
     // Sections mode — detect day header rows
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = _cmDataStartRow; i < rows.length; i++) {
       const row = rows[i]; if (!row) continue;
       const exVal = String(row[exCol] || '').trim();
       if (!exVal) continue;
