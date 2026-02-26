@@ -1157,6 +1157,34 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .colmap-btn-primary:disabled { opacity:0.4;cursor:default; }
 .colmap-btn-secondary { width:100%;padding:12px;border:1px solid var(--border);border-radius:100px;background:none;color:var(--text-sub);font-family:'Barlow',sans-serif;font-size:13px;cursor:pointer; }
 
+/* ── IMPORT INTAKE FIELDS ──────────────────────────────────────────────────── */
+.intake-field { margin-bottom:14px; }
+.intake-field-label { font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-sub);display:block;margin-bottom:6px; }
+.intake-field-input { width:100%;background:var(--surface-5);border:1px solid var(--border-3);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-primary);outline:none;-webkit-appearance:none; }
+.intake-field-input:focus { border-color:var(--gold); }
+.intake-field-input::placeholder { color:var(--text-dim); }
+.intake-maxes-row { display:flex;gap:8px; }
+.intake-maxes-row .intake-field { flex:1; }
+.intake-bw-row { display:flex;gap:8px;align-items:flex-end; }
+.intake-bw-row .intake-field { flex:1; }
+.intake-unit-toggle { padding:10px 14px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);cursor:pointer;white-space:nowrap;margin-bottom:14px; }
+.intake-gender-row { display:flex;gap:8px;margin-bottom:14px; }
+.intake-gender-btn { flex:1;padding:10px;background:var(--surface-3);border:1.5px solid var(--border);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-sub);cursor:pointer;transition:all 0.12s;text-align:center; }
+.intake-gender-btn.selected { border-color:var(--gold);color:var(--gold);background:rgba(var(--gold-rgb),0.1); }
+.intake-section-label { font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin:20px 0 10px; }
+.intake-skip-link { font-size:12px;color:var(--text-dim);text-align:center;cursor:pointer;padding:8px 0; }
+
+/* Editable metadata fields */
+.colmap-field { margin-bottom:12px; }
+.colmap-field-label { font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px;font-family:'Barlow Condensed',sans-serif; }
+.colmap-field-input { width:100%;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-primary);outline:none;-webkit-appearance:none; }
+.colmap-field-input:focus { border-color:var(--gold); }
+.colmap-field-input::placeholder { color:var(--text-dim); }
+.colmap-field-hint { font-size:11px;color:var(--text-dim);margin-top:3px; }
+.colmap-maxes-row { display:flex;gap:8px; }
+.colmap-maxes-row .colmap-field { flex:1; }
+.colmap-maxes-row .colmap-field-input { text-align:center; }
+
 </style>
 </head>
 <body>
@@ -1271,54 +1299,12 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
 </div>
 
-<!-- Import Intent Modal -->
+<!-- Import Intake Modal (multi-step) -->
 <div class="schedule-modal" id="import-intent-modal" style="display:none">
   <div class="checkin-overlay" onclick="closeImportIntent()"></div>
-  <div class="intake-sheet" style="max-height:85vh;overflow-y:auto;background:var(--glass-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);">
+  <div class="intake-sheet" style="max-height:90vh;overflow-y:auto;background:var(--glass-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);">
     <div class="checkin-handle"></div>
-    <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Import Program</div>
-      <div id="import-intent-name" style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px"></div>
-    </div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin:20px 0 10px">What is this program?</div>
-    <div class="import-intent-card active" id="import-card-active" onclick="selectImportIntent('active')">
-      <div class="import-intent-icon"><svg viewBox="0 0 28 40" width="22" height="32"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
-      <div class="import-intent-body">
-        <div class="import-intent-title">Start New Program</div>
-        <div class="import-intent-desc">I'm currently training this. Set it as my active program and navigate to my next workout.</div>
-      </div>
-      <div class="import-intent-check" id="import-check-active">✓</div>
-    </div>
-    <div class="import-intent-card" id="import-card-history" onclick="selectImportIntent('history')">
-      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--text-sub)" xmlns="http://www.w3.org/2000/svg"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></div>
-      <div class="import-intent-body">
-        <div class="import-intent-title">Historical Data</div>
-        <div class="import-intent-desc">This program is already completed. Import it to fill in my metrics and progression history.</div>
-      </div>
-      <div class="import-intent-check" id="import-check-history" style="opacity:0">✓</div>
-    </div>
-    <div class="import-intent-card" id="import-card-merge" onclick="selectImportIntent('merge')" style="display:none">
-      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
-      <div class="import-intent-body">
-        <div class="import-intent-title">Add Weeks to Existing Program</div>
-        <div class="import-intent-desc">Append these weeks to a program you've already started. Your completed workouts stay intact.</div>
-      </div>
-      <div class="import-intent-check" id="import-check-merge" style="opacity:0">✓</div>
-    </div>
-    <div id="import-merge-select" style="display:none;margin-bottom:10px">
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
-      <select id="import-merge-target" style="width:100%;background:var(--surface-3);border:1px solid var(--border-3);border-radius:8px;padding:9px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);outline:none"></select>
-    </div>
-    <div id="import-history-note" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.6">
-        <span style="color:var(--gold);font-weight:700">Note: </span>Your current active program won't change. All weeks will be marked complete using any logged weights from the sheet. This data will appear in your metrics charts.
-      </div>
-      <div style="margin-top:12px">
-        <label style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-sub);display:block;margin-bottom:6px">When did this block start?</label>
-        <input type="date" id="import-history-date" style="width:100%;background:var(--surface-5);border:1px solid var(--border-3);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-primary);outline:none;-webkit-appearance:none">
-      </div>
-    </div>
-    <button class="import-confirm-btn" onclick="confirmImportIntent()">Continue</button>
+    <div id="import-intake-body"></div>
   </div>
 </div>
 
@@ -5094,27 +5080,15 @@ async function importFromSheetsUrl(prefix) {
 let _pendingImportBlocks = null;
 let _importIntent = 'active'; // 'active' | 'history'
 
+// ── IMPORT INTAKE (multi-step) ─────────────────────────────────────────────
+let _intakeStep = 1;
+
 function openImportIntent(blocks) {
   _pendingImportBlocks = blocks;
   _importIntent = 'active';
-  const names = blocks.map(b => b.name || b.id).join(', ');
-  document.getElementById('import-intent-name').textContent = names;
-
-  // Show merge option if there are existing programs to merge into
-  const mergeCard = document.getElementById('import-card-merge');
-  const mergeSelect = document.getElementById('import-merge-target');
-  const existingBlocks = state.blocks || [];
-  if (existingBlocks.length > 0) {
-    mergeCard.style.display = 'flex';
-    mergeSelect.innerHTML = existingBlocks.map(b =>
-      `<option value="${b.id}">${b.name || b.id}</option>`
-    ).join('');
-  } else {
-    mergeCard.style.display = 'none';
-  }
-
-  selectImportIntent('active');
+  _intakeStep = 1;
   document.getElementById('import-intent-modal').style.display = 'flex';
+  renderIntakeStep();
 }
 
 function closeImportIntent() {
@@ -5122,49 +5096,280 @@ function closeImportIntent() {
   _pendingImportBlocks = null;
 }
 
+function renderIntakeStep() {
+  const body = document.getElementById('import-intake-body');
+  if (_intakeStep === 1) renderIntakeStep1(body);
+  else if (_intakeStep === 2) renderIntakeStep2(body);
+  else renderIntakeStep3(body);
+  // scroll sheet to top
+  body.closest('.intake-sheet').scrollTop = 0;
+}
+
+// ── Step 1: Program Type ──────────────────────────────────────────────────
+function renderIntakeStep1(body) {
+  const blocks = _pendingImportBlocks || [];
+  const names = blocks.map(b => b.name || b.id).join(', ');
+  const existingBlocks = state.blocks || [];
+  const showMerge = existingBlocks.length > 0;
+  const mergeOpts = existingBlocks.map(b =>
+    `<option value="${b.id}">${b.name || b.id}</option>`
+  ).join('');
+
+  body.innerHTML = `
+    <div style="margin-bottom:6px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Import Program</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px">${esc(names)}</div>
+    </div>
+    <div class="intake-section-label">What is this program?</div>
+    <div class="import-intent-card${_importIntent==='active'?' selected':''}" id="import-card-active" onclick="selectImportIntent('active')">
+      <div class="import-intent-icon"><svg viewBox="0 0 28 40" width="22" height="32"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Start New Program</div>
+        <div class="import-intent-desc">I'm currently training this. Set it as my active program.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-active" style="opacity:${_importIntent==='active'?1:0}">✓</div>
+    </div>
+    <div class="import-intent-card${_importIntent==='history'?' selected':''}" id="import-card-history" onclick="selectImportIntent('history')">
+      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--text-sub)"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Historical Data</div>
+        <div class="import-intent-desc">Already completed. Import for metrics history.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-history" style="opacity:${_importIntent==='history'?1:0}">✓</div>
+    </div>
+    ${showMerge ? `
+    <div class="import-intent-card${_importIntent==='merge'?' selected':''}" id="import-card-merge" onclick="selectImportIntent('merge')">
+      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Add Weeks to Existing</div>
+        <div class="import-intent-desc">Append to a program you've already started.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-merge" style="opacity:${_importIntent==='merge'?1:0}">✓</div>
+    </div>
+    <div id="import-merge-select" style="display:${_importIntent==='merge'?'block':'none'};margin-bottom:10px">
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
+      <select id="import-merge-target" class="intake-field-input">${mergeOpts}</select>
+    </div>` : ''}
+    <button class="import-confirm-btn" onclick="intakeNext()">Next</button>
+  `;
+}
+
 function selectImportIntent(intent) {
   _importIntent = intent;
-  const cards = ['active','history','merge'];
-  cards.forEach(c => {
-    const card = document.getElementById('import-card-'+c);
-    const check = document.getElementById('import-check-'+c);
-    if (!card) return;
-    if (c === intent) {
-      card.classList.add('selected');
-      if (check) check.style.opacity = '1';
-    } else {
-      card.classList.remove('selected');
-      if (check) check.style.opacity = '0';
-    }
-  });
-  document.getElementById('import-history-note').style.display = intent === 'history' ? 'block' : 'none';
-  if (intent === 'history') {
-    // Try to pre-fill date from sheet's dateRange
-    const dateInput = document.getElementById('import-history-date');
-    if (dateInput && _pendingImportBlocks && _pendingImportBlocks[0]?.dateRange) {
-      const dr = _pendingImportBlocks[0].dateRange;
-      // Try to parse first date from formats like "2/9/26", "2/9/2026", "02-09-2026"
-      const m = dr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-      if (m) {
-        let yr = parseInt(m[3]);
-        if (yr < 100) yr += 2000;
-        const mo = String(m[1]).padStart(2, '0');
-        const dy = String(m[2]).padStart(2, '0');
-        dateInput.value = yr + '-' + mo + '-' + dy;
-      }
+  renderIntakeStep(); // re-render step 1 with new selection
+}
+
+// ── Step 2: Your Info ─────────────────────────────────────────────────────
+function renderIntakeStep2(body) {
+  const blocks = _pendingImportBlocks || [];
+  const b0 = blocks[0] || {};
+
+  // Pre-populate: first from parsed block, then from existing athlete profile
+  const ath = loadAthlete() || {};
+  const preName = b0.athleteName || ath.name || '';
+  const preBw = ath.bodyweight || '';
+  const preBwUnit = ath.bwUnit || 'lbs';
+  const preGender = ath.gender || '';
+  const preMaxS = b0.maxes?.squat || '';
+  const preMaxB = b0.maxes?.bench || '';
+  const preMaxD = b0.maxes?.deadlift || '';
+
+  // Start date: for historical, try dateRange; for active, default today
+  let preDate = '';
+  if (_importIntent === 'history' && b0.dateRange) {
+    const m = b0.dateRange.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m) {
+      let yr = parseInt(m[3]); if (yr < 100) yr += 2000;
+      preDate = yr + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0');
     }
   }
-  document.getElementById('import-merge-select').style.display = intent === 'merge' ? 'block' : 'none';
+  if (!preDate && _importIntent === 'active') {
+    preDate = new Date().toISOString().split('T')[0];
+  }
+
+  const isHistorical = _importIntent === 'history';
+
+  body.innerHTML = `
+    <div style="margin-bottom:6px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Your Info</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px">Used for DOTS scoring and reports</div>
+    </div>
+
+    <div class="intake-section-label">Athlete</div>
+    <div class="intake-field">
+      <label class="intake-field-label">Name</label>
+      <input class="intake-field-input" id="intake-name" placeholder="Your name" value="${esc(preName)}">
+    </div>
+    <div class="intake-bw-row">
+      <div class="intake-field">
+        <label class="intake-field-label">Bodyweight</label>
+        <input class="intake-field-input" id="intake-bw" type="number" inputmode="decimal" placeholder="—" value="${preBw}">
+      </div>
+      <button class="intake-unit-toggle" id="intake-bw-unit" onclick="this.textContent=this.textContent==='lbs'?'kg':'lbs'">${esc(preBwUnit)}</button>
+    </div>
+    <div class="intake-field-label" style="margin-bottom:6px">Gender</div>
+    <div class="intake-gender-row">
+      <button class="intake-gender-btn${preGender==='male'?' selected':''}" id="intake-gender-male" onclick="intakeSetGender('male')">Male</button>
+      <button class="intake-gender-btn${preGender==='female'?' selected':''}" id="intake-gender-female" onclick="intakeSetGender('female')">Female</button>
+    </div>
+
+    <div class="intake-section-label">Current Maxes (lbs)</div>
+    <div class="intake-maxes-row">
+      <div class="intake-field">
+        <label class="intake-field-label">Squat</label>
+        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="—" value="${preMaxS}">
+      </div>
+      <div class="intake-field">
+        <label class="intake-field-label">Bench</label>
+        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="—" value="${preMaxB}">
+      </div>
+      <div class="intake-field">
+        <label class="intake-field-label">Deadlift</label>
+        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="—" value="${preMaxD}">
+      </div>
+    </div>
+
+    <div class="intake-section-label">${isHistorical ? 'When did this block start?' : 'Start Date'}</div>
+    <div class="intake-field">
+      <input class="intake-field-input" id="intake-start-date" type="date" value="${preDate}">
+    </div>
+    ${isHistorical ? `
+    <div style="margin-top:4px;padding:10px 12px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.5">
+        <span style="color:var(--gold);font-weight:700">Note:</span> Your active program won't change. All weeks will be marked complete using logged weights from the sheet.
+      </div>
+    </div>` : ''}
+
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="colmap-btn-secondary" style="flex:1" onclick="intakeBack()">Back</button>
+      <button class="import-confirm-btn" style="flex:2;margin:0" onclick="intakeNext()">Review</button>
+    </div>
+    <div class="intake-skip-link" onclick="intakeNext()">Skip — use defaults</div>
+  `;
+}
+
+function intakeSetGender(g) {
+  document.getElementById('intake-gender-male').classList.toggle('selected', g === 'male');
+  document.getElementById('intake-gender-female').classList.toggle('selected', g === 'female');
+}
+
+// ── Step 3: Review & Import ───────────────────────────────────────────────
+function renderIntakeStep3(body) {
+  const blocks = _pendingImportBlocks || [];
+  const b0 = blocks[0] || {};
+  const intake = readIntakeFields();
+
+  const intentLabels = { active: 'Start New Program', history: 'Historical Data', merge: 'Add to Existing' };
+  let mergeTargetName = '';
+  if (_importIntent === 'merge' && _intakeMergeTarget) {
+    const mt = (state.blocks || []).find(b => b.id === _intakeMergeTarget);
+    if (mt) mergeTargetName = mt.name || mt.id;
+  }
+  const weekCount = blocks.reduce((max, b) => Math.max(max, b.weeks?.length || 0), 0);
+  const dayCount = b0.weeks?.[0]?.days?.length || 0;
+  const totalEx = blocks.reduce((sum, b) => sum + (b.weeks || []).reduce((ws, w) =>
+    ws + (w.days || []).reduce((ds, d) => ds + (d.exercises || []).length, 0), 0), 0);
+
+  const rows = [
+    ['Type', intentLabels[_importIntent] || _importIntent],
+    mergeTargetName ? ['Merging Into', mergeTargetName] : null,
+    intake.name ? ['Athlete', intake.name] : null,
+    intake.gender ? ['Gender', intake.gender.charAt(0).toUpperCase() + intake.gender.slice(1)] : null,
+    intake.bodyweight ? ['Bodyweight', intake.bodyweight + ' ' + intake.bwUnit] : null,
+    intake.maxSquat ? ['Squat Max', intake.maxSquat + ' lbs'] : null,
+    intake.maxBench ? ['Bench Max', intake.maxBench + ' lbs'] : null,
+    intake.maxDeadlift ? ['Deadlift Max', intake.maxDeadlift + ' lbs'] : null,
+    intake.startDate ? ['Start Date', formatIntakeDate(intake.startDate)] : null,
+    ['Program', b0.name || b0.id || 'Untitled'],
+    ['Weeks', weekCount],
+    ['Days/Week', dayCount],
+    ['Total Exercises', totalEx],
+  ].filter(Boolean);
+
+  body.innerHTML = `
+    <div style="margin-bottom:6px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Review Import</div>
+    </div>
+    <div style="background:var(--surface-3);border-radius:12px;overflow:hidden;margin:16px 0">
+      ${rows.map(([label, val]) => `
+        <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
+          <span style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub)">${esc(label)}</span>
+          <span style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);font-weight:600">${esc(String(val))}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="colmap-btn-secondary" style="flex:1" onclick="intakeBack()">Back</button>
+      <button class="import-confirm-btn" style="flex:2;margin:0" onclick="confirmImportIntent()">Import Program</button>
+    </div>
+  `;
+}
+
+function formatIntakeDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return m + '/' + d + '/' + String(y).slice(2);
+}
+
+function readIntakeFields() {
+  // Read from Step 2 fields if they exist, else from last-read cache
+  const nameEl = document.getElementById('intake-name');
+  if (nameEl) {
+    _intakeCache = {
+      name: nameEl.value.trim(),
+      bodyweight: parseFloat(document.getElementById('intake-bw')?.value) || 0,
+      bwUnit: document.getElementById('intake-bw-unit')?.textContent || 'lbs',
+      gender: document.getElementById('intake-gender-male')?.classList.contains('selected') ? 'male'
+            : document.getElementById('intake-gender-female')?.classList.contains('selected') ? 'female'
+            : '',
+      maxSquat: parseInt(document.getElementById('intake-max-s')?.value) || 0,
+      maxBench: parseInt(document.getElementById('intake-max-b')?.value) || 0,
+      maxDeadlift: parseInt(document.getElementById('intake-max-d')?.value) || 0,
+      startDate: document.getElementById('intake-start-date')?.value || '',
+    };
+  }
+  // Also cache merge target from Step 1 if present
+  const mergeEl = document.getElementById('import-merge-target');
+  if (mergeEl) _intakeMergeTarget = mergeEl.value;
+  return _intakeCache || {};
+}
+let _intakeCache = null;
+let _intakeMergeTarget = null;
+
+function intakeNext() {
+  if (_intakeStep === 1) {
+    // Cache merge target from step 1 before leaving
+    const mergeEl = document.getElementById('import-merge-target');
+    if (mergeEl) _intakeMergeTarget = mergeEl.value;
+    _intakeStep = 2;
+  } else if (_intakeStep === 2) {
+    readIntakeFields(); // cache values before switching
+    _intakeStep = 3;
+  } else {
+    confirmImportIntent();
+    return;
+  }
+  renderIntakeStep();
+}
+
+function intakeBack() {
+  if (_intakeStep === 3) { readIntakeFields(); _intakeStep = 2; }
+  else if (_intakeStep === 2) { readIntakeFields(); _intakeStep = 1; }
+  renderIntakeStep();
 }
 
 function confirmImportIntent() {
   const blocks = _pendingImportBlocks;
   if (!blocks) return;
+
+  // Apply intake fields to blocks and athlete profile
+  const intake = readIntakeFields();
+  applyIntakeToBlocks(blocks, intake);
+  applyIntakeToProfile(intake);
+
   closeImportIntent();
 
   if (_importIntent === 'active') {
-    const prevActive = state.activeBlock;
-    // Tag with today's date as start if no date from sheet
     blocks.forEach(b => { if (!b.startDate) b.startDate = new Date().toISOString().split('T')[0]; });
     mergeBlocks(blocks);
     autoRegisterCompLifts(blocks);
@@ -5177,26 +5382,50 @@ function confirmImportIntent() {
   } else if (_importIntent === 'merge') {
     mergeWeeksIntoBlock(blocks);
   } else {
-    // Historical import — apply start date if provided
-    const dateInput = document.getElementById('import-history-date');
-    if (dateInput && dateInput.value) {
-      const startDate = dateInput.value; // ISO: YYYY-MM-DD
-      const d = new Date(startDate + 'T00:00:00');
-      const weekCount = blocks.reduce((max, b) => Math.max(max, b.weeks?.length || 0), 0);
-      const endDate = new Date(d.getTime() + (weekCount * 7 - 1) * 86400000);
-      const fmt = (dt) => (dt.getMonth()+1) + '/' + dt.getDate() + '/' + String(dt.getFullYear()).slice(2);
-      blocks.forEach(b => {
-        b.startDate = startDate;
-        b.dateRange = fmt(d) + ' – ' + fmt(endDate);
-      });
-    }
     importHistoricalBlock(blocks);
   }
+  _intakeCache = null;
+  _intakeMergeTarget = null;
   render();
 }
 
+function applyIntakeToBlocks(blocks, intake) {
+  if (!intake) return;
+  for (const b of blocks) {
+    if (intake.name) b.athleteName = intake.name;
+    if (intake.maxSquat || intake.maxBench || intake.maxDeadlift) {
+      b.maxes = b.maxes || {};
+      if (intake.maxSquat) b.maxes.squat = intake.maxSquat;
+      if (intake.maxBench) b.maxes.bench = intake.maxBench;
+      if (intake.maxDeadlift) b.maxes.deadlift = intake.maxDeadlift;
+    }
+    if (intake.startDate) {
+      b.startDate = intake.startDate;
+      // Compute dateRange from start date + week count
+      const d = new Date(intake.startDate + 'T00:00:00');
+      const weekCount = b.weeks?.length || 1;
+      const endDate = new Date(d.getTime() + (weekCount * 7 - 1) * 86400000);
+      const fmt = (dt) => (dt.getMonth()+1) + '/' + dt.getDate() + '/' + String(dt.getFullYear()).slice(2);
+      b.dateRange = fmt(d) + ' – ' + fmt(endDate);
+    }
+  }
+}
+
+function applyIntakeToProfile(intake) {
+  if (!intake) return;
+  const existing = loadAthlete() || {};
+  const updated = { ...existing };
+  if (intake.name) updated.name = intake.name;
+  if (intake.gender) updated.gender = intake.gender;
+  if (intake.bodyweight > 0) {
+    updated.bodyweight = intake.bodyweight;
+    updated.bwUnit = intake.bwUnit;
+  }
+  saveAthlete(updated);
+}
+
 function mergeWeeksIntoBlock(incomingBlocks) {
-  const targetId = document.getElementById('import-merge-target').value;
+  const targetId = _intakeMergeTarget || document.getElementById('import-merge-target')?.value;
   const target = state.blocks.find(b => b.id === targetId);
   if (!target) return;
 
@@ -6866,6 +7095,7 @@ let _cmSheetMode = 'week';   // 'week' | 'block'
 let _cmDetectedDays = [];    // discovered day names
 let _cmDataStartRow = 0;     // first data row (after header)
 let _cmExcludedSections = new Set(); // day names user toggled off
+let _cmMeta = {}; // user-entered metadata from step 3
 
 function loadSavedMappings() {
   try { return JSON.parse(localStorage.getItem(COLMAP_STORAGE_KEY)) || {}; } catch(e) { return {}; }
@@ -6894,6 +7124,7 @@ function openColumnMapper(wb) {
   _cmSheetRows = {};
   _cmDetectedDays = [];
   _cmExcludedSections = new Set();
+  _cmMeta = {};
   _cmDayMode = 'sections';
   _cmSheetMode = 'week';
   _cmMapping = { exercise: -1, prescription: -1, logged: -1, coachNotes: -1, lifterNotes: -1 };
@@ -7022,7 +7253,8 @@ function renderCmStep1() {
   const firstSheetName = _cmWb.SheetNames[0];
   const rows = _cmSheetRows[firstSheetName] || [];
   const maxCols = rows.reduce((m, r) => r ? Math.max(m, r.length) : m, 0);
-  const previewRows = rows.slice(0, Math.min(12, rows.length));
+  const nonEmptyRows = rows.filter(r => r && r.some(c => c != null && String(c).trim() !== ''));
+  const previewRows = nonEmptyRows.slice(0, Math.min(12, nonEmptyRows.length));
 
   // Build column options
   const colOpts = (selected, allowNone) => {
@@ -7166,7 +7398,6 @@ function renderCmStep3() {
   const totalDays = blocks ? blocks.reduce((sum, b) => sum + b.weeks.reduce((ws, w) => ws + w.days.length, 0), 0) : 0;
   const daysPerWeek = totalWeeks > 0 ? Math.round(totalDays / totalWeeks) : totalDays;
 
-  // Count logged data
   let loggedSets = 0;
   if (blocks) {
     blocks.forEach(b => b.weeks.forEach(w => w.days.forEach(d => d.exercises.forEach(ex => {
@@ -7174,58 +7405,81 @@ function renderCmStep3() {
     }))));
   }
 
+  // Get auto-detected metadata as defaults
+  const block = blocks && blocks[0];
+  const detectedAthlete = (block && block.athleteName !== 'Athlete') ? block.athleteName : '';
+  const detectedProgram = (block && block.name && block.name !== (block.id || 'Training Program')) ? block.name : '';
+  const detectedDateRange = (block && block.dateRange) || '';
+  const detectedMaxes = (block && block.maxes) || {};
+
+  // Use previously entered values if user already visited this step (preserve edits on back/forward)
+  const athlete = _cmMeta.athlete !== undefined ? _cmMeta.athlete : detectedAthlete;
+  const program = _cmMeta.program !== undefined ? _cmMeta.program : detectedProgram;
+  const sqMax = _cmMeta.squat !== undefined ? _cmMeta.squat : (detectedMaxes.squat || '');
+  const bnMax = _cmMeta.bench !== undefined ? _cmMeta.bench : (detectedMaxes.bench || '');
+  const dlMax = _cmMeta.deadlift !== undefined ? _cmMeta.deadlift : (detectedMaxes.deadlift || '');
+
   const el = document.getElementById('cm-step-3');
   el.innerHTML = `
-    <div style="text-align:center;padding-top:12px">
-      <div style="width:48px;height:48px;border-radius:50%;background:rgba(74,222,128,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div class="colmap-section-title" style="text-align:center">Ready to Import</div>
-      <div class="colmap-section-sub" style="text-align:center">Here's what we'll pull from your spreadsheet.</div>
-    </div>
+    <div class="colmap-section-title">Review & Confirm</div>
+    <div class="colmap-section-sub">Fill in any details about this program. All fields are optional.</div>
+
     <div class="colmap-summary">
       <div class="colmap-summary-row">
-        <span class="colmap-summary-label">Sheets found</span>
-        <span class="colmap-summary-value">${_cmWb.SheetNames.length} sheet${_cmWb.SheetNames.length===1?'':'s'}</span>
+        <span class="colmap-summary-label">Sheets</span>
+        <span class="colmap-summary-value">${_cmWb.SheetNames.length}</span>
       </div>
       <div class="colmap-summary-row">
-        <span class="colmap-summary-label">Weeks detected</span>
-        <span class="colmap-summary-value">${totalWeeks} week${totalWeeks===1?'':'s'}</span>
+        <span class="colmap-summary-label">Weeks</span>
+        <span class="colmap-summary-value">${totalWeeks}</span>
       </div>
       <div class="colmap-summary-row">
-        <span class="colmap-summary-label">Training days${totalWeeks>1?' per week':''}</span>
-        <span class="colmap-summary-value">${daysPerWeek} day${daysPerWeek===1?'':'s'}</span>
+        <span class="colmap-summary-label">Days${totalWeeks>1?' / week':''}</span>
+        <span class="colmap-summary-value">${daysPerWeek}</span>
       </div>
       <div class="colmap-summary-row">
-        <span class="colmap-summary-label">Total exercises</span>
+        <span class="colmap-summary-label">Exercises</span>
         <span class="colmap-summary-value">${totalExercises}</span>
       </div>
       ${loggedSets>0?`<div class="colmap-summary-row">
-        <span class="colmap-summary-label">Logged data found</span>
-        <span class="colmap-summary-value green">${loggedSets} exercises pre-filled</span>
+        <span class="colmap-summary-label">Pre-filled</span>
+        <span class="colmap-summary-value green">${loggedSets} logged</span>
       </div>`:''}
     </div>
-    <div class="colmap-summary">
-      <div class="colmap-card-title" style="margin-bottom:8px">Column Mapping</div>
-      <div class="colmap-summary-row">
-        <span class="colmap-summary-label">Exercise</span>
-        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.exercise)}</span>
+
+    <div class="colmap-card">
+      <div class="colmap-card-title">Program Details</div>
+      <div class="colmap-field">
+        <div class="colmap-field-label">Athlete Name</div>
+        <input class="colmap-field-input" id="cm-meta-athlete" type="text" placeholder="Your name" value="${escH(athlete)}" oninput="_cmMeta.athlete=this.value">
       </div>
-      <div class="colmap-summary-row">
-        <span class="colmap-summary-label">Prescription</span>
-        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.prescription)}</span>
+      <div class="colmap-field">
+        <div class="colmap-field-label">Program Name</div>
+        <input class="colmap-field-input" id="cm-meta-program" type="text" placeholder="e.g. Hypertrophy Block 1" value="${escH(program)}" oninput="_cmMeta.program=this.value">
       </div>
-      ${_cmMapping.logged >= 0 ? `<div class="colmap-summary-row">
-        <span class="colmap-summary-label">Logged Weight</span>
-        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.logged)}</span>
-      </div>` : ''}
-      ${_cmMapping.coachNotes >= 0 ? `<div class="colmap-summary-row">
-        <span class="colmap-summary-label">Coach Notes</span>
-        <span class="colmap-summary-value">Column ${cmColLetter(_cmMapping.coachNotes)}</span>
-      </div>` : ''}
     </div>
+
+    <div class="colmap-card">
+      <div class="colmap-card-title">Competition Maxes <span class="colmap-optional">Optional</span></div>
+      <div class="colmap-field-hint" style="margin-bottom:10px">Used for percentage-based prescriptions and e1RM tracking.</div>
+      <div class="colmap-maxes-row">
+        <div class="colmap-field">
+          <div class="colmap-field-label">Squat</div>
+          <input class="colmap-field-input" id="cm-meta-squat" type="number" inputmode="numeric" placeholder="lbs" value="${sqMax}" oninput="_cmMeta.squat=this.value">
+        </div>
+        <div class="colmap-field">
+          <div class="colmap-field-label">Bench</div>
+          <input class="colmap-field-input" id="cm-meta-bench" type="number" inputmode="numeric" placeholder="lbs" value="${bnMax}" oninput="_cmMeta.bench=this.value">
+        </div>
+        <div class="colmap-field">
+          <div class="colmap-field-label">Deadlift</div>
+          <input class="colmap-field-input" id="cm-meta-deadlift" type="number" inputmode="numeric" placeholder="lbs" value="${dlMax}" oninput="_cmMeta.deadlift=this.value">
+        </div>
+      </div>
+    </div>
+
     <div style="padding:12px 14px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:10px;margin-bottom:20px">
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">This mapping will be saved so future uploads from the same format import automatically.</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">Column mapping will be saved so future uploads from the same format import automatically.</div>
     </div>
     ${totalExercises > 0 ? `
       <button class="colmap-btn-primary" onclick="confirmColumnMapper()">Import Program</button>
@@ -7283,8 +7537,10 @@ function detectDays() {
 function parseCWorkbook(wb) {
   if (_cmMapping.exercise < 0 || _cmMapping.prescription < 0) return [];
 
+  // Extract metadata from non-exercise rows across all sheets
+  const meta = cmExtractMetadata(wb);
+
   if (_cmSheetMode === 'block') {
-    // All weeks in one sheet (or treat all sheets as one block)
     const allWeeks = [];
     for (const sn of wb.SheetNames) {
       const rows = _cmSheetRows[sn] || [];
@@ -7293,9 +7549,8 @@ function parseCWorkbook(wb) {
     }
     if (allWeeks.length === 0) return [];
     const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i, '').trim() : wb.SheetNames[0];
-    return [{ id: bId, name: bId || 'Training Program', dateRange: '', athleteName: 'Athlete', maxes: {}, weeks: allWeeks, format: 'C' }];
+    return [{ id: bId, name: meta.programName || bId || 'Training Program', dateRange: meta.dateRange || '', athleteName: meta.athleteName || 'Athlete', maxes: meta.maxes, weeks: allWeeks, format: 'C' }];
   } else {
-    // Each sheet = one week (default)
     const weeks = [];
     for (const sn of wb.SheetNames) {
       const rows = _cmSheetRows[sn] || [];
@@ -7304,8 +7559,92 @@ function parseCWorkbook(wb) {
     }
     if (weeks.length === 0) return [];
     const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i, '').trim() : wb.SheetNames[0];
-    return [{ id: bId, name: bId || 'Training Program', dateRange: '', athleteName: 'Athlete', maxes: {}, weeks, format: 'C' }];
+    return [{ id: bId, name: meta.programName || bId || 'Training Program', dateRange: meta.dateRange || '', athleteName: meta.athleteName || 'Athlete', maxes: meta.maxes, weeks, format: 'C' }];
   }
+}
+
+// Extract useful metadata from non-exercise rows (preamble, headers, etc.)
+function cmExtractMetadata(wb) {
+  const meta = { athleteName: null, programName: null, dateRange: null, maxes: {} };
+  const exCol = _cmMapping.exercise;
+  const presCol = _cmMapping.prescription;
+
+  // Scan first sheet's non-exercise rows for metadata
+  const firstSheet = _cmSheetRows[wb.SheetNames[0]] || [];
+  for (let i = 0; i < firstSheet.length; i++) {
+    const row = firstSheet[i]; if (!row) continue;
+    // Scan all cells in the row for metadata patterns
+    for (let c = 0; c < row.length; c++) {
+      const val = String(row[c] || '').trim();
+      if (!val) continue;
+      const vl = val.toLowerCase();
+
+      // Max detection: "Squat: 450" or "Squat Max: 450" or "1RM Squat 450"
+      const maxMatch = val.match(/(?:1\s*rm\s+)?(squat|bench|deadlift)\s*(?:max|1rm|1\s*rm)?\s*[:\-=]\s*(\d{2,4})/i)
+                    || val.match(/(?:1\s*rm\s+|max\s+)(squat|bench|deadlift)\s*[:\-=]?\s*(\d{2,4})/i);
+      if (maxMatch) {
+        const lift = maxMatch[1].toLowerCase();
+        const num = parseInt(maxMatch[2]);
+        if (num > 0) {
+          if (lift.includes('squat')) meta.maxes.squat = num;
+          else if (lift.includes('bench')) meta.maxes.bench = num;
+          else if (lift.includes('dead')) meta.maxes.deadlift = num;
+        }
+        continue;
+      }
+
+      // Date range detection: "2/9/2026 - 3/6/2026" or "Feb 9 - Mar 6"
+      const dateMatch = val.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s*[\-–—to]+\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+      if (dateMatch && !meta.dateRange) {
+        meta.dateRange = val;
+        continue;
+      }
+
+      // Athlete/coach name detection via label: "Athlete: Joe" or "Name: Joe"
+      const nameMatch = val.match(/^(?:athlete|name|lifter|client)\s*[:\-=]\s*(.+)/i);
+      if (nameMatch && !meta.athleteName) {
+        const name = nameMatch[1].trim();
+        if (name.length > 1 && name.length < 40) meta.athleteName = name;
+        continue;
+      }
+
+      // Program/block name via label: "Program: Hypertrophy Block 1"
+      const progMatch = val.match(/^(?:program|block|cycle|phase|mesocycle)\s*[:\-=]\s*(.+)/i);
+      if (progMatch && !meta.programName) {
+        const name = progMatch[1].trim();
+        if (name.length > 1 && name.length < 60) meta.programName = name;
+        continue;
+      }
+    }
+  }
+
+  return meta;
+}
+
+// Junk row filter for Format C parser — skips rows that aren't exercises
+// Metadata has already been extracted by cmExtractMetadata before parsing
+function cmIsJunkRow(exVal, row, presCol) {
+  if (!exVal) return true;
+  // Pure numbers or decimals
+  if (/^\d+\.?\d*\s*$/.test(exVal)) return true;
+  // No letters at all
+  if (!/[a-zA-Z]/.test(exVal)) return true;
+  // Standalone metadata keywords (already extracted)
+  if (/^(exercise|movement|lift|name|day|week|date|athlete|coach|program|block|notes?|warm\s*up|cool\s*down)$/i.test(exVal)) return true;
+  // Labeled metadata rows (e.g. "Athlete: Joe", "Squat Max: 450")
+  if (/^(athlete|name|lifter|client|coach|program|block|cycle|phase)\s*[:\-=]/i.test(exVal)) return true;
+  if (/(?:1\s*rm|max)\s*[:\-=]?\s*\d/i.test(exVal)) return true;
+  if (/^(squat|bench|deadlift)\s*(?:max|1rm|1\s*rm)?\s*[:\-=]\s*\d/i.test(exVal)) return true;
+  // Date ranges
+  if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*[\-–—to]+\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(exVal)) return true;
+  // Duplicate header rows mid-sheet
+  const el = exVal.toLowerCase();
+  if (el.includes('sets x') || el.includes('sets/') || el.includes('record weight')) return true;
+  if (presCol >= 0 && row[presCol] != null) {
+    const pLow = String(row[presCol]).toLowerCase();
+    if (pLow.includes('sets x') || pLow.includes('record') || pLow === 'reps' || pLow === 'sets') return true;
+  }
+  return false;
 }
 
 function parseCSheet(sn, rows) {
@@ -7327,10 +7666,11 @@ function parseCSheet(sn, rows) {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]; if (!row) continue;
       const exVal = String(row[exCol] || '').trim();
-      if (!exVal) continue;
       // Skip header rows
       const rowStrs = row.map(c => String(c || '').toLowerCase());
       if (rowStrs.some(s => s.includes('sets') || s.includes('record') || s.includes('exercise'))) continue;
+      // Skip junk
+      if (cmIsJunkRow(exVal, row, presCol)) continue;
       const pres = presCol >= 0 && row[presCol] != null ? String(row[presCol]).trim() : null;
       const logged = logCol >= 0 && row[logCol] != null ? String(row[logCol]).trim() || null : null;
       const note = coachCol >= 0 && row[coachCol] != null ? String(row[coachCol]).trim() || null : null;
@@ -7356,10 +7696,9 @@ function parseCSheet(sn, rows) {
           curDay = null; // skip this section
         }
       } else if (curDay) {
-        // Skip pure numbers
-        if (/^\d+\.?\d*\s*$/.test(exVal)) continue;
+        // Skip junk
+        if (cmIsJunkRow(exVal, row, presCol)) continue;
         const pres = presCol >= 0 && row[presCol] != null ? String(row[presCol]).trim() : null;
-        if (!pres && !exVal) continue; // skip empty rows
         const logged = logCol >= 0 && row[logCol] != null ? String(row[logCol]).trim() || null : null;
         const note = coachCol >= 0 && row[coachCol] != null ? String(row[coachCol]).trim() || null : null;
         const lifterNote = lifterCol >= 0 && row[lifterCol] != null ? String(row[lifterCol]).trim() || null : null;
@@ -7368,8 +7707,10 @@ function parseCSheet(sn, rows) {
     }
   }
 
-  if (days.length === 0) return null;
-  return { label: sn, days };
+  // Remove empty days (all exercises filtered out)
+  const filteredDays = days.filter(d => d.exercises.length > 0);
+  if (filteredDays.length === 0) return null;
+  return { label: sn, days: filteredDays };
 }
 
 function parseCSheetAsBlock(sn, rows) {
@@ -7393,12 +7734,27 @@ function confirmColumnMapper() {
 
   closeColumnMapper();
 
-  // Apply filename cleanup
+  // Apply user-entered metadata from step 3
   const filename = _cmWb._plFilename || '';
   const namePart = filename.replace(/\.xlsx?$/i, '').replace(/_/g, ' ').trim();
   blocks.forEach(b => {
-    if (b.athleteName === 'Athlete') b.athleteName = namePart;
-    if (b.name === 'Training Program') b.name = namePart;
+    // Athlete name: user input > auto-detected > filename
+    if (_cmMeta.athlete && _cmMeta.athlete.trim()) {
+      b.athleteName = _cmMeta.athlete.trim();
+    } else if (b.athleteName === 'Athlete') {
+      b.athleteName = namePart;
+    }
+    // Program name: user input > auto-detected > filename
+    if (_cmMeta.program && _cmMeta.program.trim()) {
+      b.name = _cmMeta.program.trim();
+    } else if (b.name === 'Training Program') {
+      b.name = namePart;
+    }
+    // Maxes: user input overrides auto-detected
+    if (!b.maxes) b.maxes = {};
+    if (_cmMeta.squat && +_cmMeta.squat > 0) b.maxes.squat = +_cmMeta.squat;
+    if (_cmMeta.bench && +_cmMeta.bench > 0) b.maxes.bench = +_cmMeta.bench;
+    if (_cmMeta.deadlift && +_cmMeta.deadlift > 0) b.maxes.deadlift = +_cmMeta.deadlift;
   });
 
   openImportIntent(blocks);
