@@ -27,6 +27,8 @@
 </script>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlElEQVR4nO2X0QmAMBBDU/GrW+koDuYoOpp+FUTwwyQQlGaA3nvX3kFLrfVAMEOyeAf4F8C+zlkANhYA1t4GAADTsmUAFHsLgBoJQLWXAVrY+5cAHPYAMDoOucK87QbVgSd75iq+NwVOe4B4A/dC0UXUikfG0BUZQLGXAFyLSOqAai8DOEJvQoc9DeBM6V+zDpAGOAEoFSO7lhfbZgAAAABJRU5ErkJggg==">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <script src="parsers.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -818,6 +820,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-option-card.expanded .upload-option-arrow { transform: rotate(180deg); }
 .upload-option-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(var(--gold-rgb),0.1); border: 1px solid rgba(var(--gold-rgb),0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--gold); }
 .upload-option-icon-sheets { background: rgba(52,168,83,0.1); border-color: rgba(52,168,83,0.15); color: #34a853; }
+.upload-option-icon-drive { background: rgba(66,133,244,0.1); border-color: rgba(66,133,244,0.15); color: #4285f4; }
 .upload-option-body { flex: 1; min-width: 0; }
 .upload-option-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-bright); letter-spacing: 0.01em; }
 .upload-option-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 2px; }
@@ -1403,6 +1406,21 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         </div>
         <div id="sheets-url-error" style="display:none;margin-top:8px;font-size:12px;color:#f87171;font-family:'Barlow',sans-serif"></div>
       </div>
+
+      <!-- Google Drive import -->
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or import from Google Drive</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="drive-btn" onclick="closeProgramModal();openDrivePicker()" style="margin:0 auto">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+          <path d="M8.01 2.56L1.69 13.44h6.32L14.33 2.56H8.01z" fill="#4285F4"/>
+          <path d="M22.31 13.44L15.99 2.56H14.33l-6.32 10.88h6.32l3.99 6.88 3.99-6.88z" fill="#FBBC04"/>
+          <path d="M1.69 13.44l3.99 6.88h12.64l3.99-6.88H1.69z" fill="#34A853"/>
+        </svg>
+        BROWSE GOOGLE DRIVE
+      </button>
     </div>
     <!-- Existing cycles -->
     <div id="program-list"></div>
@@ -3565,6 +3583,21 @@ function renderUploadOptions(prefix) {
     <div style="text-align:center;padding-top:4px">
       <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
     </div>
+
+    <div class="upload-option-card" onclick="openDrivePicker()" style="margin-top:10px">
+      <div class="upload-option-icon upload-option-icon-drive">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+          <path d="M8.01 2.56L1.69 13.44h6.32L14.33 2.56H8.01z" fill="#4285F4"/>
+          <path d="M22.31 13.44L15.99 2.56H14.33l-6.32 10.88h6.32l3.99 6.88 3.99-6.88z" fill="#FBBC04"/>
+          <path d="M1.69 13.44l3.99 6.88h12.64l3.99-6.88H1.69z" fill="#34A853"/>
+        </svg>
+      </div>
+      <div class="upload-option-body">
+        <div class="upload-option-title">Import from Google Drive</div>
+        <div class="upload-option-desc">Browse and select a spreadsheet from your Drive</div>
+      </div>
+      <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
   </div>`;
 }
 
@@ -4661,6 +4694,129 @@ async function importFromSheetsUrl(prefix) {
     btn.textContent = origText;
     btn.style.opacity = '1';
     btn.style.pointerEvents = 'auto';
+  }
+}
+
+// ── GOOGLE DRIVE PICKER ──────────────────────────────────────────────────────
+const DRIVE_CLIENT_ID = '868418344070-756bh89t1d5ms7d50e0ofvo3tuent9kl.apps.googleusercontent.com';
+const DRIVE_API_KEY = 'AIzaSyC_lOxtDPt4sElQgYKXyfSI4V1dS78cv0o';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+let _driveAccessToken = null;
+let _pickerApiLoaded = false;
+
+function loadPickerApi() {
+  return new Promise((resolve) => {
+    if (_pickerApiLoaded) { resolve(); return; }
+    gapi.load('picker', () => { _pickerApiLoaded = true; resolve(); });
+  });
+}
+
+function requestDriveToken() {
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: DRIVE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: (resp) => {
+        if (resp.error) { reject(new Error(resp.error)); return; }
+        _driveAccessToken = resp.access_token;
+        resolve(resp.access_token);
+      },
+    });
+    client.requestAccessToken();
+  });
+}
+
+async function openDrivePicker() {
+  // Close onboarding if open
+  const onboardEl = document.getElementById('onboarding-overlay');
+  if (onboardEl && onboardEl.style.display !== 'none') {
+    markOnboarded();
+    onboardEl.style.display = 'none';
+    document.querySelector('.bottom-nav').style.display = '';
+    document.querySelector('.header').style.display = '';
+  }
+
+  try {
+    // Step 1: Get access token (prompts user to sign in if needed)
+    if (!_driveAccessToken) {
+      await requestDriveToken();
+    }
+
+    // Step 2: Load Picker API
+    await loadPickerApi();
+
+    // Step 3: Build and show picker
+    const spreadsheetView = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS)
+      .setIncludeFolders(true);
+
+    const picker = new google.picker.PickerBuilder()
+      .setDeveloperKey(DRIVE_API_KEY)
+      .setOAuthToken(_driveAccessToken)
+      .setAppId('868418344070')
+      .addView(spreadsheetView)
+      .setTitle('Select a training program spreadsheet')
+      .setCallback(onDrivePickerCallback)
+      .build();
+    picker.setVisible(true);
+  } catch (err) {
+    console.error('[Drive Picker]', err);
+    // Token might have expired — clear and let user retry
+    _driveAccessToken = null;
+    if (err.message !== 'popup_closed_by_user') {
+      showParseError('error', 'Google Drive sign-in failed. Please try again.');
+    }
+  }
+}
+
+async function onDrivePickerCallback(data) {
+  if (data.action !== google.picker.Action.PICKED) return;
+  const doc = data.docs[0];
+  if (!doc) return;
+
+  const fileId = doc.id;
+  const fileName = doc.name || 'Drive Import';
+  const mimeType = doc.mimeType || '';
+
+  try {
+    let buffer;
+
+    if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+      // Google Sheets — export as xlsx
+      const resp = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
+        { headers: { Authorization: `Bearer ${_driveAccessToken}` } }
+      );
+      if (!resp.ok) throw new Error(`Export failed (${resp.status})`);
+      buffer = await resp.arrayBuffer();
+    } else {
+      // Regular xlsx/xls file — download directly
+      const resp = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        { headers: { Authorization: `Bearer ${_driveAccessToken}` } }
+      );
+      if (!resp.ok) throw new Error(`Download failed (${resp.status})`);
+      buffer = await resp.arrayBuffer();
+    }
+
+    const wb = XLSX.read(buffer);
+    wb._plFilename = fileName.replace(/\.\w+$/, '');
+    const blocks = parseWorkbook(wb);
+
+    if (!blocks || blocks.length === 0) {
+      openColumnMapper(wb);
+      return;
+    }
+
+    const namePart = fileName.replace(/\.\w+$/, '').replace(/_/g, ' ').trim();
+    blocks.forEach(b => {
+      if (b.athleteName === 'Athlete') b.athleteName = namePart;
+      if (b.name === 'Training Program') b.name = namePart;
+    });
+
+    openImportIntent(blocks);
+  } catch (err) {
+    console.error('[Drive Import]', err);
+    showParseError('error', err.message || 'Failed to import file from Google Drive.');
   }
 }
 
