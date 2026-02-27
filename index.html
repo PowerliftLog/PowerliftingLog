@@ -27,6 +27,7 @@
 </script>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlElEQVR4nO2X0QmAMBBDU/GrW+koDuYoOpp+FUTwwyQQlGaA3nvX3kFLrfVAMEOyeAf4F8C+zlkANhYA1t4GAADTsmUAFHsLgBoJQLWXAVrY+5cAHPYAMDoOucK87QbVgSd75iq+NwVOe4B4A/dC0UXUikfG0BUZQLGXAFyLSOqAai8DOEJvQoc9DeBM6V+zDpAGOAEoFSO7lhfbZgAAAABJRU5ErkJggg==">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="parsers.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -1590,43 +1591,7 @@ function setScreen(s){
 }
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
-const LIFT_GROUPS = {
-  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar squat','low bar squat','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat'],
-  bench: ['bench','close grip bench','close grip press','larson','larsen','slingshot','incline press','incline bench','decline press','decline bench','floor press','feet up bench','pause bench','touch and go bench','touch and go press','tng bench','tng press','comp bench','board press'],
-  deadlift: ['deadlift','sumo deadlift','sumo pull','sumo dead','conventional deadlift','conventional pull','romanian','rdl','rack pull','block pull','deficit deadlift','deficit pull','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo'],
-};
-
-// ── COMP LIFT DETECTION ───────────────────────────────────────────────────────
-// Exact names that count as competition lifts for projections and default tracking.
-// Variation modifiers disqualify a lift from being treated as a comp lift.
-const COMP_KEYWORDS = {
-  squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat'],
-  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift','competition deadlift','conventional pull','sumo pull','comp pull','competition style deadlift'],
-};
-
-// These terms in a lift name disqualify it from being a comp lift
-const VARIATION_MODIFIERS = [
-  'pin','close grip','wide grip','tempo','incline','decline','deficit',
-  'rack pull','block pull','snatch grip','stiff leg','romanian','rdl',
-  'floor press','board press','slingshot','sling shot','feet up',
-  'touch and go','tng','safety bar','ssb','zercher','front squat',
-  'goblet','hack','belt squat','box squat','semi sumo',
-  '1/4','quarter','partial',
-  'pause squat','paused squat',
-  'pause deadlift','paused deadlift','pause dead','paused dead',
-];
-
-function isCompLift(name){
-  const n = name.toLowerCase().trim();
-  // Variation modifier present → not a comp lift
-  if (VARIATION_MODIFIERS.some(v => n.includes(v))) return false;
-  // Exact match against comp keyword list
-  for (const keywords of Object.values(COMP_KEYWORDS)) {
-    if (keywords.includes(n)) return true;
-  }
-  return false;
-}
+// LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, isCompLift → from parsers.js
 
 function isTracked(name){
   // Returns true if this exercise should appear in metrics
@@ -2266,967 +2231,11 @@ function confirmAddLift(){
   renderMetrics();
 }
 
-// ── EXERCISE NAME SPELLCHECK ─────────────────────────────────────────────────
-const EXERCISE_DICT = [
-  'Incline','Decline','Bench','Press','Squat','Deadlift','Row','Pull','Push',
-  'Curl','Extension','Raise','Fly','Flye','Pulldown','Pullover','Pushdown',
-  'Romanian','Reverse','Lateral','Front','Overhead','Close','Wide','Grip',
-  'Barbell','Dumbbell','Cable','Machine','Smith','Hack','Leg','Hip',
-  'Hamstring','Quadricep','Glute','Back','Chest','Shoulder','Tricep','Bicep',
-  'Preacher','Spider','Concentration','Hammer','Pronated','Supinated','Neutral',
-  'Prone','Supine','Standing','Seated','Lying','Bent','Straight','Single','Arm',
-  'Unilateral','Bilateral','Compound','Isolation','Bulgarian','Split','Lunge',
-  'Step','Box','Pause','Tempo','Deficit','Rack','Block','Pin','Board','Floor',
-  'Sling','Shot','Larson','Larsen','Comp','Competition','Sumo','Conventional',
-  'Stiff','Leg','Trap','Hex','Snatch','Clean','Jerk','Thruster','Turkish',
-  'Get','Up','Swing','Windmill','Plank','Hold','Crunch','Situp','Sit',
-  'Nautilus','Leverage','Preacher','Incline','Delt','Deltoid','Pec','Dec',
-  'Crossover','Kickback','Skull','Crusher','Nose','Breaker','Tate','JM',
-  'Zottman','Drag','Pinwheel','Reverse','Wrist','Forearm','Calf','Raise',
-  'Nordic','Glute','Ham','Hyper','Extension','Good','Morning','Ab','Wheel',
-  'Plank','Hollow','Body','Dragon','Flag','Hanging','Knee','Raise','Tuck',
-  'Cuban','Arnold','Bradford','Landmine','Meadows','Pendlay','Yates','Kroc',
-  'XPLoad','Rope','Band','Chain','Plate','Weight','Weighted','Bodyweight',
-  'Dip','Chinup','Pullup','Pushup','Row','Inverted','Ring','TRX','Suspension',
-];
 
-function spellCorrectWord(word){
-  // Skip short words, numbers, and already-correct words
-  if(word.length<=3) return word;
-  const lower=word.toLowerCase();
-  // Check if it's in the dictionary (case-insensitive)
-  const match=EXERCISE_DICT.find(d=>d.toLowerCase()===lower);
-  if(match) return match; // normalize casing
-  // Find closest match using edit distance
-  let best=null; let bestDist=Infinity;
-  for(const d of EXERCISE_DICT){
-    const dist=editDistance(lower,d.toLowerCase());
-    const threshold=word.length<=5?1:2; // stricter for short words
-    if(dist<bestDist&&dist<=threshold){ bestDist=dist; best=d; }
-  }
-  return best||word;
-}
+// ── PARSERS ──────────────────────────────────────────────────────────────────
+// EXERCISE_DICT, spellcheck, DAYS, detectFormat, parseA/B/C/D, parseWorkbook,
+// deduplicateExerciseNames → all moved to parsers.js
 
-function editDistance(a,b){
-  const m=a.length,n=b.length;
-  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
-  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
-    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  return dp[m][n];
-}
-
-function spellCorrectExerciseName(name){
-  // Split on spaces, correct each word, rejoin
-  return name.split(/\s+/).map(spellCorrectWord).join(' ');
-}
-const DAYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
-
-function detectFormat(wb){
-  try{
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rawRows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
-    const rows = rawRows.map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
-
-    // Check Format A: multiple day columns in header rows
-    for(let i=0;i<Math.min(10,rows.length);i++){
-      const row=rows[i]; if(!row) continue;
-      const hits=row.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)));
-      if(hits.length>=2) return 'A';
-    }
-
-    // Check Format D: horizontal week layout — "WEEK N" labels across top row + repeating Sets/Reps headers
-    // Must check BEFORE Format C since both have split Sets/Reps headers
-    // Check multiple sheets since first sheet may be a metadata/maxes sheet
-    for (let si = 0; si < Math.min(3, wb.SheetNames.length); si++) {
-      const wsD = wb.Sheets[wb.SheetNames[si]];
-      const rowsD = XLSX.utils.sheet_to_json(wsD, {header:1, defval:null}).map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
-      let dWeekLabels = 0, dSetsCount = 0, dHasDaySection = false;
-      for(let i=0;i<Math.min(15,rowsD.length);i++){
-        const row=rowsD[i]; if(!row) continue;
-        let wkCount = 0;
-        row.forEach(c => { if(c && /^WEEK\s*\d/i.test(String(c).trim())) wkCount++; });
-        if(wkCount >= 2) dWeekLabels = wkCount;
-        const strs = row.map(c=>String(c||'').toLowerCase().trim());
-        const sc = strs.filter(s => s === 'sets').length;
-        if(sc >= 2) dSetsCount = sc;
-        if(row[0] && /^WEEK\s*\d/i.test(String(row[0]).trim())) dHasDaySection = true;
-      }
-      if(dWeekLabels >= 2 && dSetsCount >= 2 && dHasDaySection) return 'D';
-    }
-
-    // Check Format C: split columns with "Sets"/"Reps"/"Load" headers + "Day N" labels in col A
-    let hasSplitHeaders = false;
-    let hasDayLabel = false;
-    for(let i=0;i<Math.min(40,rows.length);i++){
-      const row=rows[i]; if(!row) continue;
-      const strs = row.map(c=>String(c||'').toLowerCase().trim());
-      // Look for row with "Sets" and "Reps" and "Load" as separate cells
-      if (strs.includes('sets') && strs.includes('reps') && (strs.includes('load') || strs.includes('weight'))) {
-        hasSplitHeaders = true;
-      }
-      // Look for "Day N" in col A
-      if (row[0] && /^day\s*\d/i.test(String(row[0]).trim())) {
-        hasDayLabel = true;
-      }
-      if (hasSplitHeaders && hasDayLabel) return 'C';
-    }
-  }catch(e){ console.error('[liftlog] detectFormat error:',e); }
-  return 'B';
-}
-
-// ── FORMAT A PARSER ───────────────────────────────────────────────────────────
-function parseA(wb){
-  const blocks=[];
-  for(const sn of wb.SheetNames){
-    try{
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
-      const clean=rows.map(r=>r?r.map(c=>{
-        if(typeof c==='string'&&c.startsWith("'")) return c.slice(1);
-        return c;
-      }):r);
-      const b=parseASheet(sn,clean);
-      if(b) blocks.push(b);
-    }catch(e){ console.error(`[parseA] Error parsing sheet "${sn}":`,e); }
-  }
-  return blocks;
-}
-
-function parseASheet(sn,rows){
-  if(rows.length<4) return null;
-  let hdr=-1;
-  for(let i=0;i<Math.min(10,rows.length);i++){
-    const r=rows[i]; if(!r) continue;
-    if(r.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d))).length>=2){hdr=i;break;}
-  }
-  if(hdr===-1) return null;
-
-  const athleteName=rows[0]?.[0]?String(rows[0][0]).trim():'Athlete';
-  // Use row 1 as name only if it looks like a cycle/program name, not a date range
-  const row1val=rows[1]?.[0]?String(rows[1][0]).trim():'';
-  const isDateLike=/^\d{1,2}[\/\-]/.test(row1val)||/\d{4}/.test(row1val);
-  const name=(!isDateLike&&row1val)?row1val:sn;
-  const dateRange=isDateLike?row1val:(rows[2]?.[0]?String(rows[2][0]).trim():'');
-  let maxes={};
-  for(let i=0;i<Math.min(5,rows.length);i++){
-    const r=rows[i]; if(!r) continue;
-    for(let j=0;j<r.length;j++){
-      const c=String(r[j]||'').toLowerCase().trim();
-      if(c==='squat'&&typeof rows[i+1]?.[j]==='number') maxes.squat=rows[i+1][j];
-      if(c==='bench'&&typeof rows[i+1]?.[j]==='number') maxes.bench=rows[i+1][j];
-      if(c==='deadlift'&&typeof rows[i+1]?.[j]==='number') maxes.deadlift=rows[i+1][j];
-    }
-  }
-  const hrRow=rows[hdr];
-  const dayCols=[];
-  for(let col=0;col<hrRow.length;col++){
-    const c=hrRow[col];
-    if(c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)))
-      dayCols.push({col,name:String(c).trim(),noteCol:col+1});
-  }
-  const rawDays=dayCols.map(({col,name,noteCol})=>{
-    const exs=[]; let cur=null; let curSupersetGroup=null;
-    for(let r=hdr+1;r<rows.length;r++){
-      const row=rows[r]; if(!row) continue;
-      const cell=row[col]; const note=row[noteCol];
-      // Blank row closes any open superset group
-      if(cell===null||cell===undefined||!String(cell).trim()){ curSupersetGroup=null; continue; }
-      const cs=String(cell).trim();
-      const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const wTrack=(note!==null&&note!==undefined)?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:null,trackingRaw:wTrack}); } }
-      else{
-        // Prescription patterns:
-        // lp = has parens with digits or RPE letters: 3x5(275), 12(L), 1 rep (rest :10)
-        // lp2 = NxN format without parens: 4x15, 3x5, 4x12
-        const lp=(/\(/.test(cs)&&(/\d/.test(cs)||/[LMH]/.test(cs)));
-        const lp2=/^\d+x\d+/i.test(cs); // e.g. "4x15", "3x5"
-        const ln=cs.startsWith('(')||cs.toLowerCase().includes('increase');
-        const supersetMatch=
-          cs.match(/^(\d+)\s*rounds?[\s:]*/i) ||  // "2 rounds:"
-          (cs.match(/^superset[\s:]*/i) && ['1']) ||
-          (cs.match(/^SS[\s:]*/i) && ['1']) ||
-          (cs.match(/^giant\s*set[\s:]*/i) && ['1']) ||
-          (cs.match(/^circuit[\s:]*/i) && ['1']);
-        const isSectionHeader=
-          supersetMatch!=null ||
-          /^round\s*\d/i.test(cs) ||            // "Round 1"
-          /^\d+\s*rep\s/i.test(cs) ||          // "1 rep (rest :10)"
-          /^\d+\.?\d*\s*$/.test(cs);           // bare number like "2.0"
-        // Coach note patterns:
-        // - wrapped in dashes: -McGill Protocol-
-        // - starts with "goal", "continue", "protocol"
-        // - is a sentence (contains space, ends with period or has >4 words) but is NOT a known exercise format
-        const wordCount=cs.split(/\s+/).length;
-        const isCoachNoteLine=
-          /^-.*-$/.test(cs) ||
-          /^goal\b/i.test(cs) ||
-          /^continue\b/i.test(cs) ||
-          /^protocol\b/i.test(cs) ||
-          (cs.endsWith('.')&&wordCount>=4&&!lp&&!lp2&&!ln);
-
-        // Superset group tracking: open on header, close on blank row
-        if(supersetMatch){
-          const rounds=parseInt(supersetMatch[1])||1;
-          const label=rounds>1?rounds+' rounds':'superset';
-          curSupersetGroup={label,rounds,startIdx:exs.length};
-        }
-
-        if(!lp&&!lp2&&!ln&&!isSectionHeader&&!isCoachNoteLine){
-          let normalizedCs=cs.replace(/\s+/g,' ').trim(); // collapse double spaces
-          // Detect "20 Reverse Hyper" pattern — leading number is a rep count, not part of name
-          let embeddedPres=null;
-          const leadingRepsMatch=normalizedCs.match(/^(\d+(?:[:\.]\d+)?)\s+([A-Za-z].+)$/);
-          if(leadingRepsMatch){
-            embeddedPres=leadingRepsMatch[1]; // e.g. "20" or "1:00"
-            normalizedCs=leadingRepsMatch[2]; // e.g. "Reverse Hyper" or "Plank Hold"
-          }
-          const correctedName=spellCorrectExerciseName(normalizedCs);
-          cur={name:correctedName,weeks:[],staticPrescription:embeddedPres||null,staticTrackingRaw:null,note:note?String(note).trim():null,coachNotes:[],supersetGroup:curSupersetGroup||null};
-          exs.push(cur);
-        } else if(cur&&(isCoachNoteLine||ln)){
-          const noteText=cs.replace(/^-|-$/g,'').trim();
-          if(noteText&&!cur.coachNotes.includes(noteText)) cur.coachNotes.push(noteText);
-        } else if(cur&&(lp||lp2)&&!cur.staticPrescription){
-          cur.staticPrescription=cs;
-          if(note){
-            const noteStr=String(note).trim();
-            // Only treat as a coach display note if it looks like text, not tracking data
-            // Tracking data: x, numbers, weight@rpe, slashes → goes to staticTrackingRaw only
-            const looksLikeTracking=/^[xX✓✔️]$/.test(noteStr)||/^\d/.test(noteStr)||noteStr.toLowerCase()==='done';
-            cur.staticTrackingRaw=noteStr;
-            if(!looksLikeTracking) cur.note=noteStr;
-          }
-        }
-      }
-    }
-    return{name,exercises:exs};
-  });
-
-  let nw=0;
-  for(const d of rawDays) for(const e of d.exercises) if(e.weeks.length>nw) nw=e.weeks.length;
-  if(nw===0) nw=4;
-
-  const weeks=[];
-  for(let w=1;w<=nw;w++){
-    weeks.push({label:`W${w}`,days:rawDays.map(d=>({name:d.name,exercises:d.exercises.map(ex=>{
-      const wd=ex.weeks.find(x=>x.week===w);
-      const isStatic=!wd; // no week-specific entry means this is a static prescription exercise
-      return{name:ex.name,prescription:wd?.prescription||ex.staticPrescription||null,note:wd?.note||ex.note||null,coachNotes:ex.coachNotes||[],supersetGroup:ex.supersetGroup||null,trackingRaw:wd?wd.trackingRaw:(isStatic&&w===1?ex.staticTrackingRaw:null),isStaticPrescription:isStatic};
-    })}))});
-  }
-
-  return{id:sn,name,dateRange,athleteName,maxes,weeks,format:'A'};
-}
-
-// ── FORMAT B PARSER ───────────────────────────────────────────────────────────
-function parseB(wb){
-  const weeks=[];
-  let athleteName='Athlete';
-  for(const sn of wb.SheetNames){
-    try{
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
-      const week=parseBSheet(sn,rows);
-      if(week) weeks.push(week);
-    }catch(e){ console.error(`[parseB] Error parsing sheet "${sn}":`,e); }
-  }
-  if(weeks.length===0) return [];
-  // Use first sheet name as stable ID so week-by-week uploads don't collide
-  const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i,'').trim() : wb.SheetNames[0];
-  const blocks=[{id:bId,name:bId||'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
-  return blocks;
-}
-
-function parseBSheet(sn,rows){
-  if(!rows||rows.length===0) return null;
-  const days=[]; let curDay=null;
-
-  // Column indices can shift between sheets — detect from header row per day section
-  // We track the current header columns dynamically
-  let colPres=1, colLogged=2; // defaults
-
-  // Track seen day names to detect repeated day sections (multiple weeks in one sheet)
-  // e.g. "Upper 1" appears twice — first is W1 (completed), second is W2 (future)
-  const seenDayNames={};
-  let weekOffset=0; // increments each time we detect a full week cycle repeating
-
-  for(let i=0;i<rows.length;i++){
-    const row=rows[i]; if(!row) continue;
-    const a=row[0]; if(!a) continue;
-    const aStr=String(a).trim(); if(!aStr) continue;
-    if(/^\d+\.?\d*\s*$/.test(aStr)) continue; // skip bare numbers (integers and decimals like 2.0)
-
-    // A day section header has:
-    // 1. A short name in col 0 (day section names are typically < 20 chars)
-    // 2. The word "sets" or "record" in the row (not just "reps" which appears in prescriptions)
-    const rowStrs=row.map(c=>String(c||'').toLowerCase());
-    const hasSetsHeader=rowStrs.some(s=>s.includes('sets x') || s.includes('sets/') || (s.includes('sets') && s.includes('rpe')));
-    const hasRecordHeader=rowStrs.some(s=>s.includes('record weight') || s.includes('record'));
-    const isDayHeader=(hasSetsHeader||hasRecordHeader) && aStr.length < 40;
-
-    if(isDayHeader){
-      // Detect column positions from this header row
-      const prescIdx=rowStrs.findIndex(s=>s.includes('sets'));
-      const loggedIdx=rowStrs.findIndex(s=>s.includes('record')||s.includes('weight'));
-      // Detect dedicated coach notes and lifter notes columns
-      const coachNoteIdx=rowStrs.findIndex(s=>s.includes('coach'));
-      const lifterNoteIdx=rowStrs.findIndex(s=>s.includes('lifter')||s.includes('athlete'));
-      if(prescIdx>0) colPres=prescIdx;
-      if(loggedIdx>colPres) colLogged=loggedIdx;
-      else colLogged=colPres+1; // fallback: logged is always right after prescription
-
-      // Detect repeated day name — signals a new week cycle within the same sheet
-      if(seenDayNames[aStr]!==undefined){
-        weekOffset++;
-        // Reset seen names for new cycle
-        Object.keys(seenDayNames).forEach(k=>delete seenDayNames[k]);
-      }
-      seenDayNames[aStr]=true;
-
-      // Unique day name includes week offset so logs don't collide
-      const uniqueDayName = weekOffset > 0 ? `${aStr} (W${weekOffset+1})` : aStr;
-      curDay={name:uniqueDayName,exercises:[],_colCoachNote:coachNoteIdx>0?coachNoteIdx:null,_colLifterNote:lifterNoteIdx>0?lifterNoteIdx:null};
-      days.push(curDay);
-    } else if(curDay){
-      const pres=row[colPres]!=null?String(row[colPres]).trim():null;
-      const rawLogged=row[colLogged];
-
-      // Logged can be a number (e.g. 90.0) or string (e.g. "165@6", "Seal row 55lbs + bar")
-      let cleanLogged=null;
-      if(rawLogged!=null){
-        const ls=String(rawLogged).trim();
-        // Skip if it's only checkmarks/whitespace
-        if(ls&&!/^[✔️\s]+$/.test(ls)) cleanLogged=ls;
-      }
-
-      // Coach note: dedicated column if present, otherwise scan remaining columns
-      let note=null;
-      if(curDay._colCoachNote!=null&&row[curDay._colCoachNote]!=null){
-        const vs=String(row[curDay._colCoachNote]).trim();
-        if(vs&&!/^[✔️\s]+$/.test(vs)) note=vs;
-      } else {
-        for(let c=colLogged+1;c<row.length;c++){
-          const v=row[c];
-          if(v==null) continue;
-          const vs=String(v).trim();
-          if(vs&&!/^[✔️\s]+$/.test(vs)){ note=vs; break; }
-        }
-      }
-
-      // Lifter note: dedicated column if present
-      let lifterNote=null;
-      if(curDay._colLifterNote!=null&&row[curDay._colLifterNote]!=null){
-        const vs=String(row[curDay._colLifterNote]).trim();
-        if(vs&&!/^[✔️\s]+$/.test(vs)) lifterNote=vs;
-      }
-
-      const normName=aStr.replace(/\s+/g,' ').trim(); // collapse double spaces
-
-      // ── Circuit detection (Format B) ─────────────────────────────────────────
-      // Triggers when name starts with "Circuit " OR has 2+ commas (multiple exercises listed).
-      const isCircuitRow = /^circuit\s/i.test(normName) || (normName.match(/,/g)||[]).length >= 2;
-      if(isCircuitRow){
-        const stripped = normName.replace(/^circuit\s+/i,'').trim();
-        const parts = stripped.split(/,\s*/);
-        if(parts.length >= 2){
-          const _circuitIdx = curDay.exercises.length;
-          const supersetGroup = { label:`circuit_${_circuitIdx}`, rounds:1, startIdx:_circuitIdx };
-          // Distribute prescription parts to exercises
-          const presStr = pres || '';
-          const presParts = presStr.split(/,\s*/);
-          if (presParts.length >= parts.length) {
-            // Happy path: comma counts match, assign 1:1
-            parts.forEach((exName, idx) => {
-              curDay.exercises.push({name:exName.trim(), prescription:(presParts[idx]||'').trim()||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
-            });
-          } else {
-            // Mismatch: use name-matching to assign prescriptions
-            const exNames = parts.map(p => p.trim().toLowerCase());
-            const assigned = new Array(parts.length).fill(null);
-            let defaultPres = null;
-            presParts.forEach(seg => {
-              const segLower = seg.toLowerCase().trim();
-              // Extract prescription portion (everything from first digit onward)
-              const presMatch = segLower.match(/(\d[\dx\-\s@.secminrep]*\S*)/i);
-              const presOnly = presMatch ? presMatch[0].trim() : seg.trim();
-              const matched = [];
-              exNames.forEach((en, i) => {
-                const words = en.split(/\s+/).filter(w => w.length >= 3);
-                if (words.some(w => segLower.includes(w))) matched.push(i);
-              });
-              if (matched.length > 0) {
-                matched.forEach(i => { if (!assigned[i]) assigned[i] = presOnly; });
-              } else {
-                if (!defaultPres) defaultPres = presOnly;
-              }
-            });
-            const fallback = defaultPres || assigned.filter(Boolean)[0] || presStr;
-            parts.forEach((exName, idx) => {
-              curDay.exercises.push({name:exName.trim(), prescription:assigned[idx]||fallback||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
-            });
-          }
-          continue;
-        }
-      }
-      // ─────────────────────────────────────────────────────────────────────────
-
-      curDay.exercises.push({name:normName,prescription:pres,note,lifterNote,loggedWeight:cleanLogged});
-    }
-  }
-  if(days.length===0) return null;
-  return{label:sn,days};
-}
-
-// ── UNIFIED ───────────────────────────────────────────────────────────────────
-function parseWorkbook(wb){
-  const fmt = detectFormat(wb);
-  if (fmt === 'A') return parseA(wb);
-  if (fmt === 'C') return parseCAutoFormat(wb);
-  if (fmt === 'D') return parseD(wb);
-  return parseB(wb);
-}
-
-// ── FORMAT C PARSER (split Sets/Reps/Load columns with Day N headers) ────────
-function parseCAutoFormat(wb) {
-  const blocks = [];
-  // Each sheet = one week
-  for (const sn of wb.SheetNames) {
-    try {
-      const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
-      const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
-      const week = parseCAutoSheet(sn, rows);
-      if (week) blocks.push(week);
-    } catch(e) { console.error(`[parseCAutoFormat] Error parsing sheet "${sn}":`, e); }
-  }
-  if (blocks.length === 0) return [];
-
-  // Extract metadata from first sheet
-  const firstRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null})
-    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
-  const meta = extractCAutoMeta(firstRows);
-
-  // Build single block with all weeks
-  const blockName = meta.blockName || wb._plFilename || 'Program';
-  const id = 'c_' + blockName.replace(/\s+/g,'_').substring(0,30) + '_' + Date.now();
-  return [{
-    id, name: blockName, weeks: blocks, athlete: meta.athlete || '',
-    maxes: meta.maxes || {}, dateRange: meta.dateRange || '',
-    startDate: meta.startDate || null
-  }];
-}
-
-function extractCAutoMeta(rows) {
-  const meta = { maxes: {}, athlete: '', blockName: '', dateRange: '', startDate: null };
-  // Scan first ~20 rows for metadata
-  for (let i = 0; i < Math.min(20, rows.length); i++) {
-    const row = rows[i]; if (!row) continue;
-    const a = String(row[0] || '').trim();
-    const al = a.toLowerCase();
-    // Maxes: "Squat: 415", "Bench Press: 255"
-    const maxMatch = a.match(/^(squat|bench\s*press?|sumo\s*deadlift|conventional\s*deadlift|deadlift)\s*[:=]\s*(\d+)/i);
-    if (maxMatch) {
-      const lift = maxMatch[1].toLowerCase();
-      const val = parseInt(maxMatch[2]);
-      if (lift.includes('squat')) meta.maxes.squat = val;
-      else if (lift.includes('bench')) meta.maxes.bench = val;
-      else if (lift.includes('deadlift')) meta.maxes.deadlift = val;
-    }
-    // Date + block name from row 1: "January 12, 2026 1RM's Bo..." or "Hypertrophy Block:1/12-2/..."
-    if (i === 0 && a) {
-      // Try to find date
-      const dateMatch = a.match(/((?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4})/i);
-      if (dateMatch) meta.dateRange = dateMatch[1];
-      // Check other cells for block name
-      for (let c = 1; c < (row.length || 0); c++) {
-        const v = String(row[c] || '').trim();
-        const blockMatch = v.match(/(?:block|phase|cycle)\s*[:\-]?\s*(.+)/i);
-        if (blockMatch) meta.blockName = blockMatch[0].substring(0, 50);
-      }
-    }
-  }
-  return meta;
-}
-
-function parseCAutoSheet(sn, rows) {
-  if (!rows || rows.length === 0) return null;
-
-  // Find column indices from the first "Day N" header row
-  let setsIdx = -1, repsIdx = -1, loadIdx = -1, exIdx = -1;
-  let coachIdx = -1, loggedIdx = -1, rpeIdx = -1, notesIdx = -1;
-  let dataStartRow = 0;
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]; if (!row) continue;
-    const strs = row.map(c => String(c || '').toLowerCase().trim());
-    if (strs.includes('sets') && strs.includes('reps')) {
-      setsIdx = strs.indexOf('sets');
-      repsIdx = strs.indexOf('reps');
-      loadIdx = strs.indexOf('load'); if (loadIdx < 0) loadIdx = strs.indexOf('weight');
-      coachIdx = strs.indexOf('coach notes'); if (coachIdx < 0) strs.forEach((s, ci) => { if (s.includes('coach') && coachIdx < 0) coachIdx = ci; });
-      loggedIdx = strs.findIndex(s => s.includes('weight used'));
-      rpeIdx = strs.findIndex(s => s.includes('overall rpe') || s === 'rpe');
-      notesIdx = strs.findIndex(s => s.includes('athlete notes') || s.includes('lifter notes'));
-      // Exercise name col is typically the one with "Warm Up" / "Main Exercise" text
-      exIdx = strs.findIndex(s => s === 'warm up' || s === 'main exercise');
-      if (exIdx < 0) exIdx = setsIdx > 0 ? setsIdx - 1 : 1; // default: one col before sets
-      // The day label row is this row or one before it
-      dataStartRow = (rows[i][0] && /^day\s*\d/i.test(String(rows[i][0]).trim())) ? i : 
-                     (i > 0 && rows[i-1] && rows[i-1][0] && /^day\s*\d/i.test(String(rows[i-1][0]).trim())) ? i - 1 : i;
-      break;
-    }
-  }
-
-  if (setsIdx < 0 || repsIdx < 0) return null;
-
-  // Parse days
-  const days = [];
-  let curDay = null;
-  const SUB_SECTIONS = ['warm up','main exercise','accessories','finisher','abs','recovery','cool down','cardio'];
-
-  for (let i = dataStartRow; i < rows.length; i++) {
-    const row = rows[i]; if (!row) continue;
-    const colA = String(row[0] || '').trim();
-    const exVal = String(row[exIdx] || '').trim();
-    const strs = row.map(c => String(c || '').toLowerCase().trim());
-
-    // Day header: "Day N" in col A
-    if (/^day\s*\d/i.test(colA)) {
-      // Next row might have the weekday name
-      let dayName = colA;
-      if (i + 1 < rows.length && rows[i+1]) {
-        const nextA = String(rows[i+1][0] || '').trim();
-        if (/^(mon|tue|wed|thu|fri|sat|sun)/i.test(nextA)) {
-          dayName = nextA + ' (' + colA + ')';
-        }
-      }
-      curDay = { name: dayName, exercises: [] };
-      days.push(curDay);
-      continue;
-    }
-
-    // Weekday row right after Day header — skip (already captured)
-    if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(colA)) continue;
-
-    // Sub-section header row (has "Sets"/"Reps" keywords) — skip
-    if (strs.includes('sets') && strs.includes('reps')) continue;
-
-    // No current day yet — skip metadata rows
-    if (!curDay) continue;
-
-    // Skip empty exercise name
-    if (!exVal) continue;
-
-    // Skip sub-section labels that aren't exercises
-    if (SUB_SECTIONS.some(s => exVal.toLowerCase() === s)) continue;
-
-    // Build prescription from split columns
-    const setsRaw = row[setsIdx] != null ? String(row[setsIdx]).trim() : '';
-    const repsRaw = row[repsIdx] != null ? String(row[repsIdx]).trim() : '';
-    const loadVal = loadIdx >= 0 && row[loadIdx] != null ? String(row[loadIdx]).trim() : '';
-
-    // Detect if "sets" col contains a full prescription or description, not a simple number
-    // Full prescriptions: "135x8,225x6,275x3,315x1", "BARx20, 135x8,185x4"
-    // Descriptions: "Quadruped arm swings, Scorpions(front & back) 5 mins", "90/90 hips, pigeon pose"
-    const isSimpleNum = (v) => /^\d+\.?\d*$/.test(v);
-    const isFullPrescription = (v) => !isSimpleNum(v) && v.length > 0 && (
-      /\d+x\d+/.test(v) ||           // contains NxN pattern (warmup sets)
-      /,/.test(v) ||                   // contains commas (list of items)
-      /[a-zA-Z]{3,}/.test(v) ||       // contains words (description text)
-      /bar/i.test(v)                   // "BARx20" pattern
-    );
-
-    let pres = '';
-    const setsVal = setsRaw.replace(/\.0$/, '');
-    const repsVal = repsRaw.replace(/\.0$/, '');
-
-    if (isFullPrescription(setsRaw)) {
-      // Sets col has a full prescription or description — use it directly
-      // Concatenate reps/load cols if they also have text (spanning description)
-      pres = setsRaw;
-      if (repsRaw && !isSimpleNum(repsRaw)) pres += ' ' + repsRaw;
-      if (loadVal && !isSimpleNum(loadVal) && !/rpe/i.test(loadVal)) pres += ' ' + loadVal;
-    } else if (setsVal && repsVal) {
-      pres = setsVal + 'x' + repsVal;
-    } else if (setsVal) {
-      pres = setsVal;
-    } else if (repsVal) {
-      pres = repsVal;
-    }
-
-    // Add load if it's a specific weight or RPE (only when not already a full prescription)
-    if (loadVal && !isFullPrescription(setsRaw)) {
-      const cleanLoad = loadVal.replace(/\.0$/, '');
-      if (/^\d+/.test(cleanLoad)) {
-        pres += '(' + cleanLoad + ')';
-      } else if (/rpe/i.test(cleanLoad)) {
-        pres += ' ' + cleanLoad;
-      } else if (cleanLoad) {
-        pres += ' ' + cleanLoad;
-      }
-    }
-
-    // Logged weight
-    const logged = loggedIdx >= 0 && row[loggedIdx] != null ? String(row[loggedIdx]).trim().replace(/\.0$/, '') || null : null;
-    // Coach notes  
-    const note = coachIdx >= 0 && row[coachIdx] != null ? String(row[coachIdx]).trim() || null : null;
-    // RPE logged
-    const rpeLogged = rpeIdx >= 0 && row[rpeIdx] != null ? String(row[rpeIdx]).trim().replace(/\.0$/, '') || null : null;
-    // Athlete notes
-    const lifterNote = notesIdx >= 0 && row[notesIdx] != null ? String(row[notesIdx]).trim() || null : null;
-
-    // Combine logged RPE into loggedWeight if present
-    let logStr = logged || null;
-    if (rpeLogged && logStr) logStr += ' @' + rpeLogged;
-    else if (rpeLogged && !logStr) logStr = '@' + rpeLogged;
-
-    curDay.exercises.push({
-      name: exVal.replace(/\s+/g, ' '),
-      prescription: pres.trim() || null,
-      note,
-      lifterNote,
-      loggedWeight: logStr
-    });
-  }
-
-  // Remove empty days
-  const filtered = days.filter(d => d.exercises.length > 0);
-  if (filtered.length === 0) return null;
-  return { label: sn, days: filtered };
-}
-
-// ── FORMAT D PARSER (horizontal week layout — Calgary Barbell style) ──────────
-// Weeks run across columns (repeating Sets/Reps/Load groups), days are vertical
-// sections within each sheet. Multiple sheets span multi-week blocks.
-function parseD(wb) {
-  const skipSheets = new Set();
-  // Identify non-training sheets (Training Maxes, instructions, copies, empty sheets)
-  for (const sn of wb.SheetNames) {
-    const s = sn.toLowerCase();
-    if (s.includes('max') || s.includes('instruction') || s.includes('note') || s.includes('info')
-        || s.startsWith('copy of') || s.startsWith('sheet')) skipSheets.add(sn);
-  }
-
-  // Extract block name from sheet names
-  let blockMeta = { name: '', athlete: '' };
-  const trainingSheets = wb.SheetNames.filter(sn => !skipSheets.has(sn));
-  if (trainingSheets.length > 0) {
-    // Try to derive a program name from sheet names pattern
-    const firstSheet = trainingSheets[0];
-    if (/week/i.test(firstSheet)) {
-      blockMeta.name = 'Training Block'; // Generic but clean
-    } else {
-      blockMeta.name = firstSheet;
-    }
-  }
-  if (!blockMeta.name) blockMeta.name = 'Training Block';
-
-  const allWeeks = []; // array of {label, days}
-  let globalWeekNum = 0;
-
-  for (const sn of wb.SheetNames) {
-    if (skipSheets.has(sn)) continue;
-    const ws = wb.Sheets[sn];
-    const rawRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
-    const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
-    if (!rows.length) continue;
-
-    // Parse this sheet into day sections, each with exercises across week columns
-    const sheetResult = parseDSheet(sn, rows);
-    if (!sheetResult || !sheetResult.daySections.length) continue;
-
-    const numWeeks = sheetResult.numWeeks;
-
-    // Build week objects: for each week column, collect exercises from all day sections
-    for (let w = 0; w < numWeeks; w++) {
-      globalWeekNum++;
-      const weekDays = [];
-      for (const daySection of sheetResult.daySections) {
-        const dayExercises = [];
-        for (const ex of daySection.exercises) {
-          if (!ex.weekData[w]) continue;
-          const wd = ex.weekData[w];
-          if (!wd.sets && !wd.reps) continue; // empty week cell
-          dayExercises.push({
-            name: ex.name,
-            prescription: wd.prescription,
-            note: wd.note || '',
-            lifterNote: '',
-            loggedWeight: ''
-          });
-        }
-        if (dayExercises.length > 0) {
-          weekDays.push({ name: daySection.dayName, exercises: dayExercises });
-        }
-      }
-      if (weekDays.length > 0) {
-        allWeeks.push({ label: 'Week ' + globalWeekNum, days: weekDays });
-      }
-    }
-  }
-
-  if (allWeeks.length === 0) return parseB(wb); // fallback
-
-  return [{
-    name: blockMeta.name,
-    weeks: allWeeks,
-    athlete: blockMeta.athlete
-  }];
-}
-
-// Parse a single Format D sheet into day sections with per-week exercise data
-function parseDSheet(sheetName, rows) {
-  // 1. Find day section boundaries: rows with "WEEK N, Day N" or taper-style headers
-  const daySections = []; // {dayName, headerRowIdx, exercises[]}
-  const dayStartRows = [];
-
-  for (let r = 0; r < rows.length; r++) {
-    const row = rows[r]; if (!row) continue;
-    const colA = String(row[0] || '').trim();
-    // Match "WEEK N, Day N", "WEEK N" (implicit Day 1), or "N Days from Competition"
-    const wkDayMatch = colA.match(/^WEEK\s*\d+(?:\s*,\s*Day\s*(\d+))?$/i);
-    const taperMatch = colA.match(/^(\d+)\s*Days?\s*(from|before)\s*Competition$/i);
-    if (wkDayMatch || taperMatch) {
-      let dayName;
-      if (taperMatch) {
-        dayName = colA; // Keep as-is: "5 Days from Competition"
-      } else if (wkDayMatch[1]) {
-        dayName = 'Day ' + wkDayMatch[1];
-      } else {
-        // "WEEK 1" without Day suffix — check if it's first day section in the sheet
-        dayName = 'Day 1';
-      }
-      dayStartRows.push({ rowIdx: r, dayName });
-    }
-  }
-
-  if (dayStartRows.length === 0) return null;
-
-  // 2. Determine number of week columns from the first header row after first day section
-  let numWeeks = 0;
-  let firstHeaderRow = null;
-  for (let r = dayStartRows[0].rowIdx + 1; r < Math.min(dayStartRows[0].rowIdx + 3, rows.length); r++) {
-    const row = rows[r]; if (!row) continue;
-    const strs = row.map(c => String(c || '').toLowerCase().trim());
-    const setsCount = strs.filter(s => s === 'sets').length;
-    if (setsCount >= 1) {
-      numWeeks = setsCount;
-      firstHeaderRow = r;
-      break;
-    }
-  }
-  if (numWeeks === 0) return null;
-
-  // 3. Parse each day section
-  for (let d = 0; d < dayStartRows.length; d++) {
-    const startRow = dayStartRows[d].rowIdx;
-    const endRow = d + 1 < dayStartRows.length ? dayStartRows[d + 1].rowIdx : rows.length;
-
-    // Find the column header row for this day section
-    let colHeaderIdx = -1;
-    let weekColGroups = []; // [{setsCol, repsCol, intensityCol, loadCol, tempoCol, restCol}]
-
-    for (let r = startRow + 1; r < Math.min(startRow + 4, endRow); r++) {
-      const row = rows[r]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
-      if (strs.includes('sets')) {
-        colHeaderIdx = r;
-        // Find all "Sets" positions → each starts a week group
-        for (let c = 0; c < strs.length; c++) {
-          if (strs[c] === 'sets') {
-            const group = { setsCol: c, repsCol: -1, loadCol: -1, intensityCol: -1, tempoCol: -1, restCol: -1 };
-            // Scan forward from setsCol to find the other columns in this group
-            for (let cc = c + 1; cc < Math.min(c + 8, strs.length); cc++) {
-              const h = strs[cc];
-              if (h === 'reps' && group.repsCol === -1) group.repsCol = cc;
-              else if ((h === 'load' || h === 'weight') && group.loadCol === -1) group.loadCol = cc;
-              else if (h === 'intensity' && group.intensityCol === -1) group.intensityCol = cc;
-              else if (h === 'tempo' && group.tempoCol === -1) group.tempoCol = cc;
-              else if (h.startsWith('rest') && group.restCol === -1) group.restCol = cc;
-              else if (h === 'performed' && group.loadCol === -1) { /* skip Performed col */ }
-              else if (h === 'sets') break; // next group
-            }
-            weekColGroups.push(group);
-          }
-        }
-        break;
-      }
-    }
-
-    if (colHeaderIdx === -1 || weekColGroups.length === 0) continue;
-
-    // Parse exercise rows
-    const exercises = [];
-    let lastExName = '';
-    for (let r = colHeaderIdx + 1; r < endRow; r++) {
-      const row = rows[r]; if (!row) continue;
-      let exName = String(row[0] || '').trim();
-      if (!exName) {
-        // Continuation row — check if it has data (sets/reps in first week group)
-        const hasSets = row[weekColGroups[0].setsCol] != null;
-        if (hasSets && lastExName) {
-          exName = lastExName; // inherit name; deduplicateExerciseNames appends "#2" later
-        } else {
-          continue; // truly empty row
-        }
-      } else {
-        lastExName = exName;
-      }
-      // Skip if it's another day header or column header
-      if (/^WEEK\s*\d/i.test(exName) || /^\d+\s*Days?\s*(from|before)/i.test(exName)) break;
-      if (exName.toLowerCase() === 'exercise') continue;
-
-      const weekData = [];
-      for (let w = 0; w < weekColGroups.length; w++) {
-        const g = weekColGroups[w];
-        const sets = row[g.setsCol];
-        const reps = row[g.repsCol];
-        const loadRaw = g.loadCol >= 0 ? row[g.loadCol] : null;
-        const intensity = g.intensityCol >= 0 ? row[g.intensityCol] : null;
-        const tempo = g.tempoCol >= 0 ? row[g.tempoCol] : null;
-        const rest = g.restCol >= 0 ? row[g.restCol] : null;
-
-        // Detect when "Load" column actually holds RPE/intensity and real weight is next col
-        let load = loadRaw;
-        let effectiveIntensity = intensity;
-        if (g.loadCol >= 0) {
-          const nextColVal = row[g.loadCol + 1];
-          const loadStr = String(loadRaw || '').trim();
-          const isRPE = /rpe/i.test(loadStr);
-          const isPct = typeof loadRaw === 'number' && loadRaw > 0 && loadRaw <= 1;
-          const isOpener = /opener/i.test(loadStr);
-          if (isRPE || isPct || isOpener) {
-            effectiveIntensity = loadRaw;
-            if (typeof nextColVal === 'number' && nextColVal > 1) {
-              load = nextColVal; // Next col has computed weight
-            } else {
-              load = null; // No computed weight available — show pres without load
-            }
-          }
-        }
-
-        weekData.push(buildDPrescription(sets, reps, load, effectiveIntensity, tempo, rest));
-      }
-
-      exercises.push({ name: exName.replace(/\s+/g,' ').trim(), weekData });
-    }
-
-    daySections.push({
-      dayName: dayStartRows[d].dayName,
-      exercises
-    });
-  }
-
-  return { daySections, numWeeks };
-}
-
-// Build a prescription string from Format D columns
-function buildDPrescription(sets, reps, load, intensity, tempo, rest) {
-  if (sets == null && reps == null) return { sets: 0, reps: '', prescription: '', note: '' };
-
-  const setsStr = String(sets || '').trim();
-  const repsStr = String(reps || '').trim();
-  const loadVal = load != null ? load : null;
-  const intensityStr = intensity != null ? String(intensity).trim() : '';
-  const tempoStr = tempo != null ? String(tempo).trim() : '';
-  const restVal = rest != null ? rest : null;
-
-  // Parse special set notation: "1+2F" = 1 top set + 2 fatigue sets = 3 total
-  let totalSets = 0;
-  const plusMatch = setsStr.match(/^(\d+)\+(\d+)[FR]$/i);
-  if (plusMatch) {
-    totalSets = parseInt(plusMatch[1]) + parseInt(plusMatch[2]);
-  } else {
-    totalSets = parseInt(setsStr) || 0;
-  }
-
-  // Handle reps: can be number, "x" (timed), or other
-  let repsDisplay = repsStr;
-  if (repsStr.toLowerCase() === 'x') {
-    // Timed exercise — check if intensity has time value like "30s"
-    if (/^\d+s$/i.test(intensityStr)) {
-      repsDisplay = intensityStr; // e.g. "30s"
-    }
-  }
-
-  // Build prescription string
-  let pres = '';
-  if (totalSets > 0 && repsDisplay) {
-    if (typeof loadVal === 'number' && loadVal > 0) {
-      pres = totalSets + 'x' + repsDisplay + '(' + loadVal + ')';
-    } else {
-      pres = totalSets + 'x' + repsDisplay;
-    }
-  } else if (totalSets > 0) {
-    pres = totalSets + ' sets';
-  }
-
-  // Add RPE/intensity as note context
-  const notes = [];
-
-  // Intensity: decimal (percentage), "8RPE" string, or "Opener"
-  if (intensityStr && !/^\d+s$/i.test(intensityStr) && intensityStr.toLowerCase() !== 'x') {
-    const numIntensity = parseFloat(intensityStr);
-    if (/opener/i.test(intensityStr)) {
-      notes.push('Opener');
-    } else if (/rpe/i.test(intensityStr)) {
-      // "8RPE" → "@8"
-      const rpeNum = parseFloat(intensityStr);
-      if (!isNaN(rpeNum)) notes.push('@' + rpeNum);
-    } else if (!isNaN(numIntensity) && numIntensity > 0 && numIntensity <= 1) {
-      notes.push(Math.round(numIntensity * 100) + '%');
-    }
-  }
-
-  // Special set notation explanation
-  if (plusMatch) {
-    const topSets = plusMatch[1];
-    const extraSets = plusMatch[2];
-    const fOrR = setsStr.slice(-1).toUpperCase();
-    const label = fOrR === 'F' ? 'fatigue' : 'rep';
-    notes.push(topSets + ' top + ' + extraSets + ' ' + label);
-  }
-
-  // Tempo
-  if (tempoStr && tempoStr.toLowerCase() !== 'x') {
-    notes.push('Tempo: ' + tempoStr);
-  }
-
-  return {
-    sets: totalSets,
-    reps: repsDisplay,
-    prescription: pres,
-    note: notes.join(' · ')
-  };
-}
-
-// ── BLOCK MERGE ───────────────────────────────────────────────────────────────
-// Append "#2", "#3" etc. to duplicate exercise names within the same day so log keys never collide.
-function deduplicateExerciseNames(blocks) {
-  for (const block of blocks) {
-    for (const week of (block.weeks || [])) {
-      for (const day of (week.days || [])) {
-        const seen = {};
-        for (const ex of (day.exercises || [])) {
-          const base = ex.name;
-          if (seen[base] === undefined) {
-            seen[base] = 1;
-            // First occurrence — no change needed, no displayName set
-          } else {
-            // Duplicate — keep display name as the base, disambiguate log key via prescription
-            seen[base]++;
-            ex.displayName = base; // what the user sees
-            // Use prescription as disambiguator if available, otherwise fall back to index
-            const disambig = ex.prescription
-              ? ex.prescription.replace(/\s+/g,' ').trim().substring(0, 30)
-              : ('#' + seen[base]);
-            ex.name = base + ' [' + disambig + ']'; // unique key for localStorage
-            // Also set displayName on the first occurrence so it renders cleanly
-            const firstEx = day.exercises.find(e => e !== ex && (e.displayName || e.name) === base);
-            if (firstEx && !firstEx.displayName) firstEx.displayName = base;
-          }
-        }
-      }
-    }
-  }
-}
 
 function mergeBlocks(incoming){
   deduplicateExerciseNames(incoming);
@@ -3568,74 +2577,7 @@ function inferStaticCompletions(block, onlyWeekLabels=null){
   }
 }
 
-// ── SET PARSER ────────────────────────────────────────────────────────────────
-function parseSets(pres){
-  if(!pres) return [];
-  const sets=[]; const pat=/(\d+x)?(\d+)\(([^)]+)\)/g; let m;
-  while((m=pat.exec(pres))!==null){
-    const mult=m[1]?parseInt(m[1]):1;
-    for(let i=0;i<mult;i++) sets.push({reps:parseInt(m[2]),weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim()))});
-  }
-  return sets;
-}
-function parseSimple(pres){
-  if(!pres) return null;
-  const m=pres.match(/^(\d+)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
-  if(!m) return null;
-  // Exclude range-set patterns like "3-4x15" — those go to parseRangeSet
-  if(pres.match(/^\d+[\-–]\d+x/i)) return null;
-  const sets = parseInt(m[1]);
-  // Reject unreasonable set counts — likely a warmup weight (e.g. "135x8" = 135lb x 8 reps)
-  if(sets > 20) return null;
-  return{sets,reps:m[2].trim()};
-}
-// Handles "3-4x15 (M)", "3x12-15", range-set patterns with no specific weight
-function parseRangeSet(pres){
-  if(!pres) return null;
-  // Standard: "3x10", "3-4x10", "3x8-12", "2x 45 sec"
-  const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
-  if(m){
-    const sets=parseInt(m[1]); // use lower bound of set range
-    const reps=m[3].trim();
-    return{sets,reps};
-  }
-  // "2-3 sets" or "2-3 sets (pick reps)" — sets range, open reps
-  const s=pres.match(/^(\d+)[\-–](\d+)\s*sets?/i);
-  if(s) return{sets:parseInt(s[1]),reps:'open'};
-  return null;
-}
-
-// Handles bare prescriptions like "20" (reps) or "1:00" (time) — single set, no weight in prescription
-function parseBarePres(pres){
-  if(!pres) return null;
-  const p=pres.trim();
-  // bare number: "20"
-  if(/^\d+$/.test(p)) return{sets:1,reps:p};
-  // time format: "1:00", "0:30"
-  if(/^\d+:\d{2}$/.test(p)) return{sets:1,reps:p};
-  return null;
-}
-
-// Handles comma-separated warmup notation: "135x8,225x6,275x3,315x1" or "BARx20,135x8,185x4"
-// Returns parseSets-compatible array: [{reps, weight, isRpe:false}]
-function parseWarmupSets(pres){
-  if(!pres) return [];
-  const p=pres.trim();
-  // Must contain at least one comma and multiple NxN patterns
-  if(!p.includes(',')) return [];
-  const parts=p.split(',').map(s=>s.trim()).filter(Boolean);
-  const sets=[];
-  for(const part of parts){
-    const m=part.match(/^(\w+)\s*x\s*(\d+)$/i);
-    if(m){
-      sets.push({reps:parseInt(m[2]),weight:m[1],isRpe:false});
-    } else {
-      // If any part doesn't match NxN, bail — not a warmup sequence
-      return [];
-    }
-  }
-  return sets.length>=2 ? sets : [];
-}
+// parseSets, parseSimple, parseRangeSet, parseBarePres, parseWarmupSets → parsers.js
 
 
 // ── HOME SCREEN ───────────────────────────────────────────────────────────────
@@ -5768,6 +4710,10 @@ function renderIntakeStep2(body) {
   const preMaxB = b0.maxes?.bench || '';
   const preMaxD = b0.maxes?.deadlift || '';
 
+  // Template program detection — Lift Vault programs have placeholder 1RMs
+  const tmplMaxes = b0.templateMaxes || {};
+  const hasTemplatMaxes = !!(tmplMaxes.squat || tmplMaxes.bench || tmplMaxes.deadlift);
+
   // Start date: for historical, try dateRange; for active, default today
   let preDate = '';
   if (_importIntent === 'history' && b0.dateRange) {
@@ -5807,19 +4753,30 @@ function renderIntakeStep2(body) {
       <button class="intake-gender-btn${preGender==='female'?' selected':''}" id="intake-gender-female" onclick="intakeSetGender('female')">Female</button>
     </div>
 
-    <div class="intake-section-label">Current Maxes (lbs)</div>
+    ${hasTemplatMaxes ? `
+    <div style="margin:16px 0 12px;padding:12px 14px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:12px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.06em;margin-bottom:6px">⚡ TEMPLATE PROGRAM</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);line-height:1.5">This program uses placeholder weights. Enter your actual maxes below and all weights will be scaled automatically.</div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        ${tmplMaxes.squat ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:var(--text-dim)">Template S: '+tmplMaxes.squat+'</div>' : ''}
+        ${tmplMaxes.bench ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:var(--text-dim)">Template B: '+tmplMaxes.bench+'</div>' : ''}
+        ${tmplMaxes.deadlift ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:var(--text-dim)">Template D: '+tmplMaxes.deadlift+'</div>' : ''}
+      </div>
+    </div>` : ''}
+
+    <div class="intake-section-label">${hasTemplatMaxes ? 'Your Actual Maxes' : 'Current Maxes (lbs)'}</div>
     <div class="intake-maxes-row">
       <div class="intake-field">
         <label class="intake-field-label">Squat</label>
-        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="—" value="${preMaxS}">
+        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="${hasTemplatMaxes ? 'Required' : '—'}" value="${preMaxS}">
       </div>
       <div class="intake-field">
         <label class="intake-field-label">Bench</label>
-        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="—" value="${preMaxB}">
+        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="${hasTemplatMaxes ? 'Required' : '—'}" value="${preMaxB}">
       </div>
       <div class="intake-field">
         <label class="intake-field-label">Deadlift</label>
-        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="—" value="${preMaxD}">
+        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="${hasTemplatMaxes ? 'Required' : '—'}" value="${preMaxD}">
       </div>
     </div>
 
@@ -5870,9 +4827,9 @@ function renderIntakeStep3(body) {
     intake.name ? ['Athlete', intake.name] : null,
     intake.gender ? ['Gender', intake.gender.charAt(0).toUpperCase() + intake.gender.slice(1)] : null,
     intake.bodyweight ? ['Bodyweight', intake.bodyweight + ' ' + intake.bwUnit] : null,
-    intake.maxSquat ? ['Squat Max', intake.maxSquat + ' lbs'] : null,
-    intake.maxBench ? ['Bench Max', intake.maxBench + ' lbs'] : null,
-    intake.maxDeadlift ? ['Deadlift Max', intake.maxDeadlift + ' lbs'] : null,
+    intake.maxSquat ? ['Squat Max', intake.maxSquat + ' lbs' + (b0.templateMaxes?.squat ? ' (scaled from ' + b0.templateMaxes.squat + ')' : '')] : null,
+    intake.maxBench ? ['Bench Max', intake.maxBench + ' lbs' + (b0.templateMaxes?.bench ? ' (scaled from ' + b0.templateMaxes.bench + ')' : '')] : null,
+    intake.maxDeadlift ? ['Deadlift Max', intake.maxDeadlift + ' lbs' + (b0.templateMaxes?.deadlift ? ' (scaled from ' + b0.templateMaxes.deadlift + ')' : '')] : null,
     intake.startDate ? ['Start Date', formatIntakeDate(intake.startDate)] : null,
     ['Program', b0.name || b0.id || 'Untitled'],
     ['Weeks', weekCount],
@@ -6026,6 +4983,7 @@ function confirmImportIntent() {
 
   // Apply intake fields to blocks and athlete profile
   const intake = readIntakeFields();
+  scaleBlockWeights(blocks, intake);
   applyIntakeToBlocks(blocks, intake);
   applyIntakeToProfile(intake);
 
@@ -6049,6 +5007,63 @@ function confirmImportIntent() {
   _intakeCache = null;
   _intakeMergeTarget = null;
   render();
+}
+
+function scaleBlockWeights(blocks, intake) {
+  // Scale template program weights to user's actual maxes
+  const b0 = blocks[0];
+  const tmpl = b0?.templateMaxes;
+  if (!tmpl) return;
+
+  // Build scale factors for each lift family
+  const factors = {};
+  if (tmpl.squat && intake.maxSquat) factors.squat = intake.maxSquat / tmpl.squat;
+  if (tmpl.bench && intake.maxBench) factors.bench = intake.maxBench / tmpl.bench;
+  if (tmpl.deadlift && intake.maxDeadlift) factors.deadlift = intake.maxDeadlift / tmpl.deadlift;
+  if (tmpl.ohp && intake.maxBench) factors.ohp = intake.maxBench / tmpl.ohp;
+
+  if (Object.keys(factors).length === 0) return;
+
+  // Classify which scale factor applies to each exercise
+  function getFactor(exName) {
+    const n = (exName || '').toLowerCase();
+    if (/squat|front squat|pause squat|pin squat|box squat|goblet squat|zercher/i.test(n)) return factors.squat;
+    if (/bench|close.?grip|incline.*press|pause bench|floor press|board press|slingshot|larson/i.test(n)) return factors.bench;
+    if (/deadlift|dead.?lift|deficit.*dead|romanian|rdl|rack pull|block pull|sumo|snatch.?grip|stiff.?leg|good.?morning/i.test(n)) return factors.deadlift;
+    if (/ohp|overhead|press|military|push press|btn press/i.test(n) && factors.bench) return factors.bench;
+    if (/row|barbell row|pendlay/i.test(n)) return factors.deadlift || factors.bench;
+    return null;
+  }
+
+  // Scale all weights in prescriptions
+  for (const b of blocks) {
+    for (const w of (b.weeks || [])) {
+      for (const d of (w.days || [])) {
+        for (const ex of (d.exercises || [])) {
+          const f = getFactor(ex.name);
+          if (!f || f === 1) continue;
+
+          // Scale weights in prescription string: "3x5(315)" → "3x5(1418)"
+          if (ex.prescription) {
+            ex.prescription = ex.prescription.replace(/\((\d+\.?\d*)\)/g, (match, w) => {
+              const scaled = Math.round(parseFloat(w) * f);
+              return '(' + scaled + ')';
+            });
+          }
+
+          // Scale loggedWeight if present
+          if (ex.loggedWeight) {
+            const lw = parseFloat(ex.loggedWeight);
+            if (!isNaN(lw) && lw > 0) {
+              ex.loggedWeight = String(Math.round(lw * f));
+            }
+          }
+        }
+      }
+    }
+    // Preserve original template maxes for reference
+    b.templateMaxes = tmpl;
+  }
 }
 
 function applyIntakeToBlocks(blocks, intake) {
@@ -6570,7 +5585,10 @@ function openExportModal(blockId) {
           <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts — full block</div>
         </div>
       </div>
-      <button class="export-action-btn" onclick="exportHTMLReport('${blockId}','full');closeExportModal()">Open Report</button>
+      <div style="display:flex;gap:8px">
+        <button class="export-action-btn" style="flex:1" onclick="exportHTMLReport('${blockId}','summary');closeExportModal()">Coach Summary</button>
+        <button class="export-action-btn" style="flex:1" onclick="exportHTMLReport('${blockId}','full');closeExportModal()">Full Report</button>
+      </div>
       <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:8px;letter-spacing:0.03em">Save as PDF via share sheet ↑</div>
     </div>
   </div>`;
@@ -6741,8 +5759,10 @@ function exportHTMLReport(blockId, scope) {
   }
 
   const FAMILY_COLORS = ['#C9A84C','#7B9FD4','#7EC89A','#D47B7B','#B07BD4','#D4A97B','#7BD4D4'];
+  const cs = getComputedStyle(document.documentElement);
+  const tv = (v) => cs.getPropertyValue(v).trim();
 
-  // ── Gather data by family → exercise → week ───────────────────────────────
+  // ── Gather e1RM data by family → exercise → week ─────────────────────────
   const families = { squat: {}, bench: {}, deadlift: {} };
 
   for (const [key, val] of Object.entries(blockLogs)) {
@@ -6755,7 +5775,7 @@ function exportHTMLReport(blockId, scope) {
     const si = parseInt(parts[4].slice(1));
     const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
     if (!weight || isNaN(weight) || weight <= 0) continue;
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -6769,9 +5789,15 @@ function exportHTMLReport(blockId, scope) {
     if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
   }
 
-  // ── Compliance ────────────────────────────────────────────────────────────
+  // ── Compliance + volume + RPE + rep completion ───────────────────────────
   let totalDays = 0, completedDays = 0, totalSets = 0, totalVolume = 0;
+  let totalRpe = 0, rpeCount = 0;
   const volumeByFamily = { squat: 0, bench: 0, deadlift: 0, other: 0 };
+  const volumeByWeekFamily = {}; // weekLabel -> {squat,bench,deadlift,other}
+  const rpeBuckets = { '9+': 0, '8': 0, '7': 0, '6': 0, '<=5': 0 };
+  let prescribedRepsTotal = 0, actualRepsTotal = 0;
+  const repsByFamily = { squat: { prescribed: 0, actual: 0 }, bench: { prescribed: 0, actual: 0 }, deadlift: { prescribed: 0, actual: 0 } };
+  let overrideCount = 0, checkedSetCount = 0;
 
   for (const week of weeks) {
     for (const day of (week.days || [])) {
@@ -6779,227 +5805,475 @@ function exportHTMLReport(blockId, scope) {
       if (isDayComplete(block, week, day)) completedDays++;
     }
   }
+
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    if (!val.done) continue;
+    checkedSetCount++;
     const exName = parts[3];
     const si = parseInt(parts[4].slice(1));
     const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
-    if (!weight || isNaN(weight) || weight <= 0) continue;
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
-    if (!reps || isNaN(reps)) continue;
-    totalSets++;
-    totalVolume += weight * reps;
-    const group = classifyLift(exName) || 'other';
-    volumeByFamily[group] = (volumeByFamily[group] || 0) + weight * reps;
+    const prescReps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const actualReps = val.actualReps ? parseInt(val.actualReps) : prescReps;
+    if (weight && !isNaN(weight) && weight > 0 && actualReps) {
+      totalSets++;
+      const vol = weight * actualReps;
+      totalVolume += vol;
+      const group = classifyLift(exName) || 'other';
+      volumeByFamily[group] = (volumeByFamily[group] || 0) + vol;
+      const wl = parts[1];
+      if (!volumeByWeekFamily[wl]) volumeByWeekFamily[wl] = { squat: 0, bench: 0, deadlift: 0, other: 0 };
+      volumeByWeekFamily[wl][group] = (volumeByWeekFamily[wl][group] || 0) + vol;
+
+      // Rep completion tracking
+      if (prescReps) {
+        prescribedRepsTotal += prescReps;
+        actualRepsTotal += actualReps;
+        if (repsByFamily[group]) {
+          repsByFamily[group].prescribed += prescReps;
+          repsByFamily[group].actual += actualReps;
+        }
+        if (val.actualReps) overrideCount++;
+      }
+    }
+    // RPE tracking
+    if (val.rpe) {
+      const r = parseFloat(val.rpe);
+      if (!isNaN(r)) {
+        totalRpe += r; rpeCount++;
+        if (r >= 9) rpeBuckets['9+']++;
+        else if (r >= 8) rpeBuckets['8']++;
+        else if (r >= 7) rpeBuckets['7']++;
+        else if (r >= 6) rpeBuckets['6']++;
+        else rpeBuckets['<=5']++;
+      }
+    }
   }
+
   const compliancePct = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
+  const avgRpe = rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : '—';
 
-  // ── Weekly completion dots ────────────────────────────────────────────────
-  let weekGridHtml = '';
-  for (const week of weeks) {
-    const daysDone = week.days.filter(d => isDayComplete(block, week, d)).length;
-    const allDone = daysDone === week.days.length;
-    const dots = week.days.map(d => `<span class="day-dot${isDayComplete(block,week,d)?' done':''}"></span>`).join('');
-    weekGridHtml += `<div class="week-row">
-      <span class="week-row-label">${week.label}</span>
-      <span class="week-row-dots">${dots}</span>
-      <span class="week-row-count${allDone?' all-done':''}">${daysDone}/${week.days.length}</span>
-    </div>`;
-  }
-
-  // ── Family sections — chart + compact table ───────────────────────────────
-  const chartInits = [];
-  let familySectionsHtml = '';
-  let anyData = false;
-
-  for (const [groupKey, groupLabel] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+  // ── Best comp lift e1RM per family ──────────────────────────────────────
+  function getBestCompVariation(groupKey) {
     const exercises = families[groupKey];
-    const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
-    if (!exNames.length) continue;
-    anyData = true;
+    const exNames = Object.keys(exercises);
+    if (!exNames.length) return null;
+    // Rank: comp lift > any variation
+    const compNames = exNames.filter(n => isCompLift(n));
+    const primary = compNames.length ? compNames[0] : exNames[0];
+    // Best e1RM across all weeks for primary
+    let bestWeek = null, bestE1rm = 0;
+    for (const [wl, data] of Object.entries(exercises[primary])) {
+      if (data.e1rm > bestE1rm) { bestE1rm = data.e1rm; bestWeek = wl; }
+    }
+    // First and last week e1RM for delta
+    const allWeeks = Object.keys(exercises[primary]).sort((a, b) => sessionOrder(a) - sessionOrder(b));
+    const firstWeek = allWeeks[0];
+    const lastWeek = allWeeks[allWeeks.length - 1];
+    const startE1rm = exercises[primary][firstWeek]?.e1rm || 0;
+    const endE1rm = exercises[primary][lastWeek]?.e1rm || 0;
+    const bestData = exercises[primary][bestWeek];
+    return {
+      name: primary, bestE1rm: Math.round(bestE1rm),
+      startE1rm: Math.round(startE1rm), endE1rm: Math.round(endE1rm),
+      delta: Math.round(endE1rm - startE1rm),
+      bestWeight: bestData?.topWeight, bestReps: bestData?.topReps, bestRpe: bestData?.topRpe
+    };
+  }
 
-    const allWeekLabels = [...new Set(
-      exNames.flatMap(n => Object.keys(exercises[n]))
-    )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
+  const compLifts = {
+    squat: getBestCompVariation('squat'),
+    bench: getBestCompVariation('bench'),
+    deadlift: getBestCompVariation('deadlift')
+  };
 
-    // Best e1RM across all variations
-    const bestE1rm = Math.max(...exNames.flatMap(n =>
-      Object.values(exercises[n]).map(w => w.e1rm)
-    ));
+  // ── Estimated total + DOTS/Wilks ─────────────────────────────────────────
+  const estTotal = (compLifts.squat?.bestE1rm || 0) + (compLifts.bench?.bestE1rm || 0) + (compLifts.deadlift?.bestE1rm || 0);
+  const athlete = loadAthlete();
+  let dotsScore = null, wilksScore = null;
+  if (athlete?.bodyweight && athlete?.gender && estTotal > 0) {
+    const bwKg = athlete.bwUnit === 'kg' ? athlete.bodyweight : athlete.bodyweight / 2.20462;
+    const totalKg = estTotal / 2.20462;
+    dotsScore = calcDOTS(bwKg, totalKg, athlete.gender);
+    wilksScore = calcWilks(bwKg, totalKg, athlete.gender);
+  }
 
-    // Legend
-    const legendHtml = exNames.map((n, i) => {
-      const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
-      return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${n}</span>`;
-    }).join('');
+  // ── Weekly top sets table ────────────────────────────────────────────────
+  function getWeeklyTopSet(groupKey, weekLabel) {
+    const exercises = families[groupKey];
+    let best = null;
+    for (const [exName, weekData] of Object.entries(exercises)) {
+      const d = weekData[weekLabel];
+      if (d && (!best || d.e1rm > best.e1rm)) {
+        best = { ...d, exName };
+      }
+    }
+    return best;
+  }
 
-    // Chart datasets
-    const datasets = exNames.map((n, i) => {
-      const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
-      const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
-      return {
-        label: n, data,
-        borderColor: color,
-        backgroundColor: 'transparent',
-        fill: false,
-        pointBackgroundColor: color,
-        pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface-1').trim()||'#111',
-        pointBorderWidth: 1.5,
-        pointRadius: 4, pointHoverRadius: 6,
-        tension: 0.3, spanGaps: true,
-        borderWidth: 2
-      };
-    });
+  const weekLabels = weeks.map(w => w.label);
 
-    const chartId = 'chart_' + groupKey;
-    chartInits.push({ id: chartId, labels: allWeekLabels, datasets });
+  // Find peak week (highest combined e1RM across all 3 families)
+  let peakWeekLabel = null, peakWeekTotal = 0;
+  for (const wl of weekLabels) {
+    const s = getWeeklyTopSet('squat', wl)?.e1rm || 0;
+    const b = getWeeklyTopSet('bench', wl)?.e1rm || 0;
+    const d = getWeeklyTopSet('deadlift', wl)?.e1rm || 0;
+    const total = s + b + d;
+    if (total > peakWeekTotal) { peakWeekTotal = total; peakWeekLabel = wl; }
+  }
 
-    // Compact summary table — one row per variation, just peak e1RM + best set
-    let summaryRows = '';
-    exNames.forEach((n, i) => {
-      const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
-      const weekData = Object.values(exercises[n]);
-      const peak = weekData.reduce((best, w) => w.e1rm > best.e1rm ? w : best, weekData[0]);
-      const peakE1rm = Math.round(peak.e1rm);
-      const badge = peak.method === 'rpe'
-        ? '<span class="badge rpe-badge">RPE</span>'
-        : '<span class="badge est-badge">EST</span>';
-      summaryRows += `<tr>
-        <td><span class="var-dot" style="background:${color}"></span>${n}</td>
-        <td class="num">${peakE1rm} lbs ${badge}</td>
-        <td class="muted">${peak.topWeight}×${peak.topReps}${peak.topRpe ? ' @' + peak.topRpe : ''}</td>
-      </tr>`;
-    });
+  // ── Rep completion — hide if < 20% of checked sets have overrides ────────
+  const showRepCompletion = checkedSetCount > 0 && (overrideCount / checkedSetCount) >= 0.2;
+  const repCompletionPct = prescribedRepsTotal > 0 ? Math.round(actualRepsTotal / prescribedRepsTotal * 100) : 0;
 
-    familySectionsHtml += `
-    <div class="family-section">
-      <div class="family-header">
-        <span class="family-name">${groupLabel}</span>
-        <span class="family-peak">${Math.round(bestE1rm)} lbs est. 1RM</span>
-      </div>
-      <div class="legend">${legendHtml}</div>
-      <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
-      <table class="summary-table">
-        <thead><tr><th>Variation</th><th>Peak Est. 1RM</th><th>Best Set</th></tr></thead>
-        <tbody>${summaryRows}</tbody>
-      </table>
+  // ── BUILD HTML ───────────────────────────────────────────────────────────
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const athleteName = block.athleteName || athlete?.name || '';
+
+  // ── Comp lift cards HTML ─────────────────────────────────────────────────
+  const liftCardColors = { squat: '#C9A84C', bench: '#7B9FD4', deadlift: '#7EC89A' };
+  const liftCardLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
+  let compCardsHtml = '';
+  for (const gk of ['squat', 'bench', 'deadlift']) {
+    const cl = compLifts[gk];
+    const color = liftCardColors[gk];
+    const label = liftCardLabels[gk];
+    if (!cl) {
+      compCardsHtml += `<div class="comp-card"><div class="comp-card-border" style="background:${color}"></div><div class="comp-card-label">${label}</div><div class="comp-card-val">—</div></div>`;
+      continue;
+    }
+    const deltaSign = cl.delta > 0 ? '+' : cl.delta < 0 ? '' : '';
+    const deltaColor = cl.delta > 0 ? '#4ade80' : cl.delta < 0 ? '#f87171' : '#555';
+    const deltaArrow = cl.delta > 0 ? '↑' : cl.delta < 0 ? '↓' : '→';
+    compCardsHtml += `<div class="comp-card">
+      <div class="comp-card-border" style="background:${color}"></div>
+      <div class="comp-card-label">${label}</div>
+      <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> lbs</span></div>
+      <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} lbs</div>
+      <div class="comp-card-divider"></div>
+      <div class="comp-card-best-label">Best Set</div>
+      <div class="comp-card-best">${cl.bestWeight}×${cl.bestReps}${cl.bestRpe ? ' @' + cl.bestRpe : ''}</div>
     </div>`;
   }
 
-  // ── Chart init script ─────────────────────────────────────────────────────
-  const chartScript = chartInits.map(c => `
+  // ── Weekly top sets table HTML ───────────────────────────────────────────
+  let weeklyTableHtml = '';
+  for (const wl of weekLabels) {
+    const isPeak = wl === peakWeekLabel;
+    const rowClass = isPeak ? ' class="peak-week"' : '';
+    let cells = `<td class="week-col">${wl}</td>`;
+    for (const gk of ['squat', 'bench', 'deadlift']) {
+      const ts = getWeeklyTopSet(gk, wl);
+      if (ts) {
+        const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
+        cells += `<td>${ts.topWeight}×${ts.topReps}${rpeStr}</td>`;
+      } else {
+        cells += '<td class="no-data">—</td>';
+      }
+    }
+    weeklyTableHtml += `<tr${rowClass}>${cells}</tr>`;
+  }
+
+  // ── Volume chart data ────────────────────────────────────────────────────
+  const volChartLabels = weekLabels;
+  const volChartData = {
+    squat: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.squat || 0) / 1000)),
+    bench: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.bench || 0) / 1000)),
+    deadlift: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.deadlift || 0) / 1000)),
+    other: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.other || 0) / 1000))
+  };
+
+  // ── Stat pills HTML ─────────────────────────────────────────────────────
+  const totalPrescribed = (() => {
+    let t = 0;
+    for (const week of weeks) for (const day of (week.days || [])) for (const ex of (day.exercises || [])) {
+      const sets = parseSets(ex.prescription);
+      t += sets.length || 0;
+    }
+    return t;
+  })();
+
+  // ── Intensity distribution HTML ──────────────────────────────────────────
+  const rpeBucketColors = { '9+': '#f87171', '8': '#C9A84C', '7': '#C9A84C', '6': '#7B9FD4', '<=5': '#555' };
+  let intensityHtml = '';
+  if (rpeCount > 0) {
+    intensityHtml = '<div class="section-card"><div class="section-title">Intensity Distribution</div>';
+    for (const [label, count] of Object.entries(rpeBuckets)) {
+      const pct = Math.round(count / rpeCount * 100);
+      const displayLabel = label === '<=5' ? '≤ RPE 5' : `RPE ${label}`;
+      intensityHtml += `<div class="intensity-row">
+        <div class="intensity-label">${displayLabel}</div>
+        <div class="intensity-bar-wrap"><div class="intensity-bar-fill" style="width:${pct}%;background:${rpeBucketColors[label]}"></div></div>
+        <div class="intensity-pct">${pct}%</div>
+      </div>`;
+    }
+    intensityHtml += '</div>';
+  }
+
+  // ── Rep completion HTML ──────────────────────────────────────────────────
+  let repCompletionHtml = '';
+  if (showRepCompletion) {
+    repCompletionHtml = `<div class="section-card">
+      <div class="section-title">Rep Completion</div>
+      <div class="rep-overall">${repCompletionPct}<span class="rep-overall-pct">%</span></div>
+      <div class="rep-overall-label">of prescribed reps completed</div>`;
+    for (const [gk, label, color] of [['squat','Squat','#C9A84C'],['bench','Bench','#7B9FD4'],['deadlift','Deadlift','#7EC89A']]) {
+      const fd = repsByFamily[gk];
+      const pct = fd.prescribed > 0 ? Math.round(fd.actual / fd.prescribed * 100) : 0;
+      repCompletionHtml += `<div class="intensity-row">
+        <div class="intensity-label">${label}</div>
+        <div class="intensity-bar-wrap"><div class="intensity-bar-fill" style="width:${Math.min(pct, 100)}%;background:${color}"></div></div>
+        <div class="intensity-pct">${pct}%</div>
+      </div>`;
+    }
+    repCompletionHtml += '</div>';
+  }
+
+  // ── Page 2: Lift Progressions ────────────────────────────────────────────
+  const chartInits = [];
+  let progressionHtml = '';
+  if (scope === 'full') {
+    for (const [groupKey, groupLabel] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+      const exercises = families[groupKey];
+      const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
+      if (!exNames.length) continue;
+
+      const allWeekLabels = [...new Set(
+        exNames.flatMap(n => Object.keys(exercises[n]))
+      )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
+
+      const bestE1rm = Math.max(...exNames.flatMap(n =>
+        Object.values(exercises[n]).map(w => w.e1rm)
+      ));
+
+      const chartId = 'chart_' + groupKey;
+      const datasets = exNames.map((n, i) => {
+        const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
+        const isComp = isCompLift(n);
+        const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
+        return {
+          label: n, data,
+          borderColor: color, backgroundColor: 'transparent', fill: false,
+          pointBackgroundColor: color,
+          pointBorderColor: tv('--bg') || '#0a0a0a',
+          pointBorderWidth: 1.5,
+          pointRadius: isComp ? 4 : 3, pointHoverRadius: 6,
+          tension: 0.3, spanGaps: true,
+          borderWidth: isComp ? 2.5 : 1.5,
+          borderDash: isComp ? [] : [],
+          order: isComp ? 0 : 1
+        };
+      });
+      chartInits.push({ id: chartId, labels: allWeekLabels, datasets });
+
+      let varListHtml = exNames.map((n, i) => {
+        const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
+        const peakE1rm = Math.max(...Object.values(exercises[n]).map(w => w.e1rm));
+        return `<div class="prog-var-row"><span class="prog-var-dot" style="background:${color}"></span><span class="prog-var-name">${n}</span><span class="prog-var-peak">${Math.round(peakE1rm)} lbs</span></div>`;
+      }).join('');
+
+      progressionHtml += `<div class="prog-card">
+        <div class="prog-header">
+          <span class="prog-label">${groupLabel.toUpperCase()}</span>
+          <span class="prog-e1rm-badge">${Math.round(bestE1rm)} lbs e1RM</span>
+        </div>
+        <div class="prog-chart-wrap"><canvas id="${chartId}"></canvas></div>
+        <div class="prog-var-list">${varListHtml}</div>
+      </div>`;
+    }
+  }
+
+  // ── Chart.js init scripts ────────────────────────────────────────────────
+  const volChartScript = `
+  new Chart(document.getElementById('volChart'), {
+    type: 'bar',
+    data: {
+      labels: ${JSON.stringify(volChartLabels)},
+      datasets: [
+        { label:'Squat', data:${JSON.stringify(volChartData.squat)}, backgroundColor:'#C9A84C', borderRadius:2 },
+        { label:'Bench', data:${JSON.stringify(volChartData.bench)}, backgroundColor:'#7B9FD4', borderRadius:2 },
+        { label:'Deadlift', data:${JSON.stringify(volChartData.deadlift)}, backgroundColor:'#7EC89A', borderRadius:2 },
+        { label:'Other', data:${JSON.stringify(volChartData.other)}, backgroundColor:'#555', borderRadius:2 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'${tv('--surface-2')||'#141414'}', borderColor:'${tv('--border')||'#222'}', borderWidth:1,
+          titleColor:'#888', bodyColor:'#ccc', padding:8,
+          callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + 'k lbs' }
+        }
+      },
+      scales:{
+        x:{stacked:true, ticks:{color:'#555',font:{family:'Barlow Condensed',size:10}}, grid:{display:false}, border:{display:false}},
+        y:{stacked:true, ticks:{color:'#444',font:{family:'Barlow Condensed',size:10}, callback:v=>v+'k'}, grid:{color:'${tv('--surface-3')||'#1a1a1a'}'}, border:{display:false}}
+      }
+    }
+  });`;
+
+  const lineChartScripts = chartInits.map(c => `
   new Chart(document.getElementById('${c.id}'), {
     type: 'line',
     data: { labels: ${JSON.stringify(c.labels)}, datasets: ${JSON.stringify(c.datasets)} },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-bg').trim()||'#141414', borderColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-bdr').trim()||'#2a2a2a', borderWidth: 1,
-          titleColor: '#888', bodyColor: '#ccc', padding: 8,
-          callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' lbs' }
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'${tv('--surface-2')||'#141414'}', borderColor:'${tv('--border')||'#222'}', borderWidth:1,
+          titleColor:'#888', bodyColor:'#ccc', padding:8,
+          callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' lbs' }
         }
       },
-      scales: {
-        x: { ticks: { color: '#444', font: { family: 'Barlow Condensed', size: 10 } }, grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--surface-3').trim()||'#1a1a1a' }, border: { color: getComputedStyle(document.documentElement).getPropertyValue('--surface-3').trim()||'#1a1a1a' } },
-        y: { ticks: { color: '#444', font: { family: 'Barlow Condensed', size: 10 } }, grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--surface-3').trim()||'#1a1a1a' }, border: { color: getComputedStyle(document.documentElement).getPropertyValue('--surface-3').trim()||'#1a1a1a' } }
+      scales:{
+        x:{ticks:{color:'#555',font:{family:'Barlow Condensed',size:10}}, grid:{color:'${tv('--surface-3')||'#1a1a1a'}'}, border:{color:'${tv('--surface-3')||'#1a1a1a'}'}},
+        y:{ticks:{color:'#444',font:{family:'Barlow Condensed',size:10}}, grid:{color:'${tv('--surface-3')||'#1a1a1a'}'}, border:{color:'${tv('--surface-3')||'#1a1a1a'}'}}
       }
     }
   });`).join('\n');
 
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  // ── Estimated total card HTML ────────────────────────────────────────────
+  let estTotalHtml = '';
+  if (estTotal > 0) {
+    const rightSide = (dotsScore && wilksScore) ? `
+      <div class="est-total-scores">
+        <div class="est-total-score-row"><span class="est-total-score-label">DOTS</span><span class="est-total-score-val">${dotsScore.toFixed(1)}</span></div>
+        <div class="est-total-score-row"><span class="est-total-score-label">Wilks</span><span class="est-total-score-val">${wilksScore.toFixed(1)}</span></div>
+        ${athlete?.bodyweight ? `<div class="est-total-bw">${athlete.bodyweight} ${athlete.bwUnit || 'lbs'} BW</div>` : ''}
+      </div>` : '';
+    estTotalHtml = `<div class="est-total-card">
+      <div class="est-total-left">
+        <div class="est-total-label">Estimated Total</div>
+        <div class="est-total-val">${estTotal}<span class="est-total-unit"> lbs</span></div>
+      </div>
+      ${rightSide}
+    </div>`;
+  }
 
-  // ── HTML ──────────────────────────────────────────────────────────────────
-  const cs = getComputedStyle(document.documentElement);
-  const tv = (v) => cs.getPropertyValue(v).trim();
+  // ── Volume legend ────────────────────────────────────────────────────────
+  const volLegendHtml = [['Squat','#C9A84C'],['Bench','#7B9FD4'],['Deadlift','#7EC89A'],['Other','#555']].map(([l,c]) =>
+    `<span class="vol-legend-item"><span class="vol-legend-dot" style="background:${c}"></span>${l}</span>`
+  ).join('');
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FINAL HTML
+  // ══════════════════════════════════════════════════════════════════════════
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${block.name} — Training Report</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:${tv('--bg')};color:${tv('--text-primary')||'#f0f0f0'};font-family:Barlow,sans-serif;-webkit-font-smoothing:antialiased}
-.report{max-width:720px;margin:0 auto;padding:28px 20px 80px}
+html{background:${tv('--bg')||'#0a0a0a'}}
+body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'};font-family:Barlow,sans-serif;-webkit-font-smoothing:antialiased}
+.report{max-width:480px;margin:0 auto;padding:24px 16px 80px}
 
 /* Header */
-.rpt-header{margin-bottom:20px}
-.rpt-logo{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#C9A84C;text-transform:uppercase;margin-bottom:6px}
-.rpt-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:1;letter-spacing:.02em;margin-bottom:4px}
-.rpt-meta{font-size:12px;color:var(--text-faint);display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.rpt-hdr{margin-bottom:20px}
+.rpt-brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#C9A84C;text-transform:uppercase;margin-bottom:8px}
+.rpt-athlete{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;line-height:1;letter-spacing:.02em;text-transform:uppercase;margin-bottom:2px}
+.rpt-block{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#C9A84C;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.rpt-meta{font-size:12px;color:${tv('--text-faint')||'#666'};display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.rpt-meta span+span::before{content:'·';margin-right:6px}
 .compliance-row{display:flex;align-items:center;gap:10px}
-.compliance-track{flex:1;height:3px;background:${tv('--surface-3')};border-radius:2px}
+.compliance-track{flex:1;height:4px;background:${tv('--surface-3')||'#1a1a1a'};border-radius:2px}
 .compliance-fill{height:100%;background:#4ade80;border-radius:2px}
-.compliance-label{font-size:11px;color:var(--text-faint);white-space:nowrap}
+.compliance-label{font-size:11px;color:${tv('--text-faint')||'#666'};white-space:nowrap}
 
-/* Stats row */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 20px}
-.stat-chip{background:${tv('--surface-2')};border:1px solid ${tv('--surface-5')};border-radius:10px;padding:10px 12px}
-.stat-chip-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px}
-.stat-chip-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:#fff;line-height:1}
-.stat-chip-unit{font-size:11px;font-weight:400;color:var(--text-faint)}
+/* Estimated Total */
+.est-total-card{display:flex;justify-content:space-between;align-items:center;background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.est-total-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
+.est-total-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:1;color:${tv('--text-primary')||'#f0f0f0'}}
+.est-total-unit{font-size:16px;font-weight:600;color:${tv('--text-faint')||'#666'}}
+.est-total-scores{text-align:right}
+.est-total-score-row{display:flex;justify-content:flex-end;align-items:baseline;gap:6px;margin-bottom:2px}
+.est-total-score-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'}}
+.est-total-score-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#C9A84C}
+.est-total-bw{font-size:10px;color:${tv('--text-dim')||'#555'};margin-top:2px}
 
-/* Family sections */
-.families{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.family-section{background:linear-gradient(160deg,${tv('--grad-start')} 0%,${tv('--grad-mid')} 60%,${tv('--grad-end')} 100%);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden}
-.family-header{display:flex;align-items:baseline;justify-content:space-between;padding:12px 12px 0}
-.family-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:.02em}
-.family-peak{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:#C9A84C}
-.legend{display:flex;flex-wrap:wrap;gap:6px 10px;padding:6px 12px 4px}
-.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#666;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em}
-.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.chart-wrap{height:130px;padding:4px 8px 8px}
+/* Comp lift cards */
+.comp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.comp-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:12px 10px;position:relative;overflow:hidden}
+.comp-card-border{height:3px;border-radius:2px;margin-bottom:8px}
+.comp-card-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
+.comp-card-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:24px;line-height:1;margin-bottom:2px}
+.comp-card-unit{font-size:12px;font-weight:600;color:${tv('--text-faint')||'#666'}}
+.comp-card-delta{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;margin-bottom:6px}
+.comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:6px}
+.comp-card-best-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:1px}
+.comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;color:${tv('--text-faint')||'#888'}}
 
-/* Summary table */
-.summary-table{width:100%;border-collapse:collapse;font-size:11px;border-top:1px solid ${tv('--surface-3')}}
-.summary-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dimmer);padding:6px 12px;text-align:left}
-.summary-table td{padding:5px 12px;border-top:1px solid ${tv('--surface-1')};color:#aaa;vertical-align:middle}
-.summary-table tr:last-child td{padding-bottom:10px}
-.var-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle;flex-shrink:0}
-.num{color:#ddd;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600}
-.muted{color:var(--text-dim)!important}
-.badge{font-size:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;border-radius:3px;padding:1px 3px;vertical-align:middle;margin-left:2px}
-.rpe-badge{background:rgba(201,168,76,.15);color:#C9A84C;border:1px solid rgba(201,168,76,.25)}
-.est-badge{background:${tv('--surface-3')};color:var(--text-dim);border:1px solid ${tv('--border-2')}}
+/* Weekly top sets */
+.section-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:12px}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:10px}
+.weekly-table{width:100%;border-collapse:collapse;font-size:11px}
+.weekly-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};padding:4px 6px;text-align:left;border-bottom:1px solid ${tv('--border')||'#222'}}
+.weekly-table td{padding:5px 6px;color:${tv('--text-faint')||'#888'};font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:500;border-bottom:1px solid ${tv('--surface-1')||'#111'}}
+.weekly-table .week-col{color:${tv('--text-sub')||'#999'};font-weight:700;width:50px}
+.weekly-table .no-data{color:${tv('--text-dim')||'#444'}}
+.weekly-table .rpe-dim{font-size:10px;color:${tv('--text-dim')||'#555'}}
+.weekly-table tr.peak-week td{color:#C9A84C}
+.weekly-table tr.peak-week .rpe-dim{color:rgba(201,168,76,.6)}
 
-/* Bottom row — compliance grid + footer */
-.bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.week-grid{background:${tv('--surface-2')};border:1px solid ${tv('--surface-5')};border-radius:12px;padding:10px 14px}
-.week-grid-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
-.week-row{display:flex;align-items:center;gap:8px;padding:3px 0}
-.week-row-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:var(--text-faint);width:28px;flex-shrink:0}
-.week-row-dots{display:flex;gap:4px;flex:1}
-.day-dot{width:8px;height:8px;border-radius:50%;background:${tv('--surface-5')};flex-shrink:0}
-.day-dot.done{background:#4ade80}
-.week-row-count{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--text-dim);width:24px;text-align:right}
-.week-row-count.all-done{color:#4ade80}
+/* Volume chart */
+.vol-legend{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.vol-legend-item{display:flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;color:${tv('--text-faint')||'#666'};letter-spacing:.04em}
+.vol-legend-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.vol-chart-wrap{height:160px}
 
-.vol-grid{background:${tv('--surface-2')};border:1px solid ${tv('--surface-5')};border-radius:12px;padding:10px 14px}
-.vol-grid-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
-.vol-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid ${tv('--surface-1')}}
-.vol-row:last-child{border-bottom:none}
-.vol-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--text-faint);width:60px;flex-shrink:0}
-.vol-bar-wrap{flex:1;height:4px;background:${tv('--surface-3')};border-radius:2px;overflow:hidden}
-.vol-bar-fill{height:100%;border-radius:2px}
-.vol-val{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#777;width:48px;text-align:right;flex-shrink:0}
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-pill{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px 12px}
+.stat-pill-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
+.stat-pill-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;line-height:1}
+.stat-pill-sub{font-size:11px;font-weight:500;color:${tv('--text-faint')||'#666'}}
 
-.rpt-footer{margin-top:14px;font-size:10px;color:var(--text-dimmer);display:flex;justify-content:space-between}
+/* Intensity + rep completion */
+.intensity-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.intensity-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${tv('--text-faint')||'#888'};width:54px;flex-shrink:0}
+.intensity-bar-wrap{flex:1;height:6px;background:${tv('--surface-3')||'#1a1a1a'};border-radius:3px;overflow:hidden}
+.intensity-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.intensity-pct{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${tv('--text-dim')||'#555'};width:32px;text-align:right;flex-shrink:0}
+.rep-overall{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:40px;color:#4ade80;line-height:1;margin-bottom:2px}
+.rep-overall-pct{font-size:20px;font-weight:700}
+.rep-overall-label{font-size:11px;color:${tv('--text-faint')||'#666'};margin-bottom:10px}
+
+/* Page 2 — Progressions */
+.page-2{${scope === 'full' ? 'page-break-before:always;padding-top:20px' : 'display:none'}}
+.prog-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;overflow:hidden;margin-bottom:14px}
+.prog-header{display:flex;justify-content:space-between;align-items:center;padding:14px 14px 0}
+.prog-label{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:.02em;text-transform:uppercase}
+.prog-e1rm-badge{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#C9A84C;background:rgba(201,168,76,.1);padding:3px 8px;border-radius:6px}
+.prog-chart-wrap{height:180px;padding:8px 10px}
+.prog-var-list{padding:8px 14px 12px;border-top:1px solid ${tv('--border')||'#222'}}
+.prog-var-row{display:flex;align-items:center;gap:6px;padding:3px 0}
+.prog-var-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.prog-var-name{font-size:12px;color:${tv('--text-faint')||'#888'};flex:1}
+.prog-var-peak{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:${tv('--text-sub')||'#aaa'}}
+
+/* Footer */
+.rpt-footer{margin-top:16px;font-size:10px;color:${tv('--text-dim')||'#444'};display:flex;justify-content:space-between}
+
+/* Save button */
+.save-btn{position:fixed;bottom:20px;right:20px;background:#C9A84C;color:#000;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.4)}
 
 /* Print */
-.save-btn{position:fixed;bottom:20px;right:20px;background:#C9A84C;color:#000;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;z-index:100}
 @media print{
   .save-btn{display:none}
-  .report{padding:12px;max-width:100%}
-  html,body{background:${tv('--bg')}}
+  .report{padding:10px;max-width:100%}
+  html,body{background:${tv('--bg')||'#0a0a0a'}}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .family-section{break-inside:avoid}
-  .bottom-row{break-inside:avoid}
-  @page{size:portrait;margin:10mm}
+  .comp-card,.section-card,.stat-pill,.prog-card{break-inside:avoid}
+  .vol-chart-wrap,.prog-chart-wrap{break-inside:avoid}
+  @page{size:portrait;margin:8mm}
 }
 </style>
 </head>
@@ -7007,80 +6281,89 @@ html,body{background:${tv('--bg')};color:${tv('--text-primary')||'#f0f0f0'};font
 <div class="report">
 
   <!-- Header -->
-  <div class="rpt-header">
-    <div class="rpt-logo">PowerliftingLog · Coach Report</div>
-    <div class="rpt-title">${block.name}</div>
+  <div class="rpt-hdr">
+    <div class="rpt-brand">PowerliftingLog</div>
+    ${athleteName ? `<div class="rpt-athlete">${athleteName}</div>` : ''}
+    <div class="rpt-block">${block.name}</div>
     <div class="rpt-meta">
-      <span>${block.weeks.length}-Week Block</span>
       <span>${block.dateRange || ''}</span>
-      ${block.athleteName ? `<span>${block.athleteName}</span>` : ''}
-      <span>Generated ${dateStr}</span>
+      <span>${weeks.length} weeks</span>
+      <span>${completedDays} sessions</span>
     </div>
     <div class="compliance-row">
       <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
-      <div class="compliance-label">${compliancePct}% compliance · ${completedDays}/${totalDays} days</div>
+      <div class="compliance-label">${compliancePct}% compliance</div>
     </div>
   </div>
 
-  <!-- Stats row -->
-  <div class="stats-row">
-    <div class="stat-chip">
-      <div class="stat-chip-label">Total Volume</div>
-      <div class="stat-chip-val">${Math.round(totalVolume/1000)}k<span class="stat-chip-unit"> lbs</span></div>
+  <!-- Estimated Total -->
+  ${estTotalHtml}
+
+  <!-- Comp Lift Cards -->
+  <div class="comp-cards">${compCardsHtml}</div>
+
+  <!-- Weekly Top Sets -->
+  <div class="section-card">
+    <div class="section-title">Weekly Top Sets</div>
+    <table class="weekly-table">
+      <thead><tr><th>Week</th><th>Squat</th><th>Bench</th><th>Deadlift</th></tr></thead>
+      <tbody>${weeklyTableHtml}</tbody>
+    </table>
+  </div>
+
+  <!-- Volume by Lift Family -->
+  <div class="section-card">
+    <div class="section-title">Volume by Lift Family</div>
+    <div class="vol-legend">${volLegendHtml}</div>
+    <div class="vol-chart-wrap"><canvas id="volChart"></canvas></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-pill">
+      <div class="stat-pill-label">Total Volume</div>
+      <div class="stat-pill-val">${totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}<span class="stat-pill-sub"> lbs</span></div>
     </div>
-    <div class="stat-chip">
-      <div class="stat-chip-label">Sets Completed</div>
-      <div class="stat-chip-val">${totalSets}</div>
+    <div class="stat-pill">
+      <div class="stat-pill-label">Sets Completed</div>
+      <div class="stat-pill-val">${totalSets}${totalPrescribed ? '<span class="stat-pill-sub"> of ' + totalPrescribed + '</span>' : ''}</div>
     </div>
-    <div class="stat-chip">
-      <div class="stat-chip-label">Training Days</div>
-      <div class="stat-chip-val">${completedDays}<span class="stat-chip-unit"> / ${totalDays}</span></div>
+    <div class="stat-pill">
+      <div class="stat-pill-label">Avg RPE</div>
+      <div class="stat-pill-val">${avgRpe}</div>
     </div>
-    <div class="stat-chip">
-      <div class="stat-chip-label">Compliance</div>
-      <div class="stat-chip-val">${compliancePct}<span class="stat-chip-unit">%</span></div>
+    <div class="stat-pill">
+      <div class="stat-pill-label">Training Days</div>
+      <div class="stat-pill-val">${completedDays}<span class="stat-pill-sub"> / ${totalDays}</span></div>
     </div>
   </div>
 
-  <!-- Three family charts side by side -->
-  <div class="families">
-    ${anyData ? familySectionsHtml : '<div style="color:var(--text-dimmer);font-size:13px;padding:20px;text-align:center">No logged data found.</div>'}
-  </div>
+  <!-- Intensity Distribution -->
+  ${intensityHtml}
 
-  <!-- Bottom row: weekly completion + volume breakdown -->
-  <div class="bottom-row">
-    <div class="week-grid">
-      <div class="week-grid-title">Weekly Completion</div>
-      ${weekGridHtml}
-    </div>
-    <div class="vol-grid">
-      <div class="vol-grid-title">Volume by Family</div>
-      ${[
-        ['Squat','#C9A84C',volumeByFamily.squat||0],
-        ['Bench','#7B9FD4',volumeByFamily.bench||0],
-        ['Deadlift','#7EC89A',volumeByFamily.deadlift||0],
-        ['Other','#444',volumeByFamily.other||0]
-      ].map(([label,color,vol])=>{
-        const pct = totalVolume > 0 ? Math.round(vol/totalVolume*100) : 0;
-        const k = Math.round(vol/1000);
-        return `<div class="vol-row">
-          <div class="vol-label">${label}</div>
-          <div class="vol-bar-wrap"><div class="vol-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-          <div class="vol-val">${k}k lbs</div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>
+  <!-- Rep Completion -->
+  ${repCompletionHtml}
 
+  <!-- Footer P1 -->
   <div class="rpt-footer">
     <span>PowerliftingLog</span>
     <span>${dateStr}</span>
   </div>
 
+  <!-- Page 2: Lift Progressions -->
+  <div class="page-2">
+    ${progressionHtml}
+    <div class="rpt-footer">
+      <span>PowerliftingLog</span>
+      <span>${dateStr}</span>
+    </div>
+  </div>
+
 </div>
 <button class="save-btn" onclick="setTimeout(()=>window.print(),300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save as PDF</button>
 <script>
-${chartScript}
+${volChartScript}
+${lineChartScripts}
 <\/script>
 </body>
 </html>`;
@@ -7088,6 +6371,7 @@ ${chartScript}
   const blob = new Blob([html], { type: 'text/html' });
   window.open(URL.createObjectURL(blob), '_blank');
 }
+
 
 // ── TEMPLATE DOWNLOAD ─────────────────────────────────────────────────────────
 const TEMPLATE_XLSX_B64 = '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';
