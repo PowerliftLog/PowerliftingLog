@@ -251,7 +251,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .max-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.07em; text-transform: uppercase; margin-top: 4px; }
 .max-delta-badge { position:absolute;top:6px;right:6px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;padding:2px 5px;border-radius:6px;line-height:1.2;transition:opacity 0.2s; }
 .max-delta-badge.up { background:rgba(76,175,80,0.15);color:#4CAF50; }
-.max-delta-badge.down { background:rgba(239,83,80,0.15);color:#ef5350; }
+.max-delta-badge.down { background:rgba(226,44,44,0.15);color:#E22C2C; }
 .max-item.expanded .max-delta-badge { opacity:0; }
 .max-tested-drawer { max-height:0;overflow:hidden;transition:max-height 0.25s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;opacity:0; }
 .max-item.expanded .max-tested-drawer { max-height:60px;opacity:1; }
@@ -260,7 +260,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .max-tested-val { font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text-sub); }
 .max-tested-delta { font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700; }
 .max-tested-delta.up { color:#4CAF50; }
-.max-tested-delta.down { color:#ef5350; }
+.max-tested-delta.down { color:#E22C2C; }
 .max-tested-label { font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;text-align:center;padding-top:2px;padding-bottom:2px; }
 
 /* DOTS/Wilks on metrics page */
@@ -391,7 +391,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .custom-ex-actions { display: flex; gap: 8px; margin-top: 2px; }
 .custom-ex-action-btn { background: none; border: none; cursor: pointer; font-size: 11px; font-family: 'Barlow', sans-serif; font-weight: 600; letter-spacing: 0.04em; padding: 3px 0; transition: opacity 0.15s; }
 .custom-ex-action-btn.edit { color: var(--gold); opacity: 0.8; }
-.custom-ex-action-btn.delete { color: #f87171; opacity: 0.7; }
+.custom-ex-action-btn.delete { color: #E22C2C; opacity: 0.7; }
 .custom-ex-action-btn:active { opacity: 1; }
 /* Custom exercise modal */
 .custom-ex-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1100; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
@@ -404,7 +404,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .custom-ex-input { width: 100%; background: var(--surface-3); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 15px; padding: 10px 12px; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
 .custom-ex-input:focus { border-color: rgba(201,168,76,0.5); }
 .custom-ex-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.custom-ex-error { font-size: 12px; color: #f87171; margin-bottom: 12px; display: none; }
+.custom-ex-error { font-size: 12px; color: #E22C2C; margin-bottom: 12px; display: none; }
 .custom-ex-error.visible { display: block; }
 .custom-ex-save-btn { display: block; width: 100%; padding: 14px; background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4); border-radius: 10px; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; margin-top: 4px; }
 .custom-ex-save-btn:active { background: rgba(201,168,76,0.25); }
@@ -414,7 +414,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .delete-ex-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-primary); margin-bottom: 6px; }
 .delete-ex-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
 .delete-ex-btn { display: block; width: 100%; padding: 14px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; margin-bottom: 10px; }
-.delete-ex-btn.danger { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.35); color: #f87171; }
+.delete-ex-btn.danger { background: rgba(226,44,44,0.12); border: 1px solid rgba(226,44,44,0.35); color: #E22C2C; }
 .delete-ex-btn.single { background: var(--surface-3); border: 1px solid var(--border); color: var(--text-sub); }
 .delete-ex-btn:active { opacity: 0.75; }
 
@@ -773,7 +773,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-summary-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
 .week-summary-lift-set .rpe-val { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
 .week-summary-lift-set .var-label { font-size: 11px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
-.week-summary-lift-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 100px; background: rgba(var(--gold-rgb),0.1); color: rgba(201,168,76,0.7); border: 1px solid rgba(var(--gold-rgb),0.15); flex-shrink: 0; }
+.week-summary-lift-e1rm { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; min-width: 44px; }
+.week-summary-e1rm-val { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 800; color: var(--gold); line-height: 1; }
+.week-summary-e1rm-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; line-height: 1; margin-top: 1px; }
 .week-summary-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border-2); }
 .week-summary-stat { text-align: center; }
 .week-summary-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
@@ -868,7 +870,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-sheets-input { flex: 1; background: var(--surface-3); border: 1px solid var(--border-3); border-radius: 8px; padding: 10px 12px; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-primary); outline: none; min-width: 0; box-sizing: border-box; }
 .upload-sheets-input:focus { border-color: var(--gold); }
 .upload-sheets-import-btn { background: var(--gold); color: #000; border: none; border-radius: 8px; padding: 10px 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; cursor: pointer; opacity: 0.4; pointer-events: none; white-space: nowrap; transition: opacity 0.15s; }
-.upload-sheets-error { margin-top: 8px; font-size: 12px; color: #f87171; font-family: 'Barlow', sans-serif; }
+.upload-sheets-error { margin-top: 8px; font-size: 12px; color: #E22C2C; font-family: 'Barlow', sans-serif; }
 
 /* Format example viewer */
 .format-example-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: flex-end; justify-content: center; }
@@ -933,7 +935,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .program-select-btn { font-size: 11px; padding: 5px 12px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; cursor: pointer; letter-spacing: 0.04em; }
 .program-select-btn.current { border-color: var(--gold); color: var(--gold); }
 .program-delete-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 8px 10px; transition: color 0.15s; line-height: 1; }
-.program-delete-btn:active { color: #f87171; }
+.program-delete-btn:active { color: #E22C2C; }
 .export-scope-picker { display: none; gap: 6px; margin-top: 6px; padding: 6px 0 2px; }
 .export-scope-btn { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: none; color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
 .export-scope-btn:hover { border-color: var(--gold); color: var(--gold); }
@@ -979,7 +981,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .rm-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--gold-data); }
 .rm-delta { font-size: 12px; margin-left: 6px; }
 .rm-delta.up { color: #4ade80; }
-.rm-delta.down { color: #f87171; }
+.rm-delta.down { color: #E22C2C; }
 
 /* Add lift button */
 .add-lift-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 17px; letter-spacing: 0.04em; cursor: pointer; margin-bottom: 16px; transition: all 0.15s; }
@@ -1055,7 +1057,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-plate-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: var(--text-primary); }
 .calc-plate-count { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--text-muted); }
 .calc-bar-note { font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 8px; font-style: italic; }
-.calc-no-solution { font-size: 14px; color: #f87171; text-align: center; padding: 16px 0; }
+.calc-no-solution { font-size: 14px; color: #E22C2C; text-align: center; padding: 16px 0; }
 /* Manual mode plate grid */
 .calc-plates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .calc-plate-row { display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 5px 6px; min-width: 0; }
@@ -1067,7 +1069,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-stepper-val { width: 32px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--gold-data); }
 .calc-stepper-val.zero { color: var(--text-dimmer); }
 .calc-reset-btn { width: 100%; padding: 12px; background: none; border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; color: var(--text-faint); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
-.calc-reset-btn:active { border-color: #f87171; color: #f87171; }
+.calc-reset-btn:active { border-color: #E22C2C; color: #E22C2C; }
 .calc-bar-selector { display: flex; gap: 8px; margin-bottom: 16px; }
 .calc-bar-btn { flex: 1; padding: 10px 8px; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; background: rgba(0,0,0,0.2); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.04em; cursor: pointer; text-align: center; transition: all 0.15s; line-height: 1.3; }
 .calc-bar-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
@@ -1435,7 +1437,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
             IMPORT
           </button>
         </div>
-        <div id="sheets-url-error" style="display:none;margin-top:8px;font-size:12px;color:#f87171;font-family:'Barlow',sans-serif"></div>
+        <div id="sheets-url-error" style="display:none;margin-top:8px;font-size:12px;color:#E22C2C;font-family:'Barlow',sans-serif"></div>
       </div>
 
       <!-- Google Drive import -->
@@ -1464,13 +1466,13 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <!-- Delete Confirm Modal -->
 <div class="add-lift-modal" id="delete-modal" style="display:none;z-index:400" onclick="if(event.target===this)closeDeleteModal()">
   <div class="add-lift-sheet">
-    <div class="add-lift-title" style="color:#f87171">Delete Program?</div>
+    <div class="add-lift-title" style="color:#E22C2C">Delete Program?</div>
     <div style="font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:20px">
       This will permanently delete <strong id="delete-modal-name" style="color:var(--text-primary)"></strong> and all logged workout data for this cycle. This cannot be undone.
     </div>
     <div class="add-lift-actions">
       <button class="add-lift-cancel" onclick="closeDeleteModal()">Cancel</button>
-      <button id="delete-confirm-btn" class="add-lift-confirm" style="background:#f87171;color:#000" onclick="confirmDeleteBlock()">Delete Forever</button>
+      <button id="delete-confirm-btn" class="add-lift-confirm" style="background:#E22C2C;color:#000" onclick="confirmDeleteBlock()">Delete Forever</button>
     </div>
   </div>
 </div>
@@ -3609,7 +3611,7 @@ function renderHome() {
       liftRowsHtml += '<div class="week-summary-lift-row">'
         + '<div class="week-summary-lift-name">' + label + '</div>'
         + '<div class="week-summary-lift-set">' + data.reps + '×' + data.weight + 'lb' + rpeStr + varStr + '</div>'
-        + '<div class="week-summary-lift-badge">e1RM</div>'
+        + '<div class="week-summary-lift-e1rm"><div class="week-summary-e1rm-val">' + Math.round(data.e1rm) + '</div><div class="week-summary-e1rm-label">e1RM</div></div>'
         + '</div>';
     }
 
@@ -4462,7 +4464,7 @@ function clearWorkout(){
   overlay.onclick=(e)=>{if(e.target===overlay)overlay.remove();};
   overlay.innerHTML=`
   <div class="delete-ex-sheet">
-    <div class="delete-ex-title" style="color:#f87171">Clear Workout Data?</div>
+    <div class="delete-ex-title" style="color:#E22C2C">Clear Workout Data?</div>
     <div class="delete-ex-desc">${msg}</div>
     <button class="delete-ex-btn danger" onclick="confirmClearWorkout()">Clear All Data</button>
     <button class="delete-ex-btn single" onclick="document.getElementById('clear-workout-overlay').remove()">Cancel</button>
@@ -6250,7 +6252,7 @@ function exportHTMLReport(blockId, scope) {
       continue;
     }
     const deltaSign = cl.delta > 0 ? '+' : cl.delta < 0 ? '' : '';
-    const deltaColor = cl.delta > 0 ? '#4ade80' : cl.delta < 0 ? '#f87171' : '#555';
+    const deltaColor = cl.delta > 0 ? '#4ade80' : cl.delta < 0 ? '#E22C2C' : '#555';
     const deltaArrow = cl.delta > 0 ? '↑' : cl.delta < 0 ? '↓' : '→';
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-border" style="background:${color}"></div>
@@ -6302,7 +6304,7 @@ function exportHTMLReport(blockId, scope) {
   })();
 
   // ── Intensity distribution HTML ──────────────────────────────────────────
-  const rpeBucketColors = { '9+': '#f87171', '8': '#C9A84C', '7': '#C9A84C', '6': '#7B9FD4', '<=5': '#555' };
+  const rpeBucketColors = { '9+': '#E22C2C', '8': '#C9A84C', '7': '#C9A84C', '6': '#7B9FD4', '<=5': '#555' };
   let intensityHtml = '';
   if (rpeCount > 0) {
     intensityHtml = '<div class="section-card"><div class="section-title">Intensity Distribution</div>';
@@ -6838,7 +6840,7 @@ function showParseError(errorType, details) {
 
   card.innerHTML = `
     <div class="parse-error-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#E22C2C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48">
         <circle cx="12" cy="12" r="10"/>
         <line x1="12" y1="8" x2="12" y2="12"/>
         <line x1="12" y1="16" x2="12.01" y2="16"/>
