@@ -6047,7 +6047,10 @@ function exportHTMLReport(blockId, scope) {
         exNames.flatMap(n => Object.keys(exercises[n]))
       )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
 
-      const bestE1rm = Math.max(...exNames.flatMap(n =>
+      // Prefer comp lift e1RM for the badge; fall back to best variation
+      const compExNames = exNames.filter(n => isCompLift(n));
+      const badgeSource = compExNames.length ? compExNames : exNames;
+      const bestE1rm = Math.max(...badgeSource.flatMap(n =>
         Object.values(exercises[n]).map(w => w.e1rm)
       ));
 
@@ -6077,10 +6080,11 @@ function exportHTMLReport(blockId, scope) {
         return `<div class="prog-var-row"><span class="prog-var-dot" style="background:${color}"></span><span class="prog-var-name">${n}</span><span class="prog-var-peak">${Math.round(peakE1rm)} lbs</span></div>`;
       }).join('');
 
+      const badgeLabel = compExNames.length ? '' : ` (${badgeSource[0]})`;
       progressionHtml += `<div class="prog-card">
         <div class="prog-header">
           <span class="prog-label">${groupLabel.toUpperCase()}</span>
-          <span class="prog-e1rm-badge">${Math.round(bestE1rm)} lbs e1RM</span>
+          <span class="prog-e1rm-badge">${Math.round(bestE1rm)} lbs e1RM${badgeLabel}</span>
         </div>
         <div class="prog-chart-wrap"><canvas id="${chartId}"></canvas></div>
         <div class="prog-var-list">${varListHtml}</div>
