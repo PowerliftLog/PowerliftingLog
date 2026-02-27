@@ -4992,9 +4992,7 @@ function closeImportIntent() {
 function renderIntakeStep() {
   const body = document.getElementById('import-intake-body');
   if (_intakeStep === 1) renderIntakeStep1(body);
-  else if (_intakeStep === 2) renderIntakeStep2(body);
-  else if (_intakeStep === 3) renderIntakeStep3(body);
-  else renderIntakeStep4(body);
+  else renderIntakeStep2(body);
   // scroll sheet to top
   body.closest('.intake-sheet').scrollTop = 0;
 }
@@ -5002,6 +5000,7 @@ function renderIntakeStep() {
 // ── Step 1: Program Type ──────────────────────────────────────────────────
 function renderIntakeStep1(body) {
   const blocks = _pendingImportBlocks || [];
+  const b0 = blocks[0] || {};
   const names = blocks.map(b => b.name || b.id).join(', ');
   const existingBlocks = state.blocks || [];
   const showMerge = existingBlocks.length > 0;
@@ -5009,10 +5008,23 @@ function renderIntakeStep1(body) {
     `<option value="${b.id}">${b.name || b.id}</option>`
   ).join('');
 
+  // Pre-populate 1RM and date fields
+  const ath = loadAthlete() || {};
+  const preMaxS = b0.maxes?.squat || ath.tested1rm_squat || '';
+  const preMaxB = b0.maxes?.bench || ath.tested1rm_bench || '';
+  const preMaxD = b0.maxes?.deadlift || ath.tested1rm_deadlift || '';
+  const isHistorical = _importIntent === 'history';
+  let preDate = '';
+  if (isHistorical && b0.dateRange) {
+    const m = b0.dateRange.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m) { let yr = parseInt(m[3]); if (yr < 100) yr += 2000; preDate = yr + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0'); }
+  }
+  if (!preDate && _importIntent === 'active') preDate = new Date().toISOString().split('T')[0];
+
   body.innerHTML = `
     <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Import Program</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px">${esc(names)}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Program</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${esc(names)}</div>
     </div>
     <div class="intake-section-label">What is this program?</div>
     <div class="import-intent-card${_importIntent==='active'?' selected':''}" id="import-card-active" onclick="selectImportIntent('active')">
@@ -5044,70 +5056,8 @@ function renderIntakeStep1(body) {
       <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
       <select id="import-merge-target" class="intake-field-input">${mergeOpts}</select>
     </div>` : ''}
-    <button class="import-confirm-btn" onclick="intakeNext()">Next</button>
-  `;
-}
 
-function selectImportIntent(intent) {
-  _importIntent = intent;
-  renderIntakeStep(); // re-render step 1 with new selection
-}
-
-// ── Step 2: Your Info ─────────────────────────────────────────────────────
-function renderIntakeStep2(body) {
-  const blocks = _pendingImportBlocks || [];
-  const b0 = blocks[0] || {};
-
-  // Pre-populate: first from parsed block, then from existing athlete profile
-  const ath = loadAthlete() || {};
-  const preName = b0.athleteName || ath.name || '';
-  const preBw = ath.bodyweight || '';
-  const preBwUnit = ath.bwUnit || 'lbs';
-  const preGender = ath.gender || '';
-  const preMaxS = b0.maxes?.squat || '';
-  const preMaxB = b0.maxes?.bench || '';
-  const preMaxD = b0.maxes?.deadlift || '';
-
-  // Start date: for historical, try dateRange; for active, default today
-  let preDate = '';
-  if (_importIntent === 'history' && b0.dateRange) {
-    const m = b0.dateRange.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-    if (m) {
-      let yr = parseInt(m[3]); if (yr < 100) yr += 2000;
-      preDate = yr + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0');
-    }
-  }
-  if (!preDate && _importIntent === 'active') {
-    preDate = new Date().toISOString().split('T')[0];
-  }
-
-  const isHistorical = _importIntent === 'history';
-
-  body.innerHTML = `
-    <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Your Info</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px">Used for DOTS scoring and reports</div>
-    </div>
-
-    <div class="intake-section-label">Athlete</div>
-    <div class="intake-field">
-      <label class="intake-field-label">Name</label>
-      <input class="intake-field-input" id="intake-name" placeholder="Your name" value="${esc(preName)}">
-    </div>
-    <div class="intake-bw-row">
-      <div class="intake-field">
-        <label class="intake-field-label">Bodyweight</label>
-        <input class="intake-field-input" id="intake-bw" type="number" inputmode="decimal" placeholder="—" value="${preBw}">
-      </div>
-      <button class="intake-unit-toggle" id="intake-bw-unit" onclick="this.textContent=this.textContent==='lbs'?'kg':'lbs'" style="align-self:flex-end;padding:10px 14px;background:var(--surface-5);border:1px solid var(--border-3);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);cursor:pointer;letter-spacing:0.06em;min-width:44px;text-align:center">${esc(preBwUnit)}</button>
-    </div>
-    <div class="intake-field-label" style="margin-bottom:6px">Gender</div>
-    <div class="intake-gender-row">
-      <button class="intake-gender-btn${preGender==='male'?' selected':''}" id="intake-gender-male" onclick="intakeSetGender('male')">Male</button>
-      <button class="intake-gender-btn${preGender==='female'?' selected':''}" id="intake-gender-female" onclick="intakeSetGender('female')">Female</button>
-    </div>
-
-    <div class="intake-section-label">Tested 1RM (lbs)</div>
+    <div class="intake-section-label">Tested 1RM (optional)</div>
     <div class="intake-maxes-row">
       <div class="intake-field">
         <label class="intake-field-label">Squat</label>
@@ -5134,79 +5084,22 @@ function renderIntakeStep2(body) {
       </div>
     </div>` : ''}
 
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button class="colmap-btn-secondary" style="flex:1" onclick="intakeBack()">Back</button>
-      <button class="import-confirm-btn" style="flex:2;margin:0" onclick="intakeNext()">Review</button>
-    </div>
-    <div class="intake-skip-link" onclick="intakeNext()">Skip — use defaults</div>
+    <button class="import-confirm-btn" onclick="intakeNext()">Review Program</button>
   `;
 }
 
-function intakeSetGender(g) {
-  document.getElementById('intake-gender-male').classList.toggle('selected', g === 'male');
-  document.getElementById('intake-gender-female').classList.toggle('selected', g === 'female');
+function selectImportIntent(intent) {
+  _importIntent = intent;
+  renderIntakeStep(); // re-render step 1 with new selection
 }
 
-// ── Step 3: Review & Import ───────────────────────────────────────────────
-function renderIntakeStep3(body) {
-  const blocks = _pendingImportBlocks || [];
-  const b0 = blocks[0] || {};
-  const intake = readIntakeFields();
-
-  const intentLabels = { active: 'Start New Program', history: 'Historical Data', merge: 'Add to Existing' };
-  let mergeTargetName = '';
-  if (_importIntent === 'merge' && _intakeMergeTarget) {
-    const mt = (state.blocks || []).find(b => b.id === _intakeMergeTarget);
-    if (mt) mergeTargetName = mt.name || mt.id;
-  }
-  const weekCount = blocks.reduce((max, b) => Math.max(max, b.weeks?.length || 0), 0);
-  const dayCount = b0.weeks?.[0]?.days?.length || 0;
-  const totalEx = blocks.reduce((sum, b) => sum + (b.weeks || []).reduce((ws, w) =>
-    ws + (w.days || []).reduce((ds, d) => ds + (d.exercises || []).length, 0), 0), 0);
-
-  const rows = [
-    ['Type', intentLabels[_importIntent] || _importIntent],
-    mergeTargetName ? ['Merging Into', mergeTargetName] : null,
-    intake.name ? ['Athlete', intake.name] : null,
-    intake.gender ? ['Gender', intake.gender.charAt(0).toUpperCase() + intake.gender.slice(1)] : null,
-    intake.bodyweight ? ['Bodyweight', intake.bodyweight + ' ' + intake.bwUnit] : null,
-    intake.maxSquat ? ['Squat 1RM', intake.maxSquat + ' lbs'] : null,
-    intake.maxBench ? ['Bench 1RM', intake.maxBench + ' lbs'] : null,
-    intake.maxDeadlift ? ['Deadlift 1RM', intake.maxDeadlift + ' lbs'] : null,
-    intake.startDate ? ['Start Date', formatIntakeDate(intake.startDate)] : null,
-    ['Program', b0.name || b0.id || 'Untitled'],
-    ['Weeks', weekCount],
-    ['Days/Week', dayCount],
-    ['Total Exercises', totalEx],
-  ].filter(Boolean);
-
-  body.innerHTML = `
-    <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Review Import</div>
-    </div>
-    <div style="background:var(--surface-3);border-radius:12px;overflow:hidden;margin:16px 0">
-      ${rows.map(([label, val]) => `
-        <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
-          <span style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub)">${esc(label)}</span>
-          <span style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);font-weight:600">${esc(String(val))}</span>
-        </div>
-      `).join('')}
-    </div>
-    <div style="display:flex;gap:10px">
-      <button class="colmap-btn-secondary" style="flex:1" onclick="intakeBack()">Back</button>
-      <button class="import-confirm-btn" style="flex:2;margin:0" onclick="intakeNext()">Next</button>
-    </div>
-  `;
-}
-
-// ── Step 4: Program Review ───────────────────────────────────────────────
-function renderIntakeStep4(body) {
+// ── Step 2: Review Week 1 ─────────────────────────────────────────────────
+function renderIntakeStep2(body) {
   const blocks = _pendingImportBlocks || [];
   const b0 = blocks[0] || {};
   const week1 = b0.weeks?.[0];
 
   if (!week1 || !week1.days?.length) {
-    // Edge case: no week data — skip review
     confirmImportIntent();
     return;
   }
@@ -5234,8 +5127,8 @@ function renderIntakeStep4(body) {
 
   body.innerHTML = `
     <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em">Review Week 1</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px">Check that your exercises and prescriptions look right</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Review Week 1</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">Check that your exercises and prescriptions look right</div>
     </div>
     <div class="review-day-list">
       ${dayCardsHtml}
@@ -5259,6 +5152,8 @@ function renderIntakeStep4(body) {
   `;
 }
 
+// ── (Steps 3 & 4 consolidated into Step 2 above) ────────────────────────
+
 function showReviewHelp() {
   const el = document.getElementById('review-help-msg');
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -5271,16 +5166,15 @@ function formatIntakeDate(iso) {
 }
 
 function readIntakeFields() {
-  // Read from Step 2 fields if they exist, else from last-read cache
-  const nameEl = document.getElementById('intake-name');
-  if (nameEl) {
+  // Read 1RM and date from step 1 fields if they exist
+  const maxSEl = document.getElementById('intake-max-s');
+  if (maxSEl) {
+    const ath = loadAthlete() || {};
     _intakeCache = {
-      name: nameEl.value.trim(),
-      bodyweight: parseFloat(document.getElementById('intake-bw')?.value) || 0,
-      bwUnit: document.getElementById('intake-bw-unit')?.textContent || 'lbs',
-      gender: document.getElementById('intake-gender-male')?.classList.contains('selected') ? 'male'
-            : document.getElementById('intake-gender-female')?.classList.contains('selected') ? 'female'
-            : '',
+      name: ath.name || '',
+      bodyweight: ath.bodyweight || 0,
+      bwUnit: ath.bwUnit || 'lbs',
+      gender: ath.gender || '',
       maxSquat: parseInt(document.getElementById('intake-max-s')?.value) || 0,
       maxBench: parseInt(document.getElementById('intake-max-b')?.value) || 0,
       maxDeadlift: parseInt(document.getElementById('intake-max-d')?.value) || 0,
@@ -5297,15 +5191,11 @@ let _intakeMergeTarget = null;
 
 function intakeNext() {
   if (_intakeStep === 1) {
-    // Cache merge target from step 1 before leaving
+    // Cache merge target and fields from step 1 before leaving
     const mergeEl = document.getElementById('import-merge-target');
     if (mergeEl) _intakeMergeTarget = mergeEl.value;
+    readIntakeFields();
     _intakeStep = 2;
-  } else if (_intakeStep === 2) {
-    readIntakeFields(); // cache values before switching
-    _intakeStep = 3;
-  } else if (_intakeStep === 3) {
-    _intakeStep = 4;
   } else {
     confirmImportIntent();
     return;
@@ -5314,9 +5204,7 @@ function intakeNext() {
 }
 
 function intakeBack() {
-  if (_intakeStep === 4) { _intakeStep = 3; }
-  else if (_intakeStep === 3) { readIntakeFields(); _intakeStep = 2; }
-  else if (_intakeStep === 2) { readIntakeFields(); _intakeStep = 1; }
+  if (_intakeStep === 2) { _intakeStep = 1; }
   renderIntakeStep();
 }
 
@@ -6898,7 +6786,7 @@ function showOnboardingStep(step) {
         <svg viewBox="0 0 28 40" fill="var(--gold)" width="56" height="80"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       </div>
       <div class="onboard-title">Powerlift Pro</div>
-      <div class="onboard-sub">Your training program, formatted for the platform.</div>
+      <div class="onboard-sub">Log it. Track it. Lift it.</div>
       <div class="onboard-features">
         <div class="onboard-feature">
           <div class="onboard-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></div>
@@ -6934,8 +6822,8 @@ function showOnboardingStep(step) {
     _onboardGender = athlete.gender || null;
     _onboardUnit = athlete.bwUnit || 'lbs';
     body.innerHTML = `
-      <div class="onboard-title" style="font-size:26px;margin-bottom:4px">About You</div>
-      <div class="onboard-sub" style="margin-bottom:20px">Used for DOTS & Wilks scores. All fields optional.</div>
+      <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">About You</div>
+      <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Used for DOTS & Wilks scores. All fields optional.</div>
       <div class="onboard-form">
         <div class="intake-field-label">Name</div>
         <input class="intake-input" id="onboard-name" type="text" placeholder="Your name"
@@ -6967,8 +6855,8 @@ function showOnboardingStep(step) {
 
   else if (step === 3) {
     body.innerHTML = `
-      <div class="onboard-title" style="font-size:26px;margin-bottom:4px">Upload Your Program</div>
-      <div class="onboard-sub" style="margin-bottom:24px">Get your coach's program into the app.</div>
+      <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</div>
+      <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training program.</div>
       ${renderUploadOptions('ob-')}
       <button class="onboard-skip-btn" onclick="finishOnboarding()" style="margin-top:12px">I'll do this later</button>
     `;
