@@ -601,147 +601,7 @@ function parseBSheet(sn,rows){
   return{label:sn,days};
 }
 
-// ── TEMPLATE MAX EXTRACTION ──────────────────────────────────────────────────
-function extractTemplateMaxes(wb){
-  const XLSX = typeof require !== 'undefined' ? require('xlsx') : window.XLSX;
-  const maxes = { squat: null, bench: null, deadlift: null };
 
-  function isNum(v){ return typeof v === 'number' && isFinite(v) && v > 20; }
-
-  const ABBREVS = { dl:'deadlift', sq:'squat', bp:'bench' };
-  function liftCat(name){
-    const n = name.toLowerCase().trim().replace(/[:\s]+$/,'');
-    if (ABBREVS[n]) return ABBREVS[n];
-    return classifyLift(name);
-  }
-
-  function assign(lift, val){
-    const cat = liftCat(lift);
-    if (cat && (cat === 'squat' || cat === 'bench' || cat === 'deadlift')) {
-      if (maxes[cat] === null) maxes[cat] = val;
-    }
-  }
-
-  function getRows(sn, limit){
-    const ws = wb.Sheets[sn];
-    if (!ws) return [];
-    const json = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
-    return json.slice(0, limit || json.length);
-  }
-
-  function done(){ return maxes.squat !== null && maxes.bench !== null && maxes.deadlift !== null; }
-  function found(){ return [maxes.squat, maxes.bench, maxes.deadlift].filter(v => v !== null).length >= 2; }
-
-  // Strategy A: Dedicated max/input sheet
-  const maxSheetNames = ['max','maxes','input','inputs','start here','1. start here'];
-  for (const sn of wb.SheetNames) {
-    if (!maxSheetNames.includes(sn.toLowerCase().trim())) continue;
-    const rows = getRows(sn, 25);
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      for (let c = 0; c < row.length; c++) {
-        const cell = row[c];
-        if (typeof cell !== 'string') continue;
-        const cat = liftCat(cell);
-        if (!cat || (cat !== 'squat' && cat !== 'bench' && cat !== 'deadlift')) continue;
-        // Look right for a number
-        for (let cc = c + 1; cc < Math.min(c + 4, row.length); cc++) {
-          if (isNum(row[cc])) { assign(cell, row[cc]); break; }
-        }
-        // Look left for a number (less common)
-        if (maxes[cat] === null) {
-          for (let cc = c - 1; cc >= Math.max(c - 3, 0); cc--) {
-            if (isNum(row[cc])) { assign(cell, row[cc]); break; }
-          }
-        }
-      }
-    }
-    if (found()) return done() ? maxes : (maxes.squat !== null || maxes.bench !== null || maxes.deadlift !== null) ? maxes : null;
-  }
-  if (found()) return maxes;
-
-  // Strategy B: Row with "1RM" or "Max" label + lift names in adjacent rows
-  for (const sn of wb.SheetNames) {
-    const rows = getRows(sn, 15);
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      // B1: "1RM" in col 0 — header row above or lift/value rows below
-      const firstStr = String(row[0] || '').toLowerCase().trim();
-      if (firstStr === '1rm') {
-        if (r > 0 && rows[r - 1]) {
-          const hdr = rows[r - 1];
-          for (let c = 1; c < Math.min(row.length, hdr.length); c++) {
-            if (typeof hdr[c] === 'string' && isNum(row[c])) assign(hdr[c], row[c]);
-          }
-        }
-        for (let rr = r + 1; rr < Math.min(r + 6, rows.length); rr++) {
-          const below = rows[rr];
-          if (!below) continue;
-          if (typeof below[0] === 'string' && isNum(below[1])) assign(below[0], below[1]);
-        }
-        if (found()) return maxes;
-      }
-      // B2: "1RM" in non-zero columns — lift names in rows below at col offset
-      for (let c = 1; c < row.length; c++) {
-        const cell = String(row[c] || '').toLowerCase().trim();
-        if (cell !== '1rm') continue;
-        for (let rr = r + 1; rr < Math.min(r + 5, rows.length); rr++) {
-          const below = rows[rr];
-          if (!below) continue;
-          // Lift name a few cols before the "1RM" column, value at the "1RM" column
-          for (let cc = Math.max(0, c - 4); cc < c; cc++) {
-            if (typeof below[cc] === 'string' && liftCat(below[cc]) && isNum(below[c])) {
-              assign(below[cc], below[c]); break;
-            }
-          }
-        }
-        if (done()) return maxes;
-      }
-      // B3: "Max" column header — lift name nearby in same row below, value at "Max" col
-      for (let c = 1; c < row.length; c++) {
-        const cell = String(row[c] || '').toLowerCase().trim();
-        if (cell !== 'max') continue;
-        for (let rr = r + 1; rr < Math.min(r + 4, rows.length); rr++) {
-          const below = rows[rr];
-          if (!below) continue;
-          // Scan backwards from "Max" col to find the nearest lift name
-          for (let cc = c - 1; cc >= Math.max(0, c - 5); cc--) {
-            if (typeof below[cc] === 'string' && liftCat(below[cc]) && isNum(below[c])) {
-              assign(below[cc], below[c]); break;
-            }
-          }
-        }
-        if (done()) return maxes;
-      }
-    }
-  }
-  if (found()) return maxes;
-
-  // Strategy C: nSuns inline row with "1rm" or "training max" text
-  for (const sn of wb.SheetNames) {
-    const rows = getRows(sn, 20);
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      const hasRM = row.some(c => typeof c === 'string' && (/1rm/i.test(c) || /training\s*max/i.test(c)));
-      if (!hasRM) continue;
-      // Scan for lift name followed by a number
-      for (let c = 0; c < row.length - 1; c++) {
-        if (typeof row[c] !== 'string') continue;
-        const cat = liftCat(row[c]);
-        if (!cat || (cat !== 'squat' && cat !== 'bench' && cat !== 'deadlift')) continue;
-        for (let cc = c + 1; cc < Math.min(c + 3, row.length); cc++) {
-          if (isNum(row[cc])) { assign(row[c], row[cc]); break; }
-        }
-      }
-      if (found()) return maxes;
-    }
-  }
-
-  return found() ? maxes : null;
-}
 
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
 function parseWorkbook(wb){
@@ -755,12 +615,6 @@ function parseWorkbook(wb){
   else if (fmt === 'D') blocks = parseD(wb);
   else blocks = parseB(wb);
 
-  const maxes = extractTemplateMaxes(wb);
-  if (maxes && blocks) {
-    for (const block of blocks) {
-      block.templateMaxes = maxes;
-    }
-  }
   return blocks;
 }
 
@@ -3024,7 +2878,7 @@ if (typeof module !== 'undefined' && module.exports) {
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
     DAYS, detectFormat, detectE, detectF, detectG,
     parseA, parseASheet, parseB, parseBSheet,
-    parseWorkbook, extractTemplateMaxes,
+    parseWorkbook,
     parseE, parseE_nSuns, parseE_tabular, parseE_phaseGrid, parseE_weekText, parseE_cycleWeek, parseE_parallel531,
     parseF, parseF_stride3, parseF_stride15, parseF_stride6, parseF_pctLoad, parseF_stride1,
     parseG, _gBuildExercise,

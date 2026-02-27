@@ -4714,10 +4714,6 @@ function renderIntakeStep2(body) {
   const preMaxB = b0.maxes?.bench || '';
   const preMaxD = b0.maxes?.deadlift || '';
 
-  // Template program detection — Lift Vault programs have placeholder 1RMs
-  const tmplMaxes = b0.templateMaxes || {};
-  const hasTemplatMaxes = !!(tmplMaxes.squat || tmplMaxes.bench || tmplMaxes.deadlift);
-
   // Start date: for historical, try dateRange; for active, default today
   let preDate = '';
   if (_importIntent === 'history' && b0.dateRange) {
@@ -4757,30 +4753,19 @@ function renderIntakeStep2(body) {
       <button class="intake-gender-btn${preGender==='female'?' selected':''}" id="intake-gender-female" onclick="intakeSetGender('female')">Female</button>
     </div>
 
-    ${hasTemplatMaxes ? `
-    <div style="margin:16px 0 12px;padding:12px 14px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:12px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.06em;margin-bottom:6px">⚡ TEMPLATE PROGRAM</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);line-height:1.5">This program uses placeholder weights. Enter your actual maxes below and all weights will be scaled automatically.</div>
-      <div style="display:flex;gap:12px;margin-top:8px">
-        ${tmplMaxes.squat ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:var(--text-dim)">Template S: '+tmplMaxes.squat+'</div>' : ''}
-        ${tmplMaxes.bench ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:var(--text-dim)">Template B: '+tmplMaxes.bench+'</div>' : ''}
-        ${tmplMaxes.deadlift ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:var(--text-dim)">Template D: '+tmplMaxes.deadlift+'</div>' : ''}
-      </div>
-    </div>` : ''}
-
-    <div class="intake-section-label">${hasTemplatMaxes ? 'Your Actual Maxes' : 'Current Maxes (lbs)'}</div>
+    <div class="intake-section-label">Current Maxes (lbs)</div>
     <div class="intake-maxes-row">
       <div class="intake-field">
         <label class="intake-field-label">Squat</label>
-        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="${hasTemplatMaxes ? 'Required' : '—'}" value="${preMaxS}">
+        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="—" value="${preMaxS}">
       </div>
       <div class="intake-field">
         <label class="intake-field-label">Bench</label>
-        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="${hasTemplatMaxes ? 'Required' : '—'}" value="${preMaxB}">
+        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="—" value="${preMaxB}">
       </div>
       <div class="intake-field">
         <label class="intake-field-label">Deadlift</label>
-        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="${hasTemplatMaxes ? 'Required' : '—'}" value="${preMaxD}">
+        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="—" value="${preMaxD}">
       </div>
     </div>
 
@@ -4831,9 +4816,9 @@ function renderIntakeStep3(body) {
     intake.name ? ['Athlete', intake.name] : null,
     intake.gender ? ['Gender', intake.gender.charAt(0).toUpperCase() + intake.gender.slice(1)] : null,
     intake.bodyweight ? ['Bodyweight', intake.bodyweight + ' ' + intake.bwUnit] : null,
-    intake.maxSquat ? ['Squat Max', intake.maxSquat + ' lbs' + (b0.templateMaxes?.squat ? ' (scaled from ' + b0.templateMaxes.squat + ')' : '')] : null,
-    intake.maxBench ? ['Bench Max', intake.maxBench + ' lbs' + (b0.templateMaxes?.bench ? ' (scaled from ' + b0.templateMaxes.bench + ')' : '')] : null,
-    intake.maxDeadlift ? ['Deadlift Max', intake.maxDeadlift + ' lbs' + (b0.templateMaxes?.deadlift ? ' (scaled from ' + b0.templateMaxes.deadlift + ')' : '')] : null,
+    intake.maxSquat ? ['Squat Max', intake.maxSquat + ' lbs'] : null,
+    intake.maxBench ? ['Bench Max', intake.maxBench + ' lbs'] : null,
+    intake.maxDeadlift ? ['Deadlift Max', intake.maxDeadlift + ' lbs'] : null,
     intake.startDate ? ['Start Date', formatIntakeDate(intake.startDate)] : null,
     ['Program', b0.name || b0.id || 'Untitled'],
     ['Weeks', weekCount],
@@ -4987,7 +4972,7 @@ function confirmImportIntent() {
 
   // Apply intake fields to blocks and athlete profile
   const intake = readIntakeFields();
-  scaleBlockWeights(blocks, intake);
+
   applyIntakeToBlocks(blocks, intake);
   applyIntakeToProfile(intake);
 
@@ -5011,63 +4996,6 @@ function confirmImportIntent() {
   _intakeCache = null;
   _intakeMergeTarget = null;
   render();
-}
-
-function scaleBlockWeights(blocks, intake) {
-  // Scale template program weights to user's actual maxes
-  const b0 = blocks[0];
-  const tmpl = b0?.templateMaxes;
-  if (!tmpl) return;
-
-  // Build scale factors for each lift family
-  const factors = {};
-  if (tmpl.squat && intake.maxSquat) factors.squat = intake.maxSquat / tmpl.squat;
-  if (tmpl.bench && intake.maxBench) factors.bench = intake.maxBench / tmpl.bench;
-  if (tmpl.deadlift && intake.maxDeadlift) factors.deadlift = intake.maxDeadlift / tmpl.deadlift;
-  if (tmpl.ohp && intake.maxBench) factors.ohp = intake.maxBench / tmpl.ohp;
-
-  if (Object.keys(factors).length === 0) return;
-
-  // Classify which scale factor applies to each exercise
-  function getFactor(exName) {
-    const n = (exName || '').toLowerCase();
-    if (/squat|front squat|pause squat|pin squat|box squat|goblet squat|zercher/i.test(n)) return factors.squat;
-    if (/bench|close.?grip|incline.*press|pause bench|floor press|board press|slingshot|larson/i.test(n)) return factors.bench;
-    if (/deadlift|dead.?lift|deficit.*dead|romanian|rdl|rack pull|block pull|sumo|snatch.?grip|stiff.?leg|good.?morning/i.test(n)) return factors.deadlift;
-    if (/ohp|overhead|press|military|push press|btn press/i.test(n) && factors.bench) return factors.bench;
-    if (/row|barbell row|pendlay/i.test(n)) return factors.deadlift || factors.bench;
-    return null;
-  }
-
-  // Scale all weights in prescriptions
-  for (const b of blocks) {
-    for (const w of (b.weeks || [])) {
-      for (const d of (w.days || [])) {
-        for (const ex of (d.exercises || [])) {
-          const f = getFactor(ex.name);
-          if (!f || f === 1) continue;
-
-          // Scale weights in prescription string: "3x5(315)" → "3x5(1418)"
-          if (ex.prescription) {
-            ex.prescription = ex.prescription.replace(/\((\d+\.?\d*)\)/g, (match, w) => {
-              const scaled = Math.round(parseFloat(w) * f);
-              return '(' + scaled + ')';
-            });
-          }
-
-          // Scale loggedWeight if present
-          if (ex.loggedWeight) {
-            const lw = parseFloat(ex.loggedWeight);
-            if (!isNaN(lw) && lw > 0) {
-              ex.loggedWeight = String(Math.round(lw * f));
-            }
-          }
-        }
-      }
-    }
-    // Preserve original template maxes for reference
-    b.templateMaxes = tmpl;
-  }
 }
 
 function applyIntakeToBlocks(blocks, intake) {
