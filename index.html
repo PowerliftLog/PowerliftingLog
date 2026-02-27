@@ -262,6 +262,18 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .max-tested-delta.up { color:#4CAF50; }
 .max-tested-delta.down { color:#ef5350; }
 .max-tested-label { font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;text-align:center;padding-top:2px;padding-bottom:2px; }
+
+/* DOTS/Wilks on metrics page */
+.metrics-scores-section { padding: 4px 16px 12px; }
+.metrics-scores-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 8px; }
+.metrics-scores-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.metrics-score-pill { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 1px; }
+.metrics-score-pill-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); }
+.metrics-score-pill-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
+.metrics-score-pill-level { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--gold-data); }
+.metrics-score-est { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 400; color: var(--text-dim); vertical-align: middle; letter-spacing: 0; }
+.metrics-score-note { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.metrics-score-total { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 400; color: var(--text-dim); letter-spacing: 0; }
 .week-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; background: rgba(255,255,255,0.01); }
 .week-bar::-webkit-scrollbar { display: none; }
 .week-pill { flex-shrink: 0; padding: 8px 20px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-muted); cursor: pointer; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
@@ -749,6 +761,25 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-score-est { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 400; color: var(--text-dim); vertical-align: middle; letter-spacing: 0; }
 .home-score-note { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
 .home-score-missing { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 5px; }
+
+/* Weekly Summary card on home */
+.home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.home-week-summary-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); }
+.home-week-summary-meta { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); }
+.week-summary-lifts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.week-summary-lift-row { display: flex; align-items: center; gap: 0; }
+.week-summary-lift-name { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); width: 76px; flex-shrink: 0; }
+.week-summary-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
+.week-summary-lift-set .rpe-val { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+.week-summary-lift-set .var-label { font-size: 11px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
+.week-summary-lift-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 100px; background: rgba(var(--gold-rgb),0.1); color: rgba(201,168,76,0.7); border: 1px solid rgba(var(--gold-rgb),0.15); flex-shrink: 0; }
+.week-summary-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border-2); }
+.week-summary-stat { text-align: center; }
+.week-summary-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
+.week-summary-stat-val .unit { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
+.week-summary-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.week-summary-empty { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); text-align: center; padding: 8px 0; }
 
 /* No-program state */
 .home-empty { text-align: center; padding: 60px 24px; }
@@ -2028,6 +2059,34 @@ function renderMetrics(){
     h += `</div>`;
   }
 
+  // ── DOTS / Wilks scores on metrics ──────────────────────────────────────
+  const showScores = getShowScores();
+  if (showScores) {
+    const _ath2 = loadAthlete();
+    const hasProfile = _ath2 && _ath2.gender && _ath2.bodyweight;
+    if (hasProfile) {
+      const scores = getScores();
+      if (scores) {
+        const missing = [
+          scores.missing.squat    ? 'Squat'    : null,
+          scores.missing.bench    ? 'Bench'    : null,
+          scores.missing.deadlift ? 'Deadlift' : null,
+        ].filter(Boolean);
+        const missingNote = missing.length
+          ? '<div class="metrics-score-note" style="font-style:italic">Est. from available lifts — missing: ' + missing.join(', ') + '</div>'
+          : '';
+        h += `<div class="metrics-scores-section">
+          <div class="metrics-scores-label">DOTS / Wilks <span class="metrics-score-total">· ${scores.total} lb total</span></div>
+          <div class="metrics-scores-row">
+            <div class="metrics-score-pill"><div class="metrics-score-pill-label">DOTS</div><div class="metrics-score-pill-val">${scores.dots?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.dots)||''}</div></div>
+            <div class="metrics-score-pill"><div class="metrics-score-pill-label">Wilks</div><div class="metrics-score-pill-val">${scores.wilks?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.wilks)||''}</div></div>
+          </div>
+          ${missingNote}
+        </div>`;
+      }
+    }
+  }
+
   let hasAnyData=false;
   for(const [groupKey,group] of Object.entries(metrics)){
     const vars=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
@@ -2729,7 +2788,7 @@ function toggleScoresSetting() {
   saveAppSettings(s);
   const t = document.getElementById('scores-toggle');
   if (t) t.classList.toggle('on', s.showScores);
-  if (state.screen === 'home') renderHome();
+  if (state.screen === 'metrics') renderMetrics();
 }
 
 
@@ -3017,6 +3076,85 @@ function getHomePRs() {
   if (peaks.bench)    out.push({ lift:'Bench',     val:peaks.bench,    unit:'lbs' });
   if (peaks.deadlift) out.push({ lift:'Deadlift',  val:peaks.deadlift, unit:'lbs' });
   return out;
+}
+
+// ── Weekly Summary (for home screen) ──────────────────────────────────────────
+function getWeeklySummary() {
+  const block = state.activeBlock;
+  if (!block || !block.weeks) return null;
+
+  const week = block.weeks[state.activeWeek] || block.weeks[0];
+  if (!week) return null;
+  const wl = week.label;
+  const bid = block.id;
+
+  // Gather all logged sets for this week
+  let totalVolume = 0, totalSets = 0, totalRpe = 0, rpeCount = 0;
+
+  // Best lift per family: { squat, bench, deadlift } → { name, weight, reps, rpe, e1rm, isVariation }
+  const bestByFamily = { squat: null, bench: null, deadlift: null };
+
+  for (const day of (week.days || [])) {
+    const dn = day.name;
+    for (const ex of (day.exercises || [])) {
+      const group = classifyLift(ex.name);
+      const isComp = isCompLift(ex.name);
+      const pres = ex.prescription || '';
+      const parsed = parseSimple(pres) || parseRangeSet(pres) || parseBarePres(pres);
+      const numSets = parsed ? (parsed.sets || 1) : 4;
+      const extraCount = state.extraSets?.[lk(bid, wl, dn, ex.name)] || 0;
+      const maxSets = numSets + extraCount + 5;
+
+      for (let si = 0; si < maxSets; si++) {
+        const setKey = lk(bid, wl, dn, ex.name) + '||s' + si;
+        const val = state.logs[setKey];
+        if (!val || !val.done) continue;
+
+        const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(bid, wl, dn, ex.name, si);
+        const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(bid, wl, dn, ex.name, si);
+        if (!weight || isNaN(weight) || weight <= 0 || !reps) continue;
+
+        totalSets++;
+        totalVolume += weight * reps;
+
+        if (val.rpe) {
+          const r = parseFloat(val.rpe);
+          if (!isNaN(r)) { totalRpe += r; rpeCount++; }
+        }
+
+        // Track best set per family (comp lift priority, variation fallback)
+        if (group && group !== 'other') {
+          const result = calc1rm(weight, reps, val.rpe ? parseFloat(val.rpe) : null);
+          if (result) {
+            const cur = bestByFamily[group];
+            const isUpgrade = !cur
+              || (isComp && cur.isVariation)  // comp lift always beats variation
+              || (isComp === !cur.isVariation && result.value > cur.e1rm); // same tier: higher e1rm wins
+            if (isUpgrade) {
+              bestByFamily[group] = {
+                name: ex.name,
+                weight, reps,
+                rpe: val.rpe ? parseFloat(val.rpe) : null,
+                e1rm: result.value,
+                isVariation: !isComp,
+                isComp
+              };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (totalSets === 0) return null;
+
+  return {
+    weekLabel: wl,
+    totalVolume,
+    totalSets,
+    avgRpe: rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null,
+    bestLifts: bestByFamily
+  };
 }
 
 // ── Session Summary (for completed-today hero card) ───────────────────────────
@@ -3443,68 +3581,57 @@ function renderHome() {
     middleRowHtml = '';
   }
 
-  // e1RM peaks + scores
-  const prs = getHomePRs();
-  const showScores = getShowScores();
-  const scores = showScores ? getScores() : null;
+  // Weekly Summary card
+  const weekSummary = getWeeklySummary();
+  let weeklySummaryHtml = '';
 
-  const noPrMsg = `<div style="font-family:Barlow,sans-serif;font-size:13px;color:var(--text-dim);text-align:center;padding:8px 0">Log sets to see projections</div>`;
+  if (weekSummary) {
+    const completedCount = (block.weeks[state.activeWeek]?.days || []).filter(d => isDayComplete(block, block.weeks[state.activeWeek], d)).length;
+    const totalDayCount = (block.weeks[state.activeWeek]?.days || []).length;
 
-  let scoresSectionHtml = '';
-  if (showScores) {
-    const athlete = loadAthlete();
-    const hasProfile = athlete && athlete.gender && athlete.bodyweight;
-    if (!hasProfile) {
-      scoresSectionHtml = '<div class="home-scores-section">'
-        + '<div class="home-card-label">DOTS / Wilks</div>'
-        + '<div class="home-score-note">Add gender &amp; bodyweight in Settings to see scores</div>'
-        + '</div>';
-    } else if (!scores) {
-      scoresSectionHtml = '<div class="home-scores-section">'
-        + '<div class="home-card-label">DOTS / Wilks</div>'
-        + '<div class="home-score-note">Log comp lifts to calculate scores</div>'
-        + '</div>';
-    } else {
-      const missing = [
-        scores.missing.squat    ? 'Squat'    : null,
-        scores.missing.bench    ? 'Bench'    : null,
-        scores.missing.deadlift ? 'Deadlift' : null,
-      ].filter(Boolean);
-      const missingNote = missing.length
-        ? '<div class="home-score-missing">Est. from available lifts — missing: ' + missing.join(', ') + '</div>'
-        : '';
-      scoresSectionHtml = '<div class="home-scores-section">'
-        + '<div class="home-card-label">DOTS / Wilks <span style="font-weight:400;color:var(--text-dim);letter-spacing:0;font-size:11px">· ' + scores.total + ' lb total</span></div>'
-        + '<div class="home-scores-row">'
-        + '<div class="home-score-pill"><div class="home-score-pill-label">DOTS</div><div class="home-score-pill-val">' + (scores.dots?.toFixed(1)||'—') + ' <span class="home-score-est">est</span></div><div class="home-score-pill-level">' + (dotsLevel(scores.dots)||'') + '</div></div>'
-        + '<div class="home-score-pill"><div class="home-score-pill-label">Wilks</div><div class="home-score-pill-val">' + (scores.wilks?.toFixed(1)||'—') + ' <span class="home-score-est">est</span></div><div class="home-score-pill-level">' + (dotsLevel(scores.wilks)||'') + '</div></div>'
-        + '</div>'
-        + missingNote
+    // Best lift rows
+    let liftRowsHtml = '';
+    for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+      const data = weekSummary.bestLifts[group];
+      if (!data) continue;
+      const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
+      const varStr = data.isVariation ? ` <span class="var-label">(${esc(data.name)})</span>` : '';
+      liftRowsHtml += '<div class="week-summary-lift-row">'
+        + '<div class="week-summary-lift-name">' + label + '</div>'
+        + '<div class="week-summary-lift-set">' + data.reps + '×' + data.weight + 'lb' + rpeStr + varStr + '</div>'
+        + '<div class="week-summary-lift-badge">e1RM</div>'
         + '</div>';
     }
+
+    // Stats
+    const vol = weekSummary.totalVolume >= 10000
+      ? (weekSummary.totalVolume / 1000).toFixed(1) + 'k'
+      : weekSummary.totalVolume.toLocaleString();
+
+    weeklySummaryHtml = '<div class="home-week-summary">'
+      + '<div class="home-week-summary-header">'
+      + '<div class="home-week-summary-label">This Week · ' + esc(weekSummary.weekLabel) + '</div>'
+      + '<div class="home-week-summary-meta">' + completedCount + '/' + totalDayCount + ' days</div>'
+      + '</div>'
+      + (liftRowsHtml ? '<div class="week-summary-lifts">' + liftRowsHtml + '</div>' : '')
+      + '<div class="week-summary-stats">'
+      + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + vol + '<span class="unit"> lbs</span></div><div class="week-summary-stat-label">Volume</div></div>'
+      + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + weekSummary.totalSets + '</div><div class="week-summary-stat-label">Sets</div></div>'
+      + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + (weekSummary.avgRpe || '—') + '</div><div class="week-summary-stat-label">Avg RPE</div></div>'
+      + '</div>'
+      + '</div>';
+  } else {
+    weeklySummaryHtml = '<div class="home-week-summary">'
+      + '<div class="home-week-summary-label">This Week</div>'
+      + '<div class="week-summary-empty">Log sets to see your weekly summary</div>'
+      + '</div>';
   }
-
-  const prListHtml = prs.length > 0
-    ? prs.map(p =>
-        '<div class="home-pr-row">'
-        + '<div class="home-pr-lift">' + p.lift + '</div>'
-        + '<div class="home-pr-val-wrap"><div class="home-pr-val">' + p.val + '</div><div class="home-pr-unit">' + p.unit + '</div></div>'
-        + '<div class="home-pr-badge">e1RM</div>'
-        + '</div>'
-      ).join('')
-    : '<div style="font-family:Barlow,sans-serif;font-size:13px;color:var(--text-dim);padding:6px 0 2px">Log sets to see projections</div>';
-
-  const prHtml = '<div class="home-pr-card" onclick="setScreen(\'metrics\')">'
-    + '<div class="home-card-label">Est. 1 Rep Max · ' + esc(block.name || 'Current Cycle') + '</div>'
-    + '<div class="home-pr-list">' + prListHtml + '</div>'
-    + scoresSectionHtml
-    + '</div>';
 
   content.innerHTML = `<div class="home-screen">
     <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + esc(athleteName) : ''}</div>
     ${heroHtml}
     ${middleRowHtml}
-    ${prHtml}
+    ${weeklySummaryHtml}
   </div>`;
 }
 
