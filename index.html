@@ -1575,7 +1575,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
 </div>
 
-<input type="file" id="file-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none"> accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none">
+<input type="file" id="file-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none">
 
 <script>
 // ── THEME ─────────────────────────────────────────────────────────────────────
@@ -2064,7 +2064,12 @@ function renderMetrics(){
   if (showScores) {
     const _ath2 = loadAthlete();
     const hasProfile = _ath2 && _ath2.gender && _ath2.bodyweight;
-    if (hasProfile) {
+    if (!hasProfile) {
+      h += `<div class="metrics-scores-section">
+        <div class="metrics-scores-label">DOTS / Wilks</div>
+        <div class="metrics-score-note">Add gender &amp; bodyweight in Settings to see scores</div>
+      </div>`;
+    } else {
       const scores = getScores();
       if (scores) {
         const missing = [
@@ -2082,6 +2087,11 @@ function renderMetrics(){
             <div class="metrics-score-pill"><div class="metrics-score-pill-label">Wilks</div><div class="metrics-score-pill-val">${scores.wilks?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.wilks)||''}</div></div>
           </div>
           ${missingNote}
+        </div>`;
+      } else {
+        h += `<div class="metrics-scores-section">
+          <div class="metrics-scores-label">DOTS / Wilks</div>
+          <div class="metrics-score-note">Log comp lifts to calculate scores</div>
         </div>`;
       }
     }
