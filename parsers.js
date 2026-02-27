@@ -2564,9 +2564,13 @@ function parseD(wb) {
   if (allWeeks.length === 0) return parseB(wb);
 
   return [{
+    id: (blockMeta.name||'training_block').replace(/[^a-zA-Z0-9]/g,'_') + '_D',
     name: blockMeta.name,
-    weeks: allWeeks,
-    athlete: blockMeta.athlete
+    format: 'D',
+    athleteName: blockMeta.athlete || '',
+    dateRange: '',
+    maxes: {},
+    weeks: allWeeks
   }];
 }
 

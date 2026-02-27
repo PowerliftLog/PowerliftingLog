@@ -2239,6 +2239,10 @@ function confirmAddLift(){
 
 function mergeBlocks(incoming){
   deduplicateExerciseNames(incoming);
+  // Safety: ensure every block has an id
+  for(const b of incoming){
+    if(!b.id) b.id = (b.name||'block').replace(/[^a-zA-Z0-9]/g,'_').substring(0,40) + '_' + Date.now();
+  }
   const existing=state.blocks;
   for(const inc of incoming){
     const idx=existing.findIndex(b=>b.id===inc.id);
