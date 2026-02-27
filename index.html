@@ -247,6 +247,19 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .max-lift { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
 .max-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: var(--gold-data); line-height: 1; letter-spacing: -0.01em; }
 .max-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.07em; text-transform: uppercase; margin-top: 4px; }
+.max-delta-badge { position:absolute;top:6px;right:6px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;padding:2px 5px;border-radius:6px;line-height:1.2;transition:opacity 0.2s; }
+.max-delta-badge.up { background:rgba(76,175,80,0.15);color:#4CAF50; }
+.max-delta-badge.down { background:rgba(239,83,80,0.15);color:#ef5350; }
+.max-item.expanded .max-delta-badge { opacity:0; }
+.max-tested-drawer { max-height:0;overflow:hidden;transition:max-height 0.25s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;opacity:0; }
+.max-item.expanded .max-tested-drawer { max-height:60px;opacity:1; }
+.max-tested-divider { border:none;border-top:1px solid var(--border);margin:8px 0 0; }
+.max-tested-row { display:flex;align-items:baseline;justify-content:center;gap:6px;padding-top:8px; }
+.max-tested-val { font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text-sub); }
+.max-tested-delta { font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700; }
+.max-tested-delta.up { color:#4CAF50; }
+.max-tested-delta.down { color:#ef5350; }
+.max-tested-label { font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;text-align:center;padding-top:2px;padding-bottom:2px; }
 .week-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; background: rgba(255,255,255,0.01); }
 .week-bar::-webkit-scrollbar { display: none; }
 .week-pill { flex-shrink: 0; padding: 8px 20px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-muted); cursor: pointer; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
@@ -1463,6 +1476,23 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
           <button class="settings-athlete-unit-btn" id="ap-unit" onclick="toggleApUnit()">lbs</button>
         </div>
       </div>
+      <div class="settings-athlete-row">
+        <div class="settings-athlete-label" style="margin-bottom:6px">Tested 1RM (lbs)</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;text-align:center">
+            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Squat</div>
+            <input class="settings-athlete-input" id="ap-max-s" type="number" inputmode="numeric" placeholder="—" style="text-align:center">
+          </div>
+          <div style="flex:1;text-align:center">
+            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Bench</div>
+            <input class="settings-athlete-input" id="ap-max-b" type="number" inputmode="numeric" placeholder="—" style="text-align:center">
+          </div>
+          <div style="flex:1;text-align:center">
+            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Deadlift</div>
+            <input class="settings-athlete-input" id="ap-max-d" type="number" inputmode="numeric" placeholder="—" style="text-align:center">
+          </div>
+        </div>
+      </div>
       <button class="settings-athlete-save" onclick="saveAthleteProfile()">Save</button>
     </div>
     <button class="settings-row-btn" onclick="resetOnboarding()" style="cursor:pointer">
@@ -1956,10 +1986,20 @@ function renderMetrics(){
     if (!e1rmByGroup[group] || result.value > e1rmByGroup[group]) e1rmByGroup[group] = Math.round(result.value);
   }
   if (e1rmByGroup.squat || e1rmByGroup.bench || e1rmByGroup.deadlift) {
+    const _ath = loadAthlete() || {};
+    const tested = { squat: _ath.tested1rm_squat || 0, bench: _ath.tested1rm_bench || 0, deadlift: _ath.tested1rm_deadlift || 0 };
     h += `<div class="maxes-bar">`;
-    if (e1rmByGroup.squat) h += `<div class="max-item"><div class="max-lift">Squat</div><div class="max-weight">${e1rmByGroup.squat}</div><div class="max-label">Est. 1RM</div></div>`;
-    if (e1rmByGroup.bench) h += `<div class="max-item"><div class="max-lift">Bench</div><div class="max-weight">${e1rmByGroup.bench}</div><div class="max-label">Est. 1RM</div></div>`;
-    if (e1rmByGroup.deadlift) h += `<div class="max-item"><div class="max-lift">Dead</div><div class="max-weight">${e1rmByGroup.deadlift}</div><div class="max-label">Est. 1RM</div></div>`;
+    for (const [gk, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Dead']]) {
+      const e = e1rmByGroup[gk];
+      if (!e) continue;
+      const t = tested[gk];
+      const delta = t ? e - t : 0;
+      const hasTested = t > 0;
+      const badgeHtml = hasTested ? `<div class="max-delta-badge ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div>` : '';
+      const drawerHtml = hasTested ? `<div class="max-tested-drawer"><hr class="max-tested-divider"><div class="max-tested-row"><div class="max-tested-val">${t}</div><div class="max-tested-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div></div><div class="max-tested-label">Tested</div></div>` : '';
+      const clickAttr = hasTested ? ` onclick="this.classList.toggle('expanded')" style="cursor:pointer"` : '';
+      h += `<div class="max-item"${clickAttr}>${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
+    }
     h += `</div>`;
   }
 
@@ -2610,6 +2650,9 @@ function toggleAthleteProfileForm() {
     document.getElementById('ap-unit').classList.toggle('active', true);
     document.getElementById('ap-male').classList.toggle('active', a.gender === 'male');
     document.getElementById('ap-female').classList.toggle('active', a.gender === 'female');
+    document.getElementById('ap-max-s').value = a.tested1rm_squat || '';
+    document.getElementById('ap-max-b').value = a.tested1rm_bench || '';
+    document.getElementById('ap-max-d').value = a.tested1rm_deadlift || '';
     form.classList.add('open');
     arrow.style.transform = 'rotate(90deg)';
   } else {
@@ -2636,11 +2679,17 @@ function saveAthleteProfile() {
                : document.getElementById('ap-female').classList.contains('active') ? 'female'
                : null;
   const existing = loadAthlete() || {};
+  const maxS = parseInt(document.getElementById('ap-max-s')?.value) || 0;
+  const maxB = parseInt(document.getElementById('ap-max-b')?.value) || 0;
+  const maxD = parseInt(document.getElementById('ap-max-d')?.value) || 0;
   const updated = {
     ...existing,
     ...(name && { name }),
     ...(gender && { gender }),
-    ...(!isNaN(bw) && bw > 0 && { bodyweight: bw, bwUnit: unit })
+    ...(!isNaN(bw) && bw > 0 && { bodyweight: bw, bwUnit: unit }),
+    tested1rm_squat: maxS || existing.tested1rm_squat || 0,
+    tested1rm_bench: maxB || existing.tested1rm_bench || 0,
+    tested1rm_deadlift: maxD || existing.tested1rm_deadlift || 0
   };
   saveAthlete(updated);
   // Close form
@@ -3421,7 +3470,7 @@ function renderHome() {
     : '<div style="font-family:Barlow,sans-serif;font-size:13px;color:var(--text-dim);padding:6px 0 2px">Log sets to see projections</div>';
 
   const prHtml = '<div class="home-pr-card" onclick="setScreen(\'metrics\')">'
-    + '<div class="home-card-label">Est. 1RM Peaks · ' + esc(block.name || 'Current Cycle') + '</div>'
+    + '<div class="home-card-label">Est. 1 Rep Max · ' + esc(block.name || 'Current Cycle') + '</div>'
     + '<div class="home-pr-list">' + prListHtml + '</div>'
     + scoresSectionHtml
     + '</div>';
@@ -4753,7 +4802,7 @@ function renderIntakeStep2(body) {
       <button class="intake-gender-btn${preGender==='female'?' selected':''}" id="intake-gender-female" onclick="intakeSetGender('female')">Female</button>
     </div>
 
-    <div class="intake-section-label">Current Maxes (lbs)</div>
+    <div class="intake-section-label">Tested 1RM (lbs)</div>
     <div class="intake-maxes-row">
       <div class="intake-field">
         <label class="intake-field-label">Squat</label>
@@ -4816,9 +4865,9 @@ function renderIntakeStep3(body) {
     intake.name ? ['Athlete', intake.name] : null,
     intake.gender ? ['Gender', intake.gender.charAt(0).toUpperCase() + intake.gender.slice(1)] : null,
     intake.bodyweight ? ['Bodyweight', intake.bodyweight + ' ' + intake.bwUnit] : null,
-    intake.maxSquat ? ['Squat Max', intake.maxSquat + ' lbs'] : null,
-    intake.maxBench ? ['Bench Max', intake.maxBench + ' lbs'] : null,
-    intake.maxDeadlift ? ['Deadlift Max', intake.maxDeadlift + ' lbs'] : null,
+    intake.maxSquat ? ['Squat 1RM', intake.maxSquat + ' lbs'] : null,
+    intake.maxBench ? ['Bench 1RM', intake.maxBench + ' lbs'] : null,
+    intake.maxDeadlift ? ['Deadlift 1RM', intake.maxDeadlift + ' lbs'] : null,
     intake.startDate ? ['Start Date', formatIntakeDate(intake.startDate)] : null,
     ['Program', b0.name || b0.id || 'Untitled'],
     ['Weeks', weekCount],
@@ -5030,6 +5079,10 @@ function applyIntakeToProfile(intake) {
     updated.bodyweight = intake.bodyweight;
     updated.bwUnit = intake.bwUnit;
   }
+  // Save tested 1RMs
+  if (intake.maxSquat) updated.tested1rm_squat = intake.maxSquat;
+  if (intake.maxBench) updated.tested1rm_bench = intake.maxBench;
+  if (intake.maxDeadlift) updated.tested1rm_deadlift = intake.maxDeadlift;
   saveAthlete(updated);
 }
 
@@ -5793,7 +5846,20 @@ function exportHTMLReport(blockId, scope) {
     if (!exNames.length) return null;
     // Rank: comp lift > any variation
     const compNames = exNames.filter(n => isCompLift(n));
-    const primary = compNames.length ? compNames[0] : exNames[0];
+    const isVariation = compNames.length === 0;
+    // Comp lifts first; if none, pick variation with best overall e1RM
+    let primary;
+    if (compNames.length) {
+      primary = compNames[0];
+    } else {
+      let bestVal = 0;
+      primary = exNames[0];
+      for (const n of exNames) {
+        for (const d of Object.values(exercises[n])) {
+          if (d.e1rm > bestVal) { bestVal = d.e1rm; primary = n; }
+        }
+      }
+    }
     // Best e1RM across all weeks for primary
     let bestWeek = null, bestE1rm = 0;
     for (const [wl, data] of Object.entries(exercises[primary])) {
@@ -5807,7 +5873,7 @@ function exportHTMLReport(blockId, scope) {
     const endE1rm = exercises[primary][lastWeek]?.e1rm || 0;
     const bestData = exercises[primary][bestWeek];
     return {
-      name: primary, bestE1rm: Math.round(bestE1rm),
+      name: primary, isVariation, bestE1rm: Math.round(bestE1rm),
       startE1rm: Math.round(startE1rm), endE1rm: Math.round(endE1rm),
       delta: Math.round(endE1rm - startE1rm),
       bestWeight: bestData?.topWeight, bestReps: bestData?.topReps, bestRpe: bestData?.topRpe
@@ -5834,14 +5900,18 @@ function exportHTMLReport(blockId, scope) {
   // ── Weekly top sets table ────────────────────────────────────────────────
   function getWeeklyTopSet(groupKey, weekLabel) {
     const exercises = families[groupKey];
-    let best = null;
+    let bestComp = null, bestVar = null;
     for (const [exName, weekData] of Object.entries(exercises)) {
       const d = weekData[weekLabel];
-      if (d && (!best || d.e1rm > best.e1rm)) {
-        best = { ...d, exName };
+      if (!d) continue;
+      const isComp = isCompLift(exName);
+      if (isComp && (!bestComp || d.e1rm > bestComp.e1rm)) {
+        bestComp = { ...d, exName, isVariation: false };
+      } else if (!isComp && (!bestVar || d.e1rm > bestVar.e1rm)) {
+        bestVar = { ...d, exName, isVariation: true };
       }
     }
-    return best;
+    return bestComp || bestVar;
   }
 
   const weekLabels = weeks.map(w => w.label);
@@ -5881,7 +5951,7 @@ function exportHTMLReport(blockId, scope) {
     const deltaArrow = cl.delta > 0 ? '↑' : cl.delta < 0 ? '↓' : '→';
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-border" style="background:${color}"></div>
-      <div class="comp-card-label">${label}</div>
+      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:9px;color:#777;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> lbs</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} lbs</div>
       <div class="comp-card-divider"></div>
@@ -5900,7 +5970,8 @@ function exportHTMLReport(blockId, scope) {
       const ts = getWeeklyTopSet(gk, wl);
       if (ts) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
-        cells += `<td>${ts.topWeight}×${ts.topReps}${rpeStr}</td>`;
+        const varLabel = ts.isVariation ? `<div style="font-size:8px;color:#666;margin-top:1px">${ts.exName}</div>` : '';
+        cells += `<td>${ts.topWeight}×${ts.topReps}${rpeStr}${varLabel}</td>`;
       } else {
         cells += '<td class="no-data">—</td>';
       }
