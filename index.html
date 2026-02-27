@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>PowerliftingLog</title>
+<title>Powerlift Pro</title>
 
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
@@ -11,7 +11,7 @@
 <!-- iOS PWA meta tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" id="status-bar-meta" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Powerlift Log">
+<meta name="apple-mobile-web-app-title" content="Powerlift Pro">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 
 <!-- Theme color for browser chrome -->
@@ -1229,7 +1229,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">PowerliftingLog</div>
+      <div class="header-logo">Powerlift Pro</div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings">
@@ -3610,7 +3610,7 @@ function renderUploadOptions(prefix) {
 function renderUploadScreen() {
   return `<div class="upload-screen">
     <div class="upload-icon"><svg viewBox="0 0 28 40" fill="#C9A84C" width="36" height="54"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
-    <div class="upload-title">PowerliftingLog</div>
+    <div class="upload-title">Powerlift Pro</div>
     <div class="upload-desc">Upload your training program to get started.</div>
     ${renderUploadOptions('wo-')}
     <div class="upload-hint">No account needed · All data stays on your device</div>
@@ -6451,7 +6451,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
   <!-- Header -->
   <div class="rpt-hdr">
-    <div class="rpt-brand">PowerliftingLog</div>
+    <div class="rpt-brand">Powerlift Pro</div>
     ${athleteName ? `<div class="rpt-athlete">${athleteName}</div>` : ''}
     <div class="rpt-block">${block.name}</div>
     <div class="rpt-meta">
@@ -6515,7 +6515,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
   <!-- Footer P1 -->
   <div class="rpt-footer">
-    <span>PowerliftingLog</span>
+    <span>Powerlift Pro</span>
     <span>${dateStr}</span>
   </div>
 
@@ -6523,7 +6523,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <div class="page-2">
     ${progressionHtml}
     <div class="rpt-footer">
-      <span>PowerliftingLog</span>
+      <span>Powerlift Pro</span>
       <span>${dateStr}</span>
     </div>
   </div>
@@ -6552,7 +6552,7 @@ function downloadTemplate() {
   const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'PowerliftingLog_Template.xlsx';
+  a.download = 'PowerliftPro_Template.xlsx';
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
@@ -6689,7 +6689,7 @@ function showParseError(errorType, details) {
     msg = details || 'The file appears to be empty or in an unsupported format. Make sure you\'re uploading an Excel file (.xlsx or .xls).';
   } else if (errorType === 'parse') {
     title = 'Unrecognized Format';
-    msg = 'PowerliftingLog couldn\'t find exercises in this file. The spreadsheet may use a layout we don\'t support yet.';
+    msg = 'Powerlift Pro couldn\'t find exercises in this file. The spreadsheet may use a layout we don\'t support yet.';
   } else {
     title = 'Something Went Wrong';
     msg = details || 'There was an error reading this file. Please try again.';
@@ -6754,7 +6754,7 @@ function showOnboardingStep(step) {
       <div class="onboard-icon">
         <svg viewBox="0 0 28 40" fill="var(--gold)" width="56" height="80"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       </div>
-      <div class="onboard-title">PowerliftingLog</div>
+      <div class="onboard-title">Powerlift Pro</div>
       <div class="onboard-sub">Your training program, formatted for the platform.</div>
       <div class="onboard-features">
         <div class="onboard-feature">
