@@ -1,12 +1,12 @@
-const CACHE_NAME = 'liftlog-v1';
+const CACHE_NAME = 'liftlog-v2';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
+  '/PowerliftingLog/parsers.js',
   '/PowerliftingLog/manifest.json',
   '/PowerliftingLog/icons/icon-192.png',
   '/PowerliftingLog/icons/icon-512.png',
 ];
-
 // Install — pre-cache all core assets
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -14,7 +14,6 @@ self.addEventListener('install', event => {
   );
   self.skipWaiting();
 });
-
 // Activate — clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -24,12 +23,10 @@ self.addEventListener('activate', event => {
   );
   self.clients.claim();
 });
-
 // Fetch — network-first, fall back to cache
 self.addEventListener('fetch', event => {
   // Only handle GET requests for our origin
   if (event.request.method !== 'GET') return;
-
   event.respondWith(
     fetch(event.request)
       .then(response => {
