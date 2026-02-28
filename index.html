@@ -3083,7 +3083,11 @@ function getLastCompletedWorkout() {
 function getWeekDots() {
   const block = state.activeBlock;
   if (!block) return null;
-  const week = block.weeks[state.activeWeek];
+
+  // Use the week that the home screen hero is showing (next incomplete workout's week)
+  const nw = findNextWorkout(block);
+  const weekIdx = nw.weekIdx;
+  const week = block.weeks[weekIdx];
   if (!week) return null;
 
   const trainingDayIndices = week.days.reduce((acc, d, i) => {
@@ -3092,12 +3096,10 @@ function getWeekDots() {
   }, []);
   if (trainingDayIndices.length === 0) return null;
 
-  const nw = findNextWorkout(block);
-
   const dots = trainingDayIndices.map((di, sessionIdx) => {
     const d       = week.days[di];
     const isDone  = isDayComplete(block, week, d);
-    const isCurrent = (state.activeWeek === block.weeks.indexOf(week) && di === nw.dayIdx && !isDone);
+    const isCurrent = (weekIdx === nw.weekIdx && di === nw.dayIdx && !isDone);
     return { di, sessionIdx, name: d.name, done: isDone, isCurrent };
   });
 
