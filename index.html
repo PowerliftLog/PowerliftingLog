@@ -703,26 +703,19 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .last-workout-nav { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border-2); display: flex; align-items: center; justify-content: space-between; }
 .last-workout-nav-arrow { color: var(--gold); font-size: 14px; }
 
-/* Week card */
+/* Week card — ring widget */
 .week-progress-card { margin-bottom: 10px; }
 .home-row .week-progress-card { margin-bottom: 0; }
-.home-row .week-training-dots { gap: 6px; }
-.home-row .week-training-dot { width: 26px; height: 26px; font-size: 10px; }
-.week-progress-card.full-width { margin-bottom: 14px; }
-.week-progress-card.full-width .week-training-dots { gap: 10px; }
-.week-progress-card.full-width .week-training-dot { width: 36px; height: 36px; font-size: 12px; }
-.week-fraction { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); line-height: 1; margin-bottom: 1px; }
-.week-fraction-denom { font-size: 14px; color: var(--text-faint); font-weight: 400; }
-.week-fraction-sub { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 8px; }
-.week-training-dots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
-.week-training-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-.week-training-dot-wrap:active .week-training-dot { transform: scale(0.92); }
-.week-training-dot { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--bg); font-weight: 700; transition: all 0.15s; position: relative; }
-.week-training-dot.done { background: #4ade80; border-color: #4ade80; color: var(--bg); }
-.week-training-dot.current { border-color: var(--gold); border-width: 2px; }
-.week-training-dot.done.current { background: #4ade80; border-color: #4ade80; }
-.week-training-dot-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); }
-.week-training-dot-label.assigned { color: var(--gold); }
+.week-ring-wrap { position: relative; width: 80px; height: 80px; margin: 4px auto 6px; }
+.week-ring-svg { width: 100%; height: 100%; }
+.week-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.week-ring-num { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); line-height: 1; }
+.week-ring-of { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; color: var(--text-faint); line-height: 1; margin-top: 2px; }
+.week-ring-dots { display: flex; justify-content: center; gap: 7px; }
+.week-ring-dot { width: 7px; height: 7px; border-radius: 50%; }
+.week-ring-dot.done { background: #4ade80; box-shadow: 0 0 4px rgba(74,222,128,0.25); }
+.week-ring-dot.current { border: 1.5px solid var(--gold); background: transparent; }
+.week-ring-dot.upcoming { background: rgba(255,255,255,0.08); }
 
 /* e1RM + scores card */
 .home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; }
@@ -1458,7 +1451,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         </div>
       </div>
       <div class="settings-athlete-row">
-        <div class="settings-athlete-label" style="margin-bottom:6px">Tested 1RM (lbs)</div>
+        <div class="settings-athlete-label" style="margin-bottom:6px">Current 1RM (lbs)</div>
         <div style="display:flex;gap:8px">
           <div style="flex:1;text-align:center">
             <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Squat</div>
@@ -1981,7 +1974,7 @@ function renderMetrics(){
       const delta = t ? e - t : 0;
       const hasTested = t > 0;
       const badgeHtml = hasTested ? `<div class="max-delta-badge ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div>` : '';
-      const drawerHtml = hasTested ? `<div class="max-tested-drawer"><hr class="max-tested-divider"><div class="max-tested-row"><div class="max-tested-val">${t}</div><div class="max-tested-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div></div><div class="max-tested-label">Tested</div></div>` : '';
+      const drawerHtml = hasTested ? `<div class="max-tested-drawer"><hr class="max-tested-divider"><div class="max-tested-row"><div class="max-tested-val">${t}</div><div class="max-tested-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div></div><div class="max-tested-label">Current 1RM</div></div>` : '';
       h += `<div class="max-item" onclick="toggleMaxCard(this)" style="cursor:pointer">${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
     }
     h += `</div>`;
@@ -2113,11 +2106,10 @@ function renderMetrics(){
 }
 
 function toggleMaxCard(el) {
+  const allCards = el.parentElement.querySelectorAll('.max-item');
   const wasExpanded = el.classList.contains('expanded');
-  // Collapse all sibling cards first
-  el.parentElement.querySelectorAll('.max-item.expanded').forEach(c => c.classList.remove('expanded'));
-  // Toggle the clicked one
-  if (!wasExpanded) el.classList.add('expanded');
+  // Toggle all cards together
+  allCards.forEach(c => { if (wasExpanded) c.classList.remove('expanded'); else c.classList.add('expanded'); });
 }
 function setMetricsDrill(val){ state.metricsDrillBlock=val; renderMetrics(); }
 function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; renderMetrics(); }
@@ -3118,26 +3110,39 @@ function renderWeekCard() {
   const wp = getWeekDots();
   if (!wp) return '';
 
-  const dotRows = wp.dots.map(dot => {
-    let dotClass   = 'week-training-dot';
-    let dotContent = '';
-    if (dot.done)      { dotClass += ' done'; dotContent = '\u2713'; }
-    else if (dot.isCurrent) { dotClass += ' current'; }
+  const total = wp.total || 1;
+  const done = wp.done || 0;
+  const pct = done / total;
 
-    // Use short day name from program (e.g. "Mon", "Upper 1") — truncate to ~6 chars
-    const label = dot.name.length > 6 ? dot.name.slice(0, 5) + '…' : dot.name;
+  // SVG ring math
+  const r = 34, cx = 40, cy = 40, sw = 5;
+  const circ = 2 * Math.PI * r;
+  const progressLen = pct * circ;
+  const remainLen = (1 - pct) * circ;
 
-    return '<div class="week-training-dot-wrap">'
-      + '<div class="' + dotClass + '">' + dotContent + '</div>'
-      + '<div class="week-training-dot-label assigned">' + escH(label) + '</div>'
-      + '</div>';
+  // Day dots
+  const dots = wp.dots.map(dot => {
+    let cls = 'week-ring-dot';
+    if (dot.done) cls += ' done';
+    else if (dot.isCurrent) cls += ' current';
+    else cls += ' upcoming';
+    return '<div class="' + cls + '"></div>';
   }).join('');
 
   return '<div class="home-card week-progress-card">'
-    + '<div class="home-card-label">This Week</div>'
-    + '<div class="week-fraction">' + wp.done + '<span class="week-fraction-denom">/' + wp.total + '</span></div>'
-    + '<div class="week-fraction-sub">workouts done</div>'
-    + '<div class="week-training-dots">' + dotRows + '</div>'
+    + '<div class="home-card-label" style="color:var(--text-dim)">This Week</div>'
+    + '<div class="week-ring-wrap">'
+    + '<svg viewBox="0 0 80 80" fill="none" class="week-ring-svg">'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="rgba(255,255,255,0.04)" stroke-width="' + sw + '" fill="none"/>'
+    + (done > 0 ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="#4ade80" stroke-width="' + sw + '" fill="none" stroke-linecap="round" stroke-dasharray="' + progressLen.toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')" style="filter:drop-shadow(0 0 3px rgba(74,222,128,0.2))"/>' : '')
+    + (done < total ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="rgba(201,168,76,0.15)" stroke-width="' + sw + '" fill="none" stroke-linecap="round" stroke-dasharray="0 ' + progressLen.toFixed(1) + ' ' + remainLen.toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>' : '')
+    + '</svg>'
+    + '<div class="week-ring-center">'
+    + '<div class="week-ring-num">' + done + '</div>'
+    + '<div class="week-ring-of">of ' + total + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="week-ring-dots">' + dots + '</div>'
     + '</div>';
 }
 
@@ -3380,7 +3385,7 @@ function renderHome() {
     for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
       const data = weekSummary.bestLifts[group];
       if (!data) continue;
-      const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
+      const rpeStr = '';
       const varStr = data.isVariation ? ` <span class="var-label">(${escH(data.name)})</span>` : '';
       liftRowsHtml += '<div class="week-summary-lift-row">'
         + '<div class="week-summary-lift-name">' + label + '</div>'
@@ -3400,10 +3405,9 @@ function renderHome() {
       + '<div class="home-week-summary-meta">' + completedCount + '/' + totalDayCount + ' days</div>'
       + '</div>'
       + (liftRowsHtml ? '<div class="week-summary-lifts">' + liftRowsHtml + '</div>' : '')
-      + '<div class="week-summary-stats">'
+      + '<div class="week-summary-stats" style="grid-template-columns:1fr 1fr">'
       + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + vol + '<span class="unit"> lbs</span></div><div class="week-summary-stat-label">Volume</div></div>'
       + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + weekSummary.totalSets + '</div><div class="week-summary-stat-label">Sets</div></div>'
-      + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + (weekSummary.avgRpe || '—') + '</div><div class="week-summary-stat-label">Avg RPE</div></div>'
       + '</div>'
       + '</div>';
   } else {
@@ -4172,13 +4176,112 @@ function completeWorkout(){
   if (_blockName) metaParts.push(_blockName);
   setTimeout(() => {
     showCelebration(_dayName, metaParts.join(' · '), () => {
-      setScreen('home');
-      // Scroll home to top after celebration
-      const main = document.getElementById('main-content');
-      if (main) main.scrollTop = 0;
+      // Check for new 1RM singles before going home
+      checkNewSingles(block, week, day, () => {
+        setScreen('home');
+        const main = document.getElementById('main-content');
+        if (main) main.scrollTop = 0;
+      });
     });
   }, 50);
 }
+function checkNewSingles(block, week, day, onDone) {
+  if (!day || !day.exercises) { onDone(); return; }
+  const ath = loadAthlete() || {};
+  const currentMaxes = {
+    squat: Number(ath.tested1rm_squat) || 0,
+    bench: Number(ath.tested1rm_bench) || 0,
+    deadlift: Number(ath.tested1rm_deadlift) || 0
+  };
+  const newRecords = []; // {group, liftName, weight}
+  for (const ex of day.exercises) {
+    if (!isCompLift(ex.name)) continue;
+    const group = classifyLift(ex.name);
+    if (!group || !currentMaxes.hasOwnProperty(group)) continue;
+    const key = lk(block.id, week.label, day.name, ex.name);
+    // Scan sets for logged singles
+    const pres = ex.prescription;
+    if (!pres) continue;
+    const sets = parseSets(pres);
+    const simple = parseSimple(pres);
+    const ranged = (!sets.length && !simple) ? parseRangeSet(pres) : null;
+    const numSets = sets.length || (simple?.sets || 0) || (ranged?.sets || 0) || 1;
+    for (let si = 0; si < numSets; si++) {
+      const sk = key + `||s${si}`;
+      const sl = state.logs[sk];
+      if (!sl || !sl.done) continue;
+      // Check if this set is a single (1 rep) with a logged actual weight
+      const reps = Number(sl.reps) || 0;
+      const actual = Number(sl.actual) || 0;
+      if (reps === 1 && actual > 0 && actual > currentMaxes[group]) {
+        // Only keep the highest single per group
+        const existing = newRecords.find(r => r.group === group);
+        if (!existing || actual > existing.weight) {
+          if (existing) existing.weight = actual;
+          else newRecords.push({ group, liftName: ex.name, weight: actual });
+        }
+      }
+    }
+  }
+  if (newRecords.length === 0) { onDone(); return; }
+  // Show prompt for each new record
+  showNewPRPrompt(newRecords, currentMaxes, onDone);
+}
+
+function showNewPRPrompt(records, currentMaxes, onDone) {
+  const liftLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
+  const rows = records.map(r => {
+    const old = currentMaxes[r.group];
+    const diff = r.weight - old;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-sub)">${liftLabels[r.group]}</div>
+        <div style="font-size:11px;color:var(--text-dim)">${escH(r.liftName)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">${r.weight}<span style="font-size:12px;font-weight:400;color:var(--text-dim)"> lbs</span></div>
+        ${old ? `<div style="font-size:11px;color:#4CAF50">+${diff} from ${old}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pr-prompt-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:24px 20px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:28px;margin-bottom:6px">🏆</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold)">New 1RM!</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Update your Current 1RM?</div>
+    </div>
+    ${rows}
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button onclick="dismissPRPrompt(false)" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text-sub);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Skip</button>
+      <button onclick="dismissPRPrompt(true)" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--gold);color:#111;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Update</button>
+    </div>
+  </div>`;
+
+  // Store data for dismiss handler
+  overlay._records = records;
+  overlay._onDone = onDone;
+  document.body.appendChild(overlay);
+}
+
+function dismissPRPrompt(accepted) {
+  const overlay = document.getElementById('pr-prompt-overlay');
+  if (!overlay) return;
+  const onDone = overlay._onDone;
+  if (accepted && overlay._records) {
+    const ath = loadAthlete() || {};
+    for (const r of overlay._records) {
+      ath['tested1rm_' + r.group] = r.weight;
+    }
+    saveAthlete(ath);
+  }
+  overlay.remove();
+  if (onDone) onDone();
+}
+
 function clearWorkout(){
   const block=state.activeBlock;
   const week=block.weeks[state.activeWeek];
@@ -4718,7 +4821,7 @@ function renderIntakeStep1(body) {
       <select id="import-merge-target" class="intake-field-input">${mergeOpts}</select>
     </div>` : ''}
 
-    <div class="intake-section-label">Tested 1RM (optional)</div>
+    <div class="intake-section-label">Current 1RM (optional)</div>
     <div class="intake-maxes-row">
       <div class="intake-field">
         <label class="intake-field-label">Squat</label>
