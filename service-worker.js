@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v3';
+const CACHE_NAME = 'liftlog-v4';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   '/PowerliftingLog/manifest.json',
   '/PowerliftingLog/icons/icon-192.png',
   '/PowerliftingLog/icons/icon-512.png',
+  '/PowerliftingLog/icons/icon-180.png',
 ];
 // Install — pre-cache all core assets
 self.addEventListener('install', event => {

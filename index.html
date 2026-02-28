@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Powerlift Pro</title>
 
 <!-- PWA manifest -->
@@ -17,6 +17,9 @@
 <!-- Theme color for browser chrome -->
 <meta name="theme-color" id="theme-color-meta" content="#0a0a0a">
 
+<!-- Content Security Policy -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' blob:; connect-src 'self' https://docs.google.com https://www.googleapis.com">
+
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -26,7 +29,7 @@
   }
 </script>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlElEQVR4nO2X0QmAMBBDU/GrW+koDuYoOpp+FUTwwyQQlGaA3nvX3kFLrfVAMEOyeAf4F8C+zlkANhYA1t4GAADTsmUAFHsLgBoJQLWXAVrY+5cAHPYAMDoOucK87QbVgSd75iq+NwVOe4B4A/dC0UXUikfG0BUZQLGXAFyLSOqAai8DOEJvQoc9DeBM6V+zDpAGOAEoFSO7lhfbZgAAAABJRU5ErkJggg==">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <script src="parsers.js"></script>
@@ -183,7 +186,7 @@
   --glass-border:  rgba(180,168,155,0.45);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
 html { background: var(--bg); }
 body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 'Barlow', sans-serif; min-height: 100dvh; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom); }
 #main-content { padding-bottom: 100px; }
@@ -453,7 +456,6 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
 .home-screen { padding: 48px 16px 80px; overflow: hidden; }
 .home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
-.home-title { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; margin-bottom: 24px; }
 
 /* Hero card */
 .home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -494,28 +496,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .session-lift-name { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); width: 76px; flex-shrink: 0; }
 .session-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
 .session-lift-set .rpe-val { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
-.session-lift-pr { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--gold); background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3); border-radius: 6px; padding: 2px 7px; flex-shrink: 0; }
-.session-lift-none { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); font-style: italic; flex: 1; }
-
 /* Stat tiles */
 .session-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border-2); }
 .session-stat { text-align: center; }
 .session-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
-.session-stat-val .session-stat-unit { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
 .session-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
-
-.session-next-banner {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 11px 20px; border-top: 1px solid rgba(74,222,128,0.15);
-  background: rgba(201,168,76,0.06);
-}
-.session-next-label {
-  font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold);
-}
-.session-next-arrow {
-  font-size: 14px; color: var(--gold); opacity: 0.7;
-}
 
 /* Workout Celebration Overlay */
 #celebration-overlay {
@@ -742,26 +727,6 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* e1RM + scores card */
 .home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; }
 .home-pr-card:active { transform: scale(0.98); }
-/* e1RM rows — compact left-aligned */
-.home-pr-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
-.home-pr-row { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
-.home-pr-row:last-child { border-bottom: none; }
-.home-pr-lift { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text-bright); flex: 1; }
-.home-pr-val-wrap { display: flex; align-items: baseline; gap: 3px; margin-right: 8px; }
-.home-pr-val { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--gold-data); line-height: 1; }
-.home-pr-unit { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); }
-.home-pr-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 100px; background: rgba(var(--gold-rgb),0.1); color: rgba(201,168,76,0.7); border: 1px solid rgba(var(--gold-rgb),0.15); }
-/* DOTS / Wilks scores — two-column stat pills */
-.home-scores-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-2); }
-.home-scores-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-.home-score-pill { background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 1px; }
-.home-score-pill-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); }
-.home-score-pill-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
-.home-score-pill-level { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--gold-data); }
-.home-score-est { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 400; color: var(--text-dim); vertical-align: middle; letter-spacing: 0; }
-.home-score-note { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
-.home-score-missing { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 5px; }
-
 /* Weekly Summary card on home */
 .home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px 16px; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -908,7 +873,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.bottom-nav { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; border-radius: 100px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(201,168,76,0.14); box-shadow: inset 0 1px 0 rgba(201,168,76,0.15); }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
@@ -1162,10 +1127,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .colmap-table td { padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text-sub);font-size:12px;white-space:nowrap; }
 .colmap-table tr.cm-hdr-row td { color:var(--gold);font-weight:600;background:rgba(201,168,76,0.05); }
 .colmap-table tr.cm-data-row td { color:var(--text-primary); }
-.colmap-table td.cm-hl-exercise { border-left:2px solid var(--gold);background:rgba(201,168,76,0.06); }
-.colmap-table td.cm-hl-pres { border-left:2px solid #7B9FD4;background:rgba(123,159,212,0.06); }
-.colmap-table td.cm-hl-logged { border-left:2px solid var(--green);background:rgba(74,222,128,0.06); }
-.colmap-table td.cm-hl-notes { border-left:2px solid #B07BD4;background:rgba(176,123,212,0.06); }
 .colmap-table td.cm-row-num { color:var(--text-faint);font-size:10px;text-align:center;padding:7px 6px;width:28px;min-width:28px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:all 0.15s; }
 .colmap-table tr.cm-hdr-row td.cm-row-num { color:var(--text-faint);opacity:0.5; }
 .colmap-table tr.cm-start-row td { border-top:2px solid var(--gold); }
@@ -1256,6 +1217,19 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .colmap-maxes-row .colmap-field { flex:1; }
 .colmap-maxes-row .colmap-field-input { text-align:center; }
 
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Save error toast */
+.save-error-toast{position:fixed;top:env(safe-area-inset-top,12px);left:50%;transform:translateX(-50%);background:#b91c1c;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-family:'Barlow',sans-serif;z-index:9998;text-align:center;max-width:90%;animation:toastIn .3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
 </style>
 </head>
 <body>
@@ -1265,8 +1239,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <div class="header-logo">Powerlift Pro</div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
-    <button class="settings-btn" onclick="openSettings()" title="Settings">
-      <svg viewBox="0 0 28 40" fill="currentColor" width="14" height="20"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+    <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 28 40" fill="currentColor" width="14" height="20" aria-hidden="true"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
     </button>
   </div>
   <div id="main-content"></div>
@@ -1301,18 +1275,18 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </div>
   </div>
-  <nav class="bottom-nav">
-    <button class="nav-btn" id="nav-home" onclick="setScreen('home')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
+  <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+    <button class="nav-btn" id="nav-home" onclick="setScreen('home')" aria-label="Home">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
     </button>
-    <button class="nav-btn" id="nav-workout" onclick="setScreen('workout')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg></span>Workout
+    <button class="nav-btn" id="nav-workout" onclick="setScreen('workout')" aria-label="Workout">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg></span>Workout
     </button>
-    <button class="nav-btn" id="nav-metrics" onclick="setScreen('metrics')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></span>Metrics
+    <button class="nav-btn" id="nav-metrics" onclick="setScreen('metrics')" aria-label="Metrics">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></span>Metrics
     </button>
-    <button class="nav-btn" id="nav-calc" onclick="setScreen('calc')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg></span>Calc
+    <button class="nav-btn" id="nav-calc" onclick="setScreen('calc')" aria-label="Calculator">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg></span>Calc
     </button>
   </nav>
 </div>
@@ -1361,14 +1335,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   <div class="onboarding-container" id="onboarding-body"></div>
 </div>
 
-<!-- Intake Modal -->
-<div class="schedule-modal" id="intake-modal" style="display:none">
-  <div class="checkin-overlay" onclick="skipIntake()"></div>
-  <div class="intake-sheet">
-    <div class="checkin-handle"></div>
-    <div id="intake-body"></div>
-  </div>
-</div>
+<!-- Intake Modal removed (dead code) -->
 
 <!-- Import Intake Modal (multi-step) -->
 <div class="schedule-modal" id="import-intent-modal" style="display:none">
@@ -1561,7 +1528,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         DOTS / Wilks Scores
       </div>
-      <div class="settings-toggle on" id="scores-toggle"></div>
+      <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
 
     <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
@@ -1581,11 +1548,10 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <script>
 // ── THEME ─────────────────────────────────────────────────────────────────────
-const THEMES = ['dark', 'navy', 'light'];
 const THEME_META  = { dark: '#0a0a0a', navy: '#0A0E1A', light: '#F2EDE4' };
 
 function loadTheme(){ return localStorage.getItem('liftlog_theme')||'dark'; }
-function saveTheme(t){ localStorage.setItem('liftlog_theme', t); }
+function saveTheme(t){ try{ localStorage.setItem('liftlog_theme', t); }catch(e){ console.error(e); } }
 
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t==='dark' ? '' : t);
@@ -1608,13 +1574,25 @@ const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.lengt
   if(nav.blockId){ const b=state.blocks.find(b=>b.id===nav.blockId); if(b) state.activeBlock=b; }
   if(typeof nav.week==='number') state.activeWeek=nav.week;
   if(typeof nav.day==='number') state.activeDay=nav.day;
+  // Bounds-check restored week/day indices against active block
+  const _rb=state.activeBlock;
+  if(_rb&&_rb.weeks){
+    if(state.activeWeek>=_rb.weeks.length) state.activeWeek=0;
+    const _rw=_rb.weeks[state.activeWeek];
+    if(_rw&&_rw.days&&state.activeDay>=_rw.days.length) state.activeDay=0;
+  }
 })();
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
-function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>alert('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
+function showSaveError(){if(window._saveErrorShown)return;window._saveErrorShown=true;const toast=document.createElement('div');toast.className='save-error-toast';toast.textContent='Storage full \u2014 some data may not be saved. Consider exporting your data.';document.body.appendChild(toast);setTimeout(()=>toast.remove(),8000);}
+
+function _showWarningToast(msg){const t=document.createElement('div');t.className='save-error-toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),8000);}
+function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>_showWarningToast('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
 let _saveLogsTimer=null;
-function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(()=>{ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); } },300); }
+function _saveLogsImmediate(){ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
+function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
+window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } });
 function rePopulateSets(blocks){
   try{
     for(const block of blocks){
@@ -1649,17 +1627,18 @@ function rePopulateSets(blocks){
   }catch(e){ console.error('[liftlog] rePopulateSets error:',e); }
 }
 if(_savedBlocks.length>0) rePopulateSets(_savedBlocks);
-function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>alert('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
-function saveBlocks(){ try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); } }
+function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>_showWarningToast('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
+function saveBlocks(){ try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
 function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
-function saveCustomLifts(){ try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); } }
+function saveCustomLifts(){ try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); showSaveError(); } }
 function loadTrackedLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
-function saveTrackedLifts(){ try{ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }catch(e){ console.error('[liftlog] saveTrackedLifts error:',e); } }
+function saveTrackedLifts(){ try{ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }catch(e){ console.error('[liftlog] saveTrackedLifts error:',e); showSaveError(); } }
 function loadNav(){ try{ return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch{ return {}; } }
-function saveNav(){ try{ localStorage.setItem('liftlog_nav', JSON.stringify({blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay})); }catch(e){ console.error('[liftlog] saveNav error:',e); } }
+function saveNav(){ try{ localStorage.setItem('liftlog_nav', JSON.stringify({blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay})); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML; }
+function cssEsc(s){ return CSS.escape ? CSS.escape(s) : s.replace(/([[\](){}|\\^$*.+?])/g,'\\$1'); }
 
 // ── SCREEN NAV ────────────────────────────────────────────────────────────────
 let _workoutScrollY = 0;
@@ -1955,18 +1934,6 @@ function getSetReps(blockId,weekLabel,dayName,exName,setIdx){
   return null;
 }
 
-// ── VARIATION COLORS ─────────────────────────────────────────────────────────
-const VAR_COLORS = [
-  '#C9A84C', // gold  — comp/primary
-  '#a78bfa', // purple
-  '#4ade80', // green
-  '#f97316', // orange
-  '#38bdf8', // blue
-  '#f43f5e', // red
-  '#e879f9', // pink
-  '#2dd4bf', // teal
-];
-
 // ── METRICS RENDER ────────────────────────────────────────────────────────────
 function renderMetrics(){
   const main=document.getElementById('main-content');
@@ -2118,7 +2085,7 @@ function renderMetrics(){
     // When only one variation, show specific exercise name; when multiple, show group label
     const displayTitle = vars.length === 1 ? vars[0][0] : group.label;
     h+=`<div class="metrics-lift-header">
-      <div class="metrics-lift-title">${displayTitle}</div>
+      <div class="metrics-lift-title">${escH(displayTitle)}</div>
       <div style="text-align:right">
         <div class="metrics-best">${best?best+'lb':'-'}</div>
         <div class="metrics-best-label">Best Est. 1RM</div>
@@ -2129,12 +2096,12 @@ function renderMetrics(){
       h+=`<div class="var-pill-row">`;
       vars.forEach(([vname])=>{
         const isActive = vname === activeVar;
-        h+=`<button class="var-pill${isActive?' active':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${vname}</button>`;
+        h+=`<button class="var-pill${isActive?' active':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${escH(vname)}</button>`;
       });
       h+=`</div>`;
     }
 
-    h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${esc(groupKey)}" width="400" height="160"></canvas></div>`;
+    h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160"></canvas></div>`;
 
     h+=`<div class="rm-datapoints"><div class="var-section">`;
     activePts.forEach((pt,i)=>{
@@ -2736,7 +2703,7 @@ const APP_SETTINGS_KEY     = 'liftlog_app_settings';   // { showScores: bool }
 const ONBOARDED_KEY        = 'liftlog_onboarded';      // '1' after onboarding complete
 
 function loadAppSettings()  { try { return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch { return {}; } }
-function saveAppSettings(s) { try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); } }
+function saveAppSettings(s) { try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); showSaveError(); } }
 function getShowScores()    { const s = loadAppSettings(); return s.showScores    !== false; } // default ON
 
 function toggleAthleteProfileForm() {
@@ -2821,173 +2788,14 @@ function resetOnboarding() {
 // ── Persistence helpers ───────────────────────────────────────────────────────
 
 function loadSchedule()  { try { return JSON.parse(localStorage.getItem(SCHEDULE_KEY)||'{}'); } catch { return {}; } }
-function saveSchedule(d) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+function saveSchedule(d) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
 
-// Schedule: simple ordered array — scheduleForBlock[i] = dow for training day i
-function getBlockSchedule(blockId) {
-  const s = loadSchedule();
-  const val = s[blockId];
-  if (!val || !Array.isArray(val)) return null; // null = not set or corrupt
-  return val;
-}
-function setBlockSchedule(blockId, dowArray) {
-  const s = loadSchedule();
-  s[blockId] = dowArray;
-  saveSchedule(s);
-}
 
 // Athlete profile
 function loadAthlete()  { try { return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
-function saveAthlete(d) { try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+function saveAthlete(d) { try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
 
 
-// ── Schedule modal ────────────────────────────────────────────────────────────
-let _scheduleTargetDayIdx = null; // which training day index in current week we're assigning
-
-const DOW_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const DOW_FULL   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-// ── Intake flow ───────────────────────────────────────────────────────────────
-// Triggered after a new block loads. Two steps: day selection, then athlete info.
-// State lives only in the modal; nothing is persisted until confirmed.
-
-let _intakeBlock   = null;  // block being configured
-let _intakeDowSel  = [];    // selected DOWs in order (length must equal training day count)
-
-function getTrainingDayCount(block) {
-  if (!block) return 0;
-  // Count distinct training days across week 0 (representative)
-  const week = block.weeks[0];
-  if (!week) return 0;
-  return week.days.filter(d => d.exercises && d.exercises.length > 0).length;
-}
-
-function openIntake(block) {
-  _intakeBlock  = block;
-  _intakeDowSel = [];
-  _renderIntakeStep1();
-  document.getElementById('intake-modal').style.display = 'flex';
-}
-
-function closeIntake() {
-  document.getElementById('intake-modal').style.display = 'none';
-  _intakeBlock  = null;
-  _intakeDowSel = [];
-}
-
-function skipIntake() {
-  closeIntake();
-  render();
-}
-
-function _renderIntakeStep1() {
-  const n     = getTrainingDayCount(_intakeBlock);
-  const DOW_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-
-  const pills = DOW_SHORT.map((lbl, i) => {
-    const pos = _intakeDowSel.indexOf(i);
-    const sel = pos !== -1;
-    return `<button class="intake-dow-pill${sel ? ' selected' : ''}" onclick="intakeToggleDow(${i})">
-      ${lbl}
-      ${sel ? `<span class="intake-dow-num">${pos + 1}</span>` : ''}
-    </button>`;
-  }).join('');
-
-  const ready = _intakeDowSel.length === n;
-
-  document.getElementById('intake-body').innerHTML = `
-    <div class="intake-step-label">Step 1 of 2</div>
-    <div class="intake-title">When do you train?</div>
-    <div class="intake-sub">Select ${n} day${n !== 1 ? 's' : ''} in the order your sessions run</div>
-    <div class="intake-dow-grid">${pills}</div>
-    <div class="intake-count-hint">${_intakeDowSel.length} of ${n} selected</div>
-    <button class="intake-next-btn${ready ? ' ready' : ''}" ${ready ? '' : 'disabled'} onclick="intakeStep2()">Next →</button>
-    <button class="intake-skip-btn" onclick="skipIntake()">Skip setup</button>
-  `;
-}
-
-function intakeToggleDow(dow) {
-  const idx = _intakeDowSel.indexOf(dow);
-  const n   = getTrainingDayCount(_intakeBlock);
-  if (idx !== -1) {
-    _intakeDowSel.splice(idx, 1);
-  } else if (_intakeDowSel.length < n) {
-    _intakeDowSel.push(dow);
-  }
-  _renderIntakeStep1();
-}
-
-function intakeStep2() {
-  if (!_intakeBlock || _intakeDowSel.length !== getTrainingDayCount(_intakeBlock)) return;
-  // Save schedule immediately
-  setBlockSchedule(_intakeBlock.id, [..._intakeDowSel]);
-
-  const athlete = loadAthlete() || {};
-  document.getElementById('intake-body').innerHTML = `
-    <div class="intake-step-label">Step 2 of 2</div>
-    <div class="intake-title">About you</div>
-    <div class="intake-sub">Used for DOTS & WILKS scores on your metrics</div>
-
-    <div class="intake-field-label">Name</div>
-    <input class="intake-input" id="intake-name" type="text" placeholder="Your name"
-      value="${esc(athlete.name || '')}" autocomplete="given-name">
-
-    <div class="intake-field-label">Gender</div>
-    <div class="intake-gender-row">
-      <button class="intake-gender-btn${athlete.gender === 'male' ? ' selected' : ''}" onclick="intakeSetGender('male',this)">Male</button>
-      <button class="intake-gender-btn${athlete.gender === 'female' ? ' selected' : ''}" onclick="intakeSetGender('female',this)">Female</button>
-    </div>
-
-    <div class="intake-field-label">Age</div>
-    <input class="intake-input" id="intake-age" type="number" min="10" max="99" placeholder="Years"
-      value="${athlete.age || ''}" inputmode="numeric">
-
-    <div class="intake-field-label">Bodyweight</div>
-    <div class="intake-bw-row">
-      <input class="intake-input intake-bw-input" id="intake-bw" type="number" min="30" max="400" placeholder="Weight"
-        value="${athlete.bodyweight || ''}" inputmode="decimal">
-      <div class="intake-unit-toggle">
-        <button class="intake-unit-btn${(athlete.bwUnit||'lbs')==='lbs'?' active':''}" onclick="intakeSetUnit('lbs',this)">lbs</button>
-        <button class="intake-unit-btn${(athlete.bwUnit||'lbs')==='kg'?' active':''}" onclick="intakeSetUnit('kg',this)">kg</button>
-      </div>
-    </div>
-
-    <button class="intake-next-btn ready" onclick="intakeFinish()">Done</button>
-    <button class="intake-skip-btn" onclick="skipIntake()">Skip for now</button>
-  `;
-}
-
-let _intakeGender = null;
-let _intakeUnit   = 'lbs';
-
-function intakeSetGender(g, el) {
-  _intakeGender = g;
-  el.closest('.intake-gender-row').querySelectorAll('.intake-gender-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-function intakeSetUnit(u, el) {
-  _intakeUnit = u;
-  el.closest('.intake-unit-toggle').querySelectorAll('.intake-unit-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function intakeFinish() {
-  const name = document.getElementById('intake-name')?.value.trim() || null;
-  const age  = parseInt(document.getElementById('intake-age')?.value) || null;
-  const bw   = parseFloat(document.getElementById('intake-bw')?.value) || null;
-  const existing = loadAthlete() || {};
-  const athlete = {
-    name:       name              || existing.name       || null,
-    gender:     _intakeGender     || existing.gender     || null,
-    age:        age               ?? existing.age        ?? null,
-    bodyweight: bw                ?? existing.bodyweight ?? null,
-    bwUnit:     _intakeUnit       || existing.bwUnit     || 'lbs',
-  };
-  saveAthlete(athlete);
-  closeIntake();
-  render();
-}
 
 // ── Schedule editor (from This Week card) ─────────────────────────────────────
 // Simple: shows 7 day slots, N of them are active (training days).
@@ -3362,7 +3170,7 @@ function renderWeekCard() {
 
     return '<div class="week-training-dot-wrap">'
       + '<div class="' + dotClass + '">' + dotContent + '</div>'
-      + '<div class="week-training-dot-label assigned">' + esc(label) + '</div>'
+      + '<div class="week-training-dot-label assigned">' + escH(label) + '</div>'
       + '</div>';
   }).join('');
 
@@ -3403,8 +3211,8 @@ function renderLastWorkoutCard() {
 
   return `<div class="home-card last-workout-card" onclick="goToWorkout(${weekIdx},${dayIdx})">
     <div class="home-card-label">✓ Last Workout</div>
-    <div class="last-workout-card-day">${esc(truncName)}</div>
-    <div class="last-workout-card-meta">${esc(meta)}</div>
+    <div class="last-workout-card-day">${escH(truncName)}</div>
+    <div class="last-workout-card-meta">${escH(meta)}</div>
     <div class="last-workout-stats">
       <div class="last-workout-stat">
         <div class="last-workout-stat-label">Tonnage</div>
@@ -3472,8 +3280,8 @@ function renderHome() {
       const pres = (ex.prescription || '').slice(0, 20) + (ex.prescription?.length > 20 ? '…' : '');
       return `<div class="home-hero-ex">
         <div class="home-hero-ex-dot"></div>
-        <div class="home-hero-ex-name">${esc(ex.name)}</div>
-        <div class="home-hero-ex-pres">${esc(pres)}</div>
+        <div class="home-hero-ex-name">${escH(ex.name)}</div>
+        <div class="home-hero-ex-pres">${escH(pres)}</div>
       </div>`;
     }).join('');
     heroHtml = `<div class="home-hero" onclick="goToWorkout(${weekIdx},${dayIdx})">
@@ -3481,8 +3289,8 @@ function renderHome() {
       <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       <div class="home-hero-inner">
         <div class="home-hero-label">Up Next</div>
-        <div class="home-hero-day">${esc(day.name || 'Workout')}</div>
-        <div class="home-hero-meta">${esc(meta)}</div>
+        <div class="home-hero-day">${escH(day.name || 'Workout')}</div>
+        <div class="home-hero-meta">${escH(meta)}</div>
         <div class="home-hero-exercises">
           ${exRows}
           ${more > 0 ? `<div class="home-hero-more">+${more} more</div>` : ''}
@@ -3500,7 +3308,7 @@ function renderHome() {
       <div class="home-hero-inner">
         <div class="home-hero-label">✓ All Weeks Complete</div>
         <div class="home-hero-day">Block Finished</div>
-        <div class="home-hero-meta">${esc(block.name || '')}</div>
+        <div class="home-hero-meta">${escH(block.name || '')}</div>
         <div class="home-hero-cta" onclick="setScreen('metrics')">
           <span class="home-hero-cta-text">View Metrics</span>
           <span class="home-hero-cta-arrow">→</span>
@@ -3530,7 +3338,7 @@ function renderHome() {
         if (data && data.weight) {
           const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
           liftRows.push(`<div class="session-lift-row">
-            <div class="session-lift-name">${esc(lift)}</div>
+            <div class="session-lift-name">${escH(lift)}</div>
             <div class="session-lift-set">${data.reps}×${data.weight}lb${rpeStr}</div>
           </div>`);
         }
@@ -3555,8 +3363,8 @@ function renderHome() {
       <div class="session-hero-bg"></div>
       <div class="session-hero-inner">
         <div class="session-hero-label"><div class="session-hero-label-dot"></div>${heroLabel}</div>
-        <div class="session-hero-day">${esc(dayName)}</div>
-        <div class="session-hero-meta">${esc(meta)}</div>
+        <div class="session-hero-day">${escH(dayName)}</div>
+        <div class="session-hero-meta">${escH(meta)}</div>
         ${liftRowsHtml}
         <div class="session-stats">
           <div class="session-stat"><div class="session-stat-val">${vol}<span class="unit">${volUnit}</span></div><div class="session-stat-label">Volume</div></div>
@@ -3574,8 +3382,8 @@ function renderHome() {
       <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       <div class="home-hero-inner">
         <div class="home-hero-label">Ready to Start</div>
-        <div class="home-hero-day">${esc(firstDay?.name || 'Day 1')}</div>
-        <div class="home-hero-meta">${esc(block.name || 'New Block')}</div>
+        <div class="home-hero-day">${escH(firstDay?.name || 'Day 1')}</div>
+        <div class="home-hero-meta">${escH(block.name || 'New Block')}</div>
         <div class="home-hero-cta">
           <span class="home-hero-cta-text">Begin First Workout</span>
           <span class="home-hero-cta-arrow">→</span>
@@ -3614,7 +3422,7 @@ function renderHome() {
       const data = weekSummary.bestLifts[group];
       if (!data) continue;
       const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
-      const varStr = data.isVariation ? ` <span class="var-label">(${esc(data.name)})</span>` : '';
+      const varStr = data.isVariation ? ` <span class="var-label">(${escH(data.name)})</span>` : '';
       liftRowsHtml += '<div class="week-summary-lift-row">'
         + '<div class="week-summary-lift-name">' + label + '</div>'
         + '<div class="week-summary-lift-set">' + data.reps + '×' + data.weight + 'lb' + rpeStr + varStr + '</div>'
@@ -3629,7 +3437,7 @@ function renderHome() {
 
     weeklySummaryHtml = '<div class="home-week-summary">'
       + '<div class="home-week-summary-header">'
-      + '<div class="home-week-summary-label">This Week · ' + esc(weekSummary.weekLabel) + '</div>'
+      + '<div class="home-week-summary-label">This Week · ' + escH(weekSummary.weekLabel) + '</div>'
       + '<div class="home-week-summary-meta">' + completedCount + '/' + totalDayCount + ' days</div>'
       + '</div>'
       + (liftRowsHtml ? '<div class="week-summary-lifts">' + liftRowsHtml + '</div>' : '')
@@ -3647,7 +3455,7 @@ function renderHome() {
   }
 
   content.innerHTML = `<div class="home-screen">
-    <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + esc(athleteName) : ''}</div>
+    <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</div>
     ${heroHtml}
     ${middleRowHtml}
     ${weeklySummaryHtml}
@@ -3771,7 +3579,7 @@ function renderUploadScreen() {
 function renderBlockBar(block) {
   if(state.editingBlockName){
     return `<div class="block-bar">
-      <input class="block-name-edit" id="block-name-input" value="${esc(block.name)}"
+      <input class="block-name-edit" id="block-name-input" value="${escH(block.name)}"
         onblur="saveBlockName()"
         onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingBlockName=false;render();}">
       <div class="block-dates">${block.dateRange}</div>
@@ -3797,7 +3605,7 @@ function renderWeekPills(block) {
     const classes=['week-pill'];
     if(state.activeWeek===wi) classes.push('active');
     if(weekDone) classes.push('done');
-    h+=`<button class="${classes.join(' ')}" data-week-idx="${wi}" onclick="setWeek(${wi})">${w.label}</button>`;
+    h+=`<button class="${classes.join(' ')}" data-week-idx="${wi}" onclick="setWeek(${wi})" role="tab" aria-selected="${state.activeWeek===wi}">${escH(w.label)}</button>`;
   });
   h+=`</div>`;
   return h;
@@ -3849,7 +3657,7 @@ function renderNextWorkoutBanner(block) {
   const nw=block.weeks[_next.weekIdx]; const nd=nw?.days[_next.dayIdx];
   if(!nd) return '';
   return `<div class="next-workout-banner" onclick="state.activeWeek=${_next.weekIdx};state.activeDay=${_next.dayIdx};state.expandedEx=new Set();saveNav();render()">
-    <span class="next-workout-banner-text"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Next workout: ${nw.label} — ${nd.name}</span><span class="next-workout-banner-arrow">→</span>
+    <span class="next-workout-banner-text"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Next workout: ${escH(nw.label)} — ${escH(nd.name)}</span><span class="next-workout-banner-arrow">→</span>
   </div>`;
 }
 
@@ -3950,16 +3758,16 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
   const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bare?.sets||0)||(pres?1:0);
 
-  h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${esc(expandKey)}" data-ex-key="${esc(key)}">`;
+  h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
   h+=`<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
-      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${ex.displayName||ex.name}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
+      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${escH(ex.displayName||ex.name)}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
     </div>
     <div class="ex-summary-right">
       ${showTrackBtn && !tracked ? `<button class="track-btn ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="Track in metrics"><span class="track-hint-inline">Track</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>` : trackBtn}
       ${isSkipped ? `<span class="skipped-badge">SKIPPED</span>` : ''}
-      <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" onclick="event.stopPropagation();toggleEx('${esc(key)}')">${isDone?'✓':''}</button>
+      <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone?'✓':''}</button>
     </div>
   </div>${!isExpanded?`<div class="ex-expand-handle" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')"><div class="ex-expand-pill"></div></div>`:''}`;
 
@@ -3969,7 +3777,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     const editingThis=state.editingExKey===key;
     if(editingThis){
       h+=`<div class="exercise-header" style="padding:10px 16px 4px">
-        <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${(ex.displayName||ex.name).trim()}"
+        <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${escH((ex.displayName||ex.name).trim())}"
           onblur="saveExName('${esc(key)}','${esc(ex.name)}')"
           onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;render();}">
       </div>`;
@@ -4138,7 +3946,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     if(allCoachNotes.length>0){
       h+=`<div class="notes-section">
         <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Coach Notes</div>
-        ${allCoachNotes.map(n=>`<div class="coach-note">${n}</div>`).join('')}
+        ${allCoachNotes.map(n=>`<div class="coach-note">${escH(n)}</div>`).join('')}
       </div>`;
     }
 
@@ -4146,9 +3954,9 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     const importedNote=log.lifterNote||null;
     h+=`<div class="notes-section">
       <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> My Notes</div>
-      ${importedNote?`<div class="coach-note" style="color:var(--text-sub);border-top:1px solid #222"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px;margin-right:4px;opacity:0.6"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>From sheet: ${importedNote}</div>`:''}
-      ${prevNote?`<div class="lifter-prev-note">Last time: "${prevNote}"</div>`:''}
-      <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." oninput="setNote('${esc(key)}',this.value)">${log.notes||''}</textarea></div>
+      ${importedNote?`<div class="coach-note" style="color:var(--text-sub);border-top:1px solid #222"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px;margin-right:4px;opacity:0.6"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>From sheet: ${escH(importedNote)}</div>`:''}
+      ${prevNote?`<div class="lifter-prev-note">Last time: "${escH(prevNote)}"</div>`:''}
+      <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." oninput="setNote('${esc(key)}',this.value)" aria-label="Exercise notes">${escH(log.notes||'')}</textarea></div>
     </div>`;
     h+=`</div>`; // ex-detail - close notes section
     h+=`<div class="skip-row">
@@ -4197,7 +4005,7 @@ function renderExerciseList(block, week, day) {
       const groupExpandKeys = item.exercises.map((ex, i) => lk(block.id, week.label, day.name, ex.name) + '||' + (startIdx + i));
       h += `<div class="superset-group">`;
       const _displayLabel = item.label.replace(/_\d+$/, '');
-      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${_displayLabel}</span><span class="superset-label">${item.exercises.map(e=>e.name).join(" · ")}</span></div>`;
+      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${_displayLabel}</span><span class="superset-label">${item.exercises.map(e=>escH(e.name)).join(" · ")}</span></div>`;
       item.exercises.forEach(ex => { h += renderExCard(ex, groupExpandKeys, block, week, day, globalExIdx++); });
       h += `</div>`;
     }
@@ -4510,7 +4318,7 @@ function toggleSkip(key){
   
   // Targeted DOM updates
   // 1. Update exercise card skip styling
-  const escaped=key.replace(/'/g,"\\'");
+  const escaped=cssEsc(key);
   const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
   if(card){
     card.classList.toggle('skipped', nowSkipped);
@@ -4579,7 +4387,7 @@ function adjustSets(key, delta){
   }
   state.extraSets[key]=next;
   // Preserve scroll position across render
-  const escaped=key.replace(/'/g,"\\'");
+  const escaped=cssEsc(key);
   const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
   let scrollAnchorOffset=null;
   if(card){ scrollAnchorOffset=card.getBoundingClientRect().top; }
@@ -4746,7 +4554,7 @@ function showCelebration(dayName, meta, onDismiss) {
         : '';
       const nameClass = isSkipped ? 'cel-ex-name cel-ex-done' : 'cel-ex-name';
       return `<div class="cel-ex-row">
-        <div class="${nameClass}">${esc(ex.name)}</div>
+        <div class="${nameClass}">${escH(ex.name)}</div>
         <div class="cel-ex-sets">${statusStr}</div>
       </div>`;
     }).join('');
@@ -4812,6 +4620,7 @@ async function importFromSheetsUrl(prefix) {
       throw new Error(`Failed to fetch sheet (status ${resp.status}). Check that the sharing link is correct.`);
     }
     const buffer = await resp.arrayBuffer();
+    if(buffer.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
     const wb = XLSX.read(buffer);
     wb._plFilename = id; // use sheet ID as stable filename key
     const blocks = parseWorkbook(wb);
@@ -4964,6 +4773,7 @@ async function onDrivePickerCallback(data) {
       buffer = await resp.arrayBuffer();
     }
 
+    if(buffer.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
     const wb = XLSX.read(buffer);
     wb._plFilename = fileName.replace(/\.\w+$/, '');
     const blocks = parseWorkbook(wb);
@@ -5045,7 +4855,7 @@ function renderIntakeStep1(body) {
   body.innerHTML = `
     <div style="margin-bottom:6px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Program</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${esc(names)}</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${escH(names)}</div>
     </div>
     <div class="intake-section-label">What is this program?</div>
     <div class="import-intent-card${_importIntent==='active'?' selected':''}" id="import-card-active" onclick="selectImportIntent('active')">
@@ -5133,15 +4943,15 @@ function renderIntakeStep2(body) {
       const note = ex.note || '';
       return `
         <div class="review-ex-row">
-          <div class="review-ex-name">${esc(name)}</div>
-          <div class="review-ex-pres">${esc(pres)}</div>
-          ${note ? `<div class="review-ex-note">${esc(note)}</div>` : ''}
+          <div class="review-ex-name">${escH(name)}</div>
+          <div class="review-ex-pres">${escH(pres)}</div>
+          ${note ? `<div class="review-ex-note">${escH(note)}</div>` : ''}
         </div>`;
     }).join('');
 
     dayCardsHtml += `
       <div class="review-day-card">
-        <div class="review-day-header">${esc(day.name || 'Day')}</div>
+        <div class="review-day-header">${escH(day.name || 'Day')}</div>
         ${exRows || '<div style="padding:8px 12px;font-size:12px;color:var(--text-dim)">No exercises found</div>'}
       </div>`;
   }
@@ -5178,12 +4988,6 @@ function renderIntakeStep2(body) {
 function showReviewHelp() {
   const el = document.getElementById('review-help-msg');
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-function formatIntakeDate(iso) {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-').map(Number);
-  return m + '/' + d + '/' + String(y).slice(2);
 }
 
 function readIntakeFields() {
@@ -5616,6 +5420,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
   }
   try{
     const data=await file.arrayBuffer();
+    if(data.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
     const wb=XLSX.read(data);
     wb._plFilename = file.name;
     const blocks=parseWorkbook(wb);
@@ -5650,7 +5455,7 @@ function renderProgramList(){
     const weeks=block.weeks?.length||0;
     h+=`<div class="program-item" style="flex-wrap:wrap;">
       <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')">
-        <div class="program-item-name${isCurrent?' active-cycle':''}">${esc(block.name)}</div>
+        <div class="program-item-name${isCurrent?' active-cycle':''}">${escH(block.name)}</div>
         <div class="program-item-meta">${weeks} weeks${block.dateRange?' · '+block.dateRange:''}</div>
       </div>
       <div class="program-item-actions">
@@ -5830,7 +5635,7 @@ function exportTrainingLog(blockId) {
   if (scope === 'week') {
     const activeWeekLabel = block.weeks[state.activeWeek]?.label;
     weeks = block.weeks.filter(w => w.label === activeWeekLabel);
-    if (!weeks.length) { alert('No data for current week.'); return; }
+    if (!weeks.length) { _showWarningToast('No data for current week.'); return; }
   }
 
   const blockLogs = {};
@@ -6397,7 +6202,7 @@ function exportHTMLReport(blockId, scope) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${block.name} — Training Report</title>
+<title>${escH(block.name)} — Training Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
 <style>
@@ -6513,10 +6318,10 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <!-- Header -->
   <div class="rpt-hdr">
     <div class="rpt-brand">Powerlift Pro</div>
-    ${athleteName ? `<div class="rpt-athlete">${athleteName}</div>` : ''}
-    <div class="rpt-block">${block.name}</div>
+    ${athleteName ? `<div class="rpt-athlete">${escH(athleteName)}</div>` : ''}
+    <div class="rpt-block">${escH(block.name)}</div>
     <div class="rpt-meta">
-      <span>${block.dateRange || ''}</span>
+      <span>${escH(block.dateRange || '')}</span>
       <span>${weeks.length} weeks</span>
       <span>${completedDays} sessions</span>
     </div>
@@ -6598,8 +6403,21 @@ ${lineChartScripts}
 </body>
 </html>`;
 
+  // In-app overlay instead of window.open (WKWebView compatible)
+  const overlay = document.createElement('div');
+  overlay.id = 'report-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;background:var(--bg,#0a0a0a);overflow:auto;';
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;height:100%;border:none;';
   const blob = new Blob([html], { type: 'text/html' });
-  window.open(URL.createObjectURL(blob), '_blank');
+  iframe.src = URL.createObjectURL(blob);
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '\u2715 Close Report';
+  closeBtn.style.cssText = 'position:fixed;top:env(safe-area-inset-top,12px);right:12px;z-index:10001;padding:8px 16px;background:#333;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;';
+  closeBtn.onclick = () => { URL.revokeObjectURL(iframe.src); overlay.remove(); };
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
 }
 
 
@@ -6789,7 +6607,7 @@ let _onboardGender = null;
 let _onboardUnit = 'lbs';
 
 function isOnboarded() { return localStorage.getItem(ONBOARDED_KEY) === '1'; }
-function markOnboarded() { localStorage.setItem(ONBOARDED_KEY, '1'); }
+function markOnboarded() { try{ localStorage.setItem(ONBOARDED_KEY, '1'); }catch(e){ console.error(e); } }
 
 function checkOnboarding() {
   // Show onboarding only for brand new users: no programs AND never onboarded
@@ -6857,7 +6675,7 @@ function showOnboardingStep(step) {
       <div class="onboard-form">
         <div class="intake-field-label">Name</div>
         <input class="intake-input" id="onboard-name" type="text" placeholder="Your name"
-          value="${esc(athlete.name || '')}" autocomplete="given-name">
+          value="${escH(athlete.name || '')}" autocomplete="given-name">
 
         <div class="intake-field-label">Gender</div>
         <div class="intake-gender-row">
@@ -6920,10 +6738,6 @@ function onboardSaveProfile() {
   };
   saveAthlete(athlete);
   showOnboardingStep(3);
-}
-
-function onboardUpload() {
-  document.getElementById('file-input').click();
 }
 
 function finishOnboarding() {
@@ -7069,7 +6883,7 @@ function _openCustomExModal(existingKey, existingEx) {
     </div>
     <div class="custom-ex-field">
       <div class="custom-ex-label">Exercise Name</div>
-      <input class="custom-ex-input" id="cex-name" type="text" placeholder="e.g. Hip Thrust" value="${prefillName}" autocomplete="off" autocorrect="off" spellcheck="false">
+      <input class="custom-ex-input" id="cex-name" type="text" placeholder="e.g. Hip Thrust" value="${escH(prefillName)}" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="custom-ex-row">
       <div class="custom-ex-field">
@@ -7221,7 +7035,7 @@ function saveActualReps(sk, value, prescReps) {
 function renderSetRow(sk) {
   // Extract exercise key from set key (remove ||sN suffix) to find anchor card
   const exKey = sk.replace(/\|\|s\d+$/, '');
-  const escaped = exKey.replace(/'/g, "\\'");
+  const escaped = cssEsc(exKey);
   const card = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
   let anchorOffset = null;
   if (card) { anchorOffset = card.getBoundingClientRect().top; }
@@ -7234,7 +7048,7 @@ function renderSetRow(sk) {
 
 function showRepTip() {
   // Mark seen immediately so re-tapping another exercise never re-shows
-  localStorage.setItem('liftlog_rep_tip_seen', '1');
+  try{ localStorage.setItem('liftlog_rep_tip_seen', '1'); }catch(e){ console.error(e); }
   const existing = document.getElementById('rep-tip-tooltip');
   if (existing) return;
   // Insert above the sets-grid, inside the card
@@ -7465,11 +7279,6 @@ function autoDetectColumns() {
 }
 
 function cmColLetter(idx) { return idx >= 0 ? String.fromCharCode(65 + idx) : '—'; }
-
-function cmSetDataStart(rowIdx) {
-  _cmDataStartRow = rowIdx;
-  renderCmStep1();
-}
 
 function renderCmStep1() {
   const firstSheetName = _cmWb.SheetNames[0];
@@ -8071,8 +7880,6 @@ const PLATE_COLORS = {
   0.5: '#bbbbbb',
   0.25: '#cccccc'
 };
-const BAR_KG = 20;
-
 const BARS = [
   { id: 'standard', label: 'Standard Bar', kg: 20, lbs: 44 },
   { id: 'squat',    label: 'Squat Bar',    kg: 25, lbs: 55 }

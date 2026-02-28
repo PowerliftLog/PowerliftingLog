@@ -1,6 +1,6 @@
 {
-  "name": "PowerliftingLog",
-  "short_name": "Powerlift Log",
+  "name": "Powerlift Pro",
+  "short_name": "Powerlift Pro",
   "description": "Powerlifting workout tracker",
   "start_url": "/PowerliftingLog/",
   "scope": "/PowerliftingLog/",

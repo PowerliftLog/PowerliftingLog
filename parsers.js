@@ -419,7 +419,7 @@ function parseASheet(sn,rows){
     })}))});
   }
 
-  return{id:sn,name,dateRange,athleteName,maxes,weeks,format:'A'};
+  return{id:sn+'_'+Date.now(),name,dateRange,athleteName,maxes,weeks,format:'A'};
 }
 
 // ── FORMAT B PARSER ───────────────────────────────────────────────────────────
@@ -434,7 +434,7 @@ function parseB(wb){
     }catch(e){ console.error(`[parseB] Error parsing sheet "${sn}":`,e); }
   }
   if(weeks.length===0) return [];
-  const bId = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i,'').trim() : wb.SheetNames[0];
+  const bId = (wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i,'').trim() : wb.SheetNames[0]) + '_' + Date.now();
   const blocks=[{id:bId,name:bId||'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
   return blocks;
 }
@@ -2569,7 +2569,7 @@ function parseD(wb) {
   if (allWeeks.length === 0) return parseB(wb);
 
   return [{
-    id: (blockMeta.name||'training_block').replace(/[^a-zA-Z0-9]/g,'_') + '_D',
+    id: (blockMeta.name||'training_block').replace(/[^a-zA-Z0-9]/g,'_') + '_D_' + Date.now(),
     name: blockMeta.name,
     format: 'D',
     athleteName: blockMeta.athlete || '',
