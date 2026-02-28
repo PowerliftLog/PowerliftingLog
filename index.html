@@ -818,7 +818,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .intake-gender-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(var(--gold-rgb),0.1); }
 .intake-input { width: 100%; padding: 12px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; font-family: 'Barlow', sans-serif; font-size: 16px; color: var(--text-bright); box-sizing: border-box; outline: none; }
 .intake-input:focus { border-color: var(--gold); }
-.intake-bw-row { display: flex; gap: 10px; align-items: stretch; }
+.intake-bw-row { display: flex; gap: 10px; align-items: flex-end; }
 .intake-bw-input { flex: 1; }
 .intake-unit-toggle { display: flex; flex-direction: column; gap: 4px; }
 .intake-unit-btn { flex: 1; padding: 8px 16px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.12s; text-transform: lowercase; }
@@ -3679,16 +3679,20 @@ function render(){
 function renderUploadOptions(prefix) {
   prefix = prefix || 'up-';
   return `<div class="upload-options">
-    <div class="upload-option-card" onclick="document.getElementById('file-input').click()">
-      <div class="upload-option-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
+    <div class="upload-option-card" onclick="openDrivePicker()">
+      <div class="upload-option-icon upload-option-icon-drive">
+        <svg viewBox="0 0 87.3 78" width="24" height="22">
+          <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
+          <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
+          <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/>
+          <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/>
+          <path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/>
+          <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
         </svg>
       </div>
       <div class="upload-option-body">
-        <div class="upload-option-title">Upload Excel File</div>
-        <div class="upload-option-desc">Select a .xlsx or .xls file from your device</div>
+        <div class="upload-option-title">Import from Google Drive</div>
+        <div class="upload-option-desc">Browse and select a spreadsheet from your Drive</div>
       </div>
       <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
@@ -3726,26 +3730,23 @@ function renderUploadOptions(prefix) {
       </div>
       <div id="${prefix}sheets-url-error" class="upload-sheets-error" style="display:none"></div>
     </div>
-    <div style="text-align:center;padding-top:4px">
-      <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
-    </div>
 
-    <div class="upload-option-card" onclick="openDrivePicker()" style="margin-top:10px">
-      <div class="upload-option-icon upload-option-icon-drive">
-        <svg viewBox="0 0 87.3 78" width="24" height="22">
-          <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
-          <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
-          <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/>
-          <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/>
-          <path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/>
-          <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
+    <div class="upload-option-card" onclick="document.getElementById('file-input').click()">
+      <div class="upload-option-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
         </svg>
       </div>
       <div class="upload-option-body">
-        <div class="upload-option-title">Import from Google Drive</div>
-        <div class="upload-option-desc">Browse and select a spreadsheet from your Drive</div>
+        <div class="upload-option-title">Upload Excel File</div>
+        <div class="upload-option-desc">Select a .xlsx or .xls file from your device</div>
       </div>
       <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+    <div style="text-align:center;padding-top:4px">
+      <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
     </div>
   </div>`;
 }
@@ -4876,10 +4877,10 @@ function requestDriveToken() {
 }
 
 async function openDrivePicker() {
-  // Close onboarding if open
+  // Hide onboarding overlay temporarily so picker is visible, but don't mark as onboarded yet
   const onboardEl = document.getElementById('onboarding-overlay');
-  if (onboardEl && onboardEl.style.display !== 'none') {
-    markOnboarded();
+  const wasOnboarding = onboardEl && onboardEl.style.display !== 'none';
+  if (wasOnboarding) {
     onboardEl.style.display = 'none';
     document.querySelector('.bottom-nav').style.display = '';
     document.querySelector('.header').style.display = '';
@@ -4904,15 +4905,24 @@ async function openDrivePicker() {
       .setAppId('868418344070')
       .addView(spreadsheetView)
       .setTitle('Select a training program spreadsheet')
-      .setCallback(onDrivePickerCallback)
+      .setCallback((data) => {
+        onDrivePickerCallback(data);
+        // If user cancelled and was in onboarding, return to onboarding
+        if (data.action === google.picker.Action.CANCEL && wasOnboarding) {
+          showOnboardingStep(3);
+        }
+      })
       .build();
     picker.setVisible(true);
   } catch (err) {
     console.error('[Drive Picker]', err);
-    // Token might have expired — clear and let user retry
     _driveAccessToken = null;
     if (err.message !== 'popup_closed_by_user') {
       showParseError('error', 'Google Drive sign-in failed. Please try again.');
+    }
+    // If sign-in was cancelled and was in onboarding, return to onboarding
+    if (wasOnboarding) {
+      showOnboardingStep(3);
     }
   }
 }
@@ -4987,6 +4997,10 @@ function openImportIntent(blocks) {
 function closeImportIntent() {
   document.getElementById('import-intent-modal').style.display = 'none';
   _pendingImportBlocks = null;
+  // If not yet onboarded, return to upload step
+  if (!isOnboarded()) {
+    showOnboardingStep(3);
+  }
 }
 
 function renderIntakeStep() {
@@ -5219,6 +5233,11 @@ function confirmImportIntent() {
   applyIntakeToProfile(intake);
 
   closeImportIntent();
+
+  // Close onboarding if still open and mark as complete
+  if (!isOnboarded()) {
+    finishOnboarding();
+  }
 
   if (_importIntent === 'active') {
     blocks.forEach(b => { if (!b.startDate) b.startDate = new Date().toISOString().split('T')[0]; });
@@ -5580,10 +5599,10 @@ function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const 
 
 document.getElementById('file-input').addEventListener('change',async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
-  // Close onboarding if open (so import intent modal is visible)
+  // Hide onboarding temporarily so import intent modal is visible
   const onboardEl = document.getElementById('onboarding-overlay');
-  if (onboardEl && onboardEl.style.display !== 'none') {
-    markOnboarded();
+  const wasOnboarding = onboardEl && onboardEl.style.display !== 'none';
+  if (wasOnboarding) {
     onboardEl.style.display = 'none';
     document.querySelector('.bottom-nav').style.display = '';
     document.querySelector('.header').style.display = '';
@@ -5597,7 +5616,11 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; if(b.name==='Training Program') b.name=namePart; });
     openImportIntent(blocks);
-  }catch(err){ showParseError('error', err.message); console.error(err); }
+  }catch(err){
+    showParseError('error', err.message); console.error(err);
+    // If parse failed and was in onboarding, return to upload step
+    if (wasOnboarding) { showOnboardingStep(3); }
+  }
   e.target.value='';
 });
 
