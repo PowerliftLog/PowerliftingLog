@@ -3084,23 +3084,21 @@ function getWeekDots() {
   const block = state.activeBlock;
   if (!block) return null;
 
-  // Use the week that the home screen hero is showing (next incomplete workout's week)
-  const nw = findNextWorkout(block);
-  const weekIdx = nw.weekIdx;
+  // Use the same week the hero card and weekly summary use
+  const nwInfo = getNextWorkoutInfo();
+  const weekIdx = nwInfo ? nwInfo.weekIdx : state.activeWeek;
   const week = block.weeks[weekIdx];
-  if (!week) return null;
+  if (!week || !week.days) return null;
 
-  const trainingDayIndices = week.days.reduce((acc, d, i) => {
-    if (d.exercises && d.exercises.length > 0) acc.push(i);
-    return acc;
-  }, []);
-  if (trainingDayIndices.length === 0) return null;
+  // Count ALL days in this week (not just ones with exercises)
+  // This ensures dots match the day tabs shown on the workout screen
+  const allDays = week.days;
+  if (allDays.length === 0) return null;
 
-  const dots = trainingDayIndices.map((di, sessionIdx) => {
-    const d       = week.days[di];
-    const isDone  = isDayComplete(block, week, d);
-    const isCurrent = (weekIdx === nw.weekIdx && di === nw.dayIdx && !isDone);
-    return { di, sessionIdx, name: d.name, done: isDone, isCurrent };
+  const dots = allDays.map((d, di) => {
+    const isDone = isDayComplete(block, week, d);
+    const isCurrent = nwInfo && (weekIdx === nwInfo.weekIdx && di === nwInfo.dayIdx && !isDone);
+    return { di, name: d.name, done: isDone, isCurrent: !!isCurrent };
   });
 
   const done = dots.filter(d => d.done).length;
