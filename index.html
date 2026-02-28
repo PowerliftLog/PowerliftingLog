@@ -18,7 +18,7 @@
 <meta name="theme-color" id="theme-color-meta" content="#0a0a0a">
 
 <!-- Content Security Policy -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' blob:; connect-src 'self' https://docs.google.com https://www.googleapis.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' blob: https://docs.google.com https://accounts.google.com; connect-src 'self' https://www.googleapis.com">
 
 <script>
   if ('serviceWorker' in navigator) {
@@ -817,25 +817,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-option-card.expanded { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
 .upload-option-card.expanded .upload-option-arrow { transform: rotate(180deg); }
 .upload-option-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(var(--gold-rgb),0.1); border: 1px solid rgba(var(--gold-rgb),0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--gold); }
-.upload-option-icon-sheets { background: rgba(52,168,83,0.1); border-color: rgba(52,168,83,0.15); color: #34a853; }
 .upload-option-icon-drive { background: rgba(66,133,244,0.1); border-color: rgba(66,133,244,0.15); color: #4285f4; }
 .upload-option-body { flex: 1; min-width: 0; }
 .upload-option-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-bright); letter-spacing: 0.01em; }
 .upload-option-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 .upload-option-arrow { flex-shrink: 0; color: var(--text-dim); transition: transform 0.2s; }
 
-/* Google Sheets expand section */
-.upload-sheets-expand { display: none; background: var(--surface-2); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 14px 14px; padding: 0 16px 16px; margin-bottom: 10px; }
-.upload-sheets-expand.open { display: block; }
-.upload-sheets-instructions { margin-bottom: 14px; }
-.upload-sheets-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
-.upload-sheets-step { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-sub); line-height: 1.7; }
-.upload-sheets-step strong { color: var(--text-bright); }
-.upload-sheets-input-row { display: flex; gap: 8px; align-items: stretch; }
-.upload-sheets-input { flex: 1; background: var(--surface-3); border: 1px solid var(--border-3); border-radius: 8px; padding: 10px 12px; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-primary); outline: none; min-width: 0; box-sizing: border-box; }
-.upload-sheets-input:focus { border-color: var(--gold); }
-.upload-sheets-import-btn { background: var(--gold); color: #000; border: none; border-radius: 8px; padding: 10px 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; cursor: pointer; opacity: 0.4; pointer-events: none; white-space: nowrap; transition: opacity 0.15s; }
-.upload-sheets-error { margin-top: 8px; font-size: 12px; color: #E22C2C; font-family: 'Barlow', sans-serif; }
+
 
 /* Format example viewer */
 .format-example-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: flex-end; justify-content: center; }
@@ -1378,34 +1366,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <div style="margin-bottom:20px">
       <div class="add-lift-group-label" style="margin-bottom:10px">Add New Program</div>
       <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">UPLOAD FROM DEVICE<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-
-      <!-- Google Sheets URL import -->
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or import from Google Sheets</div>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);border-radius:10px;padding:12px 14px;margin-bottom:10px">
-        <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);line-height:1.6;margin-bottom:10px">
-          <strong style="color:var(--gold);display:block;margin-bottom:4px">How to share your program:</strong>
-          If the sheet is already set to <strong style="color:var(--text-primary)">Anyone with the link → Viewer</strong>, just copy the URL and paste it below.<br><br>
-          If it's private, make a copy first:<br>
-          1. <strong style="color:var(--text-primary)">File → Make a copy</strong><br>
-          2. Click <strong style="color:var(--text-primary)">Share</strong> → General access → <strong style="color:var(--text-primary)">Anyone with the link → Viewer</strong><br>
-          3. Copy the link and paste it below
-        </div>
-        <div style="display:flex;gap:8px;align-items:stretch">
-          <input id="sheets-url-input" type="url" placeholder="Paste Google Sheets link…"
-            style="flex:1;background:var(--surface-3);border:1px solid var(--border-3);border-radius:8px;padding:9px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);outline:none;min-width:0"
-            oninput="onSheetsUrlInput(this.value,'')"
-            onkeydown="if(event.key==='Enter')importFromSheetsUrl('')" />
-          <button id="sheets-url-btn" onclick="importFromSheetsUrl('')"
-            style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.05em;cursor:pointer;opacity:0.4;pointer-events:none;white-space:nowrap;transition:opacity 0.15s">
-            IMPORT
-          </button>
-        </div>
-        <div id="sheets-url-error" style="display:none;margin-top:8px;font-size:12px;color:#E22C2C;font-family:'Barlow',sans-serif"></div>
-      </div>
 
       <!-- Google Drive import -->
       <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
@@ -2022,8 +1982,7 @@ function renderMetrics(){
       const hasTested = t > 0;
       const badgeHtml = hasTested ? `<div class="max-delta-badge ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div>` : '';
       const drawerHtml = hasTested ? `<div class="max-tested-drawer"><hr class="max-tested-divider"><div class="max-tested-row"><div class="max-tested-val">${t}</div><div class="max-tested-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div></div><div class="max-tested-label">Tested</div></div>` : '';
-      const clickAttr = hasTested ? ` onclick="toggleMaxCard(this)" style="cursor:pointer"` : '';
-      h += `<div class="max-item"${clickAttr}>${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
+      h += `<div class="max-item" onclick="toggleMaxCard(this)" style="cursor:pointer">${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
     }
     h += `</div>`;
   }
@@ -3512,40 +3471,6 @@ function renderUploadOptions(prefix) {
       <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
 
-    <div class="upload-option-card" onclick="this.querySelector('.upload-sheets-expand').classList.toggle('open');this.classList.toggle('expanded')">
-      <div class="upload-option-icon upload-option-icon-sheets">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
-          <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="1.2"/>
-          <line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" stroke-width="1.2"/>
-          <line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" stroke-width="1.2"/>
-        </svg>
-      </div>
-      <div class="upload-option-body">
-        <div class="upload-option-title">Import from Google Sheets</div>
-        <div class="upload-option-desc">Paste a link to your shared spreadsheet</div>
-      </div>
-      <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    <div class="upload-sheets-expand" onclick="event.stopPropagation()">
-      <div class="upload-sheets-instructions">
-        <div class="upload-sheets-step-label">How to share your sheet:</div>
-        <div class="upload-sheets-step">1. Open your program in Google Sheets</div>
-        <div class="upload-sheets-step">2. Click <strong>Share</strong> → General access → <strong>Anyone with the link</strong></div>
-        <div class="upload-sheets-step">3. Copy the link and paste it below</div>
-      </div>
-      <div class="upload-sheets-input-row">
-        <input id="${prefix}sheets-url-input" type="url" placeholder="Paste Google Sheets link…"
-          class="upload-sheets-input"
-          oninput="onSheetsUrlInput(this.value,'${prefix}')"
-          onkeydown="if(event.key==='Enter')importFromSheetsUrl('${prefix}')"
-          onclick="event.stopPropagation()" />
-        <button id="${prefix}sheets-url-btn" onclick="event.stopPropagation();importFromSheetsUrl('${prefix}')"
-          class="upload-sheets-import-btn">IMPORT</button>
-      </div>
-      <div id="${prefix}sheets-url-error" class="upload-sheets-error" style="display:none"></div>
-    </div>
-
     <div class="upload-option-card" onclick="document.getElementById('file-input').click()">
       <div class="upload-option-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
@@ -4566,101 +4491,6 @@ function showCelebration(dayName, meta, onDismiss) {
   const scroll = overlay.querySelector('.cel-scroll');
   if (scroll) scroll.scrollTop = 0;
   overlay.classList.add('visible');
-}
-
-// ── GOOGLE SHEETS URL IMPORT ─────────────────────────────────────────────────
-function extractSheetsId(url) {
-  // Handles formats:
-  // https://docs.google.com/spreadsheets/d/SHEET_ID/edit...
-  // https://docs.google.com/spreadsheets/d/SHEET_ID/view...
-  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
-  return m ? m[1] : null;
-}
-
-function onSheetsUrlInput(val, prefix) {
-  prefix = prefix || '';
-  const btn = document.getElementById(prefix + 'sheets-url-btn');
-  const err = document.getElementById(prefix + 'sheets-url-error');
-  if (err) err.style.display = 'none';
-  const id = extractSheetsId(val.trim());
-  if (btn) {
-    btn.style.opacity = id ? '1' : '0.4';
-    btn.style.pointerEvents = id ? 'auto' : 'none';
-  }
-}
-
-async function importFromSheetsUrl(prefix) {
-  prefix = prefix || '';
-  const input = document.getElementById(prefix + 'sheets-url-input');
-  const btn   = document.getElementById(prefix + 'sheets-url-btn');
-  const err   = document.getElementById(prefix + 'sheets-url-error');
-  const url   = input.value.trim();
-  const id    = extractSheetsId(url);
-  if (err) err.style.display = 'none';
-
-  if (!id) {
-    err.textContent = "Couldn't find a valid Google Sheets link. Make sure you copied the full URL.";
-    err.style.display = 'block';
-    return;
-  }
-
-  // Swap button to loading state
-  const origText = btn.textContent;
-  btn.textContent = 'LOADING…';
-  btn.style.opacity = '0.6';
-  btn.style.pointerEvents = 'none';
-
-  try {
-    const exportUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`;
-    const resp = await fetch(exportUrl);
-    if (!resp.ok) {
-      if (resp.status === 401 || resp.status === 403) {
-        throw new Error('This sheet is not publicly accessible. Make sure sharing is set to "Anyone with the link → Viewer".');
-      }
-      throw new Error(`Failed to fetch sheet (status ${resp.status}). Check that the sharing link is correct.`);
-    }
-    const buffer = await resp.arrayBuffer();
-    if(buffer.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
-    const wb = XLSX.read(buffer);
-    wb._plFilename = id; // use sheet ID as stable filename key
-    const blocks = parseWorkbook(wb);
-    if (!blocks || blocks.length === 0) {
-      // Fall back to column mapper
-      btn.textContent = origText;
-      btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
-      // Close modals before opening mapper
-      try { closeProgramModal(); } catch(ex) {}
-      const onboardEl = document.getElementById('onboarding-overlay');
-      if (onboardEl && onboardEl.style.display !== 'none') {
-        markOnboarded();
-        onboardEl.style.display = 'none';
-        document.querySelector('.bottom-nav').style.display = '';
-        document.querySelector('.header').style.display = '';
-      }
-      openColumnMapper(wb);
-      return;
-    }
-    // Close any open modals
-    try { closeProgramModal(); } catch(ex) {}
-    // Close onboarding if open
-    const onboardEl = document.getElementById('onboarding-overlay');
-    if (onboardEl && onboardEl.style.display !== 'none') {
-      markOnboarded();
-      onboardEl.style.display = 'none';
-      document.querySelector('.bottom-nav').style.display = '';
-      document.querySelector('.header').style.display = '';
-    }
-    input.value = '';
-    onSheetsUrlInput('', prefix);
-    openImportIntent(blocks);
-  } catch (e) {
-    err.textContent = e.message || 'Something went wrong. Please try again.';
-    err.style.display = 'block';
-    btn.textContent = origText;
-    btn.style.opacity = '1';
-    btn.style.pointerEvents = 'auto';
-  }
 }
 
 // ── GOOGLE DRIVE PICKER ──────────────────────────────────────────────────────
