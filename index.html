@@ -451,26 +451,26 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .track-hint-inline { font-size: 10px; color: var(--text-dim); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-style: normal; }
 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
-.home-screen { padding: 52px 16px 100px; overflow-y: auto; }
-.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+.home-screen { padding: 48px 16px 80px; overflow: hidden; }
+.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
 .home-title { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; margin-bottom: 24px; }
 
 /* Hero card */
-.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-hero:active { transform: scale(0.98); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
 .home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
-.home-hero-inner { position: relative; z-index: 1; padding: 20px; }
+.home-hero-inner { position: relative; z-index: 1; padding: 16px 20px; }
 .home-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
 .home-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: 4px; }
-.home-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 16px; }
-.home-hero-exercises { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.home-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 12px; }
+.home-hero-exercises { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .home-hero-ex { display: flex; align-items: center; gap: 10px; }
 .home-hero-ex-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 .home-hero-ex-name { font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 500; color: var(--text-mid); flex: 1; }
 .home-hero-ex-pres { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--text-faint); }
 .home-hero-more { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); padding-left: 15px; }
-.home-hero-cta { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--border-2); }
+.home-hero-cta { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-2); }
 .home-hero-cta-text { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
 .home-hero-cta-arrow { color: var(--gold); font-size: 18px; }
 .home-hero.done { border-color: rgba(74,222,128,0.25); }
@@ -480,13 +480,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-hero.done .home-hero-cta-arrow { color: #4ade80; }
 
 /* Session Summary Hero Card */
-.session-hero { position: relative; background: var(--glass-bg); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; overflow: hidden; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.session-hero { position: relative; background: var(--glass-bg); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .session-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, transparent 55%); pointer-events: none; }
-.session-hero-inner { position: relative; z-index: 1; padding: 18px 20px 20px; }
+.session-hero-inner { position: relative; z-index: 1; padding: 14px 20px 16px; }
 .session-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4ade80; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
 .session-hero-label-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
 .session-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: 3px; }
-.session-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 16px; }
+.session-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 12px; }
 
 /* Comp lift rows */
 .session-lift-rows { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
@@ -696,11 +696,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .import-intent-card:not(.selected) .import-intent-icon svg { fill: var(--text-faint); transition: fill 0.15s; }
 
 /* Two-col cards row */
-.home-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px 14px 14px; display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.home-card-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
+.home-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px 14px 12px; display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-card-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
 
 /* Home two-column row */
-.home-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.home-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 .home-row > .home-card { margin-bottom: 0; }
 .home-row.single-col { grid-template-columns: 1fr; }
 
@@ -709,17 +709,17 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .last-workout-card:active { transform: scale(0.97); }
 .last-workout-card .home-card-label { color: rgba(74,222,128,0.5); }
 .last-workout-card-day { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 900; color: var(--text-bright); line-height: 1.15; margin-bottom: 2px; letter-spacing: 0.02em; }
-.last-workout-card-meta { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 10px; }
+.last-workout-card-meta { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 8px; }
 .last-workout-stats { display: flex; flex-direction: column; gap: 6px; }
 .last-workout-stat { display: flex; align-items: baseline; justify-content: space-between; }
 .last-workout-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
 .last-workout-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 900; color: var(--text-bright); line-height: 1; }
 .last-workout-stat-val .unit { font-size: 10px; font-weight: 400; color: var(--text-sub); margin-left: 1px; }
-.last-workout-nav { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-2); display: flex; align-items: center; justify-content: space-between; }
+.last-workout-nav { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border-2); display: flex; align-items: center; justify-content: space-between; }
 .last-workout-nav-arrow { color: var(--gold); font-size: 14px; }
 
 /* Week card */
-.week-progress-card { margin-bottom: 14px; }
+.week-progress-card { margin-bottom: 10px; }
 .home-row .week-progress-card { margin-bottom: 0; }
 .home-row .week-training-dots { gap: 6px; }
 .home-row .week-training-dot { width: 26px; height: 26px; font-size: 10px; }
@@ -728,8 +728,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-progress-card.full-width .week-training-dot { width: 36px; height: 36px; font-size: 12px; }
 .week-fraction { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); line-height: 1; margin-bottom: 1px; }
 .week-fraction-denom { font-size: 14px; color: var(--text-faint); font-weight: 400; }
-.week-fraction-sub { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 12px; }
-.week-training-dots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.week-fraction-sub { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 8px; }
+.week-training-dots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .week-training-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
 .week-training-dot-wrap:active .week-training-dot { transform: scale(0.92); }
 .week-training-dot { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--bg); font-weight: 700; transition: all 0.15s; position: relative; }
@@ -763,11 +763,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-score-missing { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 5px; }
 
 /* Weekly Summary card on home */
-.home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px 16px; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .home-week-summary-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); }
 .home-week-summary-meta { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); }
-.week-summary-lifts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.week-summary-lifts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .week-summary-lift-row { display: flex; align-items: center; gap: 0; }
 .week-summary-lift-name { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); width: 76px; flex-shrink: 0; }
 .week-summary-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
@@ -2055,7 +2055,7 @@ function renderMetrics(){
       const hasTested = t > 0;
       const badgeHtml = hasTested ? `<div class="max-delta-badge ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div>` : '';
       const drawerHtml = hasTested ? `<div class="max-tested-drawer"><hr class="max-tested-divider"><div class="max-tested-row"><div class="max-tested-val">${t}</div><div class="max-tested-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div></div><div class="max-tested-label">Tested</div></div>` : '';
-      const clickAttr = hasTested ? ` onclick="this.classList.toggle('expanded')" style="cursor:pointer"` : '';
+      const clickAttr = hasTested ? ` onclick="toggleMaxCard(this)" style="cursor:pointer"` : '';
       h += `<div class="max-item"${clickAttr}>${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
     }
     h += `</div>`;
@@ -2186,6 +2186,13 @@ function renderMetrics(){
   },0);
 }
 
+function toggleMaxCard(el) {
+  const wasExpanded = el.classList.contains('expanded');
+  // Collapse all sibling cards first
+  el.parentElement.querySelectorAll('.max-item.expanded').forEach(c => c.classList.remove('expanded'));
+  // Toggle the clicked one
+  if (!wasExpanded) el.classList.add('expanded');
+}
 function setMetricsDrill(val){ state.metricsDrillBlock=val; renderMetrics(); }
 function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; renderMetrics(); }
 
@@ -8187,17 +8194,12 @@ function renderCalcBarSVG(plates, showCollars) {
     parts.push(`<rect x="${x+1}" y="${cy - ph/2 + 1}" width="${pt-2}" height="2" rx="1" fill="rgba(255,255,255,0.18)"/>`);
     parts.push(`<rect x="${x+1}" y="${cy + ph/2 - 3}" width="${pt-2}" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>`);
 
-    // Labels: stacked vertical chars below narrow plates (2.5kg and smaller), horizontal below wider plates
+    // Labels: horizontal below all plates, smaller font for narrow ones
     const labelCx = x + pt/2;
     if (kg <= 2.5) {
-      // Stacked upright characters below the plate, starting just below bottom edge
-      const chars = String(kg).split('');
-      const charSize = 9;
-      const lineH = charSize + 2;
-      const startY = cy + ph/2 + charSize + 2;
-      chars.forEach((ch, ci) => {
-        parts.push(`<text x="${labelCx}" y="${startY + ci * lineH}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${charSize}">${ch}</text>`);
-      });
+      const labelY = cy + ph/2 + 12;
+      const fontSize = kg < 1 ? 7 : 8;
+      parts.push(`<text x="${labelCx}" y="${labelY}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${fontSize}">${kg}</text>`);
     } else {
       const labelY = cy + ph/2 + 14;
       parts.push(`<text x="${labelCx}" y="${labelY}" text-anchor="middle" dominant-baseline="central" fill="#ccc" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11">${kg}</text>`);
