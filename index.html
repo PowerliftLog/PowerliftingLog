@@ -5691,45 +5691,50 @@ function findNextWorkout(block){
 // Memory + localStorage — persists across sessions.
 function checkWeekProgression(block) {
   if (!block || !block.weeks || block.weeks.length <= 1) return;
-  
+
   // Initialize if not set
   if (block._currentWeekIdx == null) {
     block._currentWeekIdx = 0;
     block._weekActivatedAt = new Date().toISOString().split('T')[0];
     saveBlocks();
   }
-  
-  const wi = block._currentWeekIdx;
-  if (wi >= block.weeks.length - 1) return; // already on last week
-  
-  const week = block.weeks[wi];
-  if (!week) return;
-  
-  // Check if all days with exercises are complete
-  const hasDays = week.days.some(d => d.exercises && d.exercises.length > 0);
-  if (!hasDays) return;
-  const allDone = week.days
-    .filter(d => d.exercises && d.exercises.length > 0)
-    .every(d => isDayComplete(block, week, d));
-  if (!allDone) return; // stay on current week
-  
-  // Check if a Sunday midnight has passed since this week was activated
-  const activated = new Date(block._weekActivatedAt + 'T00:00:00');
-  const now = new Date();
-  
-  // Find the first Sunday at midnight after activation
-  const activatedDay = activated.getDay(); // 0=Sun
-  const daysUntilSunday = activatedDay === 0 ? 7 : (7 - activatedDay);
-  const nextSunday = new Date(activated);
-  nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
-  nextSunday.setHours(0, 0, 0, 0);
-  
-  if (now >= nextSunday) {
-    // Advance to next week
-    block._currentWeekIdx = wi + 1;
-    block._weekActivatedAt = now.toISOString().split('T')[0];
-    saveBlocks();
+
+  // Loop: advance through all completed weeks (not just one at a time)
+  let changed = false;
+  while (block._currentWeekIdx < block.weeks.length - 1) {
+    const wi = block._currentWeekIdx;
+    const week = block.weeks[wi];
+    if (!week) break;
+
+    // Check if all days with exercises are complete
+    const hasDays = week.days.some(d => d.exercises && d.exercises.length > 0);
+    if (!hasDays) break;
+    const allDone = week.days
+      .filter(d => d.exercises && d.exercises.length > 0)
+      .every(d => isDayComplete(block, week, d));
+    if (!allDone) break; // stay on current week
+
+    // Check if a Sunday midnight has passed since this week was activated
+    const activated = new Date(block._weekActivatedAt + 'T00:00:00');
+    const now = new Date();
+
+    // Find the first Sunday at midnight after activation
+    const activatedDay = activated.getDay(); // 0=Sun
+    const daysUntilSunday = activatedDay === 0 ? 7 : (7 - activatedDay);
+    const nextSunday = new Date(activated);
+    nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
+    nextSunday.setHours(0, 0, 0, 0);
+
+    if (now >= nextSunday) {
+      // Advance to next week and keep checking
+      block._currentWeekIdx = wi + 1;
+      block._weekActivatedAt = now.toISOString().split('T')[0];
+      changed = true;
+    } else {
+      break; // Sunday hasn't passed yet for this week
+    }
   }
+  if (changed) saveBlocks();
 }
 function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
