@@ -2901,20 +2901,12 @@ function getHomePRs() {
 }
 
 // ── Weekly Summary (for home screen) ──────────────────────────────────────────
-function getWeeklySummary() {
-  const block = state.activeBlock;
-  if (!block || !block.weeks) return null;
-
-  const weekIdx = block._currentWeekIdx || 0;
-  const week = block.weeks[weekIdx] || block.weeks[0];
+function _computeWeekSummary(block, week) {
   if (!week) return null;
   const wl = week.label;
   const bid = block.id;
 
-  // Gather all logged sets for this week
   let totalVolume = 0, totalSets = 0, totalRpe = 0, rpeCount = 0;
-
-  // Best lift per family: { squat, bench, deadlift } → { name, weight, reps, rpe, e1rm, isVariation }
   const bestByFamily = { squat: null, bench: null, deadlift: null };
 
   for (const day of (week.days || [])) {
@@ -2945,14 +2937,13 @@ function getWeeklySummary() {
           if (!isNaN(r)) { totalRpe += r; rpeCount++; }
         }
 
-        // Track best set per family (comp lift priority, variation fallback)
         if (group && group !== 'other') {
           const result = calc1rm(weight, reps, val.rpe ? parseFloat(val.rpe) : null);
           if (result) {
             const cur = bestByFamily[group];
             const isUpgrade = !cur
-              || (isComp && cur.isVariation)  // comp lift always beats variation
-              || (isComp === !cur.isVariation && result.value > cur.e1rm); // same tier: higher e1rm wins
+              || (isComp && cur.isVariation)
+              || (isComp === !cur.isVariation && result.value > cur.e1rm);
             if (isUpgrade) {
               bestByFamily[group] = {
                 name: ex.name,
@@ -2978,6 +2969,25 @@ function getWeeklySummary() {
     avgRpe: rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null,
     bestLifts: bestByFamily
   };
+}
+
+function getWeeklySummary() {
+  const block = state.activeBlock;
+  if (!block || !block.weeks) return null;
+
+  const weekIdx = block._currentWeekIdx || 0;
+
+  // Try current week first
+  const current = _computeWeekSummary(block, block.weeks[weekIdx]);
+  if (current) { current.weekIdx = weekIdx; return current; }
+
+  // Current week has no logged data — fall back to last completed week
+  for (let i = weekIdx - 1; i >= 0; i--) {
+    const prev = _computeWeekSummary(block, block.weeks[i]);
+    if (prev) { prev.weekIdx = i; return prev; }
+  }
+
+  return null;
 }
 
 // ── Session Summary (for completed-today hero card) ───────────────────────────
@@ -3421,9 +3431,12 @@ function renderHome() {
   let weeklySummaryHtml = '';
 
   if (weekSummary) {
-    const homeWeekIdx = block._currentWeekIdx || 0;
-    const completedCount = (block.weeks[homeWeekIdx]?.days || []).filter(d => isDayComplete(block, block.weeks[homeWeekIdx], d)).length;
-    const totalDayCount = (block.weeks[homeWeekIdx]?.days || []).length;
+    const summaryWeekIdx = weekSummary.weekIdx;
+    const summaryWeek = block.weeks[summaryWeekIdx];
+    const currentWeekIdx = block._currentWeekIdx || 0;
+    const isFallback = summaryWeekIdx !== currentWeekIdx;
+    const completedCount = (summaryWeek?.days || []).filter(d => isDayComplete(block, summaryWeek, d)).length;
+    const totalDayCount = (summaryWeek?.days || []).length;
 
     // Best lift rows
     let liftRowsHtml = '';
@@ -3446,7 +3459,7 @@ function renderHome() {
 
     weeklySummaryHtml = '<div class="home-week-summary">'
       + '<div class="home-week-summary-header">'
-      + '<div class="home-week-summary-label">This Week · ' + escH(weekSummary.weekLabel) + '</div>'
+      + '<div class="home-week-summary-label">' + (isFallback ? 'Last Week' : 'This Week') + ' · ' + escH(weekSummary.weekLabel) + '</div>'
       + '<div class="home-week-summary-meta">' + completedCount + '/' + totalDayCount + ' days</div>'
       + '</div>'
       + (liftRowsHtml ? '<div class="week-summary-lifts">' + liftRowsHtml + '</div>' : '')
