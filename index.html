@@ -1392,7 +1392,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <!-- Add new section -->
     <div style="margin-bottom:20px">
       <div class="add-lift-group-label" style="margin-bottom:10px">Add New Program</div>
-      <button class="drive-btn" onclick="closeProgramModal();openDrivePicker()" style="margin:0 auto;width:100%;justify-content:center">
+      <button class="drive-btn" onclick="closeProgramModal();openDrivePicker()" style="margin:0 auto;width:100%;justify-content:center;flex-direction:row-reverse">
         <svg viewBox="0 0 87.3 78" width="20" height="18">
           <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
           <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
@@ -1409,7 +1409,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or upload from device</div>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
-      <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">Upload File<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+      <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px;flex-direction:row-reverse" onclick="closeProgramModal();document.getElementById('file-input').click()">Upload File<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>
     <!-- Existing cycles -->
     <div id="program-list"></div>
@@ -2905,7 +2905,8 @@ function getWeeklySummary() {
   const block = state.activeBlock;
   if (!block || !block.weeks) return null;
 
-  const week = block.weeks[state.activeWeek] || block.weeks[0];
+  const weekIdx = block._currentWeekIdx || 0;
+  const week = block.weeks[weekIdx] || block.weeks[0];
   if (!week) return null;
   const wl = week.label;
   const bid = block.id;
@@ -3130,7 +3131,7 @@ function getWeekDots() {
 
   // Use the same week the hero card and weekly summary use
   const nwInfo = getNextWorkoutInfo();
-  const weekIdx = nwInfo ? nwInfo.weekIdx : state.activeWeek;
+  const weekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
   const week = block.weeks[weekIdx];
   if (!week || !week.days) return null;
 
@@ -3420,8 +3421,9 @@ function renderHome() {
   let weeklySummaryHtml = '';
 
   if (weekSummary) {
-    const completedCount = (block.weeks[state.activeWeek]?.days || []).filter(d => isDayComplete(block, block.weeks[state.activeWeek], d)).length;
-    const totalDayCount = (block.weeks[state.activeWeek]?.days || []).length;
+    const homeWeekIdx = block._currentWeekIdx || 0;
+    const completedCount = (block.weeks[homeWeekIdx]?.days || []).filter(d => isDayComplete(block, block.weeks[homeWeekIdx], d)).length;
+    const totalDayCount = (block.weeks[homeWeekIdx]?.days || []).length;
 
     // Best lift rows
     let liftRowsHtml = '';
@@ -3479,7 +3481,16 @@ function goToWorkout(weekIdx, dayIdx, activate) {
   state.activeWeek = weekIdx;
   state.activeDay  = dayIdx;
   state.expandedEx = new Set();
-  if (activate) state.workoutActive = { weekIdx, dayIdx };
+  if (activate) {
+    state.workoutActive = { weekIdx, dayIdx };
+    // If starting a workout ahead of current training week, advance progression
+    const block = state.activeBlock;
+    if (block && weekIdx > (block._currentWeekIdx || 0)) {
+      block._currentWeekIdx = weekIdx;
+      block._weekActivatedAt = new Date().toISOString().split('T')[0];
+      saveBlocks();
+    }
+  }
   saveNav();
   setScreen('workout');
 }
@@ -3489,6 +3500,13 @@ function startWorkout(weekIdx, dayIdx) {
   state.activeWeek = weekIdx;
   state.activeDay = dayIdx;
   state.expandedEx = new Set();
+  // If starting a workout ahead of current training week, advance progression
+  const block = state.activeBlock;
+  if (block && weekIdx > (block._currentWeekIdx || 0)) {
+    block._currentWeekIdx = weekIdx;
+    block._weekActivatedAt = new Date().toISOString().split('T')[0];
+    saveBlocks();
+  }
   saveNav();
   if (state.screen !== 'workout') setScreen('workout');
   else render();
@@ -3571,12 +3589,12 @@ function renderBlockBar(block) {
     </div>`;
   }
   let h=`<div class="block-bar"><div style="display:flex;align-items:center;gap:6px">
-    <div><div class="block-name">${block.name}</div><div class="block-dates">${block.dateRange}</div></div>
+    <div><div class="block-name">${displayBlockName(block.name)}</div><div class="block-dates">${block.dateRange}</div></div>
     <button class="edit-name-btn" style="opacity:0.3;font-size:11px" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
   </div>`;
   if(state.blocks.length>1){
     h+=`<select class="cycle-select" onchange="switchBlock(this.value)">`;
-    state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${b.id}</option>`);
+    state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${displayBlockName(b.name) || b.id}</option>`);
     h+=`</select>`;
   }
   h+=`</div>`;
@@ -5752,7 +5770,7 @@ function renderProgramList(){
     const weeks=block.weeks?.length||0;
     h+=`<div class="program-item" style="flex-wrap:wrap;">
       <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')">
-        <div class="program-item-name${isCurrent?' active-cycle':''}">${escH(block.name)}</div>
+        <div class="program-item-name${isCurrent?' active-cycle':''}">${escH(displayBlockName(block.name))}</div>
         <div class="program-item-meta">${weeks} weeks${block.dateRange?' · '+block.dateRange:''}</div>
       </div>
       <div class="program-item-actions">
@@ -5774,7 +5792,7 @@ function promptDeleteBlock(blockId){
   const block=state.blocks.find(b=>b.id===blockId);
   if(!block) return;
   _pendingDeleteBlockId=blockId;
-  document.getElementById('delete-modal-name').textContent=block.name;
+  document.getElementById('delete-modal-name').textContent=displayBlockName(block.name);
   document.getElementById('delete-modal').style.display='flex';
 }
 function closeDeleteModal(){
@@ -5883,12 +5901,12 @@ function openExportModal(blockId) {
     <div class="export-card">
       <div class="export-card-header">
         <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="36" height="36" rx="8" fill="var(--surface-2)" stroke="var(--border)"/>
-          <polyline points="7,26 13,18 18,21 23,13 29,8" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <circle cx="13" cy="18" r="1.5" fill="#C9A84C"/>
-          <circle cx="18" cy="21" r="1.5" fill="#C9A84C"/>
-          <circle cx="23" cy="13" r="1.5" fill="#C9A84C"/>
-          <line x1="7" y1="28" x2="29" y2="28" stroke="#333" stroke-width="1"/>
+          <rect width="36" height="36" rx="8" fill="#C9A84C"/>
+          <rect x="8" y="22" width="4" height="6" rx="1" fill="white" opacity="0.5"/>
+          <rect x="14" y="17" width="4" height="11" rx="1" fill="white" opacity="0.7"/>
+          <rect x="20" y="13" width="4" height="15" rx="1" fill="white" opacity="0.85"/>
+          <rect x="26" y="8" width="4" height="20" rx="1" fill="white" opacity="1"/>
+          <line x1="6" y1="29" x2="32" y2="29" stroke="white" stroke-width="1" opacity="0.3"/>
         </svg>
         <div class="export-card-info">
           <div class="export-card-name">Training Report</div>
