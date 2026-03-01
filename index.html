@@ -6069,7 +6069,7 @@ function exportTrainingLog(blockId) {
   }
 
   const dateStr = new Date().toISOString().slice(0, 10);
-  const safeName = block.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const safeName = displayBlockName(block.name).replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'training';
   const scopeStr = scope === 'week' ? '-' + (block.weeks[state.activeWeek]?.label || 'week').toLowerCase().replace(/\s+/g, '') : '';
   XLSX.writeFile(wb, `${safeName}-training-log${scopeStr}-${dateStr}.xlsx`, { cellStyles: true });
 
@@ -6517,7 +6517,7 @@ function exportHTMLReport(blockId, scope) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escH(block.name)} — Training Report</title>
+<title>${escH(displayBlockName(block.name))} — Training Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
 <style>
@@ -6634,7 +6634,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <div class="rpt-hdr">
     <div class="rpt-brand">Powerlift Pro</div>
     ${athleteName ? `<div class="rpt-athlete">${escH(athleteName)}</div>` : ''}
-    <div class="rpt-block">${escH(block.name)}</div>
+    <div class="rpt-block">${escH(displayBlockName(block.name))}</div>
     <div class="rpt-meta">
       <span>${escH(block.dateRange || '')}</span>
       <span>${weeks.length} weeks</span>
