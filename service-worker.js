@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v6';
+const CACHE_NAME = 'liftlog-v7';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -15,12 +15,20 @@ const ASSETS = [
 // Google Fonts are fetched dynamically (CSS then WOFF2 files).
 // We cache them on first use via the fetch handler below.
 
+// Listen for SKIP_WAITING message from the page to activate a waiting SW
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // Install — pre-cache all core assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
+  // Don't skipWaiting automatically — let the page show an update banner
+  // and the user decides when to activate the new version
 });
 
 // Activate — clean up old caches
