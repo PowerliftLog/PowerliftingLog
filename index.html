@@ -1290,7 +1290,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.7-dbg</span></div>
+      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.8</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -3517,13 +3517,8 @@ function renderHome() {
       + '</div>';
   }
 
-  // DEBUG banner
-  const _dbgText = window._weekProgressionDebug || 'no debug yet';
-  const _dbgHtml = `<div style="background:#333;color:#0f0;font-size:10px;font-family:monospace;padding:6px 8px;border-radius:6px;margin-bottom:8px;word-break:break-all">${escH(_dbgText)}</div>`;
-
   content.innerHTML = `<div class="home-screen">
     <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</div>
-    ${_dbgHtml}
     ${heroHtml}
     ${middleRowHtml}
     ${weeklySummaryHtml}
@@ -5770,37 +5765,65 @@ function checkWeekProgression(block) {
     saveBlocks();
   }
 
-  // DEBUG: collect progression info for on-screen display
-  const _dbg = [];
-  _dbg.push('start idx=' + block._currentWeekIdx + ' activated=' + block._weekActivatedAt);
+  // Rollback check: if current week has no logged training data and the previous
+  // week is fully complete, the old code likely advanced prematurely before EOD Sunday.
+  // Roll back so the ring shows the completed week until Monday.
+  const cwi = block._currentWeekIdx;
+  if (cwi > 0) {
+    const curW = block.weeks[cwi];
+    const hasLoggedData = curW && curW.days.some(d =>
+      d.exercises && d.exercises.some(ex =>
+        ex.sets && ex.sets.some(s => s.logged)
+      )
+    );
+    if (!hasLoggedData) {
+      const prevW = block.weeks[cwi - 1];
+      const prevDone = prevW && prevW.days
+        .filter(d => d.exercises && d.exercises.length > 0)
+        .every(d => isDayComplete(block, prevW, d));
+      if (prevDone) {
+        // Check if EOD Sunday has actually passed for the previous week
+        const actDate = new Date(block._weekActivatedAt + 'T00:00:00');
+        const now = new Date();
+        const actDay = actDate.getDay();
+        // If activated today (Sunday) and it's still Sunday, roll back
+        const daysSinceActivation = Math.floor((now - actDate) / 86400000);
+        if (daysSinceActivation < 1) {
+          block._currentWeekIdx = cwi - 1;
+          // Set activated to previous Monday (approx) so the EOD Sunday boundary
+          // will fire correctly on Monday
+          const prevMonday = new Date(now);
+          prevMonday.setDate(prevMonday.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+          block._weekActivatedAt = prevMonday.toISOString().split('T')[0];
+          saveBlocks();
+        }
+      }
+    }
+  }
 
   // Loop: advance through all completed weeks (not just one at a time)
   let changed = false;
   while (block._currentWeekIdx < block.weeks.length - 1) {
     const wi = block._currentWeekIdx;
     const week = block.weeks[wi];
-    if (!week) { _dbg.push('W' + (wi+1) + ': no week obj'); break; }
+    if (!week) break;
 
     // Check if all days with exercises are complete
     const hasDays = week.days.some(d => d.exercises && d.exercises.length > 0);
-    if (!hasDays) { _dbg.push('W' + (wi+1) + ': no exercise days'); break; }
+    if (!hasDays) break;
     const allDone = week.days
       .filter(d => d.exercises && d.exercises.length > 0)
       .every(d => isDayComplete(block, week, d));
-    if (!allDone) { _dbg.push('W' + (wi+1) + ': not all done'); break; }
+    if (!allDone) break;
 
-    // Check if a Sunday midnight has passed since this week was activated
+    // Check if end-of-day Sunday (Monday 00:00) has passed since activation
     const activated = new Date(block._weekActivatedAt + 'T00:00:00');
     const now = new Date();
-
-    // Find end-of-day Sunday (= Monday 00:00:00) after activation
     const activatedDay = activated.getDay(); // 0=Sun
     const daysUntilMonday = activatedDay === 0 ? 1 : (8 - activatedDay);
     const endOfSunday = new Date(activated);
     endOfSunday.setDate(endOfSunday.getDate() + daysUntilMonday);
     endOfSunday.setHours(0, 0, 0, 0);
-
-    _dbg.push('W' + (wi+1) + ': done=true actDay=' + activatedDay + ' eodSun=' + endOfSunday.toISOString().split('T')[0] + ' now>=' + (now >= endOfSunday));
 
     if (now >= endOfSunday) {
       block._currentWeekIdx = wi + 1;
@@ -5810,11 +5833,7 @@ function checkWeekProgression(block) {
       break;
     }
   }
-  _dbg.push('final idx=' + block._currentWeekIdx);
   if (changed) saveBlocks();
-
-  // DEBUG: show on screen
-  window._weekProgressionDebug = _dbg.join(' | ');
 }
 function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
