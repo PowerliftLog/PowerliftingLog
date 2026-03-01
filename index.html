@@ -4928,9 +4928,6 @@ function renderIntakeStep1(body) {
   const names = blocks.map(b => b.name || b.id).join(', ');
   const existingBlocks = state.blocks || [];
   const showMerge = existingBlocks.length > 0;
-  const mergeOpts = existingBlocks.map(b =>
-    `<option value="${b.id}">${b.name || b.id}</option>`
-  ).join('');
 
   // Pre-populate 1RM and date fields
   const ath = loadAthlete() || {};
@@ -4938,6 +4935,7 @@ function renderIntakeStep1(body) {
   const preMaxB = b0.maxes?.bench || ath.tested1rm_bench || '';
   const preMaxD = b0.maxes?.deadlift || ath.tested1rm_deadlift || '';
   const isHistorical = _importIntent === 'history';
+  const isMerge = _importIntent === 'merge';
   let preDate = '';
   if (isHistorical && b0.dateRange) {
     const m = b0.dateRange.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
@@ -4945,42 +4943,64 @@ function renderIntakeStep1(body) {
   }
   if (!preDate && _importIntent === 'active') preDate = new Date().toISOString().split('T')[0];
 
+  // Merge target — auto-select active block, or show dropdown for multiple
+  let mergeTargetHtml = '';
+  if (showMerge) {
+    if (existingBlocks.length === 1) {
+      const tgt = existingBlocks[0];
+      mergeTargetHtml = `
+        <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
+          <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:4px">Adding to:</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);padding:8px 12px;background:var(--surface-3);border-radius:8px;border:1px solid var(--border)">${escH(displayBlockName(tgt.name) || tgt.id)}</div>
+          <input type="hidden" id="import-merge-target" value="${tgt.id}">
+        </div>`;
+    } else {
+      const activeId = state.activeBlock?.id || '';
+      const mergeOpts = existingBlocks.map(b =>
+        `<option value="${b.id}"${b.id===activeId?' selected':''}>${displayBlockName(b.name) || b.id}</option>`
+      ).join('');
+      mergeTargetHtml = `
+        <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
+          <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
+          <select id="import-merge-target" class="intake-field-input">${mergeOpts}</select>
+        </div>`;
+    }
+  }
+
   body.innerHTML = `
     <div style="margin-bottom:6px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Program</div>
       <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${escH(names)}</div>
     </div>
     <div class="intake-section-label">What is this program?</div>
+    ${showMerge ? `
+    <div class="import-intent-card${isMerge?' selected':''}" id="import-card-merge" onclick="selectImportIntent('merge')">
+      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="import-intent-body">
+        <div class="import-intent-title">Add to Current Program</div>
+        <div class="import-intent-desc">Append new weeks to your active training block.</div>
+      </div>
+      <div class="import-intent-check" id="import-check-merge" style="opacity:${isMerge?1:0}">✓</div>
+    </div>
+    ${mergeTargetHtml}` : ''}
     <div class="import-intent-card${_importIntent==='active'?' selected':''}" id="import-card-active" onclick="selectImportIntent('active')">
       <div class="import-intent-icon"><svg viewBox="0 0 28 40" width="22" height="32"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
       <div class="import-intent-body">
         <div class="import-intent-title">Start New Program</div>
-        <div class="import-intent-desc">I'm currently training this. Set it as my active program.</div>
+        <div class="import-intent-desc">Begin a new training block from scratch.</div>
       </div>
       <div class="import-intent-check" id="import-check-active" style="opacity:${_importIntent==='active'?1:0}">✓</div>
     </div>
-    <div class="import-intent-card${_importIntent==='history'?' selected':''}" id="import-card-history" onclick="selectImportIntent('history')">
+    <div class="import-intent-card${isHistorical?' selected':''}" id="import-card-history" onclick="selectImportIntent('history')">
       <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--text-sub)"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></div>
       <div class="import-intent-body">
         <div class="import-intent-title">Historical Data</div>
         <div class="import-intent-desc">Already completed. Import for metrics history.</div>
       </div>
-      <div class="import-intent-check" id="import-check-history" style="opacity:${_importIntent==='history'?1:0}">✓</div>
+      <div class="import-intent-check" id="import-check-history" style="opacity:${isHistorical?1:0}">✓</div>
     </div>
-    ${showMerge ? `
-    <div class="import-intent-card${_importIntent==='merge'?' selected':''}" id="import-card-merge" onclick="selectImportIntent('merge')">
-      <div class="import-intent-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
-      <div class="import-intent-body">
-        <div class="import-intent-title">Add Weeks to Existing</div>
-        <div class="import-intent-desc">Append to a program you've already started.</div>
-      </div>
-      <div class="import-intent-check" id="import-check-merge" style="opacity:${_importIntent==='merge'?1:0}">✓</div>
-    </div>
-    <div id="import-merge-select" style="display:${_importIntent==='merge'?'block':'none'};margin-bottom:10px">
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
-      <select id="import-merge-target" class="intake-field-input">${mergeOpts}</select>
-    </div>` : ''}
 
+    ${!isMerge ? `
     <div class="intake-section-label">Current 1RM (optional)</div>
     <div class="intake-maxes-row">
       <div class="intake-field">
@@ -5006,9 +5026,9 @@ function renderIntakeStep1(body) {
       <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.5">
         <span style="color:var(--gold);font-weight:700">Note:</span> Your active program won't change. All weeks will be marked complete using logged weights from the sheet.
       </div>
-    </div>` : ''}
+    </div>` : ''}` : ''}
 
-    <button class="import-confirm-btn" onclick="intakeNext()">Review Program</button>
+    <button class="import-confirm-btn" onclick="intakeNext()">${isMerge ? 'Review New Weeks' : 'Review Program'}</button>
   `;
 }
 
@@ -5017,10 +5037,80 @@ function selectImportIntent(intent) {
   renderIntakeStep(); // re-render step 1 with new selection
 }
 
-// ── Step 2: Review Week 1 ─────────────────────────────────────────────────
+// ── Step 2: Review Week 1 (or new weeks for merge) ───────────────────────
 function renderIntakeStep2(body) {
   const blocks = _pendingImportBlocks || [];
   const b0 = blocks[0] || {};
+
+  // For merge mode, calculate which weeks are actually new
+  if (_importIntent === 'merge') {
+    const targetId = _intakeMergeTarget || document.getElementById('import-merge-target')?.value;
+    const target = state.blocks.find(b => b.id === targetId);
+    if (!target) { confirmImportIntent(); return; }
+
+    const { newWeeks } = computeMergeWeeks(blocks, target);
+
+    if (newWeeks.length === 0) {
+      // All weeks are duplicates — nothing to add
+      body.innerHTML = `
+        <div style="margin-bottom:6px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Nothing New to Import</div>
+          <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">All weeks in this file already exist in ${escH(displayBlockName(target.name))}.</div>
+        </div>
+        <button class="import-confirm-btn" onclick="closeImportIntent()">Done</button>
+        <div style="display:flex;justify-content:center;margin-top:8px">
+          <span class="intake-skip-link" onclick="intakeBack()">← Back</span>
+        </div>
+      `;
+      return;
+    }
+
+    // Show the first new week for review
+    const reviewWeek = newWeeks[0];
+    let dayCardsHtml = '';
+    for (const day of (reviewWeek.days || [])) {
+      const exRows = (day.exercises || []).map(ex => `
+        <div class="review-ex-row">
+          <div class="review-ex-name">${escH(ex.name || 'Unnamed')}</div>
+          <div class="review-ex-pres">${escH(ex.prescription || '')}</div>
+          ${ex.note ? `<div class="review-ex-note">${escH(ex.note)}</div>` : ''}
+        </div>`).join('');
+      dayCardsHtml += `
+        <div class="review-day-card">
+          <div class="review-day-header">${escH(day.name || 'Day')}</div>
+          ${exRows || '<div style="padding:8px 12px;font-size:12px;color:var(--text-dim)">No exercises found</div>'}
+        </div>`;
+    }
+
+    body.innerHTML = `
+      <div style="margin-bottom:6px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Review New Weeks</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">Adding ${newWeeks.length} new week${newWeeks.length===1?'':'s'} to ${escH(displayBlockName(target.name))}</div>
+      </div>
+      <div class="review-day-list">
+        ${dayCardsHtml}
+      </div>
+      <button class="import-confirm-btn" onclick="confirmImportIntent()">Looks Good — Import</button>
+      <div style="margin-top:10px;text-align:center">
+        <span class="review-wrong-link" onclick="showReviewHelp()">Something doesn't look right</span>
+      </div>
+      <div id="review-help-msg" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+        <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);line-height:1.6">
+          The parser may not support your spreadsheet's layout. You can:
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+          <button class="colmap-btn-secondary" onclick="closeImportIntent()">Try a Different File</button>
+          <button class="colmap-btn-secondary" onclick="confirmImportIntent()">Import Anyway</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:8px">
+        <span class="intake-skip-link" onclick="intakeBack()">← Back</span>
+      </div>
+    `;
+    return;
+  }
+
+  // Standard review (Start New / Historical) — show first week
   const week1 = b0.weeks?.[0];
 
   if (!week1 || !week1.days?.length) {
@@ -5202,35 +5292,100 @@ function applyIntakeToProfile(intake) {
   saveAthlete(updated);
 }
 
+// ── Smart merge helpers ────────────────────────────────────────────────
+function weeksHaveSameExercises(weekA, weekB) {
+  if (weekA.days.length !== weekB.days.length) return false;
+  for (let i = 0; i < weekA.days.length; i++) {
+    const namesA = weekA.days[i].exercises.map(e => e.name).join('|');
+    const namesB = weekB.days[i].exercises.map(e => e.name).join('|');
+    if (namesA !== namesB) return false;
+  }
+  return true;
+}
+
+function computeMergeWeeks(incomingBlocks, target) {
+  const newWeeks = [];
+  const skipped = [];
+  // Find highest existing week number for renumbering
+  let maxWeekNum = 0;
+  for (const w of target.weeks) {
+    const m = w.label.match(/(\d+)/);
+    if (m) maxWeekNum = Math.max(maxWeekNum, parseInt(m[1]));
+  }
+  let nextNum = maxWeekNum + 1;
+
+  for (const inc of incomingBlocks) {
+    for (const incomingWeek of (inc.weeks || [])) {
+      const existing = target.weeks.find(w => w.label === incomingWeek.label);
+      if (!existing) {
+        // No label collision — add as-is
+        newWeeks.push(incomingWeek);
+      } else if (weeksHaveSameExercises(existing, incomingWeek)) {
+        // True duplicate — skip
+        skipped.push(incomingWeek.label);
+      } else {
+        // Label collision but different content — renumber
+        incomingWeek.label = 'Week ' + nextNum;
+        nextNum++;
+        newWeeks.push(incomingWeek);
+      }
+    }
+  }
+  return { newWeeks, skipped };
+}
+
 function mergeWeeksIntoBlock(incomingBlocks) {
   const targetId = _intakeMergeTarget || document.getElementById('import-merge-target')?.value;
   const target = state.blocks.find(b => b.id === targetId);
   if (!target) return;
 
-  for (const inc of incomingBlocks) {
-    for (const incomingWeek of (inc.weeks || [])) {
-      // Only add weeks that don't already exist in the target block
-      const exists = target.weeks.some(w => w.label === incomingWeek.label);
-      if (!exists) {
-        target.weeks.push(incomingWeek);
-      }
-      // NOTE: intentionally no populateLogsFromSheet here — these are future weeks
-      // with no training history. Log population would trigger inference and auto-complete them.
-      // Only populate if the incoming week has actual tracking data in the sheet.
-      const hasAnyTracking = incomingWeek.days.some(d =>
-        d.exercises.some(ex => ex.loggedWeight || ex.trackingRaw)
-      );
-      if (hasAnyTracking) {
-        populateLogsFromSheet([{ ...target, weeks: [incomingWeek] }],
-          { onlyWeekLabels: [incomingWeek.label] });
-      }
+  const { newWeeks } = computeMergeWeeks(incomingBlocks, target);
+
+  if (newWeeks.length === 0) {
+    // Nothing to add — shouldn't reach here (step 2 catches it), but be safe
+    setScreen('workout');
+    return;
+  }
+
+  // Track labels of newly added weeks
+  const newWeekLabels = newWeeks.map(w => w.label);
+
+  // Append new weeks
+  for (const week of newWeeks) {
+    target.weeks.push(week);
+    // Populate logs only if the week has tracking data
+    const hasAnyTracking = week.days.some(d =>
+      d.exercises.some(ex => ex.loggedWeight || ex.trackingRaw)
+    );
+    if (hasAnyTracking) {
+      populateLogsFromSheet([{ ...target, weeks: [week] }],
+        { onlyWeekLabels: [week.label] });
     }
   }
 
+  // Run dedup on the newly expanded block
+  deduplicateExerciseNames([target]);
+
+  // Extend dateRange
+  if (target.startDate) {
+    const totalWeeks = target.weeks.length;
+    const d = new Date(target.startDate + 'T00:00:00');
+    const endDate = new Date(d.getTime() + (totalWeeks * 7 - 1) * 86400000);
+    const fmt = (dt) => (dt.getMonth()+1) + '/' + dt.getDate() + '/' + String(dt.getFullYear()).slice(2);
+    target.dateRange = fmt(d) + ' – ' + fmt(endDate);
+  }
+
+  // Navigate to first new week
   state.activeBlock = state.blocks.find(b => b.id === targetId) || state.activeBlock;
-  const _n = findNextWorkout(state.activeBlock);
-  state.activeWeek = _n.weekIdx;
-  state.activeDay  = _n.dayIdx;
+  const firstNewWeekIdx = target.weeks.findIndex(w => newWeekLabels.includes(w.label));
+  const next = findNextWorkout(state.activeBlock);
+  if (firstNewWeekIdx >= 0 && next.weekIdx < firstNewWeekIdx) {
+    state.activeWeek = firstNewWeekIdx;
+    state.activeDay = 0;
+  } else {
+    state.activeWeek = next.weekIdx;
+    state.activeDay = next.dayIdx;
+  }
 
   autoRegisterCompLifts([target]);
   saveBlocks(); saveNav(); saveLogs();
