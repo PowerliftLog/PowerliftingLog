@@ -1290,7 +1290,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.6-dbg</span></div>
+      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.7-dbg</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -5721,6 +5721,30 @@ function findNextWorkout(block){
   // Check if we should advance based on Sunday boundary
   checkWeekProgression(block);
   const startWi = block._currentWeekIdx || 0;
+  // First: look for an incomplete day in the current gated week
+  const curWeek = block.weeks[startWi];
+  if (curWeek) {
+    for(let di=0;di<curWeek.days.length;di++){
+      if(!isDayComplete(block,curWeek,curWeek.days[di])) return {weekIdx:startWi, dayIdx:di};
+    }
+    // Current week is fully complete — only scan ahead if checkWeekProgression
+    // actually advanced us (i.e. Sunday boundary passed). If we're still gated
+    // on the current week, stay here.
+    if (startWi === (block._currentWeekIdx || 0)) {
+      // Check if there are future weeks with incomplete days
+      for(let wi=startWi+1;wi<block.weeks.length;wi++){
+        const week=block.weeks[wi];
+        for(let di=0;di<week.days.length;di++){
+          if(!isDayComplete(block,week,week.days[di])) {
+            // There IS a next week to go to, but we're still gated — stay on current
+            const lastDi = (curWeek.days.length||1)-1;
+            return {weekIdx:startWi, dayIdx:lastDi};
+          }
+        }
+      }
+    }
+  }
+  // Scan forward (only reached if we've been advanced past startWi or current week is null)
   for(let wi=startWi;wi<block.weeks.length;wi++){
     const week=block.weeks[wi];
     for(let di=0;di<week.days.length;di++){
