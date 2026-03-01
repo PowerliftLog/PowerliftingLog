@@ -1290,7 +1290,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.5-dbg</span></div>
+      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.6-dbg</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -5769,16 +5769,16 @@ function checkWeekProgression(block) {
     const activated = new Date(block._weekActivatedAt + 'T00:00:00');
     const now = new Date();
 
-    // Find the first Sunday at midnight after activation
+    // Find end-of-day Sunday (= Monday 00:00:00) after activation
     const activatedDay = activated.getDay(); // 0=Sun
-    const daysUntilSunday = activatedDay === 0 ? 7 : (7 - activatedDay);
-    const nextSunday = new Date(activated);
-    nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
-    nextSunday.setHours(0, 0, 0, 0);
+    const daysUntilMonday = activatedDay === 0 ? 1 : (8 - activatedDay);
+    const endOfSunday = new Date(activated);
+    endOfSunday.setDate(endOfSunday.getDate() + daysUntilMonday);
+    endOfSunday.setHours(0, 0, 0, 0);
 
-    _dbg.push('W' + (wi+1) + ': done=true actDay=' + activatedDay + ' nextSun=' + nextSunday.toISOString().split('T')[0] + ' now>=' + (now >= nextSunday));
+    _dbg.push('W' + (wi+1) + ': done=true actDay=' + activatedDay + ' eodSun=' + endOfSunday.toISOString().split('T')[0] + ' now>=' + (now >= endOfSunday));
 
-    if (now >= nextSunday) {
+    if (now >= endOfSunday) {
       block._currentWeekIdx = wi + 1;
       block._weekActivatedAt = now.toISOString().split('T')[0];
       changed = true;
