@@ -240,7 +240,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-divider { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 300px; margin: 16px 0; }
 .upload-divider::before, .upload-divider::after { content: ''; flex: 1; height: 1px; background: #222; }
 .upload-divider span { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
-.drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid #333; padding: 17px 32px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; max-width: 300px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid #333; padding: 13px 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .drive-btn:active { opacity: 0.85; }
 .block-bar { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); }
 .block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.03em; color: var(--text-bright); }
@@ -1392,15 +1392,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <!-- Add new section -->
     <div style="margin-bottom:20px">
       <div class="add-lift-group-label" style="margin-bottom:10px">Add New Program</div>
-      <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">UPLOAD FROM DEVICE<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-
-      <!-- Google Drive import -->
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or import from Google Drive</div>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <button class="drive-btn" onclick="closeProgramModal();openDrivePicker()" style="margin:0 auto">
+      <button class="drive-btn" onclick="closeProgramModal();openDrivePicker()" style="margin:0 auto;width:100%;justify-content:center">
         <svg viewBox="0 0 87.3 78" width="20" height="18">
           <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
           <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
@@ -1409,8 +1401,15 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
           <path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/>
           <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
         </svg>
-        BROWSE GOOGLE DRIVE
+        Import from Drive
       </button>
+
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or upload from device</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="upload-btn" style="width:100%;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px" onclick="closeProgramModal();document.getElementById('file-input').click()">Upload File<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>
     <!-- Existing cycles -->
     <div id="program-list"></div>
