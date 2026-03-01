@@ -1,4 +1,4 @@
-// ── PowerliftingLog — Parser Module ────────────────────────────────────────────
+// ── Unrack — Parser Module ────────────────────────────────────────────
 // Extracted from index.html for standalone testing and modularity.
 // This file is the single source of truth for all parser logic.
 // In production, include via <script src="parsers.js"></script> before the main script.
