@@ -737,8 +737,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-ring-wrap { position: relative; width: 80px; height: 80px; margin: 4px auto 6px; }
 .week-ring-svg { width: 100%; height: 100%; }
 .week-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.week-ring-num { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); line-height: 1; }
-.week-ring-of { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; color: var(--text-faint); line-height: 1; margin-top: 2px; }
+.week-ring-num { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); line-height: 1; }
+.week-ring-slash { font-weight: 600; color: var(--text-dim); font-size: 18px; margin: 0 1px; }
 .week-ring-dots { display: flex; justify-content: center; gap: 7px; }
 .week-ring-dot { width: 7px; height: 7px; border-radius: 50%; }
 .week-ring-dot.done { background: #4ade80; box-shadow: 0 0 4px rgba(74,222,128,0.25); }
@@ -2795,8 +2795,19 @@ function getNextWorkoutInfo() {
   const allDone = isDayComplete(block, week, day);
   const metaParts = [];
   if (block.weeks.length > 1) metaParts.push(`W${nw.weekIdx + 1}`);
-  if (block.name) metaParts.push(block.name);
+  if (block.name) metaParts.push(displayBlockName(block.name));
   return { day, week, weekIdx: nw.weekIdx, dayIdx: nw.dayIdx, allDone, meta: metaParts.join(' · ') };
+}
+
+function displayBlockName(name) {
+  if (!name) return '';
+  // Strip trailing timestamp suffix (e.g. "_1772319728896")
+  let clean = name.replace(/_\d{10,}$/, '');
+  // Clean up underscores from filename-based names
+  clean = clean.replace(/_/g, ' ').trim();
+  // Truncate to 24 chars
+  if (clean.length > 24) clean = clean.slice(0, 22) + '…';
+  return clean;
 }
 
 // ── e1RM peaks ────────────────────────────────────────────────────────────────
@@ -3172,8 +3183,7 @@ function renderWeekCard() {
     + (done < total ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="rgba(201,168,76,0.15)" stroke-width="' + sw + '" fill="none" stroke-linecap="round" stroke-dasharray="0 ' + progressLen.toFixed(1) + ' ' + remainLen.toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>' : '')
     + '</svg>'
     + '<div class="week-ring-center">'
-    + '<div class="week-ring-num">' + done + '</div>'
-    + '<div class="week-ring-of">of ' + total + '</div>'
+    + '<div class="week-ring-num">' + done + '<span class="week-ring-slash"> / </span>' + total + '</div>'
     + '</div>'
     + '</div>'
     + '<div class="week-ring-dots">' + dots + '</div>'
@@ -3196,7 +3206,7 @@ function renderLastWorkoutCard() {
   // Meta line
   const metaParts = [];
   if (block.weeks.length > 1) metaParts.push('W' + (weekIdx + 1));
-  metaParts.push(block.name || '');
+  metaParts.push(displayBlockName(block.name) || '');
   const meta = metaParts.filter(Boolean).join(' · ');
 
   // Stats
@@ -3306,7 +3316,7 @@ function renderHome() {
       <div class="home-hero-inner">
         <div class="home-hero-label">✓ All Weeks Complete</div>
         <div class="home-hero-day">Block Finished</div>
-        <div class="home-hero-meta">${escH(block.name || '')}</div>
+        <div class="home-hero-meta">${escH(displayBlockName(block.name))}</div>
         <div class="home-hero-cta" onclick="setScreen('metrics')">
           <span class="home-hero-cta-text">View Metrics</span>
           <span class="home-hero-cta-arrow">→</span>
@@ -3320,7 +3330,7 @@ function renderHome() {
     const dayName = day.name || 'Workout';
     const metaParts = [];
     if (block.weeks.length > 1) metaParts.push('W' + (weekIdx + 1));
-    if (block.name) metaParts.push(block.name);
+    if (block.name) metaParts.push(displayBlockName(block.name));
     // Add date if available
     const cDate = getDayCompletedDate(block, week, day);
     if (cDate) {
@@ -3381,7 +3391,7 @@ function renderHome() {
       <div class="home-hero-inner">
         <div class="home-hero-label">Ready to Start</div>
         <div class="home-hero-day">${escH(firstDay?.name || 'Day 1')}</div>
-        <div class="home-hero-meta">${escH(block.name || 'New Block')}</div>
+        <div class="home-hero-meta">${escH(displayBlockName(block.name) || 'New Block')}</div>
         <div class="home-hero-cta">
           <span class="home-hero-cta-text">Begin First Workout</span>
           <span class="home-hero-cta-arrow">→</span>
@@ -5476,15 +5486,65 @@ function toggleExpand(key, groupEncoded){
 }
 function findNextWorkout(block){
   if(!block) return {weekIdx:0, dayIdx:0};
-  for(let wi=0;wi<block.weeks.length;wi++){
+  // Check if we should advance based on Sunday boundary
+  checkWeekProgression(block);
+  const startWi = block._currentWeekIdx || 0;
+  for(let wi=startWi;wi<block.weeks.length;wi++){
     const week=block.weeks[wi];
     for(let di=0;di<week.days.length;di++){
       if(!isDayComplete(block,week,week.days[di])) return {weekIdx:wi, dayIdx:di};
     }
   }
-  // All complete — stay on last day
+  // All complete from startWi onward — stay on last day of last week
   const lastWi=block.weeks.length-1;
   return {weekIdx:lastWi, dayIdx:(block.weeks[lastWi]?.days.length||1)-1};
+}
+
+// Silent calendar: track current training week with Sunday midnight boundaries.
+// Stored per-block as _currentWeekIdx (int) and _weekActivatedAt (ISO date string).
+// Advances to next week when: (1) Sunday has passed since activation AND (2) all days in current week are done.
+// Memory + localStorage — persists across sessions.
+function checkWeekProgression(block) {
+  if (!block || !block.weeks || block.weeks.length <= 1) return;
+  
+  // Initialize if not set
+  if (block._currentWeekIdx == null) {
+    block._currentWeekIdx = 0;
+    block._weekActivatedAt = new Date().toISOString().split('T')[0];
+    saveBlocks();
+  }
+  
+  const wi = block._currentWeekIdx;
+  if (wi >= block.weeks.length - 1) return; // already on last week
+  
+  const week = block.weeks[wi];
+  if (!week) return;
+  
+  // Check if all days with exercises are complete
+  const hasDays = week.days.some(d => d.exercises && d.exercises.length > 0);
+  if (!hasDays) return;
+  const allDone = week.days
+    .filter(d => d.exercises && d.exercises.length > 0)
+    .every(d => isDayComplete(block, week, d));
+  if (!allDone) return; // stay on current week
+  
+  // Check if a Sunday midnight has passed since this week was activated
+  const activated = new Date(block._weekActivatedAt + 'T00:00:00');
+  const now = new Date();
+  
+  // Find the first Sunday at midnight after activation
+  const activatedDay = activated.getDay(); // 0=Sun
+  const daysUntilSunday = activatedDay === 0 ? 7 : (7 - activatedDay);
+  const nextSunday = new Date(activated);
+  nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
+  nextSunday.setHours(0, 0, 0, 0);
+  
+  if (now >= nextSunday) {
+    // Advance to next week
+    block._currentWeekIdx = wi + 1;
+    block._weekActivatedAt = now.toISOString().split('T')[0];
+    saveBlocks();
+  }
 }
 function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
