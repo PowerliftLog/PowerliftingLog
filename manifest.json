@@ -1,6 +1,6 @@
 {
-  "name": "Powerlift Pro",
-  "short_name": "Powerlift Pro",
+  "name": "Unrack",
+  "short_name": "Unrack",
   "description": "Powerlifting workout tracker",
   "start_url": "/PowerliftingLog/",
   "scope": "/PowerliftingLog/",
