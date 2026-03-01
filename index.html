@@ -1251,7 +1251,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.1</span></div>
+      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.2-dbg</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -3475,8 +3475,13 @@ function renderHome() {
       + '</div>';
   }
 
+  // DEBUG banner
+  const _dbgText = window._weekProgressionDebug || 'no debug yet';
+  const _dbgHtml = `<div style="background:#333;color:#0f0;font-size:10px;font-family:monospace;padding:6px 8px;border-radius:6px;margin-bottom:8px;word-break:break-all">${escH(_dbgText)}</div>`;
+
   content.innerHTML = `<div class="home-screen">
     <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</div>
+    ${_dbgHtml}
     ${heroHtml}
     ${middleRowHtml}
     ${weeklySummaryHtml}
@@ -5699,20 +5704,24 @@ function checkWeekProgression(block) {
     saveBlocks();
   }
 
+  // DEBUG: collect progression info for on-screen display
+  const _dbg = [];
+  _dbg.push('start idx=' + block._currentWeekIdx + ' activated=' + block._weekActivatedAt);
+
   // Loop: advance through all completed weeks (not just one at a time)
   let changed = false;
   while (block._currentWeekIdx < block.weeks.length - 1) {
     const wi = block._currentWeekIdx;
     const week = block.weeks[wi];
-    if (!week) break;
+    if (!week) { _dbg.push('W' + (wi+1) + ': no week obj'); break; }
 
     // Check if all days with exercises are complete
     const hasDays = week.days.some(d => d.exercises && d.exercises.length > 0);
-    if (!hasDays) break;
+    if (!hasDays) { _dbg.push('W' + (wi+1) + ': no exercise days'); break; }
     const allDone = week.days
       .filter(d => d.exercises && d.exercises.length > 0)
       .every(d => isDayComplete(block, week, d));
-    if (!allDone) break; // stay on current week
+    if (!allDone) { _dbg.push('W' + (wi+1) + ': not all done'); break; }
 
     // Check if a Sunday midnight has passed since this week was activated
     const activated = new Date(block._weekActivatedAt + 'T00:00:00');
@@ -5725,16 +5734,21 @@ function checkWeekProgression(block) {
     nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
     nextSunday.setHours(0, 0, 0, 0);
 
+    _dbg.push('W' + (wi+1) + ': done=true actDay=' + activatedDay + ' nextSun=' + nextSunday.toISOString().split('T')[0] + ' now>=' + (now >= nextSunday));
+
     if (now >= nextSunday) {
-      // Advance to next week and keep checking
       block._currentWeekIdx = wi + 1;
       block._weekActivatedAt = now.toISOString().split('T')[0];
       changed = true;
     } else {
-      break; // Sunday hasn't passed yet for this week
+      break;
     }
   }
+  _dbg.push('final idx=' + block._currentWeekIdx);
   if (changed) saveBlocks();
+
+  // DEBUG: show on screen
+  window._weekProgressionDebug = _dbg.join(' | ');
 }
 function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
