@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v4';
+const CACHE_NAME = 'liftlog-v5';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -7,7 +7,14 @@ const ASSETS = [
   '/PowerliftingLog/icons/icon-192.png',
   '/PowerliftingLog/icons/icon-512.png',
   '/PowerliftingLog/icons/icon-180.png',
+  // CDN dependencies — required for offline use
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
 ];
+
+// Google Fonts are fetched dynamically (CSS then WOFF2 files).
+// We cache them on first use via the fetch handler below.
+
 // Install — pre-cache all core assets
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -15,6 +22,7 @@ self.addEventListener('install', event => {
   );
   self.skipWaiting();
 });
+
 // Activate — clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -24,20 +32,31 @@ self.addEventListener('activate', event => {
   );
   self.clients.claim();
 });
-// Fetch — network-first, fall back to cache
+
+// Fetch — cache-first for assets, with background refresh
 self.addEventListener('fetch', event => {
-  // Only handle GET requests for our origin
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Google API scripts (GIS, GAPI) — network only, not needed offline
+  if (url.hostname === 'accounts.google.com' || url.hostname === 'apis.google.com') return;
+
+  // Cache-first strategy: serve from cache instantly, update in background
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Cache a fresh copy if it's one of our assets
+    caches.match(event.request).then(cached => {
+      // Background refresh — fetch new version and update cache
+      const fetchPromise = fetch(event.request).then(response => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      })
-      .catch(() => caches.match(event.request))
+      }).catch(() => null);
+
+      // Return cached immediately if available, otherwise wait for network
+      if (cached) return cached;
+      return fetchPromise.then(resp => resp || new Response('Offline', { status: 503 }));
+    })
   );
 });
