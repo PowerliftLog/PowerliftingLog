@@ -5394,40 +5394,18 @@ function applyIntakeToProfile(intake) {
 }
 
 // ── Smart merge helpers ────────────────────────────────────────────────
-function weeksHaveSameExercises(weekA, weekB) {
-  if (weekA.days.length !== weekB.days.length) return false;
-  for (let i = 0; i < weekA.days.length; i++) {
-    const namesA = weekA.days[i].exercises.map(e => e.name).join('|');
-    const namesB = weekB.days[i].exercises.map(e => e.name).join('|');
-    if (namesA !== namesB) return false;
-  }
-  return true;
-}
-
 function computeMergeWeeks(incomingBlocks, target) {
   const newWeeks = [];
   const skipped = [];
-  // Find highest existing week number for renumbering
-  let maxWeekNum = 0;
-  for (const w of target.weeks) {
-    const m = w.label.match(/(\d+)/);
-    if (m) maxWeekNum = Math.max(maxWeekNum, parseInt(m[1]));
-  }
-  let nextNum = maxWeekNum + 1;
+  const existingLabels = new Set(target.weeks.map(w => w.label));
 
   for (const inc of incomingBlocks) {
     for (const incomingWeek of (inc.weeks || [])) {
-      const existing = target.weeks.find(w => w.label === incomingWeek.label);
-      if (!existing) {
-        // No label collision — add as-is
-        newWeeks.push(incomingWeek);
-      } else if (weeksHaveSameExercises(existing, incomingWeek)) {
-        // True duplicate — skip
+      if (existingLabels.has(incomingWeek.label)) {
+        // Label already exists — skip. Existing weeks are sacred.
         skipped.push(incomingWeek.label);
       } else {
-        // Label collision but different content — renumber
-        incomingWeek.label = 'Week ' + nextNum;
-        nextNum++;
+        // Net-new week — append
         newWeeks.push(incomingWeek);
       }
     }
@@ -5439,6 +5417,9 @@ function mergeWeeksIntoBlock(incomingBlocks) {
   const targetId = _intakeMergeTarget || document.getElementById('import-merge-target')?.value;
   const target = state.blocks.find(b => b.id === targetId);
   if (!target) return;
+
+  // Fix: dedup incoming names BEFORE comparing against existing (already-deduped) block
+  deduplicateExerciseNames(incomingBlocks);
 
   const { newWeeks } = computeMergeWeeks(incomingBlocks, target);
 
