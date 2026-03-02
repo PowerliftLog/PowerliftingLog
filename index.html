@@ -1486,11 +1486,35 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
+    <div class="settings-section-label">Data</div>
+    <button class="settings-row-btn" onclick="downloadBackup()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Backup
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="settings-row-btn" onclick="triggerRestore()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Restore from Backup
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div id="last-backup-time" style="font-size:11px;color:var(--text-dim);padding:4px 18px 0;display:none"></div>
+
     <div class="settings-section-label">Export</div>
     <button class="settings-row-btn" onclick="closeSettings();openExportFromSettings()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Training Log &amp; Report
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="settings-row-btn" onclick="closeSettings();exportCSV()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Training History (CSV)
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -5921,6 +5945,7 @@ function openSettings(scrollTo) {
   const modal = document.getElementById('settings-modal');
   if (!modal) return;
   updateSettingsThemePills();
+  updateBackupTimestamp();
   modal.style.display = 'flex';
   requestAnimationFrame(() => {
     modal.classList.add('open');
@@ -6832,6 +6857,241 @@ ${lineChartScripts}
   document.body.appendChild(overlay);
 }
 
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [['Date','Exercise','Set','Weight','Reps','RPE','e1RM','Block','Week','Day']];
+
+  for (const block of state.blocks) {
+    for (const week of (block.weeks || [])) {
+      for (const day of (week.days || [])) {
+        for (const ex of (day.exercises || [])) {
+          const exKey = [block.id, week.label, day.name, ex.name].join('||');
+          const exLog = state.logs[exKey] || {};
+          if (exLog.skipped) continue;
+
+          // Determine set count
+          const pSets = parseSets(ex.prescription) || [];
+          let setCount = pSets.length;
+          let fallbackReps = null;
+          if (!setCount) {
+            const simple = parseSimple(ex.prescription);
+            const ranged = parseRangeSet(ex.prescription);
+            const bare = parseBarePres(ex.prescription);
+            setCount = (simple && simple.sets) || (ranged && ranged.sets) || (bare && bare.sets) || 1;
+            fallbackReps = (simple && simple.reps) || (ranged && ranged.reps) || (bare && bare.reps) || null;
+          }
+          const extra = state.extraSets ? (state.extraSets[exKey] || 0) : 0;
+          const totalSets = setCount + extra;
+
+          // Get completion date
+          const completeKey = [block.id, week.label, day.name, '__complete__'].join('||');
+          const completeLog = state.logs[completeKey] || {};
+          const dateStr = completeLog.completedDate || '';
+
+          let hasAnyLogged = false;
+          for (let si = 0; si < totalSets; si++) {
+            const sk = exKey + '||s' + si;
+            const sl = state.logs[sk] || {};
+            if (!sl.done && !sl.actual) continue;
+            hasAnyLogged = true;
+
+            const weight = sl.actual || (pSets[si] && !pSets[si].isRpe ? String(pSets[si].weight) : '');
+            const repsRaw = sl.reps || (pSets[si] ? pSets[si].reps : fallbackReps);
+            const reps = repsRaw === 'open' ? '' : (repsRaw || '');
+            const rpe = sl.rpe || '';
+
+            // e1RM: Epley formula if weight and reps are available
+            let e1rm = '';
+            const w = parseFloat(weight);
+            const r = parseInt(reps);
+            if (w > 0 && r > 0 && r <= 10) {
+              e1rm = r === 1 ? String(w) : String(Math.round(w * (1 + r / 30)));
+            }
+
+            // Clean exercise name (strip trailing " #2" etc.)
+            const cleanName = ex.name.replace(/\s*#\d+$/, '');
+            // Clean block name
+            const blockName = displayBlockName(block.name);
+
+            rows.push([dateStr, cleanName, String(si + 1), weight, String(reps), String(rpe), e1rm, blockName, week.label, day.name]);
+          }
+
+          // If no sets were logged but exercise was marked done, add a single row
+          if (!hasAnyLogged && exLog.done) {
+            const cleanName = ex.name.replace(/\s*#\d+$/, '');
+            const blockName = displayBlockName(block.name);
+            rows.push([dateStr, cleanName, '1', exLog.actual || '', '', exLog.rpe || '', '', blockName, week.label, day.name]);
+          }
+        }
+      }
+    }
+  }
+
+  if (rows.length <= 1) { _showWarningToast('No logged workout data to export.'); return; }
+
+  // Build CSV string with proper escaping
+  const csv = rows.map(r => r.map(v => {
+    const s = String(v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `unrack-training-history-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  _showWarningToast('CSV exported ✓'); // reusing toast for success
+}
+
+// ── DATA BACKUP & RESTORE ─────────────────────────────────────────────────────
+const BACKUP_KEYS = [
+  'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
+  'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
+  'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps'
+];
+
+function downloadBackup() {
+  const data = { version: 1, timestamp: new Date().toISOString(), appVersion: '1.0.0', data: {} };
+  for (const key of BACKUP_KEYS) {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) {
+      try { data.data[key] = JSON.parse(raw); } catch { data.data[key] = raw; }
+    }
+  }
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `unrack-backup-${new Date().toISOString().slice(0, 16).replace(/:/g, '-')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Update last backup display
+  localStorage.setItem('liftlog_last_backup', new Date().toISOString());
+  updateBackupTimestamp();
+  _showWarningToast('Backup downloaded ✓');
+}
+
+function triggerRestore() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const backup = JSON.parse(ev.target.result);
+        validateAndRestore(backup, file.name);
+      } catch (err) {
+        _showWarningToast('This file doesn\'t appear to be a valid backup.');
+        console.error('[Restore] Parse error:', err);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function validateAndRestore(backup, fileName) {
+  // Basic validation
+  if (!backup || typeof backup !== 'object' || !backup.data) {
+    _showWarningToast('This file doesn\'t appear to be a valid Unrack backup.');
+    return;
+  }
+  if (backup.version && backup.version > 1) {
+    _showWarningToast('This backup was created by a newer version. Please update the app first.');
+    return;
+  }
+
+  // Count what's in the backup for the confirmation
+  let blockCount = 0;
+  let logCount = 0;
+  try {
+    const blocks = backup.data.liftlog_blocks;
+    if (Array.isArray(blocks)) blockCount = blocks.length;
+    const logs = backup.data.liftlog_v4;
+    if (logs && typeof logs === 'object') {
+      logCount = Object.keys(logs).filter(k => k.includes('__complete__') && logs[k].done).length;
+    }
+  } catch {}
+
+  const dateStr = backup.timestamp ? new Date(backup.timestamp).toLocaleString() : 'Unknown date';
+
+  // Show confirmation modal
+  const overlay = document.createElement('div');
+  overlay.className = 'export-modal-overlay';
+  overlay.id = 'restore-confirm-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="export-modal" style="max-width:340px">
+      <div class="export-modal-header">
+        <span class="export-modal-title">Restore Backup</span>
+        <button class="export-modal-close" onclick="document.getElementById('restore-confirm-overlay').remove()">✕</button>
+      </div>
+      <div style="padding:0 4px">
+        <div style="color:var(--text-secondary);font-size:13px;line-height:1.5;margin-bottom:16px">
+          This will <strong style="color:var(--text-primary)">replace all current data</strong> with the backup contents.
+        </div>
+        <div style="background:var(--card-bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);line-height:1.6">
+          <div><span style="color:var(--text-dim)">Backup date:</span> ${escH(dateStr)}</div>
+          <div><span style="color:var(--text-dim)">Programs:</span> ${blockCount}</div>
+          <div><span style="color:var(--text-dim)">Logged workouts:</span> ${logCount}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="export-action-btn" style="flex:1;background:var(--card-bg);color:var(--text-secondary)" onclick="document.getElementById('restore-confirm-overlay').remove()">Cancel</button>
+          <button class="export-action-btn" style="flex:1;background:#c0392b;color:#fff" onclick="executeRestore()">Restore</button>
+        </div>
+      </div>
+    </div>
+  `;
+  overlay._backupData = backup;
+  document.body.appendChild(overlay);
+}
+
+function executeRestore() {
+  const overlay = document.getElementById('restore-confirm-overlay');
+  if (!overlay || !overlay._backupData) return;
+  const backup = overlay._backupData;
+  overlay.remove();
+
+  try {
+    // Write each key to localStorage
+    for (const [key, val] of Object.entries(backup.data)) {
+      const toStore = typeof val === 'string' ? val : JSON.stringify(val);
+      localStorage.setItem(key, toStore);
+    }
+
+    _showWarningToast('Backup restored ✓ Reloading...');
+    setTimeout(() => location.reload(), 800);
+  } catch (err) {
+    console.error('[Restore] Error:', err);
+    _showWarningToast('Restore failed. Your current data is unchanged.');
+  }
+}
+
+function updateBackupTimestamp() {
+  const el = document.getElementById('last-backup-time');
+  if (!el) return;
+  const ts = localStorage.getItem('liftlog_last_backup');
+  if (ts) {
+    el.textContent = 'Last backup: ' + new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
 
 // ── TEMPLATE DOWNLOAD ─────────────────────────────────────────────────────────
 const TEMPLATE_XLSX_B64 = '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';
