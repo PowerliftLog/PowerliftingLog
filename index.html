@@ -5854,6 +5854,35 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     document.querySelector('.bottom-nav').style.display = '';
     document.querySelector('.header').style.display = '';
   }
+
+  const isCSV = /\.csv$/i.test(file.name);
+
+  if (isCSV) {
+    // CSV path: Strong / Hevy import
+    try {
+      const text = await file.text();
+      // Quick-check headers before showing unit picker
+      const firstLine = text.split(/\r?\n/)[0];
+      const testHeaders = firstLine.split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+      const isStrong = testHeaders.includes('workout name') && testHeaders.includes('set order');
+      const isHevy = testHeaders.includes('exercise_title') && testHeaders.includes('set_index');
+      if (!isStrong && !isHevy) {
+        showParseError('error', 'This CSV doesn\'t appear to be a Strong or Hevy export. Expected columns like "Workout Name" (Strong) or "exercise_title" (Hevy).');
+        if (wasOnboarding) showOnboardingStep(3);
+        e.target.value = '';
+        return;
+      }
+      // Show unit picker, then parse
+      showCSVUnitPicker(text, isStrong ? 'Strong' : 'Hevy');
+    } catch (err) {
+      showParseError('error', err.message); console.error(err);
+      if (wasOnboarding) showOnboardingStep(3);
+    }
+    e.target.value = '';
+    return;
+  }
+
+  // XLSX path (existing)
   try{
     const data=await file.arrayBuffer();
     if(data.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
@@ -5866,11 +5895,132 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     openImportIntent(blocks);
   }catch(err){
     showParseError('error', err.message); console.error(err);
-    // If parse failed and was in onboarding, return to upload step
     if (wasOnboarding) { showOnboardingStep(3); }
   }
   e.target.value='';
 });
+
+// ── CSV IMPORT (Strong / Hevy) ────────────────────────────────────────────────
+function showCSVUnitPicker(csvText, source) {
+  const existing = document.getElementById('csv-unit-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'export-modal-overlay';
+  overlay.id = 'csv-unit-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="export-modal" style="max-width:340px">
+      <div class="export-modal-header">
+        <span class="export-modal-title">${source} Import</span>
+        <button class="export-modal-close" onclick="document.getElementById('csv-unit-overlay').remove()">✕</button>
+      </div>
+      <div style="padding:0 4px">
+        <div style="color:var(--text-secondary);font-size:13px;line-height:1.5;margin-bottom:16px">
+          Import your workout history from ${source}. This will appear as a historical block in your metrics.
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Weight Unit</div>
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <button class="export-scope-pill active" id="csv-unit-lbs" onclick="selectCSVUnit('lbs')">lbs</button>
+          <button class="export-scope-pill" id="csv-unit-kg" onclick="selectCSVUnit('kg')">kg</button>
+        </div>
+        <button class="export-action-btn" onclick="executeCSVImport()">Import</button>
+      </div>
+    </div>
+  `;
+  overlay._csvText = csvText;
+  overlay._csvUnit = 'lbs';
+  document.body.appendChild(overlay);
+}
+
+function selectCSVUnit(unit) {
+  const overlay = document.getElementById('csv-unit-overlay');
+  if (!overlay) return;
+  overlay._csvUnit = unit;
+  document.getElementById('csv-unit-lbs').classList.toggle('active', unit === 'lbs');
+  document.getElementById('csv-unit-kg').classList.toggle('active', unit === 'kg');
+}
+
+function executeCSVImport() {
+  const overlay = document.getElementById('csv-unit-overlay');
+  if (!overlay) return;
+  const csvText = overlay._csvText;
+  const unit = overlay._csvUnit;
+  overlay.remove();
+
+  try {
+    const blocks = parseCSVImport(csvText, unit);
+    if (!blocks || !blocks.length) {
+      showParseError('error', 'No workout data found in this CSV. Make sure it contains exercises with weights or reps.');
+      return;
+    }
+
+    // Populate logs from the _csvSets data attached to each exercise
+    deduplicateExerciseNames(blocks);
+    for (const block of blocks) {
+      for (const week of (block.weeks || [])) {
+        for (const day of (week.days || [])) {
+          for (const ex of (day.exercises || [])) {
+            if (!ex._csvSets) continue;
+            const key = lk(block.id, week.label, day.name, ex.name);
+            state.logs[key] = { done: true };
+
+            ex._csvSets.forEach((s, si) => {
+              const sk = key + '||s' + si;
+              const entry = { done: true };
+              if (s.weight) entry.actual = s.weight;
+              if (s.rpe) entry.rpe = s.rpe;
+              state.logs[sk] = entry;
+            });
+
+            // Completion date for the day
+            const dateStr = ex._csvDate || '';
+            const completeKey = lk(block.id, week.label, day.name, '__complete__');
+            if (!state.logs[completeKey]) {
+              state.logs[completeKey] = { done: true, completedDate: dateStr };
+            }
+
+            // Clean up temp properties
+            delete ex._csvSets;
+            delete ex._csvDate;
+          }
+        }
+      }
+    }
+
+    // Insert as historical
+    const prevActive = state.activeBlock;
+    for (const inc of blocks) {
+      if (inc.startDate) {
+        const insertIdx = state.blocks.findIndex(b => b.startDate && b.startDate > inc.startDate);
+        if (insertIdx !== -1) state.blocks.splice(insertIdx, 0, inc);
+        else {
+          const activeIdx = state.blocks.indexOf(prevActive);
+          if (activeIdx > 0) state.blocks.splice(activeIdx, 0, inc);
+          else state.blocks.push(inc);
+        }
+      } else {
+        state.blocks.push(inc);
+      }
+    }
+    state.activeBlock = prevActive || state.blocks[state.blocks.length - 1];
+
+    autoRegisterCompLifts(blocks);
+    saveBlocks();
+    saveLogs();
+
+    // Count for confirmation
+    let dayCount = 0, exCount = 0;
+    for (const b of blocks) for (const w of b.weeks) dayCount += w.days.length;
+    for (const b of blocks) for (const w of b.weeks) for (const d of w.days) exCount += d.exercises.length;
+
+    _showWarningToast(`Imported ${dayCount} workouts with ${exCount} exercises ✓`);
+    setScreen('metrics');
+  } catch (err) {
+    console.error('[CSV Import]', err);
+    showParseError('error', 'Failed to parse CSV: ' + (err.message || 'Unknown error'));
+  }
+}
 
 // ── PROGRAM MANAGER ───────────────────────────────────────────────────────────
 let _pendingDeleteBlockId=null;

@@ -151,6 +151,16 @@ function detectFormat(wb){
       }
     }
 
+    // Check Format I: Texas Method — "Texas Method" text + Mon/Wed/Fri day columns
+    // Must check before F since some sheets might trigger F's horizontal week detection
+    if (detectTexasMethodFmt(wb)) return 'I';
+
+    // Check Format J: Hepburn — "1RM Input" sheet + "Power Phase" / "Pump Phase" sheets
+    if (detectHepburnFmt(wb)) return 'J';
+
+    // Check Format K: Bulgarian Method — "Start Here" sheet + "(A)" group markers
+    if (detectBulgarianFmt(wb)) return 'K';
+
     // Check Format F: horizontal week columns (531 Wendler, Madcow, Rip & Tear)
     if (detectF(wb)) return 'F';
 
@@ -174,6 +184,7 @@ function detectFormat(wb){
       }
       if (hasSplitHeaders && hasDayLabel) return 'C';
     }
+
   }catch(e){ console.error('[liftlog] detectFormat error:',e); }
   return 'B';
 }
@@ -608,6 +619,9 @@ function parseWorkbook(wb){
   const fmt = detectFormat(wb);
   let blocks;
   if (fmt === 'A') blocks = parseA(wb);
+  else if (fmt === 'I') blocks = parseTexasMethod(wb);
+  else if (fmt === 'J') blocks = parseHepburn(wb);
+  else if (fmt === 'K') blocks = parseBulgarianMethod(wb);
   else if (fmt === 'E') blocks = parseE(wb);
   else if (fmt === 'F') blocks = parseF(wb);
   else if (fmt === 'G') blocks = parseG(wb);
@@ -2870,6 +2884,818 @@ function parseWarmupSets(pres){
   return sets.length>=2 ? sets : [];
 }
 
+// ── FORMAT H: STRONG / HEVY CSV IMPORT ────────────────────────────────────────
+
+function parseCSVRows(text) {
+  // Simple CSV parser handling quoted fields with commas/newlines
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { field += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field.trim()); field = ''; }
+      else if (ch === '\n' || (ch === '\r' && text[i + 1] === '\n')) {
+        row.push(field.trim()); field = '';
+        if (row.some(c => c !== '')) rows.push(row);
+        row = [];
+        if (ch === '\r') i++;
+      } else { field += ch; }
+    }
+  }
+  // Last row
+  row.push(field.trim());
+  if (row.some(c => c !== '')) rows.push(row);
+  return rows;
+}
+
+function detectCSVFormat(headers) {
+  const h = headers.map(c => c.toLowerCase().trim());
+  if (h.includes('workout name') && h.includes('set order')) return 'strong';
+  if (h.includes('exercise_title') && h.includes('set_index')) return 'hevy';
+  return null;
+}
+
+function parseCSVImport(csvText, unitLabel) {
+  const rows = parseCSVRows(csvText);
+  if (rows.length < 2) return null;
+
+  const headers = rows[0];
+  const fmt = detectCSVFormat(headers);
+  if (!fmt) return null;
+
+  // Build column index map
+  const col = {};
+  headers.forEach((h, i) => { col[h.toLowerCase().trim()] = i; });
+
+  // Extract rows into normalized objects
+  const entries = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const get = (key) => r[col[key]] || '';
+
+    let date, workoutName, exerciseName, setOrder, weight, reps, rpe, notes;
+
+    if (fmt === 'strong') {
+      date = get('date');
+      workoutName = get('workout name');
+      exerciseName = get('exercise name');
+      setOrder = parseInt(get('set order')) || 0;
+      weight = get('weight');
+      reps = get('reps');
+      rpe = '';
+      notes = get('notes');
+    } else {
+      // Hevy — parse date from start_time
+      const startRaw = get('start_time');
+      // Hevy dates can be "28 Mar 2025, 17:29" or ISO "2025-03-28T17:29:00Z"
+      const d = new Date(startRaw);
+      date = !isNaN(d) ? `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` : startRaw;
+      workoutName = get('title');
+      exerciseName = get('exercise_title');
+      setOrder = parseInt(get('set_index')) || 0;
+      weight = get('weight_lbs');
+      reps = get('reps');
+      rpe = get('rpe');
+      notes = get('exercise_notes');
+    }
+
+    // Skip rows with no exercise name
+    if (!exerciseName) continue;
+    // Skip cardio: no weight AND no reps
+    const w = parseFloat(weight);
+    const rep = parseInt(reps);
+    if ((isNaN(w) || w === 0) && (isNaN(rep) || rep === 0)) continue;
+
+    entries.push({ date, workoutName, exerciseName, setOrder, weight: isNaN(w) ? '' : String(w), reps: isNaN(rep) ? '' : String(rep), rpe, notes });
+  }
+
+  if (!entries.length) return null;
+
+  // Group entries by date + workout name → "sessions"
+  const sessionMap = new Map();
+  for (const e of entries) {
+    const key = e.date + '|||' + e.workoutName;
+    if (!sessionMap.has(key)) sessionMap.set(key, { date: e.date, name: e.workoutName, entries: [] });
+    sessionMap.get(key).entries.push(e);
+  }
+
+  // Sort sessions chronologically
+  const sessions = [...sessionMap.values()].sort((a, b) => {
+    const da = new Date(a.date), db = new Date(b.date);
+    return da - db;
+  });
+
+  // Group sessions into weeks by ISO week boundary (Monday-based)
+  function isoWeekKey(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return 'unknown';
+    // Adjust to Monday-based week
+    const day = d.getDay() || 7; // Sunday = 7
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - day + 1);
+    return monday.toISOString().slice(0, 10);
+  }
+
+  const weekMap = new Map();
+  for (const sess of sessions) {
+    const wk = isoWeekKey(sess.date);
+    if (!weekMap.has(wk)) weekMap.set(wk, []);
+    weekMap.get(wk).push(sess);
+  }
+
+  // Build block structure
+  const weeks = [];
+  let weekNum = 0;
+  for (const [, weekSessions] of weekMap) {
+    weekNum++;
+    const days = [];
+    for (const sess of weekSessions) {
+      // Group entries by exercise name (preserve order)
+      const exMap = new Map();
+      for (const e of sess.entries) {
+        if (!exMap.has(e.exerciseName)) exMap.set(e.exerciseName, []);
+        exMap.get(e.exerciseName).push(e);
+      }
+
+      const exercises = [];
+      for (const [exName, sets] of exMap) {
+        // Build prescription from actual data: collapse identical sets
+        const setParts = [];
+        let runWeight = null, runReps = null, runCount = 0;
+        for (const s of sets) {
+          if (s.weight === runWeight && s.reps === runReps) {
+            runCount++;
+          } else {
+            if (runCount > 0) {
+              const hasWeight = runWeight && runWeight !== '0';
+              setParts.push(hasWeight ? `${runCount}x${runReps}(${runWeight})` : `${runCount}x${runReps}`);
+            }
+            runWeight = s.weight;
+            runReps = s.reps;
+            runCount = 1;
+          }
+        }
+        if (runCount > 0) {
+          const hasWeight = runWeight && runWeight !== '0';
+          setParts.push(hasWeight ? `${runCount}x${runReps}(${runWeight})` : `${runCount}x${runReps}`);
+        }
+
+        const prescription = setParts.join(', ');
+        const note = sets[0].notes || null;
+
+        exercises.push({
+          name: exName,
+          prescription: prescription || null,
+          note: note,
+          // Store raw set data for log population
+          _csvSets: sets.map(s => ({ weight: s.weight, reps: s.reps, rpe: s.rpe })),
+          _csvDate: sess.date
+        });
+      }
+
+      days.push({ name: sess.name || sess.date, exercises });
+    }
+    weeks.push({ label: 'Week ' + weekNum, days });
+  }
+
+  if (!weeks.length) return null;
+
+  // Determine date range
+  const firstDate = sessions[0].date;
+  const lastDate = sessions[sessions.length - 1].date;
+
+  const ts = Date.now();
+  const source = fmt === 'strong' ? 'Strong' : 'Hevy';
+  const blockName = source + ' Import';
+
+  return [{
+    id: 'csv_' + ts,
+    name: blockName,
+    format: 'H',
+    athleteName: '',
+    dateRange: firstDate + ' – ' + lastDate,
+    startDate: firstDate,
+    maxes: {},
+    historical: true,
+    _csvUnit: unitLabel || 'lbs',
+    weeks
+  }];
+}
+
+// ── FORMAT I: TEXAS METHOD ────────────────────────────────────────────────────
+
+function detectTexasMethodFmt(wb) {
+  if (wb.SheetNames.length > 2) return false;
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    // Must be a standalone "Texas Method" cell (not embedded in a longer description)
+    // AND the same row must have Mon/Wed/Fri day columns
+    const hasTM = row.some(c => c && /^texas\s*method$/i.test(String(c).trim()));
+    if (!hasTM) continue;
+    const dayHits = row.filter(c => c && /^(mon|wed|fri)/i.test(String(c).trim()));
+    if (dayHits.length >= 3) return true;
+  }
+  return false;
+}
+
+function parseTexasMethod(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+  // Extract 1RM maxes from top area (col H=7 has lift names, col I=8 has weights)
+  const maxes = {};
+  for (let i = 0; i < 10; i++) {
+    const row = rows[i]; if (!row) continue;
+    const label = row[7], weight = row[8];
+    if (label && typeof weight === 'number' && weight > 0) {
+      const n = String(label).trim().toLowerCase();
+      if (n === 'squat') maxes.squat = weight;
+      else if (n === 'bench') maxes.bench = weight;
+      else if (/^(press|ohp)$/i.test(n)) maxes.press = weight;
+      else if (n === 'deadlift') maxes.deadlift = weight;
+      else if (n === 'clean') maxes.clean = weight;
+    }
+  }
+
+  // Find all "Texas Method" header rows — each starts a 3-week block
+  const blockStarts = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    if (row.some(c => c && /^texas\s*method$/i.test(String(c).trim()))) blockStarts.push(i);
+  }
+  if (!blockStarts.length) return null;
+
+  const DAY_NAMES = ['Monday', 'Wednesday', 'Friday'];
+  const allWeeks = [];
+
+  for (let bi = 0; bi < blockStarts.length; bi++) {
+    const bStart = blockStarts[bi];
+    const headerRow = rows[bStart]; if (!headerRow) continue;
+
+    // Find first day column (Mon)
+    let firstDayCol = -1;
+    for (let c = 0; c < headerRow.length; c++) {
+      if (headerRow[c] && /^(mon|tue|wed|thu|fri|sat|sun)/i.test(String(headerRow[c]).trim())) {
+        firstDayCol = c; break;
+      }
+    }
+    if (firstDayCol < 0) continue;
+
+    // Count how many day columns (groups of 3 = weeks)
+    let dayColCount = 0;
+    for (let c = firstDayCol; c < headerRow.length; c++) {
+      if (headerRow[c] && /^(mon|tue|wed|thu|fri|sat|sun)/i.test(String(headerRow[c]).trim())) dayColCount++;
+      else if (headerRow[c] == null || String(headerRow[c]).trim() === '') continue;
+      else break;
+    }
+    const numWeeks = Math.floor(dayColCount / 3) || 1;
+
+    // Read SxR scheme row (bStart + 2): e.g. "5x5", "2x5", "1x5"
+    const sxrRow = rows[bStart + 2] || [];
+
+    // Initialize weeks with empty days
+    const weekDays = [];
+    for (let w = 0; w < numWeeks; w++) {
+      const days = [];
+      for (let d = 0; d < 3; d++) {
+        days.push({
+          name: DAY_NAMES[d],
+          colIdx: firstDayCol + w * 3 + d,
+          sxr: String(sxrRow[firstDayCol + w * 3 + d] || '').trim(),
+          exercises: []
+        });
+      }
+      weekDays.push(days);
+    }
+
+    // Parse exercise blocks from bStart+3 until VOLUME or next block
+    const bEnd = (bi + 1 < blockStarts.length) ? blockStarts[bi + 1] : rows.length;
+    let curExercise = null;
+
+    for (let i = bStart + 3; i < bEnd; i++) {
+      const row = rows[i]; if (!row) continue;
+      const col2 = row[2] ? String(row[2]).trim() : '';
+      const col3 = row[3] ? String(row[3]).trim() : '';
+
+      // VOLUME row = end of exercises
+      if (/^volume$/i.test(col2)) break;
+
+      // New exercise name in col 2
+      if (col2 && /[a-zA-Z]{2,}/.test(col2) && col2 !== curExercise) {
+        curExercise = col2;
+      }
+      if (!curExercise) continue;
+
+      // Only capture "Work Sets" rows
+      if (col3.toLowerCase() !== 'work sets') continue;
+
+      for (let w = 0; w < numWeeks; w++) {
+        for (let d = 0; d < 3; d++) {
+          const colIdx = firstDayCol + w * 3 + d;
+          const val = row[colIdx];
+          if (val == null || val === '') continue;
+
+          const valStr = String(val).trim();
+          const daySxr = weekDays[w][d].sxr;
+          let prescription;
+
+          // If value is a SxR pattern itself (e.g. "5x10", "3xF"), use as-is
+          if (/^\d+x[\dF]/i.test(valStr)) {
+            prescription = valStr;
+          } else if (typeof val === 'number' || /^[\d.]+$/.test(valStr)) {
+            // Numeric weight — combine with day's SxR scheme
+            const wt = typeof val === 'number' ? Math.round(val * 10) / 10 : valStr;
+            if (/^\d+x\d/.test(daySxr)) {
+              prescription = `${daySxr}(${wt})`;
+            } else {
+              prescription = String(wt);
+            }
+          } else {
+            prescription = valStr;
+          }
+
+          weekDays[w][d].exercises.push({
+            name: spellCorrectExerciseName(curExercise),
+            prescription,
+            note: ''
+          });
+        }
+      }
+      curExercise = null; // Done with this exercise's work sets
+    }
+
+    // Add to allWeeks
+    for (let w = 0; w < numWeeks; w++) {
+      const filteredDays = weekDays[w].filter(d => d.exercises.length > 0).map(d => ({
+        name: d.name,
+        exercises: d.exercises
+      }));
+      if (filteredDays.length > 0) {
+        allWeeks.push({ label: `Week ${allWeeks.length + 1}`, days: filteredDays });
+      }
+    }
+  }
+
+  if (!allWeeks.length) return null;
+  return [{
+    id: 'texas_' + Date.now(),
+    name: 'Texas Method',
+    format: 'I',
+    maxes,
+    weeks: allWeeks
+  }];
+}
+
+
+// ── FORMAT J: HEPBURN ────────────────────────────────────────────────────────
+
+function detectHepburnFmt(wb) {
+  const names = wb.SheetNames.map(s => s.toLowerCase());
+  return names.some(n => /1rm\s*input/i.test(n)) &&
+         names.some(n => /power\s*phase/i.test(n) || /pump\s*phase/i.test(n));
+}
+
+function parseHepburn(wb) {
+  const SKIP = /^(notes|1rm\s*input|readme|info|instructions?)$/i;
+
+  // Extract maxes from "1RM Input" sheet
+  const maxes = {};
+  const maxSheet = wb.SheetNames.find(s => /1rm\s*input/i.test(s));
+  if (maxSheet) {
+    const mRows = XLSX.utils.sheet_to_json(wb.Sheets[maxSheet], {header:1, defval:null});
+    for (let i = 0; i < mRows.length; i++) {
+      const row = mRows[i]; if (!row) continue;
+      const label = row[0] ? String(row[0]).trim().toLowerCase() : '';
+      const val = row[1];
+      if (typeof val === 'number' && val > 0) {
+        if (/^squat/.test(label)) maxes.squat = maxes.squat || val;
+        else if (/^bench/.test(label)) maxes.bench = maxes.bench || val;
+        else if (/^dead/.test(label)) maxes.deadlift = maxes.deadlift || val;
+        else if (/^ohp|^press/.test(label)) maxes.press = maxes.press || val;
+      }
+    }
+  }
+
+  const blocks = [];
+
+  for (const sn of wb.SheetNames) {
+    if (SKIP.test(sn.trim())) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+      .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+    const weeks = [];
+    let curWeekNum = 0, curWorkoutNum = 0;
+    let curDayExercises = null;
+    let curWeek = null;
+
+    const flushDay = () => {
+      if (curDayExercises && curDayExercises.length > 0) {
+        if (!curWeek) curWeek = { label: `Week ${curWeekNum || 1}`, days: [] };
+        curWeek.days.push({ name: `Workout ${curWorkoutNum}`, exercises: curDayExercises });
+      }
+      curDayExercises = null;
+    };
+
+    const flushWeek = () => {
+      flushDay();
+      if (curWeek && curWeek.days.length > 0) {
+        weeks.push(curWeek);
+      }
+      curWeek = null;
+    };
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      const col0 = row[0] ? String(row[0]).trim() : '';
+      const col1 = row[1];
+
+      // Week marker
+      if (/^week$/i.test(col0) && typeof col1 === 'number') {
+        const newWeekNum = col1;
+        if (newWeekNum !== curWeekNum) {
+          flushWeek();
+          curWeekNum = newWeekNum;
+        }
+        continue;
+      }
+
+      // Workout marker
+      if (/^workout$/i.test(col0) && typeof col1 === 'number') {
+        flushDay();
+        curWorkoutNum = col1;
+        curDayExercises = [];
+        continue;
+      }
+
+      // Header row (Sets/Reps/Weight) — skip
+      if (row[3] && /^sets$/i.test(String(row[3]).trim()) &&
+          row[4] && /^reps$/i.test(String(row[4]).trim())) continue;
+
+      // Exercise row: col 2 = exercise name, col 3 = sets, col 4 = reps, col 5 = weight
+      if (curDayExercises !== null && row[2]) {
+        const exName = String(row[2]).trim();
+        if (!exName || /^optional/i.test(exName)) continue;
+        if (!/[a-zA-Z]{2,}/.test(exName)) continue;
+
+        const sets = typeof row[3] === 'number' ? row[3] : null;
+        const reps = typeof row[4] === 'number' ? row[4] : null;
+        const weight = typeof row[5] === 'number' ? row[5] : null;
+
+        if (sets && reps) {
+          const corrected = spellCorrectExerciseName(exName);
+          // Check if last exercise in current day has the same name — merge sets
+          const last = curDayExercises.length > 0 ? curDayExercises[curDayExercises.length - 1] : null;
+          if (last && last.name === corrected) {
+            // Append to prescription
+            const wt = weight ? `(${Math.round(weight * 10) / 10})` : '';
+            last.prescription += `, ${sets}x${reps}${wt}`;
+          } else {
+            const wt = weight ? `(${Math.round(weight * 10) / 10})` : '';
+            curDayExercises.push({
+              name: corrected,
+              prescription: `${sets}x${reps}${wt}`,
+              note: ''
+            });
+          }
+        }
+      }
+    }
+
+    // Flush remaining
+    flushWeek();
+
+    if (weeks.length > 0) {
+      blocks.push({
+        id: 'hepburn_' + Date.now() + '_' + blocks.length,
+        name: sn,
+        format: 'J',
+        maxes,
+        weeks
+      });
+    }
+  }
+
+  return blocks.length > 0 ? blocks : null;
+}
+
+
+// ── FORMAT K: BULGARIAN METHOD ───────────────────────────────────────────────
+
+function detectBulgarianFmt(wb) {
+  const names = wb.SheetNames.map(s => s.toLowerCase());
+  if (!names.some(n => n.includes('start here'))) return false;
+  // Check for (A) markers in any training sheet
+  for (const sn of wb.SheetNames) {
+    if (/start\s*here|bare\s*minimum/i.test(sn)) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(20, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      if (row[0] && /^\(\s*[A-E]\s*\)$/i.test(String(row[0]).trim())) return true;
+    }
+  }
+  return false;
+}
+
+function parseBulgarianMethod(wb) {
+  const SKIP = /^(start\s*here|the\s*bare\s*minimum|readme|notes|info)$/i;
+
+  // Extract 1RM from training sheets (rows 1-2 typically have 1RM values)
+  const maxes = {};
+  const blocks = [];
+
+  for (const sn of wb.SheetNames) {
+    if (SKIP.test(sn.trim())) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+      .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+    if (rows.length < 5) continue;
+
+    // Extract 1RM from this sheet (look for "1RM" row with Squat/Bench/Deadlift values)
+    let sheetMaxes = {};
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const col1 = row[1] ? String(row[1]).trim().toLowerCase() : '';
+      if (/1rm|1\s*rep\s*max/i.test(col1)) {
+        // Next cells should be lift maxes — look at header row above for lift names
+        const headerRow = rows[i - 1];
+        if (headerRow) {
+          for (let c = 2; c < Math.min(8, row.length); c++) {
+            const liftName = headerRow[c] ? String(headerRow[c]).trim().toLowerCase() : '';
+            const val = row[c];
+            if (typeof val === 'number' && val > 0) {
+              if (/squat/.test(liftName)) sheetMaxes.squat = val;
+              else if (/bench/.test(liftName)) sheetMaxes.bench = val;
+              else if (/dead/.test(liftName)) sheetMaxes.deadlift = val;
+            }
+          }
+        }
+      }
+    }
+    Object.assign(maxes, sheetMaxes);
+
+    // Find week sections
+    const weekStarts = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      for (let c = 0; c < Math.min(3, row.length); c++) {
+        if (row[c] && /^week\s*[\d_]/i.test(String(row[c]).trim())) {
+          weekStarts.push(i);
+          break;
+        }
+      }
+    }
+    if (weekStarts.length === 0) continue;
+
+    const weeks = [];
+
+    for (let wi = 0; wi < weekStarts.length; wi++) {
+      const wStart = weekStarts[wi];
+      const wEnd = (wi + 1 < weekStarts.length) ? weekStarts[wi + 1] : rows.length;
+      const weekRow = rows[wStart];
+
+      // Detect day columns from week header row
+      // Look for "Day N" cells to find column positions
+      const dayColumns = []; // {col, dayNum, label}
+
+      // Check for split layout (Frequency First): two groups side by side
+      let isSplit = false;
+      const weekLabels = [];
+      for (let c = 0; c < (weekRow ? weekRow.length : 0); c++) {
+        const v = weekRow[c] ? String(weekRow[c]).trim() : '';
+        if (/^week/i.test(v)) weekLabels.push(c);
+        if (/^day\s*\d/i.test(v)) {
+          const dayNum = parseInt(v.match(/\d+/)[0]);
+          dayColumns.push({ col: c, dayNum, label: `Day ${dayNum}` });
+        }
+      }
+      if (weekLabels.length >= 2) isSplit = true;
+
+      if (dayColumns.length === 0) continue;
+
+      // Find reps column(s) — the column with "Reps" header in the row below week header
+      const repsRow = rows[wStart + 1];
+      const repsColumns = []; // col indices where "Reps" appears
+      if (repsRow) {
+        for (let c = 0; c < repsRow.length; c++) {
+          if (repsRow[c] && /^reps$/i.test(String(repsRow[c]).trim())) repsColumns.push(c);
+        }
+      }
+
+      // For split layout, there are two reps columns. Map each day to its reps column.
+      // For simple layout, one reps column for all days.
+      const dayToRepsCol = {};
+      if (repsColumns.length === 1) {
+        dayColumns.forEach(dc => { dayToRepsCol[dc.dayNum] = repsColumns[0]; });
+      } else if (repsColumns.length >= 2 && isSplit) {
+        // Left group days use first reps col, right group days use second
+        // Sort reps columns by position
+        const sorted = [...repsColumns].sort((a, b) => a - b);
+        for (const dc of dayColumns) {
+          // Assign to nearest reps column that is to the left
+          let best = sorted[0];
+          for (const rc of sorted) {
+            if (rc < dc.col) best = rc;
+          }
+          dayToRepsCol[dc.dayNum] = best;
+        }
+      }
+
+      // Parse exercise blocks within this week
+      // Structure: (A) marker in col 0 or col 7 (split), exercise name next col, then rows of sets
+      const dayExercises = {}; // dayNum -> [{name, sets: [{reps, weight}]}]
+      dayColumns.forEach(dc => { dayExercises[dc.dayNum] = []; });
+
+      let curExName = null;
+      let curExSets = {}; // dayNum -> [{reps, weight}]
+      let inWarmup = false;
+
+      const flushExercise = () => {
+        if (!curExName) return;
+        for (const dc of dayColumns) {
+          const sets = curExSets[dc.dayNum] || [];
+          if (sets.length === 0) continue;
+
+          // Collapse consecutive identical sets
+          const collapsed = [];
+          let runReps = null, runWeight = null, runCount = 0;
+          for (const s of sets) {
+            if (s.reps === runReps && s.weight === runWeight) {
+              runCount++;
+            } else {
+              if (runCount > 0) collapsed.push({ count: runCount, reps: runReps, weight: runWeight });
+              runReps = s.reps; runWeight = s.weight; runCount = 1;
+            }
+          }
+          if (runCount > 0) collapsed.push({ count: runCount, reps: runReps, weight: runWeight });
+
+          const parts = collapsed.map(c => {
+            const wt = (c.weight != null && c.weight !== '' && c.weight !== 0) ? `(${c.weight})` : '';
+            return `${c.count}x${c.reps}${wt}`;
+          });
+
+          dayExercises[dc.dayNum].push({
+            name: spellCorrectExerciseName(curExName),
+            prescription: parts.join(', '),
+            note: ''
+          });
+        }
+        curExName = null;
+        curExSets = {};
+      };
+
+      for (let i = wStart + 2; i < wEnd; i++) {
+        const row = rows[i]; if (!row) continue;
+
+        // Check for (A)/(B)/(C) group markers in col 0 or col 7 (split right group)
+        const col0 = row[0] ? String(row[0]).trim() : '';
+        let groupMarkerCol = -1;
+        if (/^\(\s*[A-Z]\s*\)$/i.test(col0)) groupMarkerCol = 0;
+        // Split layout: right group marker might be in another column
+        for (let c = 5; c < Math.min(10, row.length); c++) {
+          if (row[c] && /^\(\s*[A-Z]\s*\)$/i.test(String(row[c]).trim())) {
+            // This starts a new exercise in the right group
+            // Handle: flush left group exercise, parse right group
+            groupMarkerCol = c;
+          }
+        }
+
+        // "Your typical warmup" = warmup separator, skip
+        const col1 = row[1] ? String(row[1]).trim() : '';
+        if (/warmup/i.test(col1)) { inWarmup = false; continue; }
+
+        // "(Optional)" or "Daily Min" / "Daily Max" labels
+        if (/^\(optional\)|daily\s*(min|max)/i.test(col1)) {
+          // These are placeholder rows — include if they have a rep count
+          // (they indicate the program structure even without predetermined weights)
+        }
+
+        if (groupMarkerCol >= 0) {
+          // New exercise — flush previous
+          flushExercise();
+          const nameCol = groupMarkerCol + 1;
+          curExName = row[nameCol] ? String(row[nameCol]).trim() : null;
+          if (!curExName || !/[a-zA-Z]{2,}/.test(curExName)) { curExName = null; continue; }
+          curExSets = {};
+
+          // Read first set from this same row
+          for (const dc of dayColumns) {
+            const repsCol = dayToRepsCol[dc.dayNum];
+            // Find which reps column is associated with this group
+            let actualRepsCol = repsCol;
+            if (isSplit) {
+              // For split: if day col is in left group, use left reps col; right group, use right reps col
+              if (repsColumns.length >= 2) {
+                const sorted = [...repsColumns].sort((a, b) => a - b);
+                actualRepsCol = dc.col > sorted[sorted.length - 1] ? sorted[sorted.length - 1] :
+                               dc.col > sorted[0] ? sorted[sorted.length - 1] : sorted[0];
+                // Simpler: use the reps column closest to (and before) this day column
+                for (const rc of sorted) {
+                  if (rc <= dc.col) actualRepsCol = rc;
+                }
+              }
+            }
+            const reps = row[actualRepsCol];
+            const weight = row[dc.col];
+            if (reps == null) continue;
+            const repsStr = String(reps).trim();
+            const weightStr = weight != null ? String(weight).trim() : '';
+
+            // Skip rest days
+            if (/^x$/i.test(weightStr) || /^x\s*=/i.test(weightStr)) continue;
+            // Skip if reps is not numeric or range
+            if (!/^\d/.test(repsStr)) continue;
+
+            if (!curExSets[dc.dayNum]) curExSets[dc.dayNum] = [];
+
+            // Handle percentage text like "70-85% of 1RM"
+            if (/\d+.*%/.test(weightStr)) {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: weightStr });
+            } else if (typeof weight === 'number') {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: Math.round(weight * 10) / 10 });
+            } else if (weightStr && /^\d/.test(weightStr)) {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: weightStr });
+            } else if (weightStr === '') {
+              // No weight (placeholder for daily min/max)
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: '' });
+            }
+          }
+          continue;
+        }
+
+        // Continuation rows for current exercise (no group marker)
+        if (curExName) {
+          for (const dc of dayColumns) {
+            let actualRepsCol = dayToRepsCol[dc.dayNum] || repsColumns[0];
+            if (isSplit && repsColumns.length >= 2) {
+              const sorted = [...repsColumns].sort((a, b) => a - b);
+              for (const rc of sorted) {
+                if (rc <= dc.col) actualRepsCol = rc;
+              }
+            }
+            const reps = row[actualRepsCol];
+            const weight = row[dc.col];
+            if (reps == null) continue;
+            const repsStr = String(reps).trim();
+            const weightStr = weight != null ? String(weight).trim() : '';
+            if (/^x$/i.test(weightStr) || /^x\s*=/i.test(weightStr)) continue;
+            if (!/^\d/.test(repsStr)) continue;
+
+            if (!curExSets[dc.dayNum]) curExSets[dc.dayNum] = [];
+            if (/\d+.*%/.test(weightStr)) {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: weightStr });
+            } else if (typeof weight === 'number') {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: Math.round(weight * 10) / 10 });
+            } else if (weightStr && /^\d/.test(weightStr)) {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: weightStr });
+            } else if (weightStr === '') {
+              curExSets[dc.dayNum].push({ reps: repsStr, weight: '' });
+            }
+          }
+        }
+      }
+      flushExercise();
+
+      // Build week with sorted days
+      const dayNums = Object.keys(dayExercises).map(Number).sort((a, b) => a - b);
+      const weekDays = [];
+      for (const dn of dayNums) {
+        if (dayExercises[dn].length > 0) {
+          weekDays.push({ name: `Day ${dn}`, exercises: dayExercises[dn] });
+        }
+      }
+      if (weekDays.length > 0) {
+        weeks.push({ label: `Week ${weeks.length + 1}`, days: weekDays });
+      }
+    }
+
+    if (weeks.length > 0) {
+      blocks.push({
+        id: 'bulgarian_' + Date.now() + '_' + blocks.length,
+        name: sn,
+        format: 'K',
+        maxes: Object.keys(sheetMaxes).length > 0 ? sheetMaxes : maxes,
+        weeks
+      });
+    }
+  }
+
+  return blocks.length > 0 ? blocks : null;
+}
+
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -2886,5 +3712,9 @@ if (typeof module !== 'undefined' && module.exports) {
     parseD, parseDSheet, buildDPrescription,
     deduplicateExerciseNames,
     parseSets, parseSimple, parseRangeSet, parseBarePres, parseWarmupSets,
+    parseCSVRows, detectCSVFormat, parseCSVImport,
+    detectTexasMethodFmt, parseTexasMethod,
+    detectHepburnFmt, parseHepburn,
+    detectBulgarianFmt, parseBulgarianMethod,
   };
 }
