@@ -1611,8 +1611,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 // ── THEME ─────────────────────────────────────────────────────────────────────
 const THEME_META  = { dark: '#0a0a0a', navy: '#0A0E1A', light: '#F2EDE4' };
 
-function loadTheme(){ return localStorage.getItem('liftlog_theme')||'dark'; }
-function saveTheme(t){ try{ localStorage.setItem('liftlog_theme', t); }catch(e){ console.error(e); } }
+function loadTheme(){ if(_idbReady && _idbCache['liftlog_theme']!==undefined) return _idbCache['liftlog_theme']; return localStorage.getItem('liftlog_theme')||'dark'; }
+function saveTheme(t){ _idbPut('liftlog_theme', t); try{ localStorage.setItem('liftlog_theme', t); }catch(e){ console.error(e); } }
 
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t==='dark' ? '' : t);
@@ -1627,31 +1627,159 @@ function applyTheme(t){
 // Apply on load
 applyTheme(loadTheme());
 
-const _savedBlocks=loadBlocks()||[];
-const state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
-// Restore nav position from last session
-(function restoreNav(){
-  const nav=loadNav();
-  if(nav.blockId){ const b=state.blocks.find(b=>b.id===nav.blockId); if(b) state.activeBlock=b; }
-  if(typeof nav.week==='number') state.activeWeek=nav.week;
-  if(typeof nav.day==='number') state.activeDay=nav.day;
-  // Bounds-check restored week/day indices against active block
-  const _rb=state.activeBlock;
-  if(_rb&&_rb.weeks){
-    if(state.activeWeek>=_rb.weeks.length) state.activeWeek=0;
-    const _rw=_rb.weeks[state.activeWeek];
-    if(_rw&&_rw.days&&state.activeDay>=_rw.days.length) state.activeDay=0;
+// ── IndexedDB Storage Layer ──────────────────────────────────────────────────
+// Thin key-value wrapper over IndexedDB. All app data is stored as { key, value }
+// pairs in a single object store. Reads/writes are async but the app uses an
+// in-memory cache (_idbCache) so load functions stay synchronous after boot.
+// localStorage is kept as a dual-write fallback for older browsers / private mode.
+const _IDB_NAME = 'unrack_db';
+const _IDB_VERSION = 1;
+const _IDB_STORE = 'kv';
+let _idbReady = false;      // true once IDB is open
+let _idbDB = null;           // IDBDatabase instance
+const _idbCache = {};        // in-memory mirror: { lsKey: parsedValue }
+
+function _idbOpen() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not available')); return; }
+    const req = indexedDB.open(_IDB_NAME, _IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(_IDB_STORE)) {
+        db.createObjectStore(_IDB_STORE, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = (e) => { _idbDB = e.target.result; _idbReady = true; resolve(_idbDB); };
+    req.onerror = (e) => { console.error('[IDB] open error:', e.target.error); reject(e.target.error); };
+  });
+}
+
+// Read all KV pairs into _idbCache
+function _idbLoadAll() {
+  return new Promise((resolve, reject) => {
+    if (!_idbDB) { resolve({}); return; }
+    const tx = _idbDB.transaction(_IDB_STORE, 'readonly');
+    const store = tx.objectStore(_IDB_STORE);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const rows = req.result || [];
+      for (const row of rows) _idbCache[row.key] = row.value;
+      resolve(_idbCache);
+    };
+    req.onerror = (e) => { console.error('[IDB] loadAll error:', e.target.error); reject(e.target.error); };
+  });
+}
+
+// Write a single key (async, fire-and-forget from save functions)
+function _idbPut(key, value) {
+  _idbCache[key] = value;
+  if (!_idbDB) return;
+  try {
+    const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
+    tx.objectStore(_IDB_STORE).put({ key, value });
+  } catch (e) { console.error('[IDB] put error:', key, e); }
+}
+
+// Delete a key
+function _idbDelete(key) {
+  delete _idbCache[key];
+  if (!_idbDB) return;
+  try {
+    const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
+    tx.objectStore(_IDB_STORE).delete(key);
+  } catch (e) { console.error('[IDB] delete error:', key, e); }
+}
+
+// Migrate localStorage → IndexedDB (one-time, on first IDB boot)
+const _IDB_MIGRATED_KEY = 'liftlog_idb_migrated';
+function _idbMigrateFromLS() {
+  return new Promise((resolve) => {
+    if (!_idbDB) { resolve(); return; }
+    // Skip if already migrated
+    if (_idbCache[_IDB_MIGRATED_KEY]) { resolve(); return; }
+    const keysToMigrate = [
+      'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
+      'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
+      'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps',
+      'liftlog_last_backup', 'liftlog_rep_tip_seen'
+    ];
+    const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
+    const store = tx.objectStore(_IDB_STORE);
+    let migrated = 0;
+    for (const lsKey of keysToMigrate) {
+      const raw = localStorage.getItem(lsKey);
+      if (raw !== null) {
+        let val;
+        try { val = JSON.parse(raw); } catch { val = raw; }
+        store.put({ key: lsKey, value: val });
+        _idbCache[lsKey] = val;
+        migrated++;
+      }
+    }
+    // Mark migration done
+    store.put({ key: _IDB_MIGRATED_KEY, value: true });
+    _idbCache[_IDB_MIGRATED_KEY] = true;
+    tx.oncomplete = () => { console.log(`[IDB] Migrated ${migrated} keys from localStorage`); resolve(); };
+    tx.onerror = (e) => { console.error('[IDB] migration error:', e.target.error); resolve(); };
+  });
+}
+
+// Request persistent storage so the browser won't evict our data
+function _requestPersist() {
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then(granted => {
+      console.log('[Storage] Persistent storage ' + (granted ? 'granted' : 'denied'));
+    }).catch(() => {});
   }
-})();
+}
+
+// ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
+// State object — declared here so it's in scope for the whole script.
+// Populated inside _bootApp() once data is loaded.
+let state;
+
+async function _bootApp() {
+  // 1. Try to open IndexedDB
+  try {
+    await _idbOpen();
+    await _idbLoadAll();
+    await _idbMigrateFromLS();
+    _requestPersist();
+  } catch (e) {
+    console.warn('[IDB] Falling back to localStorage only:', e);
+  }
+
+  // 2. Initialize state using the cache (IDB data) or localStorage fallback
+  const _savedBlocks = loadBlocks() || [];
+  state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+
+  // 3. Restore nav position from last session
+  const nav = loadNav();
+  if (nav.blockId) { const b = state.blocks.find(b => b.id === nav.blockId); if (b) state.activeBlock = b; }
+  if (typeof nav.week === 'number') state.activeWeek = nav.week;
+  if (typeof nav.day === 'number') state.activeDay = nav.day;
+  const _rb = state.activeBlock;
+  if (_rb && _rb.weeks) {
+    if (state.activeWeek >= _rb.weeks.length) state.activeWeek = 0;
+    const _rw = _rb.weeks[state.activeWeek];
+    if (_rw && _rw.days && state.activeDay >= _rw.days.length) state.activeDay = 0;
+  }
+
+  // 4. Re-run set-level pre-population then kick off render
+  if (_savedBlocks.length > 0) rePopulateSets(_savedBlocks);
+
+  // 5. Boot the UI (onboarding check → render)
+  checkOnboarding();
+}
 
 // Re-run set-level pre-population for blocks restored from localStorage
 // This fills in missing set keys that may not have existed in older versions
 function showSaveError(){if(window._saveErrorShown)return;window._saveErrorShown=true;const toast=document.createElement('div');toast.className='save-error-toast';toast.textContent='Storage full \u2014 some data may not be saved. Consider exporting your data.';document.body.appendChild(toast);setTimeout(()=>toast.remove(),8000);}
 
 function _showWarningToast(msg){const t=document.createElement('div');t.className='save-error-toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),8000);}
-function loadLogs(){ try{ return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>_showWarningToast('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
+function loadLogs(){ try{ if(_idbReady && _idbCache['liftlog_v4']!==undefined) return _idbCache['liftlog_v4']; return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>_showWarningToast('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
 let _saveLogsTimer=null;
-function _saveLogsImmediate(){ try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
+function _saveLogsImmediate(){ _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } });
 function rePopulateSets(blocks){
@@ -1687,15 +1815,15 @@ function rePopulateSets(blocks){
     if(blocks.length>0) saveLogs();
   }catch(e){ console.error('[liftlog] rePopulateSets error:',e); }
 }
-if(_savedBlocks.length>0) rePopulateSets(_savedBlocks);
-function loadBlocks(){ try{ const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>_showWarningToast('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
-function saveBlocks(){ try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
-function loadCustomLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
-function saveCustomLifts(){ try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); showSaveError(); } }
-function loadTrackedLifts(){ try{ return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
-function saveTrackedLifts(){ try{ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }catch(e){ console.error('[liftlog] saveTrackedLifts error:',e); showSaveError(); } }
-function loadNav(){ try{ return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch{ return {}; } }
-function saveNav(){ try{ localStorage.setItem('liftlog_nav', JSON.stringify({blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay})); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
+// Old top-level rePopulateSets call removed — now inside _bootApp()
+function loadBlocks(){ try{ if(_idbReady && _idbCache['liftlog_blocks']!==undefined) return _idbCache['liftlog_blocks']; const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>_showWarningToast('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
+function saveBlocks(){ _idbPut('liftlog_blocks', state.blocks); try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
+function loadCustomLifts(){ try{ if(_idbReady && _idbCache['liftlog_custom']!==undefined) return _idbCache['liftlog_custom']; return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
+function saveCustomLifts(){ _idbPut('liftlog_custom', state.customLifts); try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); showSaveError(); } }
+function loadTrackedLifts(){ try{ if(_idbReady && _idbCache['liftlog_tracked']!==undefined) return _idbCache['liftlog_tracked']; return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
+function saveTrackedLifts(){ _idbPut('liftlog_tracked', state.trackedLifts); try{ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }catch(e){ console.error('[liftlog] saveTrackedLifts error:',e); showSaveError(); } }
+function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) return _idbCache['liftlog_nav']; return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch{ return {}; } }
+function saveNav(){ const navObj={blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay}; _idbPut('liftlog_nav', navObj); try{ localStorage.setItem('liftlog_nav', JSON.stringify(navObj)); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML; }
@@ -2761,8 +2889,8 @@ const ATHLETE_KEY          = 'liftlog_athlete';         // { gender, age, bodywe
 const APP_SETTINGS_KEY     = 'liftlog_app_settings';   // { showScores: bool }
 const ONBOARDED_KEY        = 'liftlog_onboarded';      // '1' after onboarding complete
 
-function loadAppSettings()  { try { return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch { return {}; } }
-function saveAppSettings(s) { try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); showSaveError(); } }
+function loadAppSettings()  { try { if(_idbReady && _idbCache[APP_SETTINGS_KEY]!==undefined) return _idbCache[APP_SETTINGS_KEY]; return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch { return {}; } }
+function saveAppSettings(s) { _idbPut(APP_SETTINGS_KEY, s); try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); showSaveError(); } }
 function getShowScores()    { const s = loadAppSettings(); return s.showScores    !== false; } // default ON
 
 function toggleAthleteProfileForm() {
@@ -2838,6 +2966,7 @@ function toggleScoresSetting() {
 
 
 function resetOnboarding() {
+  _idbDelete(ONBOARDED_KEY);
   localStorage.removeItem(ONBOARDED_KEY);
   saveAthlete(null);
   closeSettings();
@@ -2846,13 +2975,13 @@ function resetOnboarding() {
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
 
-function loadSchedule()  { try { return JSON.parse(localStorage.getItem(SCHEDULE_KEY)||'{}'); } catch { return {}; } }
-function saveSchedule(d) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
+function loadSchedule()  { try { if(_idbReady && _idbCache[SCHEDULE_KEY]!==undefined) return _idbCache[SCHEDULE_KEY]; return JSON.parse(localStorage.getItem(SCHEDULE_KEY)||'{}'); } catch { return {}; } }
+function saveSchedule(d) { _idbPut(SCHEDULE_KEY, d); try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
 
 
 // Athlete profile
-function loadAthlete()  { try { return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
-function saveAthlete(d) { try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
+function loadAthlete()  { try { if(_idbReady && _idbCache[ATHLETE_KEY]!==undefined) return _idbCache[ATHLETE_KEY]; return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
+function saveAthlete(d) { _idbPut(ATHLETE_KEY, d); try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
 
 
 
@@ -7257,9 +7386,14 @@ const BACKUP_KEYS = [
 function downloadBackup() {
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: '1.0.0', data: {} };
   for (const key of BACKUP_KEYS) {
-    const raw = localStorage.getItem(key);
-    if (raw !== null) {
-      try { data.data[key] = JSON.parse(raw); } catch { data.data[key] = raw; }
+    // Prefer IDB cache, fall back to localStorage
+    if (_idbReady && _idbCache[key] !== undefined) {
+      data.data[key] = _idbCache[key];
+    } else {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) {
+        try { data.data[key] = JSON.parse(raw); } catch { data.data[key] = raw; }
+      }
     }
   }
 
@@ -7275,7 +7409,9 @@ function downloadBackup() {
   URL.revokeObjectURL(url);
 
   // Update last backup display
-  localStorage.setItem('liftlog_last_backup', new Date().toISOString());
+  const _bkTs = new Date().toISOString();
+  _idbPut('liftlog_last_backup', _bkTs);
+  localStorage.setItem('liftlog_last_backup', _bkTs);
   updateBackupTimestamp();
   _showWarningToast('Backup downloaded ✓');
 }
@@ -7365,8 +7501,9 @@ function executeRestore() {
   overlay.remove();
 
   try {
-    // Write each key to localStorage
+    // Write each key to both IndexedDB and localStorage
     for (const [key, val] of Object.entries(backup.data)) {
+      _idbPut(key, val);
       const toStore = typeof val === 'string' ? val : JSON.stringify(val);
       localStorage.setItem(key, toStore);
     }
@@ -7382,7 +7519,7 @@ function executeRestore() {
 function updateBackupTimestamp() {
   const el = document.getElementById('last-backup-time');
   if (!el) return;
-  const ts = localStorage.getItem('liftlog_last_backup');
+  const ts = (_idbReady && _idbCache['liftlog_last_backup']!==undefined) ? _idbCache['liftlog_last_backup'] : localStorage.getItem('liftlog_last_backup');
   if (ts) {
     el.textContent = 'Last backup: ' + new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
     el.style.display = 'block';
@@ -7576,8 +7713,8 @@ function closeParseError() {
 let _onboardGender = null;
 let _onboardUnit = 'lbs';
 
-function isOnboarded() { return localStorage.getItem(ONBOARDED_KEY) === '1'; }
-function markOnboarded() { try{ localStorage.setItem(ONBOARDED_KEY, '1'); }catch(e){ console.error(e); } }
+function isOnboarded() { if(_idbReady && _idbCache[ONBOARDED_KEY]!==undefined) return _idbCache[ONBOARDED_KEY]==='1'||_idbCache[ONBOARDED_KEY]===1||_idbCache[ONBOARDED_KEY]===true; return localStorage.getItem(ONBOARDED_KEY) === '1'; }
+function markOnboarded() { _idbPut(ONBOARDED_KEY, '1'); try{ localStorage.setItem(ONBOARDED_KEY, '1'); }catch(e){ console.error(e); } }
 
 function checkOnboarding() {
   // Show onboarding only for brand new users: no programs AND never onboarded
@@ -7720,7 +7857,8 @@ function finishOnboarding() {
 
 // ── END ONBOARDING ────────────────────────────────────────────────────────────
 
-checkOnboarding();
+// Boot the app — opens IndexedDB, migrates data, initializes state, renders
+_bootApp();
 
 
 // ── CUSTOM EXERCISE ───────────────────────────────────────────────────────────
@@ -7976,7 +8114,7 @@ function _confirmDeleteEx(exName, dayName, allWeeks) {
 
 function openRepsEditor(sk, prescReps) {
   // Show one-time tooltip on first use
-  if (!localStorage.getItem('liftlog_rep_tip_seen')) {
+  if (!(_idbReady && _idbCache['liftlog_rep_tip_seen']) && !localStorage.getItem('liftlog_rep_tip_seen')) {
     showRepTip();
   }
   state.editingRepsKey = sk;
@@ -8018,7 +8156,7 @@ function renderSetRow(sk) {
 
 function showRepTip() {
   // Mark seen immediately so re-tapping another exercise never re-shows
-  try{ localStorage.setItem('liftlog_rep_tip_seen', '1'); }catch(e){ console.error(e); }
+  _idbPut('liftlog_rep_tip_seen', '1'); try{ localStorage.setItem('liftlog_rep_tip_seen', '1'); }catch(e){ console.error(e); }
   const existing = document.getElementById('rep-tip-tooltip');
   if (existing) return;
   // Insert above the sets-grid, inside the card
@@ -8064,11 +8202,12 @@ let _cmExcludedSections = new Set(); // day names user toggled off
 let _cmMeta = {}; // user-entered metadata from step 3
 
 function loadSavedMappings() {
-  try { return JSON.parse(localStorage.getItem(COLMAP_STORAGE_KEY)) || {}; } catch(e) { return {}; }
+  try { if(_idbReady && _idbCache[COLMAP_STORAGE_KEY]!==undefined) return _idbCache[COLMAP_STORAGE_KEY]; return JSON.parse(localStorage.getItem(COLMAP_STORAGE_KEY)) || {}; } catch(e) { return {}; }
 }
 function saveMappingForFile(fingerprint, mapping) {
   const all = loadSavedMappings();
   all[fingerprint] = mapping;
+  _idbPut(COLMAP_STORAGE_KEY, all);
   try { localStorage.setItem(COLMAP_STORAGE_KEY, JSON.stringify(all)); } catch(e) {}
 }
 function getFileFingerprint(wb) {
