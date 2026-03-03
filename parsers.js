@@ -472,8 +472,9 @@ function parseB(wb){
     }catch(e){ console.error(`[parseB] Error parsing sheet "${sn}":`,e); }
   }
   if(weeks.length===0) return [];
-  const bId = (wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i,'').trim() : wb.SheetNames[0]) + '_' + Date.now();
-  const blocks=[{id:bId,name:bId||'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
+  const bName = wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i,'').trim() : wb.SheetNames[0];
+  const bId = bName + '_' + Date.now();
+  const blocks=[{id:bId,name:bName||'Training Program',dateRange:'',athleteName,maxes:{},weeks,format:'B'}];
   return blocks;
 }
 
