@@ -427,6 +427,24 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .collapsed-prev-summary { font-size: 11px; color: #b8902a; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; padding: 0 16px 10px; opacity: 0.8; }
 .rest-msg { text-align: center; color: var(--text-dimmer); padding-top: 60px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
 
+/* ── Rest Timer Banner ────────────────────────────────────────────── */
+.rest-timer-banner { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; z-index: 190; border-radius: 14px; overflow: hidden; transition: transform 0.3s ease, opacity 0.3s ease; }
+.rest-timer-banner.hidden { transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; }
+.rest-timer-inner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface-5); border: 1px solid var(--gold-dim, rgba(201,168,76,0.3)); border-radius: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+.rest-timer-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+.rest-timer-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+.rest-timer-ring circle { fill: none; stroke-width: 3; }
+.rest-timer-ring .ring-bg { stroke: rgba(255,255,255,0.06); }
+.rest-timer-ring .ring-fg { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset 0.3s linear; }
+.rest-timer-time { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: var(--text-bright); letter-spacing: 0.02em; }
+.rest-timer-info { flex: 1; min-width: 0; }
+.rest-timer-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+.rest-timer-ex { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rest-timer-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.rest-timer-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-mid); border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: all 0.15s; }
+.rest-timer-btn:active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
+.rest-timer-skip { color: var(--gold); border-color: rgba(201,168,76,0.3); }
+
 /* ── Custom Exercise ─────────────────────────────────────────────────── */
 .add-exercise-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 32px); margin: 0 16px 12px; padding: 13px 16px; background: none; border: 1px dashed var(--border); border-radius: 10px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; }
 .add-exercise-btn:active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.05); }
@@ -1341,6 +1359,24 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </div>
   </div>
+  <!-- Rest Timer Banner -->
+  <div id="rest-timer-banner" class="rest-timer-banner hidden">
+    <div class="rest-timer-inner">
+      <div class="rest-timer-ring">
+        <svg viewBox="0 0 44 44"><circle class="ring-bg" cx="22" cy="22" r="19"/><circle class="ring-fg" id="rest-timer-ring-fg" cx="22" cy="22" r="19" stroke-dasharray="119.38" stroke-dashoffset="0"/></svg>
+        <div class="rest-timer-time" id="rest-timer-display">3:00</div>
+      </div>
+      <div class="rest-timer-info">
+        <div class="rest-timer-label">REST</div>
+        <div class="rest-timer-ex" id="rest-timer-ex-name"></div>
+      </div>
+      <div class="rest-timer-actions">
+        <button class="rest-timer-btn" onclick="addRestTime(30)">+30s</button>
+        <button class="rest-timer-btn rest-timer-skip" onclick="skipRestTimer()">Skip</button>
+      </div>
+    </div>
+  </div>
+
   <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
     <button class="nav-btn" id="nav-home" onclick="setScreen('home')" aria-label="Home">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
@@ -1590,6 +1626,14 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         DOTS / Wilks Scores
       </div>
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
+    </button>
+
+    <button class="settings-row-btn" onclick="toggleRestTimerSetting()" style="cursor:pointer">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Rest Timer
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.04em" id="rest-timer-mode-label">Auto</div>
     </button>
 
     <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
@@ -1844,6 +1888,8 @@ function setScreen(s){
   // Restore workout scroll; all other tabs start at top
   if(s==='workout'){ requestAnimationFrame(()=>window.scrollTo(0, _workoutScrollY)); }
   else { window.scrollTo(0, 0); }
+  // Hide rest timer banner when leaving workout
+  if(s!=='workout') { const rtb=document.getElementById('rest-timer-banner'); if(rtb) rtb.classList.add('hidden'); stopRestTimer(true); }
 }
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
@@ -2964,6 +3010,125 @@ function toggleScoresSetting() {
   if (state.screen === 'metrics') renderMetrics();
 }
 
+// ── REST TIMER ─────────────────────────────────────────────────────────────────
+const COMPOUND_KEYWORDS = ['squat','bench press','deadlift','dead lift','overhead press','ohp','barbell row',
+  'pendlay','t-bar','front squat','back squat','incline press','decline press','romanian deadlift',
+  'rdl','sumo deadlift','conventional deadlift','hip thrust','clean','snatch','jerk','power clean','push press'];
+let _restTimer = { intervalId: null, remaining: 0, total: 0, exName: '' };
+
+function getRestTimerMode() { const s = loadAppSettings(); return s.restTimerMode || 'auto'; }
+function setRestTimerMode(mode) { const s = loadAppSettings(); s.restTimerMode = mode; saveAppSettings(s); }
+function getRestTimerDefaults() {
+  const s = loadAppSettings();
+  return s.restTimerDefaults || { compound: 180, accessory: 120, bodyweight: 90 };
+}
+
+function getRestDuration(exerciseName) {
+  const defaults = getRestTimerDefaults();
+  const mode = getExerciseInputMode(exerciseName, '');
+  if (mode === 'cardio') return 0;
+  if (mode === 'bw' || mode === 'bw-timed') return defaults.bodyweight;
+  const n = exerciseName.toLowerCase();
+  if (COMPOUND_KEYWORDS.some(k => n.includes(k))) return defaults.compound;
+  return defaults.accessory;
+}
+
+function startRestTimer(exerciseName) {
+  if (getRestTimerMode() === 'off') return;
+  const dur = getRestDuration(exerciseName);
+  if (dur <= 0) return;
+  stopRestTimer(true); // clear any existing timer silently
+  _restTimer.remaining = dur;
+  _restTimer.total = dur;
+  _restTimer.exName = exerciseName;
+  const banner = document.getElementById('rest-timer-banner');
+  const display = document.getElementById('rest-timer-display');
+  const ring = document.getElementById('rest-timer-ring-fg');
+  const exLabel = document.getElementById('rest-timer-ex-name');
+  if (!banner) return;
+  exLabel.textContent = exerciseName;
+  updateTimerDisplay(display, ring, dur, dur);
+  banner.classList.remove('hidden');
+  _restTimer.intervalId = setInterval(() => {
+    _restTimer.remaining--;
+    updateTimerDisplay(display, ring, _restTimer.remaining, _restTimer.total);
+    if (_restTimer.remaining <= 0) {
+      timerComplete();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(display, ring, remaining, total) {
+  const m = Math.floor(remaining / 60);
+  const s = remaining % 60;
+  display.textContent = m + ':' + String(s).padStart(2, '0');
+  const circumference = 2 * Math.PI * 19; // r=19
+  const progress = total > 0 ? remaining / total : 0;
+  ring.setAttribute('stroke-dashoffset', circumference * (1 - progress));
+}
+
+function timerComplete() {
+  stopRestTimer(true);
+  // Vibrate
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
+  // Flash the banner briefly before hiding
+  const banner = document.getElementById('rest-timer-banner');
+  if (banner) {
+    const label = banner.querySelector('.rest-timer-label');
+    if (label) label.textContent = 'DONE';
+    const display = document.getElementById('rest-timer-display');
+    if (display) display.textContent = '0:00';
+    setTimeout(() => {
+      banner.classList.add('hidden');
+      if (label) label.textContent = 'REST';
+    }, 2000);
+  }
+}
+
+function stopRestTimer(silent) {
+  if (_restTimer.intervalId) {
+    clearInterval(_restTimer.intervalId);
+    _restTimer.intervalId = null;
+  }
+  _restTimer.remaining = 0;
+  if (!silent) {
+    const banner = document.getElementById('rest-timer-banner');
+    if (banner) banner.classList.add('hidden');
+  }
+}
+
+function skipRestTimer() { stopRestTimer(); }
+
+function addRestTime(sec) {
+  _restTimer.remaining += sec;
+  _restTimer.total += sec;
+}
+
+function toggleRestTimerSetting() {
+  const modes = ['auto', 'manual', 'off'];
+  const cur = getRestTimerMode();
+  const next = modes[(modes.indexOf(cur) + 1) % modes.length];
+  setRestTimerMode(next);
+  updateRestTimerToggleUI();
+}
+function updateRestTimerToggleUI() {
+  const mode = getRestTimerMode();
+  const label = document.getElementById('rest-timer-mode-label');
+  if (label) label.textContent = mode === 'auto' ? 'Auto' : mode === 'manual' ? 'Manual' : 'Off';
+}
+
+// Manual rest timer trigger from long-press or button (for manual mode)
+function manualRestTimer() {
+  if (getRestTimerMode() === 'off') return;
+  const block = state.activeBlock;
+  if (!block) return;
+  const week = block.weeks[state.activeWeek];
+  const day = week?.days[state.activeDay];
+  if (!day) return;
+  // Use first exercise name as fallback
+  const exName = day.exercises[0]?.name || 'Rest';
+  startRestTimer(exName);
+}
 
 function resetOnboarding() {
   _idbDelete(ONBOARDED_KEY);
@@ -4032,7 +4197,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         </div>`;
       } else {
         h+=`<div style="display:flex;align-items:center;gap:6px;padding:10px 16px 4px">
-          <button class="edit-name-btn" style="opacity:0.4" onclick="startEditEx('${esc(key)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit name</button>
+          <button class="edit-name-btn" style="opacity:0.4" onclick="startEditEx('${esc(key)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit name</button>
         </div>`;
       };
     }
@@ -4922,6 +5087,16 @@ function toggleSet(key){
   autoCompleteExercise(key);
   updateProgressBar();
   updateDayTabCheckmarks();
+  // Auto-start rest timer when checking a set
+  if (nowDone && getRestTimerMode() === 'auto') {
+    const exName = _resolveExNameFromKey(key);
+    if (exName) startRestTimer(exName);
+  }
+}
+function _resolveExNameFromKey(setKey) {
+  // setKey format: blockId|weekLabel|dayName|exName||s0
+  const parts = setKey.split('||')[0].split('|');
+  return parts.length >= 4 ? parts.slice(3).join('|') : null;
 }
 function adjustSets(key, delta){
   const cur = state.extraSets[key] || 0;
@@ -5193,7 +5368,7 @@ async function openDrivePicker() {
         onDrivePickerCallback(data);
         // If user cancelled and was in onboarding, return to onboarding
         if (data.action === google.picker.Action.CANCEL && wasOnboarding) {
-          showOnboardingStep(3);
+          showOnboardingStep(4);
         }
       })
       .build();
@@ -5206,7 +5381,7 @@ async function openDrivePicker() {
     }
     // If sign-in was cancelled and was in onboarding, return to onboarding
     if (wasOnboarding) {
-      showOnboardingStep(3);
+      showOnboardingStep(4);
     }
   }
 }
@@ -5315,7 +5490,7 @@ function closeImportIntent() {
   _pendingImportBlocks = null;
   // If not yet onboarded, return to upload step
   if (!isOnboarded()) {
-    showOnboardingStep(3);
+    showOnboardingStep(4);
   }
 }
 
@@ -6173,7 +6348,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
       const isHevy = testHeaders.includes('exercise_title') && testHeaders.includes('set_index');
       if (!isStrong && !isHevy) {
         showParseError('error', 'This CSV doesn\'t appear to be a Strong or Hevy export. Expected columns like "Workout Name" (Strong) or "exercise_title" (Hevy).');
-        if (wasOnboarding) showOnboardingStep(3);
+        if (wasOnboarding) showOnboardingStep(4);
         e.target.value = '';
         return;
       }
@@ -6181,7 +6356,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
       showCSVUnitPicker(text, isStrong ? 'Strong' : 'Hevy');
     } catch (err) {
       showParseError('error', err.message); console.error(err);
-      if (wasOnboarding) showOnboardingStep(3);
+      if (wasOnboarding) showOnboardingStep(4);
     }
     e.target.value = '';
     return;
@@ -6200,7 +6375,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     openImportIntent(blocks);
   }catch(err){
     showParseError('error', err.message); console.error(err);
-    if (wasOnboarding) { showOnboardingStep(3); }
+    if (wasOnboarding) { showOnboardingStep(4); }
   }
   e.target.value='';
 });
@@ -6401,6 +6576,7 @@ function openSettings(scrollTo) {
   if (!modal) return;
   updateSettingsThemePills();
   updateBackupTimestamp();
+  updateRestTimerToggleUI();
   modal.style.display = 'flex';
   requestAnimationFrame(() => {
     modal.classList.add('open');
@@ -7837,6 +8013,32 @@ function showOnboardingStep(step) {
   }
 
   else if (step === 3) {
+    const curMode = getRestTimerMode();
+    body.innerHTML = `
+      <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Rest Timer</div>
+      <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Automatic rest timer between sets. You can change this anytime in Settings.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px;margin:0 auto">
+        <button class="intake-gender-btn${curMode==='auto'?' selected':''}" onclick="onboardSetRestTimer('auto',this)" style="padding:14px;font-size:15px">
+          <div style="font-weight:700">Auto</div>
+          <div style="font-size:12px;opacity:0.7;margin-top:2px">Starts after every set check</div>
+        </button>
+        <button class="intake-gender-btn${curMode==='manual'?' selected':''}" onclick="onboardSetRestTimer('manual',this)" style="padding:14px;font-size:15px">
+          <div style="font-weight:700">Manual Only</div>
+          <div style="font-size:12px;opacity:0.7;margin-top:2px">Tap to start when you want</div>
+        </button>
+        <button class="intake-gender-btn${curMode==='off'?' selected':''}" onclick="onboardSetRestTimer('off',this)" style="padding:14px;font-size:15px">
+          <div style="font-weight:700">Off</div>
+          <div style="font-size:12px;opacity:0.7;margin-top:2px">No rest timer</div>
+        </button>
+      </div>
+      <button class="onboard-primary-btn" onclick="showOnboardingStep(4)" style="margin-top:20px">Continue</button>
+    `;
+    body.style.animation = 'none';
+    body.offsetHeight;
+    body.style.animation = 'onboardFadeIn 0.4s ease';
+  }
+
+  else if (step === 4) {
     body.innerHTML = `
       <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</div>
       <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training program.</div>
@@ -7847,6 +8049,12 @@ function showOnboardingStep(step) {
     body.offsetHeight;
     body.style.animation = 'onboardFadeIn 0.4s ease';
   }
+}
+
+function onboardSetRestTimer(mode, el) {
+  setRestTimerMode(mode);
+  el.parentElement.querySelectorAll('.intake-gender-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
 }
 
 function onboardSetGender(g, el) {
