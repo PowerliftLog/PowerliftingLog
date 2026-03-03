@@ -1314,13 +1314,27 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .save-error-toast{position:fixed;top:env(safe-area-inset-top,12px);left:50%;transform:translateX(-50%);background:#b91c1c;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-family:'Barlow',sans-serif;z-index:9998;text-align:center;max-width:90%;animation:toastIn .3s ease}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
+/* Install prompt banner */
+.install-banner { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; z-index: 195; background: var(--surface-2); border: 1px solid var(--gold); border-radius: 14px; padding: 16px; animation: installSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.install-banner-content { display: flex; align-items: flex-start; gap: 12px; }
+.install-banner-icon { flex-shrink: 0; width: 40px; height: 40px; background: rgba(201,168,76,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.install-banner-text { flex: 1; min-width: 0; }
+.install-banner-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: var(--text-primary); margin-bottom: 3px; }
+.install-banner-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.4; }
+.install-banner-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+.install-banner-btn { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 13px; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: opacity 0.15s; }
+.install-banner-btn:active { opacity: 0.7; }
+.install-banner-btn.primary { background: var(--gold); color: #000; }
+.install-banner-btn.dismiss { background: transparent; color: var(--text-dim); }
+@keyframes installSlideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.2</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.3</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -8183,6 +8197,117 @@ _bootApp().catch(e => {
   if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
   checkOnboarding();
 });
+
+
+// ── HOME-SCREEN INSTALL PROMPT ───────────────────────────────────────────────
+
+let _deferredInstallPrompt = null;
+const INSTALL_DISMISSED_KEY = 'liftlog_install_dismissed';
+
+// Capture Chrome/Android beforeinstallprompt
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  _maybeShowInstallBanner();
+});
+
+function _isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function _isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function _installDismissed() {
+  try {
+    const raw = localStorage.getItem(INSTALL_DISMISSED_KEY);
+    if (!raw) return false;
+    // Re-show after 7 days
+    const ts = parseInt(raw, 10);
+    return !isNaN(ts) && (Date.now() - ts) < 7 * 24 * 60 * 60 * 1000;
+  } catch(e) { return false; }
+}
+
+function _maybeShowInstallBanner() {
+  if (_isStandalone()) return;
+  if (_installDismissed()) return;
+  if (!isOnboarded()) return;
+  if (document.getElementById('install-banner')) return;
+
+  const isIOS = _isIOS();
+  const hasNativePrompt = !!_deferredInstallPrompt;
+
+  // Only show if we can do something useful
+  if (!isIOS && !hasNativePrompt) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.className = 'install-banner';
+
+  if (isIOS) {
+    banner.innerHTML = `
+      <div class="install-banner-content">
+        <div class="install-banner-icon">
+          <svg viewBox="0 0 28 40" fill="var(--gold)" width="20" height="28"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+        </div>
+        <div class="install-banner-text">
+          <div class="install-banner-title">Add Unrack to Home Screen</div>
+          <div class="install-banner-desc">Tap <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 5v14M5 12l7-7 7 7"/><line x1="5" y1="19" x2="19" y2="19"/></svg> in Safari, then <strong style="color:var(--text-primary)">"Add to Home Screen"</strong> for the full app experience — faster launch, offline access, and more reliable storage.</div>
+        </div>
+      </div>
+      <div class="install-banner-actions">
+        <button class="install-banner-btn dismiss" onclick="dismissInstallBanner()">Not now</button>
+      </div>`;
+  } else {
+    banner.innerHTML = `
+      <div class="install-banner-content">
+        <div class="install-banner-icon">
+          <svg viewBox="0 0 28 40" fill="var(--gold)" width="20" height="28"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+        </div>
+        <div class="install-banner-text">
+          <div class="install-banner-title">Install Unrack</div>
+          <div class="install-banner-desc">Add to your home screen for faster launch, offline access, and more reliable storage.</div>
+        </div>
+      </div>
+      <div class="install-banner-actions">
+        <button class="install-banner-btn dismiss" onclick="dismissInstallBanner()">Not now</button>
+        <button class="install-banner-btn primary" onclick="acceptInstallPrompt()">Install</button>
+      </div>`;
+  }
+
+  document.body.appendChild(banner);
+}
+
+function acceptInstallPrompt() {
+  if (!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(result => {
+    _deferredInstallPrompt = null;
+    _removeInstallBanner();
+    if (result.outcome === 'accepted') {
+      try { localStorage.setItem(INSTALL_DISMISSED_KEY, '9999999999999'); } catch(e) {}
+    }
+  });
+}
+
+function dismissInstallBanner() {
+  try { localStorage.setItem(INSTALL_DISMISSED_KEY, String(Date.now())); } catch(e) {}
+  _removeInstallBanner();
+}
+
+function _removeInstallBanner() {
+  const el = document.getElementById('install-banner');
+  if (el) { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(20px)'; setTimeout(() => el.remove(), 300); }
+}
+
+// Check on boot (slight delay so UI settles)
+window.addEventListener('appinstalled', () => {
+  _removeInstallBanner();
+  try { localStorage.setItem(INSTALL_DISMISSED_KEY, '9999999999999'); } catch(e) {}
+});
+
+setTimeout(_maybeShowInstallBanner, 2000);
 
 
 // ── CUSTOM EXERCISE ───────────────────────────────────────────────────────────
