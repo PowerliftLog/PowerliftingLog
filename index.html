@@ -1910,12 +1910,19 @@ function isTracked(name){
   const n=name.toLowerCase().trim();
   if(state.trackedLifts[n]===false) return false; // explicitly deselected
   if(state.trackedLifts[n]===true) return true;   // explicitly opted in
+  // Also check base name for deduped exercises (e.g., "Barbell Deadlift [1x1(352)]")
+  const base = _getBaseName(name).toLowerCase().trim();
+  if(base !== n) {
+    if(state.trackedLifts[base]===false) return false;
+    if(state.trackedLifts[base]===true) return true;
+  }
   return isCompLift(name);                          // default: comp lifts on, variations off
 }
 
 function toggleTracked(name, event){
   if(event){ event.stopPropagation(); event.preventDefault(); }
-  const n=name.toLowerCase().trim();
+  // Use base name so toggling one deduped variant affects all variants
+  const n=_getBaseName(name).toLowerCase().trim();
   const current=isTracked(name);
   state.trackedLifts[n]=!current;
   saveTrackedLifts();
@@ -1939,7 +1946,8 @@ function autoRegisterCompLifts(blocks){
     for(const week of block.weeks){
       for(const day of week.days){
         for(const ex of day.exercises){
-          const n=ex.name.toLowerCase().trim();
+          // Use base name for tracked lifts key (handles deduped names like "Barbell Deadlift [1x1(352)]")
+          const n=_getBaseName(ex.name).toLowerCase().trim();
           // Only set if not already explicitly set by user
           if(state.trackedLifts[n]===undefined&&isCompLift(ex.name)){
             state.trackedLifts[n]=true;
@@ -5158,17 +5166,19 @@ function setActual(key,v){
   saveLogs();
   if (shouldCheck) _maybeAdvanceWeek();
 
+  // Start rest timer BEFORE DOM calls (which could throw and prevent timer)
+  if (shouldCheck && !existing.done && getRestTimerMode() === 'auto') {
+    try {
+      const exName = _resolveExNameFromKey(key);
+      if (exName) startRestTimer(exName);
+    } catch(e) { console.error('[rest-timer] setActual hook error:', e); }
+  }
+
   // Update set checkmark directly without full render
   updateSetCheckmark(key,shouldCheck);
 
   // Check if all sets are now done → auto-complete exercise
   autoCompleteExercise(key);
-
-  // Start rest timer on auto-check (weight entered)
-  if (shouldCheck && !existing.done && getRestTimerMode() === 'auto') {
-    const exName = _resolveExNameFromKey(key);
-    if (exName) startRestTimer(exName);
-  }
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
@@ -6148,14 +6158,37 @@ function getPrevWeekNote(blockId,weekLabel,dayName,exName){
   if(!block) return null;
   const curIdx=block.weeks.findIndex(w=>w.label===weekLabel);
   if(curIdx<=0) return null;
+  const baseName = _getBaseName(exName);
+  const isDeduped = baseName !== exName;
+  // Find position among same-base siblings in current day (for dedup matching)
+  let dupPos = 0;
+  if (isDeduped) {
+    const curDay = block.weeks[curIdx]?.days.find(d => d.name === dayName);
+    if (curDay) {
+      for (const e of curDay.exercises) {
+        if (e.name === exName) break;
+        if (_getBaseName(e.name) === baseName || e.displayName === baseName || e.name === baseName) dupPos++;
+      }
+    }
+  }
   // Search backwards through previous weeks
   for(let i=curIdx-1;i>=0;i--){
     const w=block.weeks[i];
     const day=w.days.find(d=>d.name===dayName);
     if(!day) continue;
-    const ex=day.exercises.find(e=>e.name===exName);
+    let ex = day.exercises.find(e=>e.name===exName);
+    // For deduped names, match by base name + position
+    if (!ex && isDeduped) {
+      let pos = 0;
+      for (const e of day.exercises) {
+        if (_getBaseName(e.name) === baseName || e.displayName === baseName || e.name === baseName) {
+          if (pos === dupPos) { ex = e; break; }
+          pos++;
+        }
+      }
+    }
     if(!ex) continue;
-    const key=[blockId,w.label,dayName,exName].join('||');
+    const key=[blockId,w.label,dayName,ex.name].join('||');
     const note=state.logs[key]?.notes;
     if(note&&note.trim()) return note.trim();
   }
@@ -6171,6 +6204,37 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
     }
     return sets;
   }
+  // For deduplicated exercises, find the matching exercise in another week's day
+  // by base name + position (since prescription-based suffix changes week to week)
+  function _findMatchingEx(day, targetName) {
+    // Exact match first
+    const exact = day.exercises.find(e => e.name === targetName);
+    if (exact) return exact;
+    // For deduped names: match by displayName + position among same-base siblings
+    const baseName = _getBaseName(targetName);
+    if (baseName === targetName) return null; // not a deduped name, no match
+    // Find position of targetName among same-base exercises in current context
+    // We need the position from the calling context, so instead match by base + occurrence index
+    const curBlock = state.blocks.find(b => b.id === blockId);
+    const curWeek = curBlock?.weeks.find(w => w.label === weekLabel);
+    const curDay = curWeek?.days.find(d => d.name === dayName);
+    if (!curDay) return null;
+    let pos = 0;
+    for (const e of curDay.exercises) {
+      if (e.name === targetName) break;
+      if (_getBaseName(e.name) === baseName || e.displayName === baseName || e.name === baseName) pos++;
+    }
+    // Now find the exercise at the same position in the target day
+    let targetPos = 0;
+    for (const e of day.exercises) {
+      const eBase = _getBaseName(e.name);
+      if (eBase === baseName || e.displayName === baseName || e.name === baseName) {
+        if (targetPos === pos) return e;
+        targetPos++;
+      }
+    }
+    return null;
+  }
   // Phase 1: search current block backwards
   const block=state.blocks.find(b=>b.id===blockId);
   if(block){
@@ -6180,8 +6244,9 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
       const w=block.weeks[i];
       const day=w.days.find(d=>d.name===dayName);
       if(!day) continue;
-      if(!day.exercises.find(e=>e.name===exName)) continue;
-      const key=[blockId,w.label,dayName,exName].join('||');
+      const matchEx = _findMatchingEx(day, exName);
+      if(!matchEx) continue;
+      const key=[blockId,w.label,dayName,matchEx.name].join('||');
       if(!state.logs[key]?.done) continue;
       const sets=getSets(key);
       if(sets.length>0) return {label:w.label,source:null,sets};
@@ -6194,8 +6259,9 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
     for(let wi=b.weeks.length-1;wi>=0;wi--){
       const w=b.weeks[wi];
       for(const d of w.days){
-        if(!d.exercises.find(e=>e.name===exName)) continue;
-        const key=[b.id,w.label,d.name,exName].join('||');
+        const matchEx = _findMatchingEx(d, exName);
+        if(!matchEx) continue;
+        const key=[b.id,w.label,d.name,matchEx.name].join('||');
         if(!state.logs[key]?.done) continue;
         const sets=getSets(key);
         if(sets.length>0) return {label:w.label,source:b.name||b.id,sets};

@@ -28,12 +28,18 @@ const VARIATION_MODIFIERS = [
 ];
 
 function isCompLift(name){
-  const n = name.toLowerCase().trim();
+  // Strip dedup bracket suffix: "Barbell Deadlift [1x1(352)]" → "barbell deadlift"
+  const n = name.toLowerCase().trim().replace(/\s*\[.*\]$/, '');
   if (VARIATION_MODIFIERS.some(v => n.includes(v))) return false;
   for (const keywords of Object.values(COMP_KEYWORDS)) {
     if (keywords.includes(n)) return true;
   }
   return false;
+}
+// Helper: extract base name from potentially deduplicated exercise name
+function _getBaseName(exName) {
+  const m = exName.match(/^(.+?)\s*\[.*\]$/);
+  return m ? m[1] : exName;
 }
 
 function classifyLift(name){
@@ -5848,7 +5854,7 @@ function _mBuildExercise(name, setLines) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS,
-    isCompLift, classifyLift,
+    isCompLift, classifyLift, _getBaseName,
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
     DAYS, detectFormat, detectE, detectF, detectG,
     parseA, parseASheet, parseB, parseBSheet,
