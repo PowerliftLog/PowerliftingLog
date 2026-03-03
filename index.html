@@ -4999,11 +4999,42 @@ let _intakeStep = 1;
 
 function openImportIntent(blocks) {
   _pendingImportBlocks = blocks;
-  _importIntent = 'active';
   _intakeStep = 1;
+
+  // ── Auto-detect best import intent ──────────────────────────────────────
+  _importIntent = 'active'; // safe default
+  _importIntentReason = '';  // hint shown in UI
+
+  const existing = state.blocks || [];
+  const b0 = blocks[0] || {};
+
+  if (existing.length > 0 && b0.format) {
+    // Check if any existing block matches format + similar name
+    const matchByFormat = existing.filter(eb => eb.format === b0.format);
+    if (matchByFormat.length > 0) {
+      // Same format found — likely adding weeks to existing program
+      const nameMatch = matchByFormat.find(eb => {
+        const eName = (eb.name || '').toLowerCase().replace(/\s+/g, '');
+        const bName = (b0.name || '').toLowerCase().replace(/\s+/g, '');
+        return eName === bName || eName.includes(bName) || bName.includes(eName);
+      });
+      if (nameMatch) {
+        _importIntent = 'merge';
+        _intakeMergeTarget = nameMatch.id;
+        _importIntentReason = `This looks like more weeks for "${displayBlockName(nameMatch.name)}".`;
+      } else {
+        // Same format but different name — probably a new program
+        _importIntent = 'active';
+        _importIntentReason = 'Same format as an existing program, but different name — starting fresh.';
+      }
+    }
+    // Different format entirely → default 'active' stands, no hint needed
+  }
+
   document.getElementById('import-intent-modal').style.display = 'flex';
   renderIntakeStep();
 }
+let _importIntentReason = '';
 
 function closeImportIntent() {
   document.getElementById('import-intent-modal').style.display = 'none';
@@ -5056,9 +5087,9 @@ function renderIntakeStep1(body) {
           <input type="hidden" id="import-merge-target" value="${tgt.id}">
         </div>`;
     } else {
-      const activeId = state.activeBlock?.id || '';
+      const preferredId = _intakeMergeTarget || state.activeBlock?.id || '';
       const mergeOpts = existingBlocks.map(b =>
-        `<option value="${b.id}"${b.id===activeId?' selected':''}>${displayBlockName(b.name) || b.id}</option>`
+        `<option value="${b.id}"${b.id===preferredId?' selected':''}>${displayBlockName(b.name) || b.id}</option>`
       ).join('');
       mergeTargetHtml = `
         <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
@@ -5073,6 +5104,12 @@ function renderIntakeStep1(body) {
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Program</div>
       <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${escH(names)}</div>
     </div>
+    ${_importIntentReason ? `
+    <div style="margin:8px 0;padding:8px 12px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.4">
+        <span style="color:var(--gold);font-weight:700">Auto-detected:</span> ${escH(_importIntentReason)}
+      </div>
+    </div>` : ''}
     <div class="intake-section-label">What is this program?</div>
     ${showMerge ? `
     <div class="import-intent-card${isMerge?' selected':''}" id="import-card-merge" onclick="selectImportIntent('merge')">
@@ -5135,6 +5172,7 @@ function renderIntakeStep1(body) {
 
 function selectImportIntent(intent) {
   _importIntent = intent;
+  _importIntentReason = ''; // clear auto-detect hint on manual override
   renderIntakeStep(); // re-render step 1 with new selection
 }
 
