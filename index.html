@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Unrack</title>
+<title>UNRACK</title>
 
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
@@ -11,7 +11,7 @@
 <!-- iOS PWA meta tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" id="status-bar-meta" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Unrack">
+<meta name="apple-mobile-web-app-title" content="UNRACK">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 
 <!-- Theme color for browser chrome -->
@@ -1302,7 +1302,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">Unrack <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.9.9</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.1</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -3795,7 +3795,7 @@ function renderUploadOptions(prefix) {
 function renderUploadScreen() {
   return `<div class="upload-screen">
     <div class="upload-icon"><svg viewBox="0 0 28 40" fill="#C9A84C" width="36" height="54"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
-    <div class="upload-title">Unrack</div>
+    <div class="upload-title">UNRACK</div>
     <div class="upload-desc">Upload your training program to get started.</div>
     ${renderUploadOptions('wo-')}
     <div class="upload-hint">No account needed · All data stays on your device</div>
@@ -4921,19 +4921,30 @@ function adjustSets(key, delta){
     }
   }
   state.extraSets[key]=next;
-  // Preserve scroll position across render
+  // Preserve scroll position across render — use rAF so it runs AFTER
+  // renderWorkout's own rAF that scrolls day-tabs/week-pills into view
+  const scrollYBefore=window.scrollY;
   const escaped=cssEsc(key);
   const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
-  let scrollAnchorOffset=null;
-  if(card){ scrollAnchorOffset=card.getBoundingClientRect().top; }
+  let anchorTop=null;
+  if(card){ anchorTop=card.getBoundingClientRect().top; }
   render();
-  if(card && scrollAnchorOffset!==null){
+  // Immediate correction
+  if(card && anchorTop!==null){
     const newCard=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
     if(newCard){
       const newTop=newCard.getBoundingClientRect().top;
-      window.scrollBy(0, newTop - scrollAnchorOffset);
+      window.scrollBy(0, newTop - anchorTop);
     }
   }
+  // Second correction after renderWorkout's rAF tab-scroll runs
+  requestAnimationFrame(()=>{
+    const nc=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+    if(nc && anchorTop!==null){
+      const diff=nc.getBoundingClientRect().top - anchorTop;
+      if(Math.abs(diff)>2) window.scrollBy(0, diff);
+    }
+  });
 }
 function setActual(key,v){
   const existing = state.logs[key]||{};
@@ -7181,7 +7192,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
   <!-- Header -->
   <div class="rpt-hdr">
-    <div class="rpt-brand">Unrack</div>
+    <div class="rpt-brand">UNRACK</div>
     ${athleteName ? `<div class="rpt-athlete">${escH(athleteName)}</div>` : ''}
     <div class="rpt-block">${escH(displayBlockName(block.name))}</div>
     <div class="rpt-meta">
@@ -7245,7 +7256,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
   <!-- Footer P1 -->
   <div class="rpt-footer">
-    <span>Unrack</span>
+    <span>UNRACK</span>
     <span>${dateStr}</span>
   </div>
 
@@ -7253,7 +7264,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <div class="page-2">
     ${progressionHtml}
     <div class="rpt-footer">
-      <span>Unrack</span>
+      <span>UNRACK</span>
       <span>${dateStr}</span>
     </div>
   </div>
@@ -7384,7 +7395,7 @@ const BACKUP_KEYS = [
 ];
 
 function downloadBackup() {
-  const data = { version: 1, timestamp: new Date().toISOString(), appVersion: '1.0.0', data: {} };
+  const data = { version: 1, timestamp: new Date().toISOString(), appVersion: '0.10.0', data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -7740,7 +7751,7 @@ function showOnboardingStep(step) {
       <div class="onboard-icon">
         <svg viewBox="0 0 28 40" fill="var(--gold)" width="56" height="80"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       </div>
-      <div class="onboard-title">Unrack</div>
+      <div class="onboard-title">UNRACK</div>
       <div class="onboard-sub">Log it. Track it. Lift it.</div>
       <div class="onboard-features">
         <div class="onboard-feature">
