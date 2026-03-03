@@ -1898,8 +1898,7 @@ function setScreen(s){
   // Restore workout scroll; all other tabs start at top
   if(s==='workout'){ requestAnimationFrame(()=>window.scrollTo(0, _workoutScrollY)); }
   else { window.scrollTo(0, 0); }
-  // Hide rest timer banner when leaving workout
-  if(s!=='workout') { const rtb=document.getElementById('rest-timer-banner'); if(rtb) rtb.classList.add('hidden'); stopRestTimer(true); }
+  // Rest timer persists across all tabs — no cleanup on nav
 }
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
@@ -3047,6 +3046,8 @@ function getRestDuration(exerciseName) {
   if (mode === 'cardio') return 0;
   if (mode === 'bw' || mode === 'bw-timed') return defaults.bodyweight;
   const n = exerciseName.toLowerCase();
+  // All barbell exercises get compound rest time
+  if (n.includes('barbell') || n.includes('bb ') || n.startsWith('bb ')) return defaults.compound;
   if (COMPOUND_KEYWORDS.some(k => n.includes(k))) return defaults.compound;
   return defaults.accessory;
 }
