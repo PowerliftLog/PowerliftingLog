@@ -5160,9 +5160,15 @@ function setActual(key,v){
 
   // Update set checkmark directly without full render
   updateSetCheckmark(key,shouldCheck);
-  
+
   // Check if all sets are now done → auto-complete exercise
   autoCompleteExercise(key);
+
+  // Start rest timer on auto-check (weight entered)
+  if (shouldCheck && !existing.done && getRestTimerMode() === 'auto') {
+    const exName = _resolveExNameFromKey(key);
+    if (exName) startRestTimer(exName);
+  }
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
