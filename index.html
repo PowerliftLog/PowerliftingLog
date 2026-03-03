@@ -1804,6 +1804,16 @@ async function _bootApp() {
       if (_rw && _rw.days && state.activeDay >= _rw.days.length) state.activeDay = 0;
     }
 
+    // 3b. One-time migration: strip timestamps from block names
+    let _namesCleaned = false;
+    _savedBlocks.forEach(b => {
+      if (b.name && /_\d{10,}$/.test(b.name)) {
+        b.name = b.name.replace(/_\d{10,}$/, '');
+        _namesCleaned = true;
+      }
+    });
+    if (_namesCleaned) saveBlocks();
+
     // 4. Re-run set-level pre-population
     if (_savedBlocks.length > 0) rePopulateSets(_savedBlocks);
   } catch (e) {
@@ -5094,9 +5104,9 @@ function toggleSet(key){
   }
 }
 function _resolveExNameFromKey(setKey) {
-  // setKey format: blockId|weekLabel|dayName|exName||s0
-  const parts = setKey.split('||')[0].split('|');
-  return parts.length >= 4 ? parts.slice(3).join('|') : null;
+  // setKey format: blockId||weekLabel||dayName||exName||s0
+  const parts = setKey.split('||');
+  return parts.length >= 4 ? parts[3] : null;
 }
 function adjustSets(key, delta){
   const cur = state.extraSets[key] || 0;
