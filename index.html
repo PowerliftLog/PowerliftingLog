@@ -468,7 +468,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .workout-done-row { display: flex; align-items: center; gap: 10px; margin: 8px 16px 24px; }
 .workout-done-row .complete-workout-btn { margin: 0; flex: 1; }
 .workout-done-row .clear-workout-btn { flex-shrink: 0; }
-.workout-complete-msg { text-align: center; color: #4ade80; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.08em; padding: 20px 16px 32px; opacity: 0.6; display: flex; align-items: center; justify-content: center; animation: completePulse 1.2s ease-out forwards; }
+.workout-complete-msg { text-align: center; color: #4ade80; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.08em; padding: 20px 16px 12px; opacity: 0.6; display: flex; align-items: center; justify-content: center; animation: completePulse 1.2s ease-out forwards; }
 @keyframes completePulse {
   0%   { opacity: 0; text-shadow: 0 0 0px rgba(74,222,128,0); }
   30%  { opacity: 1; text-shadow: 0 0 20px rgba(74,222,128,0.8), 0 0 40px rgba(74,222,128,0.4); }
@@ -477,6 +477,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 }
 .clear-workout-btn { background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.5; padding: 2px 4px; transition: opacity 0.15s; line-height: 1; }
 .clear-workout-btn:hover { opacity: 1; }
+
+/* ── Reset Workout Button ── */
+.workout-reset-row { text-align: center; padding: 0 16px 24px; margin-top: -12px; }
+.workout-reset-btn { background: none; border: 1px solid var(--border-2); border-radius: 8px; padding: 8px 16px; color: var(--text-faint); font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+.workout-reset-btn:hover { color: var(--text-sub); border-color: var(--text-dim); }
+.workout-reset-btn:active { transform: scale(0.97); }
+.workout-reset-btn svg { opacity: 0.7; }
 
 /* ── Workout Preview Mode ── */
 .preview-exercise-list { display: flex; flex-direction: column; gap: 0; padding: 0 16px; }
@@ -489,6 +496,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .preview-exercise.completed .preview-ex-pres { color: var(--text-dimmer); }
 .preview-ex-check { margin-left: 10px; flex-shrink: 0; display: flex; align-items: center; }
 .preview-ex-check svg { width: 14px; height: 14px; }
+
+/* ── Completed Exercise Detail ── */
+.completed-ex-detail { text-align: right; flex-shrink: 0; margin-left: 10px; }
+.completed-ex-top { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 800; color: rgba(74,222,128,0.85); letter-spacing: 0.02em; line-height: 1.15; }
+.completed-ex-meta { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-top: 1px; }
 .set-row:has(.set-check.done) { opacity: 0.4; }
 .exercise-check svg { width: 14px; height: 14px; }
 
@@ -4104,7 +4116,8 @@ function renderExerciseList(block, week, day) {
 
   // Live workout — user explicitly tapped Finish Workout
   if (isLiveComplete) {
-    h+=`<div class="workout-complete-msg">Workout Complete <button class="clear-workout-btn" onclick="clearWorkout()" title="Clear workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div>`;
+    h+=`<div class="workout-complete-msg">Workout Complete</div>`;
+    h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset Workout</button></div>`;
     return h;
   }
 
@@ -4153,10 +4166,66 @@ function getDayProgress(block, week, day) {
   return { total, done, hasAnyData };
 }
 
+// ── Exercise summary from actual logged data ─────────────────────────────────
+function getExerciseLogSummary(block, week, day, ex) {
+  const bid = block.id, wl = week.label, dn = day.name;
+  const exKey = lk(bid, wl, dn, ex.name);
+  const pres = ex.prescription || '';
+  const parsedSets = parseSets(pres);
+  if (!parsedSets.length) { const wu = parseWarmupSets(pres); if (wu.length) parsedSets.push(...wu); }
+  const simpleP = parseSimple(pres);
+  const rangedP = (!parsedSets.length && !simpleP) ? parseRangeSet(pres) : null;
+  const prescribedCount = parsedSets.length || simpleP?.sets || rangedP?.sets || 1;
+  const extraCount = (state.extraSets && state.extraSets[exKey]) ? state.extraSets[exKey] : 0;
+  const maxSi = prescribedCount + extraCount + 3; // scan a few extra
+
+  let topWeight = 0, topReps = 0, topRpe = null;
+  let setsCompleted = 0;
+  let totalRpe = 0, rpeCount = 0;
+  const setDetails = [];
+
+  for (let si = 0; si < maxSi; si++) {
+    const sk = exKey + '||s' + si;
+    const sv = state.logs[sk];
+    if (!sv || !sv.done) continue;
+    setsCompleted++;
+
+    const weight = sv.actual ? parseFloat(sv.actual) : null;
+    const reps = sv.actualReps ? parseInt(sv.actualReps) : getSetReps(bid, wl, dn, ex.name, si);
+    const rpe = sv.rpe ? parseFloat(sv.rpe) : null;
+
+    if (rpe && !isNaN(rpe)) { totalRpe += rpe; rpeCount++; }
+
+    if (weight && !isNaN(weight)) {
+      setDetails.push({ weight, reps: reps || 0, rpe });
+      if (weight > topWeight || (weight === topWeight && (reps || 0) > topReps)) {
+        topWeight = weight;
+        topReps = reps || 0;
+        topRpe = rpe;
+      }
+    }
+  }
+
+  return {
+    setsCompleted,
+    topWeight,
+    topReps,
+    topRpe,
+    avgRpe: rpeCount > 0 ? Math.round(totalRpe / rpeCount * 10) / 10 : null,
+    setDetails,
+    hasActualData: topWeight > 0
+  };
+}
+
 function renderPreviewList(block, week, day) {
   if (!day || day.exercises.length === 0) {
     return `<div class="rest-msg">Rest day. Eat enough protein.</div>`;
   }
+
+  // Check if this day is completed (for deciding display mode)
+  const forceLog = state.logs[lk(block.id, week.label, day.name, '__complete__')];
+  const dayComplete = !!(forceLog?.done) || !!block.historical;
+
   let h = '<div class="preview-exercise-list">';
   day.exercises.forEach(ex => {
     const key = lk(block.id, week.label, day.name, ex.name);
@@ -4164,17 +4233,50 @@ function renderPreviewList(block, week, day) {
     const isDone = log.done || false;
     const isSkipped = log.skipped || false;
     const completedClass = (isDone || isSkipped) ? ' completed' : '';
-    const presShort = ex.prescription || '';
-    const noteHtml = ex.note ? `<div class="preview-ex-note">${escH(ex.note)}</div>` : '';
-    h += `<div class="preview-exercise${completedClass}">
-      <div style="flex:1">
-        <div class="preview-ex-name">${escH(ex.displayName || ex.name)}</div>
-        ${noteHtml}
-      </div>
-      <div class="preview-ex-pres">${escH(presShort)}</div>
-      ${isDone ? `<div class="preview-ex-check" style="color:#4ade80">${_checkSvg}</div>` : ''}
-      ${isSkipped ? `<div class="preview-ex-check" style="color:var(--text-faint)"><span style="font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.06em">SKIP</span></div>` : ''}
-    </div>`;
+
+    if (dayComplete && isDone && !isSkipped) {
+      // ── Completed exercise: show actual performance data ──
+      const summary = getExerciseLogSummary(block, week, day, ex);
+      let detailHtml = '';
+
+      if (summary.hasActualData) {
+        // Top set line: "315 × 5" style
+        const topLine = `${summary.topWeight} × ${summary.topReps}`;
+        const setsLine = summary.setsCompleted > 1 ? `${summary.setsCompleted} sets` : '1 set';
+        const rpeLine = summary.avgRpe != null ? `RPE ${summary.avgRpe}` : '';
+        const metaParts = [setsLine, rpeLine].filter(Boolean).join(' · ');
+
+        detailHtml = `
+          <div class="completed-ex-detail">
+            <div class="completed-ex-top">${escH(topLine)}</div>
+            <div class="completed-ex-meta">${escH(metaParts)}</div>
+          </div>`;
+      } else {
+        // No weight data (bodyweight exercise, or inferred complete from import)
+        detailHtml = `<div class="preview-ex-pres" style="color:var(--text-dim)">✓ Done</div>`;
+      }
+
+      h += `<div class="preview-exercise completed">
+        <div style="flex:1">
+          <div class="preview-ex-name">${escH(ex.displayName || ex.name)}</div>
+        </div>
+        ${detailHtml}
+        <div class="preview-ex-check" style="color:#4ade80">${_checkSvg}</div>
+      </div>`;
+    } else {
+      // ── Not done / skipped / day not complete: show prescription ──
+      const presShort = ex.prescription || '';
+      const noteHtml = ex.note ? `<div class="preview-ex-note">${escH(ex.note)}</div>` : '';
+      h += `<div class="preview-exercise${completedClass}">
+        <div style="flex:1">
+          <div class="preview-ex-name">${escH(ex.displayName || ex.name)}</div>
+          ${noteHtml}
+        </div>
+        <div class="preview-ex-pres">${escH(presShort)}</div>
+        ${isDone ? `<div class="preview-ex-check" style="color:#4ade80">${_checkSvg}</div>` : ''}
+        ${isSkipped ? `<div class="preview-ex-check" style="color:var(--text-faint)"><span style="font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.06em">SKIP</span></div>` : ''}
+      </div>`;
+    }
   });
   h += '</div>';
   return h;
@@ -4237,7 +4339,8 @@ function renderWorkout(){
       } else if (forceLog?.importedComplete) {
         h += `<div class="workout-complete-msg">Workout Complete</div>`;
       } else {
-        h += `<div class="workout-complete-msg">Workout Complete <button class="clear-workout-btn" onclick="clearWorkout()" title="Clear workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div>`;
+        h += `<div class="workout-complete-msg">Workout Complete</div>`;
+        h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset Workout</button></div>`;
       }
     } else {
       // Not started or partial — show banner + preview list
