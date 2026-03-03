@@ -1608,6 +1608,21 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <input type="file" id="file-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none">
 
 <script>
+// ── IndexedDB variables (declared early so loadTheme/saveTheme can reference them) ──
+let _idbReady = false;      // true once IDB is open
+let _idbDB = null;           // IDBDatabase instance
+const _idbCache = {};        // in-memory mirror: { lsKey: parsedValue }
+function _idbPut(key, value) {
+  _idbCache[key] = value;
+  if (!_idbDB) return;
+  try { const tx = _idbDB.transaction('kv', 'readwrite'); tx.objectStore('kv').put({ key, value }); } catch (e) { console.error('[IDB] put error:', key, e); }
+}
+function _idbDelete(key) {
+  delete _idbCache[key];
+  if (!_idbDB) return;
+  try { const tx = _idbDB.transaction('kv', 'readwrite'); tx.objectStore('kv').delete(key); } catch (e) { console.error('[IDB] delete error:', key, e); }
+}
+
 // ── THEME ─────────────────────────────────────────────────────────────────────
 const THEME_META  = { dark: '#0a0a0a', navy: '#0A0E1A', light: '#F2EDE4' };
 
@@ -1632,12 +1647,11 @@ applyTheme(loadTheme());
 // pairs in a single object store. Reads/writes are async but the app uses an
 // in-memory cache (_idbCache) so load functions stay synchronous after boot.
 // localStorage is kept as a dual-write fallback for older browsers / private mode.
+// NOTE: _idbReady, _idbDB, _idbCache, _idbPut, _idbDelete declared at top of
+// script (before theme section) to avoid temporal dead zone issues.
 const _IDB_NAME = 'unrack_db';
 const _IDB_VERSION = 1;
 const _IDB_STORE = 'kv';
-let _idbReady = false;      // true once IDB is open
-let _idbDB = null;           // IDBDatabase instance
-const _idbCache = {};        // in-memory mirror: { lsKey: parsedValue }
 
 function _idbOpen() {
   return new Promise((resolve, reject) => {
@@ -1668,26 +1682,6 @@ function _idbLoadAll() {
     };
     req.onerror = (e) => { console.error('[IDB] loadAll error:', e.target.error); reject(e.target.error); };
   });
-}
-
-// Write a single key (async, fire-and-forget from save functions)
-function _idbPut(key, value) {
-  _idbCache[key] = value;
-  if (!_idbDB) return;
-  try {
-    const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
-    tx.objectStore(_IDB_STORE).put({ key, value });
-  } catch (e) { console.error('[IDB] put error:', key, e); }
-}
-
-// Delete a key
-function _idbDelete(key) {
-  delete _idbCache[key];
-  if (!_idbDB) return;
-  try {
-    const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
-    tx.objectStore(_IDB_STORE).delete(key);
-  } catch (e) { console.error('[IDB] delete error:', key, e); }
 }
 
 // Migrate localStorage → IndexedDB (one-time, on first IDB boot)
@@ -1749,26 +1743,32 @@ async function _bootApp() {
     console.warn('[IDB] Falling back to localStorage only:', e);
   }
 
-  // 2. Initialize state using the cache (IDB data) or localStorage fallback
-  const _savedBlocks = loadBlocks() || [];
-  state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+  // 2. Initialize state — wrapped in try/catch so UI always boots
+  try {
+    const _savedBlocks = loadBlocks() || [];
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 
-  // 3. Restore nav position from last session
-  const nav = loadNav();
-  if (nav.blockId) { const b = state.blocks.find(b => b.id === nav.blockId); if (b) state.activeBlock = b; }
-  if (typeof nav.week === 'number') state.activeWeek = nav.week;
-  if (typeof nav.day === 'number') state.activeDay = nav.day;
-  const _rb = state.activeBlock;
-  if (_rb && _rb.weeks) {
-    if (state.activeWeek >= _rb.weeks.length) state.activeWeek = 0;
-    const _rw = _rb.weeks[state.activeWeek];
-    if (_rw && _rw.days && state.activeDay >= _rw.days.length) state.activeDay = 0;
+    // 3. Restore nav position from last session
+    const nav = loadNav();
+    if (nav.blockId) { const b = state.blocks.find(b => b.id === nav.blockId); if (b) state.activeBlock = b; }
+    if (typeof nav.week === 'number') state.activeWeek = nav.week;
+    if (typeof nav.day === 'number') state.activeDay = nav.day;
+    const _rb = state.activeBlock;
+    if (_rb && _rb.weeks) {
+      if (state.activeWeek >= _rb.weeks.length) state.activeWeek = 0;
+      const _rw = _rb.weeks[state.activeWeek];
+      if (_rw && _rw.days && state.activeDay >= _rw.days.length) state.activeDay = 0;
+    }
+
+    // 4. Re-run set-level pre-population
+    if (_savedBlocks.length > 0) rePopulateSets(_savedBlocks);
+  } catch (e) {
+    console.error('[Boot] State init failed, using empty state:', e);
+    // Emergency fallback — boot with empty state so the app isn't blank
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
   }
 
-  // 4. Re-run set-level pre-population then kick off render
-  if (_savedBlocks.length > 0) rePopulateSets(_savedBlocks);
-
-  // 5. Boot the UI (onboarding check → render)
+  // 5. Boot the UI (onboarding check → render) — always runs
   checkOnboarding();
 }
 
@@ -7858,7 +7858,12 @@ function finishOnboarding() {
 // ── END ONBOARDING ────────────────────────────────────────────────────────────
 
 // Boot the app — opens IndexedDB, migrates data, initializes state, renders
-_bootApp();
+_bootApp().catch(e => {
+  console.error('[Boot] Unhandled boot error:', e);
+  // Last resort — if _bootApp somehow fails entirely, init empty state and render
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+  checkOnboarding();
+});
 
 
 // ── CUSTOM EXERCISE ───────────────────────────────────────────────────────────

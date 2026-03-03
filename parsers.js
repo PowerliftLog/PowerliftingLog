@@ -678,6 +678,8 @@ function parseE(wb) {
   if (result && result.length > 0) return result;
   result = parseE_phaseGrid(wb);
   if (result && result.length > 0) return result;
+  result = parseE_texasMethod(wb);
+  if (result && result.length > 0) return result;
   result = parseE_weekText(wb);
   if (result && result.length > 0) return result;
   result = parseE_cycleWeek(wb);
@@ -1211,6 +1213,81 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
     return days;
   }
 
+  // Check for horizontal SxR+weight column pairs (Smolov Base Mesocycle style)
+  // Pattern: a row has 2+ SxR text values each immediately followed by a number
+  let multiDayCols = null;
+  let multiDayDataRow = -1;
+  for (let r = startRow; r < Math.min(startRow + 25, endRow); r++) {
+    const row = rows[r]; if (!row) continue;
+    const pairs = [];
+    for (let c = 0; c < row.length - 1; c++) {
+      if (row[c] != null && /^\d+\s*x\s*\d/i.test(String(row[c]).trim())) {
+        if (typeof row[c + 1] === 'number' && row[c + 1] > 0) {
+          pairs.push({ sxrCol: c, weightCol: c + 1 });
+          c++; // skip weight column
+        }
+      }
+    }
+    if (pairs.length >= 2) { multiDayCols = pairs; multiDayDataRow = r; break; }
+  }
+
+  if (multiDayCols && multiDayCols.length >= 2) {
+    // Determine exercise names — check row above data for per-column names
+    const perDayNames = [];
+    if (multiDayDataRow > 0) {
+      const nameRow = rows[multiDayDataRow - 1];
+      if (nameRow) {
+        for (const col of multiDayCols) {
+          const val = nameRow[col.sxrCol];
+          perDayNames.push(val != null && typeof val === 'string' && /[a-zA-Z]{3,}/.test(val.trim()) ? val.trim() : null);
+        }
+      }
+    }
+
+    // Fallback exercise name from header area or sheet name
+    let exName = sheetName || 'Exercise';
+    for (let i = 0; i < Math.min(startRow + 10, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const val = row[c]; if (val == null) continue;
+        const str = String(val).trim();
+        if (/^(Back Squat|Front Squat|Squat|Bench|Deadlift|Press)/i.test(str)) { exName = str; break; }
+      }
+    }
+    if (exName === sheetName) {
+      for (let i = 0; i < Math.min(startRow + 10, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        for (let c = 0; c < row.length; c++) {
+          if (row[c] == null) continue;
+          const s = String(row[c]).trim().toLowerCase();
+          if (/\bsquat\b/.test(s)) { exName = 'Squat'; break; }
+          if (/\bbench\b/.test(s)) { exName = 'Bench'; break; }
+          if (/\bdeadlift\b/.test(s)) { exName = 'Deadlift'; break; }
+        }
+      }
+    }
+
+    const days = multiDayCols.map((_, idx) => ({ name: `Day ${idx + 1}`, exercises: [] }));
+    for (let r = startRow; r < endRow; r++) {
+      const row = rows[r]; if (!row) continue;
+      for (let di = 0; di < multiDayCols.length; di++) {
+        const { sxrCol, weightCol } = multiDayCols[di];
+        const sxr = row[sxrCol]; if (sxr == null) continue;
+        const sxrStr = String(sxr).trim();
+        if (!/^\d+\s*x\s*\d/i.test(sxrStr)) continue;
+        const wt = row[weightCol];
+        if (typeof wt !== 'number' || wt <= 0) continue;
+        days[di].exercises.push({
+          name: (perDayNames[di] || exName).replace(/\s+/g, ' '),
+          prescription: `${sxrStr}(${Math.round(wt * 100) / 100})`,
+          note: '', lifterNote: '', loggedWeight: ''
+        });
+      }
+    }
+    const result = days.filter(d => d.exercises.length > 0);
+    if (result.length >= 2) return result;
+  }
+
   // Vertical layout (MagOrt / Smolov style): SxR text + weight
   const exercises = [];
   let exerciseName = sheetName || 'Exercise';
@@ -1579,6 +1656,151 @@ function parseE_parallel531(wb) {
   }];
 }
 
+// ── parseE_texasMethod: Texas Method columnar Mon/Wed/Fri cycle pattern ──────
+function parseE_texasMethod(wb) {
+  // Find the Texas Method sheet
+  let tmSheet = null;
+  for (const sn of wb.SheetNames) {
+    if (/texas\s*method/i.test(sn.trim())) { tmSheet = wb.Sheets[sn]; break; }
+  }
+  if (!tmSheet) return null;
+
+  const rows = XLSX.utils.sheet_to_json(tmSheet, { header: 1, defval: null })
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+  // Verify Mon/Wed/Fri pattern exists
+  let hasTMHeader = false;
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    if (!row.some(c => c && /^texas\s*method$/i.test(String(c).trim()))) continue;
+    if (row.filter(c => c && /^(mon|wed|fri)/i.test(String(c).trim())).length >= 3) { hasTMHeader = true; break; }
+  }
+  if (!hasTMHeader) return null;
+
+  // Extract maxes from Questions/Input sheets
+  let maxes = {};
+  for (const sn of wb.SheetNames) {
+    if (/^(question|input|maxe?s?|start)/i.test(sn.trim())) {
+      const mRows = _eCleanRows(wb.Sheets[sn]);
+      if (mRows) Object.assign(maxes, _eExtractMaxes(mRows, 30));
+    }
+  }
+
+  // Find all "Texas Method" header rows — each starts a cycle block
+  const blockStarts = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    if (row.some(c => c && /^texas\s*method$/i.test(String(c).trim()))) blockStarts.push(i);
+  }
+  if (!blockStarts.length) return null;
+
+  const DAY_NAMES = ['Monday', 'Wednesday', 'Friday'];
+  const allWeeks = [];
+
+  for (let bi = 0; bi < blockStarts.length; bi++) {
+    const bStart = blockStarts[bi];
+    const headerRow = rows[bStart]; if (!headerRow) continue;
+
+    // Find first day column
+    let firstDayCol = -1;
+    for (let c = 0; c < headerRow.length; c++) {
+      if (headerRow[c] && /^(mon|wed|fri)/i.test(String(headerRow[c]).trim())) { firstDayCol = c; break; }
+    }
+    if (firstDayCol < 0) continue;
+
+    // Count day columns (groups of 3 = weeks)
+    let dayColCount = 0;
+    for (let c = firstDayCol; c < headerRow.length; c++) {
+      if (headerRow[c] && /^(mon|wed|fri)/i.test(String(headerRow[c]).trim())) dayColCount++;
+      else if (headerRow[c] == null || String(headerRow[c]).trim() === '') continue;
+      else break;
+    }
+    const numWeeks = Math.floor(dayColCount / 3) || 1;
+
+    // Read SxR scheme row (bStart + 2)
+    const sxrRow = rows[bStart + 2] || [];
+
+    // Initialize weeks with empty days
+    const weekDays = [];
+    for (let w = 0; w < numWeeks; w++) {
+      const days = [];
+      for (let d = 0; d < 3; d++) {
+        days.push({
+          name: DAY_NAMES[d],
+          colIdx: firstDayCol + w * 3 + d,
+          sxr: String(sxrRow[firstDayCol + w * 3 + d] || '').trim(),
+          exercises: []
+        });
+      }
+      weekDays.push(days);
+    }
+
+    // Parse exercise blocks
+    const bEnd = (bi + 1 < blockStarts.length) ? blockStarts[bi + 1] : rows.length;
+    let curExercise = null;
+
+    for (let i = bStart + 3; i < bEnd; i++) {
+      const row = rows[i]; if (!row) continue;
+      const col0 = row[0] ? String(row[0]).trim() : '';
+      const col1 = row[1] ? String(row[1]).trim() : '';
+
+      if (/^(volume|cycle)/i.test(col0)) break;
+
+      // New exercise name in col 0
+      if (col0 && /[a-zA-Z]{2,}/.test(col0) && !/^(VOLUME|Cycle|Reps|Sets)/i.test(col0)) {
+        curExercise = col0;
+      }
+      if (!curExercise) continue;
+
+      // Only capture "Work Sets" rows
+      if (col1.toLowerCase() !== 'work sets') continue;
+
+      for (let w = 0; w < numWeeks; w++) {
+        for (let d = 0; d < 3; d++) {
+          const colIdx = firstDayCol + w * 3 + d;
+          const val = row[colIdx];
+          if (val == null || val === '') continue;
+
+          const valStr = String(val).trim();
+          const daySxr = weekDays[w][d].sxr;
+          let prescription;
+
+          if (/^\d+x[\dF]/i.test(valStr)) {
+            prescription = valStr;
+          } else if (typeof val === 'number' || /^[\d.]+$/.test(valStr)) {
+            const wt = typeof val === 'number' ? Math.round(val * 10) / 10 : valStr;
+            prescription = /^\d+x\d/.test(daySxr) ? `${daySxr}(${wt})` : String(wt);
+          } else {
+            prescription = valStr;
+          }
+
+          weekDays[w][d].exercises.push({
+            name: spellCorrectExerciseName(curExercise),
+            prescription,
+            note: '', lifterNote: '', loggedWeight: ''
+          });
+        }
+      }
+      curExercise = null;
+    }
+
+    for (let w = 0; w < numWeeks; w++) {
+      const filteredDays = weekDays[w].filter(d => d.exercises.length > 0).map(d => ({
+        name: d.name, exercises: d.exercises
+      }));
+      if (filteredDays.length > 0) {
+        allWeeks.push({ label: `Week ${allWeeks.length + 1}`, days: filteredDays });
+      }
+    }
+  }
+
+  if (!allWeeks.length) return null;
+  return [{
+    id: 'e_tm_' + Date.now(), name: 'Texas Method', format: 'E',
+    athleteName: '', dateRange: '', maxes, weeks: allWeeks
+  }];
+}
+
 // ── FORMAT C PARSER (split Sets/Reps/Load columns with Day N headers) ────────
 function parseCAutoFormat(wb) {
   const blocks = [];
@@ -1845,6 +2067,8 @@ function parseF(wb) {
   if (result && result.length > 0 && result[0].weeks && result[0].weeks.length > 0) return result;
   result = parseF_stride1(wb);
   if (result && result.length > 0 && result[0].weeks && result[0].weeks.length > 0) return result;
+  result = parseF_coach(wb);
+  if (result && result.length > 0 && result[0].weeks && result[0].weeks.length > 0) return result;
   return parseB(wb);
 }
 
@@ -1874,21 +2098,28 @@ function parseF_stride3(wb) {
     }
     if (weekHeaderRow === -1) continue;
 
-    // Find sub-header row with Weight/Reps repeating
+    // Find sub-header row with Weight/Reps repeating (or Exercise/Sets/Reps/Weight repeating)
     let subHeaderRow = -1;
     let weekColGroups = [];
     for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 3, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
       const strs = row.map(c => String(c || '').toLowerCase().trim());
-      const wCols = [], rCols = [];
+      const wCols = [], rCols = [], sCols = [], eCols = [];
       for (let c = 0; c < strs.length; c++) {
         if (strs[c] === 'weight') wCols.push(c);
         if (strs[c] === 'reps') rCols.push(c);
+        if (strs[c] === 'sets') sCols.push(c);
+        if (strs[c] === 'exercise') eCols.push(c);
       }
       if (wCols.length >= 2 && rCols.length >= 2) {
         subHeaderRow = i;
         for (let g = 0; g < wCols.length; g++) {
-          weekColGroups.push({weightCol: wCols[g], repsCol: rCols[g] !== undefined ? rCols[g] : wCols[g] + 1});
+          weekColGroups.push({
+            weightCol: wCols[g],
+            repsCol: rCols[g] !== undefined ? rCols[g] : wCols[g] + 1,
+            setsCol: sCols[g] !== undefined ? sCols[g] : -1,
+            exCol: eCols[g] !== undefined ? eCols[g] : -1
+          });
         }
         break;
       }
@@ -1897,12 +2128,12 @@ function parseF_stride3(wb) {
 
     if (!blockName) blockName = sn;
 
-    // Find day sections
+    // Find day sections (match day-of-week names OR "Day N" labels)
     const dayStarts = [];
     for (let i = subHeaderRow + 1; i < rows.length; i++) {
       const row = rows[i]; if (!row) continue;
       const colA = String(row[0] || '').trim().toLowerCase();
-      if (DAYS.some(d => colA === d || colA.startsWith(d + ' '))) {
+      if (DAYS.some(d => colA === d || colA.startsWith(d + ' ')) || /^day\s*\d/i.test(colA)) {
         dayStarts.push({row: i, name: String(row[0]).trim()});
       }
     }
@@ -1922,6 +2153,7 @@ function parseF_stride3(wb) {
           const v = row[c]; if (v == null) continue;
           const s = String(v).trim();
           if (DAYS.some(dd => s.toLowerCase() === dd || s.toLowerCase().startsWith(dd + ' '))) continue;
+          if (/^day\s*\d/i.test(s)) continue;
           if (/[a-zA-Z]{2,}/.test(s) && !/^(Week|Exercise)/i.test(s)) { exName = s; break; }
         }
         let hasData = false;
@@ -1947,8 +2179,11 @@ function parseF_stride3(wb) {
             const row = rows[ri];
             const weight = row[g.weightCol];
             const reps = row[g.repsCol];
+            const setsNum = g.setsCol >= 0 ? (parseInt(row[g.setsCol]) || 0) : 0;
+            // Also check for per-week exercise name (different exercises per week in same row position)
+            const weekExName = g.exCol >= 0 && row[g.exCol] ? String(row[g.exCol]).trim() : '';
             if (weight != null || reps != null) {
-              sets.push({weight: typeof weight === 'number' ? weight : null, reps: reps != null ? String(reps) : ''});
+              sets.push({weight: typeof weight === 'number' ? weight : null, reps: reps != null ? String(reps) : '', setsNum, weekExName});
             }
           }
           weekSets.push(sets);
@@ -1958,7 +2193,7 @@ function parseF_stride3(wb) {
       dayData.push({name: dayStarts[d].name, exercises: dayExercises});
     }
 
-    // Build weeks
+    // Build weeks — handle per-week exercise names (exercises that change across weeks in same row)
     for (let w = 0; w < weekColGroups.length; w++) {
       globalWeekNum++;
       const weekDays = [];
@@ -1968,16 +2203,20 @@ function parseF_stride3(wb) {
           if (w >= ex.weekSets.length) continue;
           const sets = ex.weekSets[w];
           if (sets.length === 0) continue;
+          // Determine exercise name: use per-week name if available
+          const useName = (sets[0].weekExName && /[a-zA-Z]{2,}/.test(sets[0].weekExName) && !/^(Exercise|Week)/i.test(sets[0].weekExName))
+            ? sets[0].weekExName : ex.name;
           const presParts = [];
           for (const s of sets) {
+            const sc = s.setsNum > 0 ? s.setsNum : 1;
             if (s.weight != null && s.weight > 0 && s.reps) {
-              presParts.push('1x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')');
+              presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')');
             } else if (s.reps) {
-              presParts.push('1x' + s.reps);
+              presParts.push(sc + 'x' + s.reps);
             }
           }
           if (presParts.length === 0) continue;
-          exercises.push({name: ex.name, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: ''});
+          exercises.push({name: useName, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: ''});
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
       }
@@ -1988,7 +2227,7 @@ function parseF_stride3(wb) {
   }
 
   if (allWeeks.length === 0) return null;
-  return [{name: blockName, weeks: allWeeks}];
+  return [{name: blockName, weeks: allWeeks, format: 'F'}];
 }
 
 // F2: stride-15 — nested exercises per week (531 Esl3fko)
@@ -2407,6 +2646,200 @@ function parseF_stride1(wb) {
     if (allWeeks.length > 0) return [{name: sn, weeks: allWeeks}];
   }
   return null;
+}
+
+// F6: parseF_coach — coaching template with WEEK headers + EXERCISE/SETS/REPS/LOAD repeating columns
+// Handles DUP-style programs (Brendan Tietz, DUP Templates) where:
+// - Multiple BLOCK sheets each contain 4 weeks
+// - WEEK 1/2/3/4 labels in a header row, stride=7
+// - Day sections separated by date rows + EXERCISE sub-header rows
+// - Multi-row exercises (top set RPE, back-off weight, AMRAP)
+function parseF_coach(wb) {
+  const allWeeks = [];
+  let blockName = '';
+  let globalWeekNum = 0;
+
+  const SKIP_SHEET_COACH = /^(homepage|faq|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|output|pr\s*sheet|notes?|start\s*here|1\.\s*start|predicted|movement\s*prep|nutrition|volume)/i;
+
+  for (const sn of wb.SheetNames) {
+    if (SKIP_SHEET_COACH.test(sn.trim())) continue;
+    const ws = wb.Sheets[sn];
+    const rows = _fCleanRows(ws);
+    if (!rows || rows.length < 5) continue;
+
+    // Determine column/row offset: sheet_to_json arrays start from the first column in the sheet range
+    const sheetRef = ws['!ref'] || 'A1';
+    const sheetRange = XLSX.utils.decode_range(sheetRef);
+    const colOffset = sheetRange.s.c; // Physical column index of array[0]
+    const rowOffset = sheetRange.s.r; // Physical row index of rows[0]
+
+    // Find week header row: ≥2 "WEEK N" labels
+    let weekHeaderRow = -1;
+    let weekPositions = [];
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const wpos = [];
+      for (let c = 0; c < row.length; c++) {
+        const val = row[c]; if (val == null) continue;
+        if (/^Week\s*\d/i.test(String(val).trim())) wpos.push({col: c, label: String(val).trim()});
+      }
+      if (wpos.length >= 2) { weekHeaderRow = i; weekPositions = wpos; break; }
+    }
+    if (weekHeaderRow === -1) continue;
+
+    // Determine stride from week positions
+    const stride = weekPositions.length > 1 ? weekPositions[1].col - weekPositions[0].col : 7;
+
+    // Find EXERCISE/SETS/REPS/LOAD sub-header rows (can appear multiple times for different day sections)
+    // Detect column offsets within a week group
+    let exOff = -1, setsOff = -1, repsOff = -1, loadOff = -1;
+    let firstSubHeaderRow = -1;
+
+    for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 4, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const base = weekPositions[0].col;
+      for (let c = base; c < base + stride && c < row.length; c++) {
+        const s = String(row[c] || '').toLowerCase().trim();
+        if (s === 'exercise') exOff = c - base;
+        else if (s === 'sets') setsOff = c - base;
+        else if (s === 'reps') repsOff = c - base;
+        else if (s === 'load' || s === 'load/rpe' || s === 'load / rpe') loadOff = c - base;
+      }
+      if (exOff >= 0 && setsOff >= 0 && repsOff >= 0) { firstSubHeaderRow = i; break; }
+    }
+    if (firstSubHeaderRow === -1 || exOff < 0 || setsOff < 0 || repsOff < 0) continue;
+
+    if (!blockName) blockName = sn;
+
+    // Find all day sections: a day starts when we see a sub-header row with EXERCISE repeating
+    // Each day section: subheader row followed by exercise data rows
+    const daySections = [];
+    let dayNum = 0;
+    for (let i = firstSubHeaderRow; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      // Check if this row is a sub-header (EXERCISE appears at expected offset for ≥2 week groups)
+      let exHeaderCount = 0;
+      for (const wp of weekPositions) {
+        const val = String(row[wp.col + exOff] || '').toLowerCase().trim();
+        if (val === 'exercise') exHeaderCount++;
+      }
+      if (exHeaderCount >= 2) {
+        dayNum++;
+        daySections.push({subHeaderRow: i, dayNum});
+      }
+    }
+    if (daySections.length === 0) continue;
+
+    // Parse each day section
+    const dayData = [];
+    for (let d = 0; d < daySections.length; d++) {
+      const startRow = daySections[d].subHeaderRow + 1;
+      const endRow = d + 1 < daySections.length ? daySections[d + 1].subHeaderRow - 1 : rows.length;
+
+      // Group exercises within the first week's columns (exercise name in exOff col)
+      const base = weekPositions[0].col;
+      const exerciseGroups = [];
+      for (let r = startRow; r < endRow; r++) {
+        const row = rows[r]; if (!row) continue;
+        const nameVal = row[base + exOff];
+        const exName = nameVal ? String(nameVal).trim() : '';
+        // Check if this row has any data (sets/reps/load in any week)
+        let hasData = false;
+        for (const wp of weekPositions) {
+          if (row[wp.col + setsOff] != null || row[wp.col + repsOff] != null) { hasData = true; break; }
+        }
+        if (!hasData) continue;
+
+        if (exName && /[a-zA-Z]{2,}/.test(exName) && !/^(exercise|week|rest\s*day)/i.test(exName)) {
+          exerciseGroups.push({name: exName, rows: [r]});
+        } else if (exerciseGroups.length > 0 && !exName) {
+          exerciseGroups[exerciseGroups.length - 1].rows.push(r);
+        }
+      }
+
+      // Build per-week exercise data
+      const dayExercises = [];
+      for (const eg of exerciseGroups) {
+        const weekData = [];
+        for (let w = 0; w < weekPositions.length; w++) {
+          const wBase = weekPositions[w].col;
+          const presParts = [];
+          // Check per-week exercise name (may differ from first week)
+          let weekExName = '';
+          for (const ri of eg.rows) {
+            const row = rows[ri];
+            const wkName = row[wBase + exOff] ? String(row[wBase + exOff]).trim() : '';
+            if (wkName && /[a-zA-Z]{2,}/.test(wkName) && !/^(exercise|week)/i.test(wkName)) {
+              if (!weekExName) weekExName = wkName;
+            }
+            const setsVal = row[wBase + setsOff];
+            const repsVal = row[wBase + repsOff];
+            const rawLoadVal = row[wBase + loadOff] != null ? row[wBase + loadOff] : null;
+            if (setsVal == null && repsVal == null) continue;
+
+            // Get formatted load value from worksheet cell (handles % formatting)
+            let ld = '';
+            if (rawLoadVal != null) {
+              const physRow = ri + rowOffset;
+              const physCol = wBase + loadOff + colOffset;
+              const loadCellAddr = XLSX.utils.encode_cell({r: physRow, c: physCol});
+              const loadCell = ws[loadCellAddr];
+              if (loadCell && loadCell.w) {
+                ld = loadCell.w.trim();
+              } else {
+                ld = String(rawLoadVal).trim();
+              }
+            }
+
+            const sc = parseInt(setsVal) || 0;
+            const rp = repsVal != null ? String(repsVal).trim() : '';
+
+            if (sc > 0 && rp) {
+              if (ld && /[a-zA-Z%]/.test(ld)) {
+                // Load contains text like "72.5lbs", "-5%", "same", "3 clusters"
+                presParts.push(sc + 'x' + rp + '(' + ld + ')');
+              } else if (ld && /^[0-9]+$/.test(ld) && parseInt(ld) <= 10) {
+                // Numeric load that's small (1-10) is likely RPE
+                presParts.push(sc + 'x' + rp + ' @' + ld);
+              } else if (ld && /^[0-9.,]+$/.test(ld)) {
+                // Numeric load with commas = multiple RPE values
+                presParts.push(sc + 'x' + rp + ' @' + ld);
+              } else {
+                presParts.push(sc + 'x' + rp);
+              }
+            } else if (sc > 0) {
+              presParts.push(sc + ' sets');
+            }
+          }
+          weekData.push({pres: presParts.join(', '), weekExName: weekExName || eg.name});
+        }
+        dayExercises.push({name: eg.name, weekData});
+      }
+      dayData.push({name: 'Day ' + daySections[d].dayNum, exercises: dayExercises});
+    }
+
+    // Build weeks
+    for (let w = 0; w < weekPositions.length; w++) {
+      globalWeekNum++;
+      const weekDays = [];
+      for (const dd of dayData) {
+        const exercises = [];
+        for (const ex of dd.exercises) {
+          if (w >= ex.weekData.length) continue;
+          const wd = ex.weekData[w];
+          if (!wd.pres) continue;
+          exercises.push({name: wd.weekExName, prescription: wd.pres, note: '', lifterNote: '', loggedWeight: ''});
+        }
+        if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
+      }
+      if (weekDays.length > 0) {
+        allWeeks.push({label: 'Week ' + globalWeekNum, days: weekDays});
+      }
+    }
+  }
+
+  if (allWeeks.length === 0) return null;
+  return [{name: blockName, weeks: allWeeks, format: 'F'}];
 }
 
 // ── FORMAT G DETECTION (Sheiko numbered exercises) ───────────────────────────
@@ -4389,6 +4822,72 @@ function parseH_deathbench(wb) {
   return blocks;
 }
 
+function _parseDeathbenchSide(rows, ws, cfg) {
+  const weeks = [];
+  for (let i = 3; i < Math.min(100, rows.length); i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const label = String(row[cfg.labelCol] || '').trim();
+
+    if (/^Week\s+\d/i.test(label)) {
+      weeks.push({ label, days: [] });
+      continue;
+    }
+
+    if (/^Day\s+\d/i.test(label) && weeks.length > 0) {
+      const day = { name: label, exercises: [] };
+      const benchName = String(row[cfg.nameCol] || '').trim() || 'Bench';
+      const benchSets = row[cfg.setsCol];
+      const benchReps = row[cfg.repsCol];
+      const benchWt = getCellValue(ws, `${cfg.weightCol}${i + 1}`);
+
+      const benchParts = [];
+      if (typeof benchSets === 'number' && typeof benchReps === 'number') {
+        benchParts.push(benchWt !== null ? buildPrescription(benchSets, benchReps, benchWt) : `${benchSets}x${benchReps}`);
+      }
+
+      // Scan forward for bench continuation sets and accessories
+      for (let j = i + 1; j < Math.min(i + 15, rows.length); j++) {
+        const fwdRow = rows[j];
+        if (!fwdRow) continue;
+        const fwdLabel = String(fwdRow[cfg.labelCol] || '').trim();
+        if (/^(Day|Week)\s+\d/i.test(fwdLabel)) break;
+
+        const fwdName = String(fwdRow[cfg.nameCol] || '').trim();
+        const fwdSets = fwdRow[cfg.setsCol];
+        const fwdReps = fwdRow[cfg.repsCol];
+
+        if (!fwdName && typeof fwdSets === 'number' && typeof fwdReps === 'number') {
+          // Bench continuation set (no name, has numeric sets/reps)
+          const fwdWt = getCellValue(ws, `${cfg.weightCol}${j + 1}`);
+          benchParts.push(fwdWt !== null ? buildPrescription(fwdSets, fwdReps, fwdWt) : `${fwdSets}x${fwdReps}`);
+        } else if (fwdName && !/^(Set|Reps|Weight)/i.test(fwdName) && typeof fwdSets === 'number') {
+          // Accessory exercise
+          const fwdWt = getCellValue(ws, `${cfg.weightCol}${j + 1}`);
+          day.exercises.push({
+            name: spellCorrectExerciseName(fwdName),
+            prescription: fwdWt !== null ? buildPrescription(fwdSets, fwdReps || 0, fwdWt) : `${fwdSets}x${fwdReps || 0}`,
+            note: '', lifterNote: '', loggedWeight: ''
+          });
+        }
+      }
+
+      if (benchParts.length > 0) {
+        day.exercises.unshift({
+          name: spellCorrectExerciseName(benchName),
+          prescription: benchParts.join(', '),
+          note: '', lifterNote: '', loggedWeight: ''
+        });
+      }
+
+      if (day.exercises.length > 0) {
+        weeks[weeks.length - 1].days.push(day);
+      }
+    }
+  }
+  return weeks;
+}
+
 function parseH_deathbenchSheet(sn, ws) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
   if (rows.length < 50) return null;
@@ -4407,63 +4906,19 @@ function parseH_deathbenchSheet(sn, ws) {
   const b2 = getCellValue(ws, 'B2');
   if (b2 !== null) maxes.bench = b2;
 
-  // Parse weeks
-  const weeks = [];
+  // Parse left side (weeks 1-5) and right side (weeks 6-10)
+  const leftWeeks = _parseDeathbenchSide(rows, ws, {
+    labelCol: 0, nameCol: 1, setsCol: 2, repsCol: 3, weightCol: 'E'
+  });
+  const rightWeeks = _parseDeathbenchSide(rows, ws, {
+    labelCol: 6, nameCol: 7, setsCol: 8, repsCol: 9, weightCol: 'K'
+  });
 
-  for (let i = 6; i < Math.min(120, rows.length); i++) {
-    const row = rows[i];
-    if (!row) continue;
-
-    const a = String(row[0] || '').trim();
-
-    if (/^Week\s+\d/i.test(a)) {
-      const week = { label: a, days: [] };
-      weeks.push(week);
-      continue;
-    }
-
-    if (/^Day\s+\d/i.test(a)) {
-      const day = { name: a, exercises: [] };
-
-      const benchSets = row[2];
-      const benchReps = row[3];
-      const benchWt = getCellValue(ws, `E${i + 1}`);
-
-      if (benchSets !== null && benchReps !== null && benchWt !== null) {
-        day.exercises.push({
-          name: 'Bench',
-          prescription: buildPrescription(benchSets, benchReps, benchWt),
-          note: '',
-          lifterNote: '',
-          loggedWeight: ''
-        });
-      }
-
-      // Accessories
-      for (let j = i + 1; j < Math.min(i + 8, rows.length); j++) {
-        const accRow = rows[j];
-        if (!accRow) continue;
-
-        const accName = String(accRow[1] || '').trim();
-        const accSets = accRow[2];
-        const accReps = accRow[3];
-
-        if (accName && !accName.match(/^Week|^Day/) && accSets !== null) {
-          day.exercises.push({
-            name: spellCorrectExerciseName(accName),
-            prescription: `${accSets}x${accReps || 0}`,
-            note: '',
-            lifterNote: '',
-            loggedWeight: ''
-          });
-        }
-      }
-
-      if (weeks.length > 0 && day.exercises.length > 0) {
-        weeks[weeks.length - 1].days.push(day);
-      }
-    }
-  }
+  const weeks = [...leftWeeks, ...rightWeeks].sort((a, b) => {
+    const na = parseInt(a.label.match(/\d+/)[0]);
+    const nb = parseInt(b.label.match(/\d+/)[0]);
+    return na - nb;
+  });
 
   if (weeks.length === 0) return null;
 
