@@ -533,25 +533,25 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .track-hint-inline { font-size: 10px; color: var(--text-dim); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-style: normal; }
 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
-.home-screen { padding: 48px 16px 80px; overflow: hidden; }
+.home-screen { padding: 12px 16px 0; display: flex; flex-direction: column; height: calc(100dvh - 56px - 80px); overflow: hidden; box-sizing: border-box; }
 .home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
 
 /* Hero card */
-.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .home-hero:active { transform: scale(0.98); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
 .home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
-.home-hero-inner { position: relative; z-index: 1; padding: 16px 20px; }
+.home-hero-inner { position: relative; z-index: 1; padding: 16px 20px; flex: 1; display: flex; flex-direction: column; }
 .home-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
 .home-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: 4px; }
 .home-hero-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-bottom: 12px; }
-.home-hero-exercises { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.home-hero-exercises { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; flex: 1; }
 .home-hero-ex { display: flex; align-items: center; gap: 10px; }
 .home-hero-ex-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 .home-hero-ex-name { font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 500; color: var(--text-mid); flex: 1; }
 .home-hero-ex-pres { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--text-faint); }
 .home-hero-more { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); padding-left: 15px; }
-.home-hero-cta { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-2); }
+.home-hero-cta { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border-2); margin-top: auto; }
 .home-hero-cta-text { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
 .home-hero-cta-arrow { color: var(--gold); font-size: 18px; }
 .home-hero.done { border-color: rgba(74,222,128,0.25); }
@@ -561,9 +561,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-hero.done .home-hero-cta-arrow { color: #4ade80; }
 
 /* Session Summary Hero Card */
-.session-hero { position: relative; background: var(--glass-bg); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.session-hero { position: relative; background: var(--glass-bg); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .session-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, transparent 55%); pointer-events: none; }
-.session-hero-inner { position: relative; z-index: 1; padding: 14px 20px 16px; }
+.session-hero-inner { position: relative; z-index: 1; padding: 14px 20px 16px; flex: 1; display: flex; flex-direction: column; }
 .session-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4ade80; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
 .session-hero-label-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
 .session-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: 3px; }
@@ -576,7 +576,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .session-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
 .session-lift-set .rpe-val { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
 /* Stat tiles */
-.session-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border-2); }
+.session-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border-2); margin-top: auto; }
 .session-stat { text-align: center; }
 .session-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
 .session-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
@@ -825,6 +825,23 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-summary-stat-val .unit { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
 .week-summary-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 .week-summary-empty { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); text-align: center; padding: 8px 0; }
+
+/* ── Combined Week Bar (ring + summary) ── */
+.home-week-bar { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 10px 14px; display: flex; align-items: center; gap: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-shrink: 0; position: relative; }
+.week-bar-ring { flex-shrink: 0; width: 68px; height: 68px; position: relative; }
+.week-bar-ring-svg { width: 68px; height: 68px; }
+.week-bar-ring-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.week-bar-ring-num { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; }
+.week-bar-ring-num .week-ring-slash { font-weight: 400; color: var(--text-dim); font-size: 12px; }
+.week-bar-data { flex: 1; min-width: 0; }
+.week-bar-header { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 4px; }
+.week-bar-lifts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.week-bar-lift { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-mid); }
+.week-bar-lift-label { color: var(--text-dim); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; }
+.week-bar-stats { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); display: flex; align-items: center; gap: 4px; }
+.week-bar-stats-sep { opacity: 0.4; }
+.week-bar-empty { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); }
+.week-bar-dots { position: absolute; bottom: 6px; right: 14px; display: flex; gap: 3px; }
 
 /* No-program state */
 .home-empty { text-align: center; padding: 60px 24px; }
@@ -3050,10 +3067,9 @@ function getWeeklySummary() {
   const block = state.activeBlock;
   if (!block || !block.weeks) return null;
 
-  // Use the gated _currentWeekIdx so summary shows the completed week
-  // until Monday (same as the ring widget)
-  checkWeekProgression(block);
-  const weekIdx = block._currentWeekIdx || 0;
+  // Match the ring — use whichever week the next workout falls in
+  const nwInfo = getNextWorkoutInfo();
+  const weekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
 
   // Try current week first
   const current = _computeWeekSummary(block, block.weeks[weekIdx]);
@@ -3217,11 +3233,11 @@ function getWeekDots() {
   const block = state.activeBlock;
   if (!block) return null;
 
-  // Ring uses the gated _currentWeekIdx so it shows the completed week
-  // until the Sunday boundary passes (Monday 00:00)
-  checkWeekProgression(block);
-  const weekIdx = block._currentWeekIdx || 0;
+  // Ring should match the hero card — show whichever week contains the
+  // next incomplete workout.  This avoids the "stuck at 4/4 green" bug
+  // where the Sunday-gated _currentWeekIdx lags behind the hero.
   const nwInfo = getNextWorkoutInfo();
+  const weekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
   const week = block.weeks[weekIdx];
   if (!week || !week.days) return null;
 
@@ -3492,76 +3508,89 @@ function renderHome() {
     </div>`;
   }
 
-  const weekHtml      = renderWeekCard();
-  // Skip "Last Workout" card when hero already shows session summary (avoids redundancy)
-  const lastWkHtml    = nextIsIncomplete ? renderLastWorkoutCard() : '';
-
-  // Two-column row: Last Workout + Week Progress (or just week if no last workout)
-  let middleRowHtml;
-  if (lastWkHtml && weekHtml) {
-    middleRowHtml = '<div class="home-row">' + lastWkHtml + weekHtml + '</div>';
-  } else if (weekHtml) {
-    middleRowHtml = weekHtml;
-  } else if (lastWkHtml) {
-    middleRowHtml = '<div class="home-row single-col">' + lastWkHtml + '</div>';
-  } else {
-    middleRowHtml = '';
-  }
-
-  // Weekly Summary card
+  // ── Combined week bar: ring + summary in one row ──
+  const wp = getWeekDots();
   const weekSummary = getWeeklySummary();
-  let weeklySummaryHtml = '';
+  let weekBarHtml = '';
 
-  if (weekSummary) {
-    const summaryWeekIdx = weekSummary.weekIdx;
-    const summaryWeek = block.weeks[summaryWeekIdx];
-    const currentWeekIdx = block._currentWeekIdx || 0;
-    const isFallback = summaryWeekIdx !== currentWeekIdx;
-    const completedCount = (summaryWeek?.days || []).filter(d => isDayComplete(block, summaryWeek, d)).length;
-    const totalDayCount = (summaryWeek?.days || []).length;
+  if (wp) {
+    const total = wp.total || 1;
+    const done = wp.done || 0;
+    const pct = done / total;
 
-    // Best lift rows
-    let liftRowsHtml = '';
-    for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-      const data = weekSummary.bestLifts[group];
-      if (!data) continue;
-      const rpeStr = '';
-      const varStr = data.isVariation ? ` <span class="var-label">(${escH(data.name)})</span>` : '';
-      liftRowsHtml += '<div class="week-summary-lift-row">'
-        + '<div class="week-summary-lift-name">' + label + '</div>'
-        + '<div class="week-summary-lift-set">' + data.reps + '×' + data.weight + 'lb' + rpeStr + varStr + '</div>'
-        + '<div class="week-summary-lift-e1rm"><div class="week-summary-e1rm-val">' + Math.round(data.e1rm) + '</div><div class="week-summary-e1rm-label">e1RM</div></div>'
+    // SVG ring
+    const r = 28, cx = 34, cy = 34, sw = 4;
+    const circ = 2 * Math.PI * r;
+    const progressLen = pct * circ;
+    const remainLen = (1 - pct) * circ;
+
+    // Day dots
+    const dots = wp.dots.map(dot => {
+      let cls = 'week-ring-dot';
+      if (dot.done) cls += ' done';
+      else if (dot.isCurrent) cls += ' current';
+      else cls += ' upcoming';
+      return '<div class="' + cls + '"></div>';
+    }).join('');
+
+    const ringHtml = '<div class="week-bar-ring">'
+      + '<svg viewBox="0 0 68 68" fill="none" class="week-bar-ring-svg">'
+      + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="rgba(255,255,255,0.04)" stroke-width="' + sw + '" fill="none"/>'
+      + (done > 0 ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="#4ade80" stroke-width="' + sw + '" fill="none" stroke-linecap="round" stroke-dasharray="' + progressLen.toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')" style="filter:drop-shadow(0 0 3px rgba(74,222,128,0.2))"/>' : '')
+      + (done < total ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="rgba(201,168,76,0.15)" stroke-width="' + sw + '" fill="none" stroke-linecap="round" stroke-dasharray="0 ' + progressLen.toFixed(1) + ' ' + remainLen.toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>' : '')
+      + '</svg>'
+      + '<div class="week-bar-ring-center"><div class="week-bar-ring-num">' + done + '<span class="week-ring-slash"> / </span>' + total + '</div></div>'
+      + '</div>';
+
+    // Summary data (right side)
+    let summaryHtml = '';
+    if (weekSummary) {
+      const ringWeekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
+      const isFallback = weekSummary.weekIdx !== ringWeekIdx;
+      const summaryWeek = block.weeks[weekSummary.weekIdx];
+      const completedCount = (summaryWeek?.days || []).filter(d => isDayComplete(block, summaryWeek, d)).length;
+      const totalDayCount = (summaryWeek?.days || []).length;
+
+      // Compact best lifts
+      let liftChips = '';
+      for (const [group, label] of [['squat','S'],['bench','B'],['deadlift','D']]) {
+        const data = weekSummary.bestLifts[group];
+        if (!data) continue;
+        liftChips += '<div class="week-bar-lift"><span class="week-bar-lift-label">' + label + '</span> ' + data.weight + '×' + data.reps + '</div>';
+      }
+
+      const vol = weekSummary.totalVolume >= 10000
+        ? (weekSummary.totalVolume / 1000).toFixed(1) + 'k'
+        : weekSummary.totalVolume.toLocaleString();
+
+      summaryHtml = '<div class="week-bar-data">'
+        + '<div class="week-bar-header">' + (isFallback ? 'Last Week' : 'This Week') + ' · ' + escH(weekSummary.weekLabel) + '</div>'
+        + (liftChips ? '<div class="week-bar-lifts">' + liftChips + '</div>' : '')
+        + '<div class="week-bar-stats">'
+        + '<span>' + vol + ' lbs</span>'
+        + '<span class="week-bar-stats-sep">·</span>'
+        + '<span>' + weekSummary.totalSets + ' sets</span>'
+        + (weekSummary.avgRpe ? '<span class="week-bar-stats-sep">·</span><span>RPE ' + weekSummary.avgRpe + '</span>' : '')
+        + '</div>'
+        + '</div>';
+    } else {
+      summaryHtml = '<div class="week-bar-data">'
+        + '<div class="week-bar-header">This Week</div>'
+        + '<div class="week-bar-empty">Log sets to see stats</div>'
         + '</div>';
     }
 
-    // Stats
-    const vol = weekSummary.totalVolume >= 10000
-      ? (weekSummary.totalVolume / 1000).toFixed(1) + 'k'
-      : weekSummary.totalVolume.toLocaleString();
-
-    weeklySummaryHtml = '<div class="home-week-summary">'
-      + '<div class="home-week-summary-header">'
-      + '<div class="home-week-summary-label">' + (isFallback ? 'Last Week' : 'This Week') + ' · ' + escH(weekSummary.weekLabel) + '</div>'
-      + '<div class="home-week-summary-meta">' + completedCount + '/' + totalDayCount + ' days</div>'
-      + '</div>'
-      + (liftRowsHtml ? '<div class="week-summary-lifts">' + liftRowsHtml + '</div>' : '')
-      + '<div class="week-summary-stats" style="grid-template-columns:1fr 1fr">'
-      + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + vol + '<span class="unit"> lbs</span></div><div class="week-summary-stat-label">Volume</div></div>'
-      + '<div class="week-summary-stat"><div class="week-summary-stat-val">' + weekSummary.totalSets + '</div><div class="week-summary-stat-label">Sets</div></div>'
-      + '</div>'
-      + '</div>';
-  } else {
-    weeklySummaryHtml = '<div class="home-week-summary">'
-      + '<div class="home-week-summary-label">This Week</div>'
-      + '<div class="week-summary-empty">Log sets to see your weekly summary</div>'
+    weekBarHtml = '<div class="home-week-bar">'
+      + ringHtml
+      + summaryHtml
+      + '<div class="week-bar-dots">' + dots + '</div>'
       + '</div>';
   }
 
   content.innerHTML = `<div class="home-screen">
     <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</div>
     ${heroHtml}
-    ${middleRowHtml}
-    ${weeklySummaryHtml}
+    ${weekBarHtml}
   </div>`;
 }
 
@@ -5891,38 +5920,43 @@ function checkWeekProgression(block) {
     saveBlocks();
   }
 
-  // Rollback check: if current week has no logged training data and the previous
-  // week is fully complete, the old code likely advanced prematurely before EOD Sunday.
-  // Roll back so the ring shows the completed week until Monday.
+  // Rollback guard: if _currentWeekIdx was advanced but the new week has
+  // zero logged sets AND the activation was same-day (premature advance),
+  // roll back so the ring shows the completed week until the next real
+  // training session starts.
+  // NOTE: we check state.logs (the log-key system), NOT ex.sets[].logged
   const cwi = block._currentWeekIdx;
   if (cwi > 0) {
     const curW = block.weeks[cwi];
-    const hasLoggedData = curW && curW.days.some(d =>
-      d.exercises && d.exercises.some(ex =>
-        ex.sets && ex.sets.some(s => s.logged)
-      )
-    );
-    if (!hasLoggedData) {
-      const prevW = block.weeks[cwi - 1];
-      const prevDone = prevW && prevW.days
-        .filter(d => d.exercises && d.exercises.length > 0)
-        .every(d => isDayComplete(block, prevW, d));
-      if (prevDone) {
-        // Check if EOD Sunday has actually passed for the previous week
-        const actDate = new Date(block._weekActivatedAt + 'T00:00:00');
-        const now = new Date();
-        const actDay = actDate.getDay();
-        // If activated today (Sunday) and it's still Sunday, roll back
-        const daysSinceActivation = Math.floor((now - actDate) / 86400000);
-        if (daysSinceActivation < 1) {
-          block._currentWeekIdx = cwi - 1;
-          // Set activated to previous Monday (approx) so the EOD Sunday boundary
-          // will fire correctly on Monday
-          const prevMonday = new Date(now);
-          prevMonday.setDate(prevMonday.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-          block._weekActivatedAt = prevMonday.toISOString().split('T')[0];
-          saveBlocks();
+    let hasLoggedData = false;
+    if (curW) {
+      for (const d of curW.days) {
+        for (const ex of (d.exercises || [])) {
+          // Check if any set has been logged via state.logs
+          const baseKey = lk(block.id, curW.label, d.name, ex.name);
+          for (let si = 0; si < 20; si++) {
+            if (state.logs[baseKey + '||s' + si]?.done) { hasLoggedData = true; break; }
+          }
+          if (hasLoggedData) break;
+          // Also check exercise-level done/skipped
+          if (state.logs[baseKey]?.done || state.logs[baseKey]?.skipped) { hasLoggedData = true; break; }
         }
+        if (hasLoggedData) break;
+        // Check force-complete key
+        const forceKey = lk(block.id, curW.label, d.name, '__complete__');
+        if (state.logs[forceKey]?.done) { hasLoggedData = true; break; }
+      }
+    }
+    if (!hasLoggedData) {
+      const actDate = new Date(block._weekActivatedAt + 'T00:00:00');
+      const daysSinceActivation = Math.floor((new Date() - actDate) / 86400000);
+      if (daysSinceActivation < 1) {
+        block._currentWeekIdx = cwi - 1;
+        const now = new Date();
+        const prevMonday = new Date(now);
+        prevMonday.setDate(prevMonday.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        block._weekActivatedAt = prevMonday.toISOString().split('T')[0];
+        saveBlocks();
       }
     }
   }
