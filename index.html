@@ -3206,8 +3206,8 @@ function saveUnitOverrides(o) {
   try { localStorage.setItem(UNIT_OVERRIDES_KEY, JSON.stringify(o)); } catch(e) { console.error(e); }
 }
 
-// Global display unit preference — reads dedicated weightUnit, falls back to lbs
-function getDisplayUnit() { return loadAthlete()?.weightUnit || 'lbs'; }
+// Global display unit preference — reads dedicated weightUnit, falls back to bwUnit (legacy), then lbs
+function getDisplayUnit() { const a = loadAthlete(); return a?.weightUnit || a?.bwUnit || 'lbs'; }
 
 // Unit for a specific exercise (per-exercise override > global)
 function getExUnit(exName) {
@@ -3251,7 +3251,7 @@ function toggleAthleteProfileForm() {
     const unit = a.bwUnit || 'lbs';
     document.getElementById('ap-unit').textContent = unit;
     document.getElementById('ap-unit').classList.toggle('active', true);
-    const wUnit = a.weightUnit || 'lbs';
+    const wUnit = a.weightUnit || a.bwUnit || 'lbs';
     document.getElementById('ap-weight-lbs').classList.toggle('active', wUnit === 'lbs');
     document.getElementById('ap-weight-kg').classList.toggle('active', wUnit === 'kg');
     document.getElementById('ap-1rm-label').textContent = 'Current 1RM (' + wUnit + ')';
@@ -3708,7 +3708,7 @@ function _computeWeekSummary(block, week) {
 
   return {
     weekLabel: wl,
-    totalVolume,
+    totalVolume: Math.round(totalVolume),
     totalSets,
     avgRpe: rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null,
     bestLifts: bestByFamily
@@ -4206,12 +4206,14 @@ function renderHome() {
     for (const [group, fullName] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
       const data = weekSummary.bestLifts[group];
       if (!data) continue;
+      const dispW = Math.round(data.weight);
       const e1rm = calc1rm(data.weight, data.reps, data.rpe);
+      const e1rmDisp = e1rm ? Math.round(e1rm.value) : null;
       const varLabel = data.isVariation ? ` <span class="var-label">(${data.name})</span>` : '';
       liftRows += `<div class="week-summary-lift-row">
         <div class="week-summary-lift-name">${fullName}</div>
-        <div class="week-summary-lift-set">${data.weight}×${data.reps}${data.rpe ? `<span class="rpe-val">@${data.rpe}</span>` : ''}${varLabel}</div>
-        ${e1rm ? `<div class="week-summary-lift-e1rm"><div class="week-summary-e1rm-val">${e1rm.value}</div><div class="week-summary-e1rm-label">E1RM</div></div>` : ''}
+        <div class="week-summary-lift-set">${dispW}×${data.reps}${data.rpe ? `<span class="rpe-val">@${data.rpe}</span>` : ''}${varLabel}</div>
+        ${e1rmDisp ? `<div class="week-summary-lift-e1rm"><div class="week-summary-e1rm-val">${e1rmDisp}</div><div class="week-summary-e1rm-label">E1RM</div></div>` : ''}
       </div>`;
     }
 
@@ -8658,7 +8660,7 @@ function showOnboardingStep(step) {
     const athlete = loadAthlete() || {};
     _onboardGender = athlete.gender || null;
     _onboardUnit = athlete.bwUnit || 'lbs';
-    _onboardWeightUnit = athlete.weightUnit || 'lbs';
+    _onboardWeightUnit = athlete.weightUnit || athlete.bwUnit || 'lbs';
     body.innerHTML = `
       <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">About You</div>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Used for DOTS & Wilks scores. All fields optional.</div>
