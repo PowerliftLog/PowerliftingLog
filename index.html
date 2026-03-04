@@ -1381,7 +1381,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.6</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.7</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -1947,6 +1947,9 @@ async function _bootApp() {
 
     // 4. Re-run set-level pre-population
     if (_savedBlocks.length > 0) rePopulateSets(_savedBlocks);
+
+    // 4b. One-time prune: clean stale trackedLifts/customLifts entries from deleted blocks
+    if (_savedBlocks.length > 0) _pruneTrackedLifts();
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
@@ -2175,8 +2178,17 @@ function buildMetrics(drillBlockId){
   const blockIndex={};
   state.blocks.forEach((b,i)=>{ blockIndex[b.id]=i; });
 
+  // Pre-seed custom lift variation slots — scoped to filtered blocks
   state.customLifts.forEach(cl=>{
     if(!isTracked(cl.name)) return; // only show tracked custom lifts
+    // If filtering to a specific block, only seed if this exercise exists in that block
+    if(drillBlockId){
+      const block=state.blocks.find(b=>b.id===drillBlockId);
+      if(block){
+        const found=block.weeks.some(w=>w.days.some(d=>d.exercises.some(e=>_getBaseName(e.name).toLowerCase().trim()===cl.name.toLowerCase().trim())));
+        if(!found) return;
+      }
+    }
     const g=groups[cl.group]||groups.other;
     if(!g.variations[cl.name]) g.variations[cl.name]=[];
   });
@@ -2342,7 +2354,9 @@ function renderMetrics(){
       if(g.variations[vn].length > 0) trackedInMetrics.add(vn.toLowerCase().trim());
 
   // Gather all exercises from program that are tracked but have no data yet
-  for(const block of state.blocks){
+  // Scope to filtered blocks: current cycle = active block only; all = all blocks
+  const pillBlocks = drillBlockId ? state.blocks.filter(b=>b.id===drillBlockId) : state.blocks;
+  for(const block of pillBlocks){
     for(const week of block.weeks){
       for(const day of week.days){
         for(const ex of day.exercises){
@@ -2359,21 +2373,25 @@ function renderMetrics(){
       }
     }
   }
-  // Also check explicitly tracked lifts from state.trackedLifts
+  // Also check explicitly tracked lifts from state.trackedLifts — but only if exercise exists in filtered blocks
   for(const [key, val] of Object.entries(state.trackedLifts)){
     if(val !== true) continue;
     if(trackedInMetrics.has(key)) continue;
-    // Try to find the original cased name from program
-    let displayName = key;
-    for(const block of state.blocks){
+    // Try to find the original cased name from filtered blocks only
+    let displayName = null;
+    for(const block of pillBlocks){
       for(const week of block.weeks){
         for(const day of week.days){
           for(const ex of day.exercises){
             if(_getBaseName(ex.name).toLowerCase().trim() === key){ displayName = _getBaseName(ex.name); break; }
           }
+          if(displayName) break;
         }
+        if(displayName) break;
       }
+      if(displayName) break;
     }
+    if(!displayName) continue; // not in any filtered block — skip
     const group = classifyLift(displayName);
     if(!group) continue;
     const g = metrics[group] || metrics.other;
@@ -7006,9 +7024,36 @@ function confirmDeleteBlock(){
     state.activeWeek=0; state.activeDay=0;
   }
   saveBlocks();
+  // Prune trackedLifts — remove entries that no longer exist in any remaining block
+  _pruneTrackedLifts();
   closeDeleteModal();
   closeProgramModal();
   render();
+}
+
+function _pruneTrackedLifts(){
+  // Build set of all exercise base names across remaining blocks
+  const activeNames = new Set();
+  for(const block of state.blocks){
+    for(const week of block.weeks){
+      for(const day of week.days){
+        for(const ex of day.exercises){
+          activeNames.add(_getBaseName(ex.name).toLowerCase().trim());
+        }
+      }
+    }
+  }
+  // Remove tracked entries that aren't in any remaining block
+  let changed = false;
+  for(const key of Object.keys(state.trackedLifts)){
+    if(!activeNames.has(key)){
+      delete state.trackedLifts[key];
+      changed = true;
+    }
+  }
+  // Also prune customLifts
+  state.customLifts = state.customLifts.filter(cl => activeNames.has(cl.name.toLowerCase().trim()));
+  if(changed) saveTrackedLifts();
 }
 
 document.getElementById('new-btn') && document.getElementById('new-btn').addEventListener('click', openProgramModal);
