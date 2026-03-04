@@ -1633,8 +1633,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <div class="settings-athlete-row">
         <div class="settings-athlete-label">Bodyweight</div>
         <div class="settings-athlete-bw-row">
-          <input class="settings-athlete-input" id="ap-bw" type="number" inputmode="decimal" placeholder="0">
-          <button class="settings-athlete-unit-btn" id="ap-unit" onclick="toggleApUnit()">lbs</button>
+          <input class="settings-athlete-input" id="ap-bw" type="number" inputmode="decimal" placeholder="0" style="max-width:100px;text-align:center">
+          <div class="settings-athlete-gender" style="flex:0 0 auto;gap:6px">
+            <button class="settings-athlete-gender-btn" id="ap-bw-lbs" onclick="setApBwUnit('lbs')" style="padding:9px 12px;font-size:12px">LBS</button>
+            <button class="settings-athlete-gender-btn" id="ap-bw-kg" onclick="setApBwUnit('kg')" style="padding:9px 12px;font-size:12px">KG</button>
+          </div>
         </div>
       </div>
       <div class="settings-athlete-row">
@@ -3379,8 +3382,8 @@ function toggleAthleteProfileForm() {
     document.getElementById('ap-name').value = a.name || '';
     document.getElementById('ap-bw').value = a.bodyweight || '';
     const unit = a.bwUnit || 'lbs';
-    document.getElementById('ap-unit').textContent = unit;
-    document.getElementById('ap-unit').classList.toggle('active', true);
+    document.getElementById('ap-bw-lbs').classList.toggle('active', unit === 'lbs');
+    document.getElementById('ap-bw-kg').classList.toggle('active', unit === 'kg');
     const wUnit = a.weightUnit || a.bwUnit || 'lbs';
     document.getElementById('ap-weight-lbs').classList.toggle('active', wUnit === 'lbs');
     document.getElementById('ap-weight-kg').classList.toggle('active', wUnit === 'kg');
@@ -3403,10 +3406,9 @@ function setApGender(g) {
   document.getElementById('ap-male').dataset.val = g === 'male' ? 'male' : '';
   document.getElementById('ap-female').dataset.val = g === 'female' ? 'female' : '';
 }
-function toggleApUnit() {
-  const btn = document.getElementById('ap-unit');
-  const isLbs = btn.textContent === 'lbs';
-  btn.textContent = isLbs ? 'kg' : 'lbs';
+function setApBwUnit(u) {
+  document.getElementById('ap-bw-lbs').classList.toggle('active', u === 'lbs');
+  document.getElementById('ap-bw-kg').classList.toggle('active', u === 'kg');
 }
 function setApWeightUnit(u) {
   document.getElementById('ap-weight-lbs').classList.toggle('active', u === 'lbs');
@@ -3416,7 +3418,7 @@ function setApWeightUnit(u) {
 function saveAthleteProfile() {
   const name = document.getElementById('ap-name').value.trim();
   const bw = parseFloat(document.getElementById('ap-bw').value);
-  const unit = document.getElementById('ap-unit').textContent;
+  const unit = document.getElementById('ap-bw-lbs').classList.contains('active') ? 'lbs' : 'kg';
   const weightUnit = document.getElementById('ap-weight-lbs').classList.contains('active') ? 'lbs' : 'kg';
   const gender = document.getElementById('ap-male').classList.contains('active') ? 'male'
                : document.getElementById('ap-female').classList.contains('active') ? 'female'
