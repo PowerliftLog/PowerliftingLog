@@ -5,9 +5,12 @@
 
 // ── LIFT GROUPS & CLASSIFICATION ──────────────────────────────────────────────
 const LIFT_GROUPS = {
-  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar squat','low bar squat','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat'],
-  bench: ['bench','close grip bench','close grip press','larson','larsen','slingshot','incline press','incline bench','decline press','decline bench','floor press','feet up bench','pause bench','touch and go bench','touch and go press','tng bench','tng press','comp bench','board press'],
-  deadlift: ['deadlift','sumo deadlift','sumo pull','sumo dead','conventional deadlift','conventional pull','romanian','rdl','rack pull','block pull','deficit deadlift','deficit pull','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo'],
+  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar squat','low bar squat','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat',
+    'hatfield','cyclist squat','overhead squat','ohs','jefferson squat','zombie squat','walkout'],
+  bench: ['bench','close grip bench','close grip press','larson','larsen','slingshot','incline press','incline bench','decline press','decline bench','floor press','feet up bench','pause bench','touch and go bench','touch and go press','tng bench','tng press','comp bench','board press',
+    'spoto','spoto press','jm press','california press','guillotine press','dead bench','pin press','cgbp','wgbp','rgbp'],
+  deadlift: ['deadlift','sumo deadlift','sumo pull','sumo dead','conventional deadlift','conventional pull','romanian','rdl','rack pull','block pull','deficit deadlift','deficit pull','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo',
+    'clean pull','snatch pull','hack lift','dimel','halting','mat pull','pin pull','sldl','sgdl','reeves','suitcase deadlift','zercher deadlift','jefferson deadlift'],
 };
 
 const COMP_KEYWORDS = {
@@ -25,6 +28,20 @@ const VARIATION_MODIFIERS = [
   '1/4','quarter','partial',
   'pause squat','paused squat',
   'pause deadlift','paused deadlift','pause dead','paused dead',
+  // Named bench variations
+  'spoto','larsen','larson','jm press','california','guillotine','dead bench','reverse grip',
+  // Specialty bars
+  'cambered','buffalo','duffalo','axle','earthquake','bamboo','swiss bar','football bar','kadillac','spider bar','transformer bar',
+  // Deadlift variations
+  'dimel','halting','mat pull','pin pull','clean pull','snatch pull','reeves','suitcase',
+  // Accommodating resistance
+  'banded','chain','reverse band','weight releaser',
+  // Squat variations
+  'hatfield','cyclist','overhead squat','ohs','zombie','walkout','jefferson',
+  // Effort/touch modifiers
+  'dead stop','speed','dynamic effort','eccentric','isometric','floating','1.5 rep',
+  // Stance/position
+  'wide stance','narrow stance','sumo stance','heel elevated','beltless',
 ];
 
 function isCompLift(name){
@@ -72,6 +89,19 @@ const EXERCISE_DICT = [
   'Cuban','Arnold','Bradford','Landmine','Meadows','Pendlay','Yates','Kroc',
   'XPLoad','Rope','Band','Chain','Plate','Weight','Weighted','Bodyweight',
   'Dip','Chinup','Pullup','Pushup','Row','Inverted','Ring','TRX','Suspension',
+  // Named barbell variations (from exercise report)
+  'Spoto','Zercher','Hatfield','Dimel','Guillotine','California',
+  'Duffalo','Buffalo','Kadillac','Cambered','Marrs','Transformer',
+  'Earthquake','Bamboo','Axle','Tsunami',
+  // Specialty bar names
+  'SSB','Safety',
+  // Effort/modifier words
+  'Beltless','Eccentric','Isometric','Slingshot','Accommodating',
+  'Dynamic','Banded','Lockout','Walkout','Floating',
+  // Abbreviations (>3 chars to qualify for spell check)
+  'CGBP','SGDL','SLDL','WGBP','RGBP','AMRAP',
+  // Additional proper names
+  'Reeves','Jefferson','Gironda','Anderson','Hackenschmidt',
 ];
 
 function editDistance(a,b){
