@@ -1059,6 +1059,13 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .rm-delta.up { color: #4ade80; }
 .rm-delta.down { color: #E22C2C; }
 
+/* Empty state for tracked lifts with no data */
+.metrics-empty-state { padding: 20px 16px 24px; text-align: center; }
+.metrics-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
+.metrics-empty-text { font-size: 14px; color: var(--text-dim); font-family: 'Barlow', sans-serif; margin-bottom: 4px; }
+.metrics-empty-sub { font-size: 11px; color: var(--text-faint); font-family: 'Barlow', sans-serif; }
+.var-pill.empty { opacity: 0.5; }
+
 /* Add lift button */
 .add-lift-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 17px; letter-spacing: 0.04em; cursor: pointer; margin-bottom: 16px; transition: all 0.15s; }
 .add-lift-btn:hover { border-color: #444; color: var(--text-sub); }
@@ -2152,7 +2159,7 @@ function buildMetrics(drillBlockId){
     else if(val.done){ weight=getPrescribedWeight(parts[0],parts[1],parts[2],parts[3],setIdxNum); }
     if(!weight||isNaN(weight)||weight<=0) continue;
 
-    const reps=getSetReps(parts[0],parts[1],parts[2],parts[3],setIdxNum);
+    const reps=val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0],parts[1],parts[2],parts[3],setIdxNum);
     if(!reps) continue;
 
     const rpe=val.rpe?parseFloat(val.rpe):null;
@@ -2284,6 +2291,54 @@ function renderMetrics(){
   // null drill = current cycle; 'all' = all blocks
   const drillBlockId = (drill && drill !== 'all') ? drill : (drill === 'all' ? null : activeBlockId);
   const metrics=buildMetrics(drillBlockId);
+
+  // ── Inject empty cards for tracked lifts with no logged data ──
+  // Enumerate all exercises from loaded program blocks
+  const trackedInMetrics = new Set();
+  for(const g of Object.values(metrics))
+    for(const vn of Object.keys(g.variations))
+      if(g.variations[vn].length > 0) trackedInMetrics.add(vn.toLowerCase().trim());
+
+  // Gather all exercises from program that are tracked but have no data yet
+  for(const block of state.blocks){
+    for(const week of block.weeks){
+      for(const day of week.days){
+        for(const ex of day.exercises){
+          const baseName = _getBaseName(ex.name);
+          const key = baseName.toLowerCase().trim();
+          if(trackedInMetrics.has(key)) continue; // already has data
+          if(!isTracked(ex.name)) continue; // not tracked
+          const group = classifyLift(ex.name);
+          if(!group) continue;
+          const g = metrics[group] || metrics.other;
+          if(!g.variations[baseName]) g.variations[baseName] = []; // empty array = no data
+          trackedInMetrics.add(key); // don't add duplicates
+        }
+      }
+    }
+  }
+  // Also check explicitly tracked lifts from state.trackedLifts
+  for(const [key, val] of Object.entries(state.trackedLifts)){
+    if(val !== true) continue;
+    if(trackedInMetrics.has(key)) continue;
+    // Try to find the original cased name from program
+    let displayName = key;
+    for(const block of state.blocks){
+      for(const week of block.weeks){
+        for(const day of week.days){
+          for(const ex of day.exercises){
+            if(_getBaseName(ex.name).toLowerCase().trim() === key){ displayName = _getBaseName(ex.name); break; }
+          }
+        }
+      }
+    }
+    const group = classifyLift(displayName);
+    if(!group) continue;
+    const g = metrics[group] || metrics.other;
+    if(!g.variations[displayName]) g.variations[displayName] = [];
+    trackedInMetrics.add(key);
+  }
+
   let h=`<div class="metrics-screen">`;
 
   // No program loaded — empty state
@@ -2340,7 +2395,7 @@ function renderMetrics(){
     const si = parseInt(parts[4].slice(1));
     let weight = val.actual ? parseFloat(val.actual) : null;
     if (!weight || isNaN(weight) || weight <= 0) continue;
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -2404,11 +2459,15 @@ function renderMetrics(){
 
   let hasAnyData=false;
   for(const [groupKey,group] of Object.entries(metrics)){
-    const vars=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
-    if(vars.length===0) continue;
-    hasAnyData=true;
+    const varsWithData=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
+    const varsEmpty=Object.entries(group.variations).filter(([,pts])=>pts.length===0);
+    const allVars=Object.entries(group.variations);
+    if(allVars.length===0) continue; // no tracked lifts in this group at all
 
-    // Variation pill selector — default to first var, preserve selection across re-renders
+    if(varsWithData.length > 0) hasAnyData=true;
+
+    // Variation pill selector — default to first var with data, preserve selection across re-renders
+    const vars = varsWithData.length > 0 ? varsWithData : allVars;
     const activeVar = (state.metricsActiveVar[groupKey] && vars.find(([vn])=>vn===state.metricsActiveVar[groupKey]))
       ? state.metricsActiveVar[groupKey] : vars[0][0];
     state.metricsActiveVar[groupKey] = activeVar;
@@ -2416,61 +2475,73 @@ function renderMetrics(){
 
     // Best e1RM = best of selected variation only
     const best = activePts.length > 0 ? Math.max(...activePts.map(p=>p.e1rm)) : null;
+    const hasData = activePts.length > 0;
 
     h+=`<div class="metrics-lift-group">`;
     // When only one variation, show specific exercise name; when multiple, show group label
-    const displayTitle = vars.length === 1 ? vars[0][0] : group.label;
+    const displayTitle = allVars.length === 1 ? allVars[0][0] : group.label;
     h+=`<div class="metrics-lift-header">
       <div class="metrics-lift-title">${escH(displayTitle)}</div>
       <div style="text-align:right">
-        <div class="metrics-best">${best?best+'lb':'-'}</div>
+        <div class="metrics-best">${best?best+'lb':'—'}</div>
         <div class="metrics-best-label">Best Est. 1RM</div>
       </div>
     </div>`;
 
-    if(vars.length > 1){
+    if(allVars.length > 1){
       h+=`<div class="var-pill-row">`;
-      vars.forEach(([vname])=>{
+      allVars.forEach(([vname])=>{
         const isActive = vname === activeVar;
-        h+=`<button class="var-pill${isActive?' active':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${escH(vname)}</button>`;
+        const isEmpty = group.variations[vname].length === 0;
+        h+=`<button class="var-pill${isActive?' active':''}${isEmpty?' empty':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${escH(vname)}</button>`;
       });
       h+=`</div>`;
     }
 
     h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160"></canvas></div>`;
 
-    h+=`<div class="rm-datapoints"><div class="var-section">`;
-    activePts.forEach((pt,i)=>{
-      const prev=activePts[i-1];
-      const delta=prev?pt.e1rm-prev.e1rm:null;
-      const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}lb</span>`:'';
-      const methodBadge=pt.method==='rpe'
-        ?`<span class="method-badge rpe-badge">RPE</span>`
-        :`<span class="method-badge est-badge">EST</span>`;
-      const sublabel=drill
-        ?(()=>{
-          const parts=[];
-          if(pt.topWeight&&pt.topReps) parts.push(`${pt.topReps}×${pt.topWeight}lb`);
-          if(pt.completedDate){
-            const [y,m,d]=pt.completedDate.split('-');
-            parts.push(`${m}/${d}`);
-          }
-          return parts.join(' · ');
-        })()
-        :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
-      h+=`<div class="rm-row">
-        <div style="display:flex;flex-direction:column;gap:1px">
-          <div class="rm-session">${pt.session}</div>
-          ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}lb</div></div>
+    if(hasData){
+      h+=`<div class="rm-datapoints"><div class="var-section">`;
+      activePts.forEach((pt,i)=>{
+        const prev=activePts[i-1];
+        const delta=prev?pt.e1rm-prev.e1rm:null;
+        const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}lb</span>`:'';
+        const methodBadge=pt.method==='rpe'
+          ?`<span class="method-badge rpe-badge">RPE</span>`
+          :`<span class="method-badge est-badge">EST</span>`;
+        const sublabel=drill
+          ?(()=>{
+            const parts=[];
+            if(pt.topWeight&&pt.topReps) parts.push(`${pt.topReps}×${pt.topWeight}lb`);
+            if(pt.completedDate){
+              const [y,m,d]=pt.completedDate.split('-');
+              parts.push(`${m}/${d}`);
+            }
+            return parts.join(' · ');
+          })()
+          :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
+        h+=`<div class="rm-row">
+          <div style="display:flex;flex-direction:column;gap:1px">
+            <div class="rm-session">${pt.session}</div>
+            ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}lb</div></div>
+        </div>`;
+      });
+      h+=`</div></div>`;
+    } else {
+      // Empty state for tracked lifts with no data
+      const emptyNames = allVars.map(([vn])=>vn);
+      h+=`<div class="metrics-empty-state">
+        <div class="metrics-empty-icon">📊</div>
+        <div class="metrics-empty-text">Log training data to see trends</div>
+        <div class="metrics-empty-sub">Tracking: ${emptyNames.map(n=>escH(n)).join(', ')}</div>
       </div>`;
-    });
-    h+=`</div></div>`;
+    }
     h+=`</div>`;
   }
 
-  if(!hasAnyData){
+  if(!hasAnyData && Object.values(metrics).every(g=>Object.keys(g.variations).length===0)){
     h+=`<div class="no-data-msg">No performance data yet.<br><br>Log actual weights during your workouts and your estimated 1RMs will appear here.</div>`;
   }
 
@@ -2480,10 +2551,16 @@ function renderMetrics(){
 
   setTimeout(()=>{
     for(const [groupKey,group] of Object.entries(metrics)){
-      const vars=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
-      if(vars.length===0) continue;
-      const activeVar=state.metricsActiveVar[groupKey]||vars[0][0];
-      const activePts=vars.find(([vn])=>vn===activeVar)?.[1]||[];
+      const allVars=Object.entries(group.variations);
+      if(allVars.length===0) continue;
+      const varsWithData=allVars.filter(([,pts])=>pts.length>0);
+      if(varsWithData.length===0){
+        // Draw empty state on canvas
+        drawEmptyChart(`chart-${groupKey}`);
+        continue;
+      }
+      const activeVar=state.metricsActiveVar[groupKey]||varsWithData[0][0];
+      const activePts=varsWithData.find(([vn])=>vn===activeVar)?.[1]||[];
       drawSingleVarChart(`chart-${groupKey}`, activePts, drillBlockId!==null);
     }
   },0);
@@ -2497,6 +2574,37 @@ function toggleMaxCard(el) {
 }
 function setMetricsDrill(val){ state.metricsDrillBlock=val; renderMetrics(); }
 function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; renderMetrics(); }
+
+function drawEmptyChart(canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||400;
+  const H=160;
+  canvas.width=W; canvas.height=H;
+  ctx.clearRect(0,0,W,H);
+
+  // Draw dashed baseline
+  // Resolve CSS vars for canvas
+  const cs=getComputedStyle(document.documentElement);
+  const borderColor=cs.getPropertyValue('--border').trim()||'#333';
+  const dimColor=cs.getPropertyValue('--text-dim').trim()||'#666';
+
+  ctx.strokeStyle=borderColor;
+  ctx.setLineDash([4,4]);
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(40, H/2);
+  ctx.lineTo(W-20, H/2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // "No data yet" text
+  ctx.fillStyle=dimColor;
+  ctx.font='13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('No data yet', W/2, H/2 - 10);
+}
 
 function drawSingleVarChart(canvasId, pts, drillMode){
   const canvas=document.getElementById(canvasId);
@@ -3396,7 +3504,7 @@ function getHomePRs() {
     const weight = val.actual ? parseFloat(val.actual) : null;
     if (!weight || isNaN(weight) || weight <= 0) continue;
     const si = parseInt(parts[4].slice(1));
-    const reps = getSetReps(parts[0], parts[1], parts[2], parts[3], si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], parts[3], si);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -3530,7 +3638,7 @@ function getSessionSummary(block, week, day) {
     const weight = val.actual ? parseFloat(val.actual) : null;
     if (!weight || isNaN(weight) || weight <= 0) continue;
     const si   = parseInt(parts[4].slice(1));
-    const reps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
     if (!reps) continue;
     const rpe    = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -3571,8 +3679,8 @@ function getSessionSummary(block, week, day) {
       if (!weight || isNaN(weight) || weight <= 0) continue;
       const rpe = sv.rpe ? parseFloat(sv.rpe) : null;
 
-      // Volume: use prescribed reps, fall back to 1
-      const reps = getSetReps(bid, wl, dn, ex.name, si) || sv.actualReps || 1;
+      // Volume: prefer actual reps, fall back to prescribed, then 1
+      const reps = sv.actualReps ? parseInt(sv.actualReps) : (getSetReps(bid, wl, dn, ex.name, si) || 1);
       const repsNum = typeof reps === 'string' ? (parseInt(reps) || 1) : (reps || 1);
       totalVolume += weight * repsNum;
       totalSets++;
