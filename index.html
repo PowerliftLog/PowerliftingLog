@@ -1361,7 +1361,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.5</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.6</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -1575,40 +1575,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
-    <div class="settings-section-label">Data</div>
-    <button class="settings-row-btn" onclick="downloadBackup()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Backup
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <button class="settings-row-btn" onclick="triggerRestore()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Restore from Backup
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div id="last-backup-time" style="font-size:11px;color:var(--text-dim);padding:4px 18px 0;display:none"></div>
-
-    <div class="settings-section-label">Export</div>
-    <button class="settings-row-btn" onclick="closeSettings();openExportFromSettings()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Training Log &amp; Report
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <button class="settings-row-btn" onclick="closeSettings();exportCSV()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        Training History (CSV)
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-
-    <div class="settings-section-label">Home</div>
+    <div class="settings-section-label">Preferences</div>
     <button class="settings-row-btn" onclick="toggleAthleteProfileForm()" id="athlete-profile-row">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1654,21 +1621,13 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <button class="settings-athlete-save" onclick="saveAthleteProfile()">Save</button>
     </div>
-    <button class="settings-row-btn" onclick="resetOnboarding()" style="cursor:pointer">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Reset Onboarding (Testing)
-      </div>
-    </button>
-
     <button id="scores-settings-row" class="settings-row-btn" onclick="toggleScoresSetting()" style="cursor:pointer">
       <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         DOTS / Wilks Scores
       </div>
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
-
     <button class="settings-row-btn" onclick="openRestTimerModal()" style="cursor:pointer">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1677,12 +1636,51 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.04em" id="rest-timer-mode-label">Auto</div>
     </button>
 
+    <div class="settings-section-label">Training Data</div>
+    <button class="settings-row-btn" onclick="downloadBackup()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Backup
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="settings-row-btn" onclick="triggerRestore()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Restore from Backup
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div id="last-backup-time" style="font-size:11px;color:var(--text-dim);padding:4px 18px 0;display:none"></div>
+    <button class="settings-row-btn" onclick="closeSettings();openExportFromSettings()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Training Log &amp; Report
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="settings-row-btn" onclick="closeSettings();exportCSV()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Training History (CSV)
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
     <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
     <div class="settings-theme-pills" id="settings-theme-pills">
       <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
       <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
       <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
     </div>
+
+    <!-- TODO: Remove before public release -->
+    <button class="settings-row-btn" onclick="resetOnboarding()" style="cursor:pointer;margin-top:16px">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Reset Onboarding (Testing)
+      </div>
+    </button>
 
     <div style="text-align:center;padding-top:20px;padding-bottom:8px">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px">Privacy Policy</a>
@@ -6889,10 +6887,7 @@ function openExportModal(blockId) {
           <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts — full block</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="export-action-btn" style="flex:1" onclick="exportHTMLReport('${blockId}','summary');closeExportModal()">Coach Summary</button>
-        <button class="export-action-btn" style="flex:1" onclick="exportHTMLReport('${blockId}','full');closeExportModal()">Full Report</button>
-      </div>
+      <button class="export-action-btn" onclick="exportHTMLReport('${blockId}');closeExportModal()">Training Report</button>
       <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:8px;letter-spacing:0.03em">Save as PDF via share sheet ↑</div>
     </div>
   </div>`;
@@ -7052,7 +7047,7 @@ function exportTrainingLog(blockId) {
   closeExportModal();
 }
 
-function exportHTMLReport(blockId, scope) {
+function exportHTMLReport(blockId) {
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return;
   const weeks = block.weeks || [];
@@ -7093,15 +7088,12 @@ function exportHTMLReport(blockId, scope) {
     if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
   }
 
-  // ── Compliance + volume + RPE + rep completion ───────────────────────────
+  // ── Compliance + volume + RPE tracking ───────────────────────────────────
   let totalDays = 0, completedDays = 0, totalSets = 0, totalVolume = 0;
   let totalRpe = 0, rpeCount = 0;
   const volumeByFamily = { squat: 0, bench: 0, deadlift: 0, other: 0 };
   const volumeByWeekFamily = {}; // weekLabel -> {squat,bench,deadlift,other}
-  const rpeBuckets = { '9+': 0, '8': 0, '7': 0, '6': 0, '<=5': 0 };
-  let prescribedRepsTotal = 0, actualRepsTotal = 0;
-  const repsByFamily = { squat: { prescribed: 0, actual: 0 }, bench: { prescribed: 0, actual: 0 }, deadlift: { prescribed: 0, actual: 0 } };
-  let overrideCount = 0, checkedSetCount = 0;
+  const rpeByWeek = {}; // weekLabel -> {total, count}
 
   for (const week of weeks) {
     for (const day of (week.days || [])) {
@@ -7114,7 +7106,6 @@ function exportHTMLReport(blockId, scope) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
     if (!val.done) continue;
-    checkedSetCount++;
     const exName = parts[3];
     const si = parseInt(parts[4].slice(1));
     const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
@@ -7129,28 +7120,16 @@ function exportHTMLReport(blockId, scope) {
       const wl = parts[1];
       if (!volumeByWeekFamily[wl]) volumeByWeekFamily[wl] = { squat: 0, bench: 0, deadlift: 0, other: 0 };
       volumeByWeekFamily[wl][group] = (volumeByWeekFamily[wl][group] || 0) + vol;
-
-      // Rep completion tracking
-      if (prescReps) {
-        prescribedRepsTotal += prescReps;
-        actualRepsTotal += actualReps;
-        if (repsByFamily[group]) {
-          repsByFamily[group].prescribed += prescReps;
-          repsByFamily[group].actual += actualReps;
-        }
-        if (val.actualReps) overrideCount++;
-      }
     }
-    // RPE tracking
+    // RPE tracking (overall + per-week)
     if (val.rpe) {
       const r = parseFloat(val.rpe);
       if (!isNaN(r)) {
         totalRpe += r; rpeCount++;
-        if (r >= 9) rpeBuckets['9+']++;
-        else if (r >= 8) rpeBuckets['8']++;
-        else if (r >= 7) rpeBuckets['7']++;
-        else if (r >= 6) rpeBuckets['6']++;
-        else rpeBuckets['<=5']++;
+        const wl = parts[1];
+        if (!rpeByWeek[wl]) rpeByWeek[wl] = { total: 0, count: 0 };
+        rpeByWeek[wl].total += r;
+        rpeByWeek[wl].count++;
       }
     }
   }
@@ -7163,10 +7142,8 @@ function exportHTMLReport(blockId, scope) {
     const exercises = families[groupKey];
     const exNames = Object.keys(exercises);
     if (!exNames.length) return null;
-    // Rank: comp lift > any variation
     const compNames = exNames.filter(n => isCompLift(n));
     const isVariation = compNames.length === 0;
-    // Comp lifts first; if none, pick variation with best overall e1RM
     let primary;
     if (compNames.length) {
       primary = compNames[0];
@@ -7179,23 +7156,37 @@ function exportHTMLReport(blockId, scope) {
         }
       }
     }
-    // Best e1RM across all weeks for primary
     let bestWeek = null, bestE1rm = 0;
     for (const [wl, data] of Object.entries(exercises[primary])) {
       if (data.e1rm > bestE1rm) { bestE1rm = data.e1rm; bestWeek = wl; }
     }
-    // First and last week e1RM for delta
     const allWeeks = Object.keys(exercises[primary]).sort((a, b) => sessionOrder(a) - sessionOrder(b));
     const firstWeek = allWeeks[0];
     const lastWeek = allWeeks[allWeeks.length - 1];
     const startE1rm = exercises[primary][firstWeek]?.e1rm || 0;
     const endE1rm = exercises[primary][lastWeek]?.e1rm || 0;
     const bestData = exercises[primary][bestWeek];
+    // Build per-week e1RM array for sparkline
+    const weekLabelsAll = weeks.map(w => w.label);
+    const e1rmByWeek = weekLabelsAll.map(wl => exercises[primary][wl] ? Math.round(exercises[primary][wl].e1rm) : null);
+    // Build per-week RPE array for trend analysis
+    const rpeByWeekForLift = {};
+    for (const [exN, weekData] of Object.entries(exercises)) {
+      for (const [wl, d] of Object.entries(weekData)) {
+        if (d.topRpe) {
+          if (!rpeByWeekForLift[wl]) rpeByWeekForLift[wl] = { total: 0, count: 0 };
+          rpeByWeekForLift[wl].total += d.topRpe;
+          rpeByWeekForLift[wl].count++;
+        }
+      }
+    }
+    const rpeArr = weekLabelsAll.map(wl => rpeByWeekForLift[wl] ? +(rpeByWeekForLift[wl].total / rpeByWeekForLift[wl].count).toFixed(1) : null);
     return {
       name: primary, isVariation, bestE1rm: Math.round(bestE1rm),
       startE1rm: Math.round(startE1rm), endE1rm: Math.round(endE1rm),
       delta: Math.round(endE1rm - startE1rm),
-      bestWeight: bestData?.topWeight, bestReps: bestData?.topReps, bestRpe: bestData?.topRpe
+      bestWeight: bestData?.topWeight, bestReps: bestData?.topReps, bestRpe: bestData?.topRpe,
+      e1rmByWeek, rpeArr
     };
   }
 
@@ -7204,6 +7195,164 @@ function exportHTMLReport(blockId, scope) {
     bench: getBestCompVariation('bench'),
     deadlift: getBestCompVariation('deadlift')
   };
+
+  // ── Per-lift trend classification ────────────────────────────────────────
+  // Analyzes e1RM direction + RPE direction → plain language + color
+  function classifyTrend(cl) {
+    if (!cl || !cl.e1rmByWeek) return { text: 'Insufficient data', color: 'gold' };
+    const vals = cl.e1rmByWeek.filter(v => v !== null);
+    if (vals.length < 2) return { text: 'Insufficient data', color: 'gold' };
+
+    const rpeVals = cl.rpeArr ? cl.rpeArr.filter(v => v !== null) : [];
+    const hasRpe = rpeVals.length >= 2;
+
+    // e1RM direction: compare first half avg vs second half avg
+    const mid = Math.floor(vals.length / 2);
+    const firstHalf = vals.slice(0, mid);
+    const secondHalf = vals.slice(mid);
+    const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+    const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    const e1rmDelta = avgSecond - avgFirst;
+    const e1rmPct = avgFirst > 0 ? (e1rmDelta / avgFirst) * 100 : 0;
+
+    // Check for regression weeks (e1RM drop > 2% from previous week)
+    let regressionWeeks = 0;
+    for (let i = 1; i < vals.length; i++) {
+      if (vals[i] < vals[i - 1] * 0.98) regressionWeeks++;
+    }
+
+    // RPE direction
+    let rpeTrend = 'stable';
+    if (hasRpe) {
+      const rpeMid = Math.floor(rpeVals.length / 2);
+      const rpeFirst = rpeVals.slice(0, rpeMid);
+      const rpeSecond = rpeVals.slice(rpeMid);
+      const rpeAvgFirst = rpeFirst.reduce((a, b) => a + b, 0) / rpeFirst.length;
+      const rpeAvgSecond = rpeSecond.reduce((a, b) => a + b, 0) / rpeSecond.length;
+      const rpeDelta = rpeAvgSecond - rpeAvgFirst;
+      if (rpeDelta > 0.4) rpeTrend = 'rising';
+      else if (rpeDelta < -0.4) rpeTrend = 'falling';
+    }
+
+    // Classification matrix
+    if (e1rmPct > 2 && rpeTrend !== 'rising' && regressionWeeks === 0) {
+      return { text: 'Steady uptrend \u2014 no regression weeks', color: 'green' };
+    } else if (e1rmPct > 2 && rpeTrend !== 'rising') {
+      return { text: 'Strong uptrend \u2014 consistent progress', color: 'green' };
+    } else if (e1rmPct > 1 && rpeTrend === 'stable') {
+      return { text: 'Gradual climb \u2014 consistent RPE', color: 'green' };
+    } else if (e1rmPct > 1 && rpeTrend === 'rising') {
+      return { text: 'Grinding higher \u2014 RPE rising with e1RM', color: 'gold' };
+    } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'stable') {
+      return { text: 'Maintained \u2014 stable performance', color: 'gold' };
+    } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'rising') {
+      return { text: 'Stalling \u2014 flat e1RM with rising RPE', color: 'amber' };
+    } else if (e1rmPct < -1 && rpeTrend === 'rising') {
+      return { text: 'Regression \u2014 declining e1RM with rising effort', color: 'red' };
+    } else if (e1rmPct < -1) {
+      return { text: 'Declining \u2014 e1RM trending down', color: 'red' };
+    }
+    return { text: 'Mixed signals \u2014 inconsistent trend', color: 'gold' };
+  }
+
+  // ── Per-lift flags generation ────────────────────────────────────────────
+  function generateFlags(groupKey, cl) {
+    const flags = [];
+    if (!cl) return flags;
+    const vals = cl.e1rmByWeek.filter(v => v !== null);
+    const rpeVals = cl.rpeArr ? cl.rpeArr.filter(v => v !== null) : [];
+
+    // e1RM trend flag
+    if (cl.delta > 0) {
+      const rpeStable = rpeVals.length >= 2 && Math.abs(rpeVals[rpeVals.length - 1] - rpeVals[0]) <= 0.5;
+      flags.push({ color: 'green', text: `e1RM up +${cl.delta} lbs${rpeStable ? ' with stable RPE \u2014 strong adaptation signal' : ' across block'}` });
+    } else if (cl.delta < 0) {
+      flags.push({ color: 'red', text: `e1RM down ${cl.delta} lbs \u2014 potential overreach` });
+    }
+
+    // RPE creep detection
+    if (rpeVals.length >= 3) {
+      const firstRpe = rpeVals[0];
+      const lastRpe = rpeVals[rpeVals.length - 1];
+      if (lastRpe - firstRpe >= 1.0) {
+        flags.push({ color: 'amber', text: `RPE rose from ${firstRpe} \u2192 ${lastRpe} at comparable loads over block` });
+      }
+    }
+
+    // Consecutive declining weeks
+    if (vals.length >= 3) {
+      let consecutiveDecline = 0, maxDecline = 0;
+      for (let i = 1; i < vals.length; i++) {
+        if (vals[i] < vals[i - 1]) { consecutiveDecline++; maxDecline = Math.max(maxDecline, consecutiveDecline); }
+        else consecutiveDecline = 0;
+      }
+      if (maxDecline >= 2) {
+        flags.push({ color: 'red', text: `${maxDecline + 1} consecutive declining e1RM weeks detected` });
+      }
+    }
+
+    // Session fatigue (within-session e1RM drop) — compute from raw logs
+    const fatigueByWeek = computeSessionFatigue(groupKey);
+    if (fatigueByWeek.length > 0) {
+      const avgFatigue = fatigueByWeek.reduce((a, b) => a + b, 0) / fatigueByWeek.length;
+      if (avgFatigue > 7) {
+        flags.push({ color: 'red', text: `Session fatigue averaging ${avgFatigue.toFixed(1)}% \u2014 above sustainable threshold` });
+      } else if (avgFatigue > 5) {
+        flags.push({ color: 'amber', text: `Session fatigue averaging ${avgFatigue.toFixed(1)}% \u2014 approaching threshold` });
+      } else if (avgFatigue > 0) {
+        flags.push({ color: 'green', text: `Session fatigue averaging ${avgFatigue.toFixed(1)}% \u2014 well within recovery capacity` });
+      }
+    }
+
+    // Flat e1RM with rising RPE = overreach signal
+    if (vals.length >= 3 && rpeVals.length >= 3) {
+      const e1rmFlat = Math.abs(cl.delta) <= 5;
+      const rpeRising = rpeVals[rpeVals.length - 1] - rpeVals[0] >= 0.8;
+      if (e1rmFlat && rpeRising) {
+        flags.push({ color: 'red', text: 'e1RM flat despite rising effort \u2014 potential overreach' });
+      }
+    }
+
+    return flags;
+  }
+
+  // ── Session fatigue: first set e1RM vs last set e1RM per session ────────
+  function computeSessionFatigue(groupKey) {
+    // Group sets by session (weekLabel + dayName + exName)
+    const sessions = {};
+    for (const [key, val] of Object.entries(blockLogs)) {
+      const parts = key.split('||');
+      if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+      if (!val.done) continue;
+      const exName = parts[3];
+      const group = classifyLift(exName);
+      if (group !== groupKey) continue;
+      const sessionKey = parts[1] + '||' + parts[2] + '||' + exName;
+      const si = parseInt(parts[4].slice(1));
+      const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+      if (!weight || isNaN(weight) || weight <= 0) continue;
+      const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
+      if (!reps) continue;
+      const rpe = val.rpe ? parseFloat(val.rpe) : null;
+      const result = calc1rm(weight, reps, rpe);
+      if (!result) continue;
+      if (!sessions[sessionKey]) sessions[sessionKey] = [];
+      sessions[sessionKey].push({ si, e1rm: result.value });
+    }
+
+    const fatigues = [];
+    for (const sets of Object.values(sessions)) {
+      if (sets.length < 2) continue;
+      sets.sort((a, b) => a.si - b.si);
+      const firstE1rm = sets[0].e1rm;
+      const lastE1rm = sets[sets.length - 1].e1rm;
+      if (firstE1rm > 0) {
+        const fatiguePct = ((firstE1rm - lastE1rm) / firstE1rm) * 100;
+        if (fatiguePct > 0) fatigues.push(fatiguePct);
+      }
+    }
+    return fatigues;
+  }
 
   // ── Estimated total + DOTS/Wilks ─────────────────────────────────────────
   const estTotal = (compLifts.squat?.bestE1rm || 0) + (compLifts.bench?.bestE1rm || 0) + (compLifts.deadlift?.bestE1rm || 0);
@@ -7235,7 +7384,7 @@ function exportHTMLReport(blockId, scope) {
 
   const weekLabels = weeks.map(w => w.label);
 
-  // Find peak week (highest combined e1RM across all 3 families)
+  // Find peak week
   let peakWeekLabel = null, peakWeekTotal = 0;
   for (const wl of weekLabels) {
     const s = getWeeklyTopSet('squat', wl)?.e1rm || 0;
@@ -7245,38 +7394,82 @@ function exportHTMLReport(blockId, scope) {
     if (total > peakWeekTotal) { peakWeekTotal = total; peakWeekLabel = wl; }
   }
 
-  // ── Rep completion — hide if < 20% of checked sets have overrides ────────
-  const showRepCompletion = checkedSetCount > 0 && (overrideCount / checkedSetCount) >= 0.2;
-  const repCompletionPct = prescribedRepsTotal > 0 ? Math.round(actualRepsTotal / prescribedRepsTotal * 100) : 0;
-
   // ── BUILD HTML ───────────────────────────────────────────────────────────
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const athleteName = block.athleteName || athlete?.name || '';
 
-  // ── Comp lift cards HTML ─────────────────────────────────────────────────
+  // ── Comp lift cards HTML (with sparklines + trend) ───────────────────────
   const liftCardColors = { squat: '#C9A84C', bench: '#7B9FD4', deadlift: '#7EC89A' };
   const liftCardLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
+  const sparkCanvasIds = {};
   let compCardsHtml = '';
   for (const gk of ['squat', 'bench', 'deadlift']) {
     const cl = compLifts[gk];
     const color = liftCardColors[gk];
     const label = liftCardLabels[gk];
     if (!cl) {
-      compCardsHtml += `<div class="comp-card"><div class="comp-card-border" style="background:${color}"></div><div class="comp-card-label">${label}</div><div class="comp-card-val">—</div></div>`;
+      compCardsHtml += `<div class="comp-card"><div class="comp-card-accent" style="background:${color}"></div><div class="comp-card-label">${label}</div><div class="comp-card-val">\u2014</div></div>`;
       continue;
     }
     const deltaSign = cl.delta > 0 ? '+' : cl.delta < 0 ? '' : '';
     const deltaColor = cl.delta > 0 ? '#4ade80' : cl.delta < 0 ? '#E22C2C' : '#555';
-    const deltaArrow = cl.delta > 0 ? '↑' : cl.delta < 0 ? '↓' : '→';
+    const deltaArrow = cl.delta > 0 ? '\u2191' : cl.delta < 0 ? '\u2193' : '\u2192';
+    const sparkId = 'spark-' + gk;
+    sparkCanvasIds[gk] = sparkId;
+    const trend = classifyTrend(cl);
     compCardsHtml += `<div class="comp-card">
-      <div class="comp-card-border" style="background:${color}"></div>
+      <div class="comp-card-accent" style="background:${color}"></div>
       <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:9px;color:#777;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> lbs</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} lbs</div>
+      <div class="comp-card-sparkline"><canvas id="${sparkId}"></canvas></div>
       <div class="comp-card-divider"></div>
       <div class="comp-card-best-label">Best Set</div>
-      <div class="comp-card-best">${cl.bestWeight}×${cl.bestReps}${cl.bestRpe ? ' @' + cl.bestRpe : ''}</div>
+      <div class="comp-card-best">${cl.bestWeight}\u00d7${cl.bestReps}${cl.bestRpe ? ' @' + cl.bestRpe : ''}</div>
+      <div class="comp-card-trend">
+        <div class="comp-card-trend-dot ${trend.color}"></div>
+        <div class="comp-card-trend-text">${trend.text}</div>
+      </div>
     </div>`;
+  }
+
+  // ── Flags HTML (per-lift + general) ─────────────────────────────────────
+  const allFlags = {};
+  for (const gk of ['squat', 'bench', 'deadlift']) {
+    allFlags[gk] = generateFlags(gk, compLifts[gk]);
+  }
+  // General flags
+  const generalFlags = [];
+  if (compliancePct >= 85) {
+    generalFlags.push({ color: 'green', text: `${compliancePct}% compliance \u2014 ${completedDays} of ${totalDays} prescribed sessions completed` });
+  } else if (compliancePct >= 70) {
+    generalFlags.push({ color: 'amber', text: `${compliancePct}% compliance \u2014 ${completedDays} of ${totalDays} sessions. Consider adherence check-in` });
+  } else if (totalDays > 0) {
+    generalFlags.push({ color: 'red', text: `${compliancePct}% compliance \u2014 only ${completedDays} of ${totalDays} sessions completed` });
+  }
+
+  const hasAnyFlags = Object.values(allFlags).some(f => f.length > 0) || generalFlags.length > 0;
+  let flagsHtml = '';
+  if (hasAnyFlags) {
+    flagsHtml = '<div class="flags-section"><div class="section-title">Flags &amp; Insights</div>';
+    for (const [gk, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+      const flags = allFlags[gk];
+      if (!flags || !flags.length) continue;
+      const color = liftCardColors[gk];
+      flagsHtml += `<div class="flags-group"><div class="flags-group-label"><span class="flags-group-accent" style="background:${color}"></span><span style="color:${color}">${label}</span></div>`;
+      for (const f of flags) {
+        flagsHtml += `<div class="flag-row"><div class="flag-dot ${f.color}"></div><div class="flag-text">${f.text}</div></div>`;
+      }
+      flagsHtml += '</div>';
+    }
+    if (generalFlags.length) {
+      flagsHtml += '<div class="flags-group"><div class="flags-group-label"><span class="flags-group-accent" style="background:#555"></span><span style="color:#999">General</span></div>';
+      for (const f of generalFlags) {
+        flagsHtml += `<div class="flag-row"><div class="flag-dot ${f.color}"></div><div class="flag-text">${f.text}</div></div>`;
+      }
+      flagsHtml += '</div>';
+    }
+    flagsHtml += '</div>';
   }
 
   // ── Weekly top sets table HTML ───────────────────────────────────────────
@@ -7290,15 +7483,15 @@ function exportHTMLReport(blockId, scope) {
       if (ts) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
         const varLabel = ts.isVariation ? `<div style="font-size:8px;color:#666;margin-top:1px">${ts.exName}</div>` : '';
-        cells += `<td>${ts.topWeight}×${ts.topReps}${rpeStr}${varLabel}</td>`;
+        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${varLabel}</td>`;
       } else {
-        cells += '<td class="no-data">—</td>';
+        cells += '<td class="no-data">\u2014</td>';
       }
     }
     weeklyTableHtml += `<tr${rowClass}>${cells}</tr>`;
   }
 
-  // ── Volume chart data ────────────────────────────────────────────────────
+  // ── Volume + RPE chart data ──────────────────────────────────────────────
   const volChartLabels = weekLabels;
   const volChartData = {
     squat: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.squat || 0) / 1000)),
@@ -7306,161 +7499,10 @@ function exportHTMLReport(blockId, scope) {
     deadlift: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.deadlift || 0) / 1000)),
     other: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.other || 0) / 1000))
   };
-
-  // ── Stat pills HTML ─────────────────────────────────────────────────────
-  const totalPrescribed = (() => {
-    let t = 0;
-    for (const week of weeks) for (const day of (week.days || [])) for (const ex of (day.exercises || [])) {
-      const sets = parseSets(ex.prescription);
-      t += sets.length || 0;
-    }
-    return t;
-  })();
-
-  // ── Intensity distribution HTML ──────────────────────────────────────────
-  const rpeBucketColors = { '9+': '#E22C2C', '8': '#C9A84C', '7': '#C9A84C', '6': '#7B9FD4', '<=5': '#555' };
-  let intensityHtml = '';
-  if (rpeCount > 0) {
-    intensityHtml = '<div class="section-card"><div class="section-title">Intensity Distribution</div>';
-    for (const [label, count] of Object.entries(rpeBuckets)) {
-      const pct = Math.round(count / rpeCount * 100);
-      const displayLabel = label === '<=5' ? '≤ RPE 5' : `RPE ${label}`;
-      intensityHtml += `<div class="intensity-row">
-        <div class="intensity-label">${displayLabel}</div>
-        <div class="intensity-bar-wrap"><div class="intensity-bar-fill" style="width:${pct}%;background:${rpeBucketColors[label]}"></div></div>
-        <div class="intensity-pct">${pct}%</div>
-      </div>`;
-    }
-    intensityHtml += '</div>';
-  }
-
-  // ── Rep completion HTML ──────────────────────────────────────────────────
-  let repCompletionHtml = '';
-  if (showRepCompletion) {
-    repCompletionHtml = `<div class="section-card">
-      <div class="section-title">Rep Completion</div>
-      <div class="rep-overall">${repCompletionPct}<span class="rep-overall-pct">%</span></div>
-      <div class="rep-overall-label">of prescribed reps completed</div>`;
-    for (const [gk, label, color] of [['squat','Squat','#C9A84C'],['bench','Bench','#7B9FD4'],['deadlift','Deadlift','#7EC89A']]) {
-      const fd = repsByFamily[gk];
-      const pct = fd.prescribed > 0 ? Math.round(fd.actual / fd.prescribed * 100) : 0;
-      repCompletionHtml += `<div class="intensity-row">
-        <div class="intensity-label">${label}</div>
-        <div class="intensity-bar-wrap"><div class="intensity-bar-fill" style="width:${Math.min(pct, 100)}%;background:${color}"></div></div>
-        <div class="intensity-pct">${pct}%</div>
-      </div>`;
-    }
-    repCompletionHtml += '</div>';
-  }
-
-  // ── Page 2: Lift Progressions ────────────────────────────────────────────
-  const chartInits = [];
-  let progressionHtml = '';
-  if (scope === 'full') {
-    for (const [groupKey, groupLabel] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-      const exercises = families[groupKey];
-      const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
-      if (!exNames.length) continue;
-
-      const allWeekLabels = [...new Set(
-        exNames.flatMap(n => Object.keys(exercises[n]))
-      )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
-
-      // Prefer comp lift e1RM for the badge; fall back to best variation
-      const compExNames = exNames.filter(n => isCompLift(n));
-      const badgeSource = compExNames.length ? compExNames : exNames;
-      const bestE1rm = Math.max(...badgeSource.flatMap(n =>
-        Object.values(exercises[n]).map(w => w.e1rm)
-      ));
-
-      const chartId = 'chart_' + groupKey;
-      const datasets = exNames.map((n, i) => {
-        const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
-        const isComp = isCompLift(n);
-        const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
-        return {
-          label: n, data,
-          borderColor: color, backgroundColor: 'transparent', fill: false,
-          pointBackgroundColor: color,
-          pointBorderColor: tv('--bg') || '#0a0a0a',
-          pointBorderWidth: 1.5,
-          pointRadius: isComp ? 4 : 3, pointHoverRadius: 6,
-          tension: 0.3, spanGaps: true,
-          borderWidth: isComp ? 2.5 : 1.5,
-          borderDash: isComp ? [] : [],
-          order: isComp ? 0 : 1
-        };
-      });
-      chartInits.push({ id: chartId, labels: allWeekLabels, datasets });
-
-      let varListHtml = exNames.map((n, i) => {
-        const color = FAMILY_COLORS[i % FAMILY_COLORS.length];
-        const peakE1rm = Math.max(...Object.values(exercises[n]).map(w => w.e1rm));
-        return `<div class="prog-var-row"><span class="prog-var-dot" style="background:${color}"></span><span class="prog-var-name">${n}</span><span class="prog-var-peak">${Math.round(peakE1rm)} lbs</span></div>`;
-      }).join('');
-
-      const badgeLabel = compExNames.length ? '' : ` (${badgeSource[0]})`;
-      progressionHtml += `<div class="prog-card">
-        <div class="prog-header">
-          <span class="prog-label">${groupLabel.toUpperCase()}</span>
-          <span class="prog-e1rm-badge">${Math.round(bestE1rm)} lbs e1RM${badgeLabel}</span>
-        </div>
-        <div class="prog-chart-wrap"><canvas id="${chartId}"></canvas></div>
-        <div class="prog-var-list">${varListHtml}</div>
-      </div>`;
-    }
-  }
-
-  // ── Chart.js init scripts ────────────────────────────────────────────────
-  const volChartScript = `
-  new Chart(document.getElementById('volChart'), {
-    type: 'bar',
-    data: {
-      labels: ${JSON.stringify(volChartLabels)},
-      datasets: [
-        { label:'Squat', data:${JSON.stringify(volChartData.squat)}, backgroundColor:'#C9A84C', borderRadius:2 },
-        { label:'Bench', data:${JSON.stringify(volChartData.bench)}, backgroundColor:'#7B9FD4', borderRadius:2 },
-        { label:'Deadlift', data:${JSON.stringify(volChartData.deadlift)}, backgroundColor:'#7EC89A', borderRadius:2 },
-        { label:'Other', data:${JSON.stringify(volChartData.other)}, backgroundColor:'#555', borderRadius:2 }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'${tv('--surface-2')||'#141414'}', borderColor:'${tv('--border')||'#222'}', borderWidth:1,
-          titleColor:'#888', bodyColor:'#ccc', padding:8,
-          callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + 'k lbs' }
-        }
-      },
-      scales:{
-        x:{stacked:true, ticks:{color:'#555',font:{family:'Barlow Condensed',size:10}}, grid:{display:false}, border:{display:false}},
-        y:{stacked:true, ticks:{color:'#444',font:{family:'Barlow Condensed',size:10}, callback:v=>v+'k'}, grid:{color:'${tv('--surface-3')||'#1a1a1a'}'}, border:{display:false}}
-      }
-    }
-  });`;
-
-  const lineChartScripts = chartInits.map(c => `
-  new Chart(document.getElementById('${c.id}'), {
-    type: 'line',
-    data: { labels: ${JSON.stringify(c.labels)}, datasets: ${JSON.stringify(c.datasets)} },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'${tv('--surface-2')||'#141414'}', borderColor:'${tv('--border')||'#222'}', borderWidth:1,
-          titleColor:'#888', bodyColor:'#ccc', padding:8,
-          callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' lbs' }
-        }
-      },
-      scales:{
-        x:{ticks:{color:'#555',font:{family:'Barlow Condensed',size:10}}, grid:{color:'${tv('--surface-3')||'#1a1a1a'}'}, border:{color:'${tv('--surface-3')||'#1a1a1a'}'}},
-        y:{ticks:{color:'#444',font:{family:'Barlow Condensed',size:10}}, grid:{color:'${tv('--surface-3')||'#1a1a1a'}'}, border:{color:'${tv('--surface-3')||'#1a1a1a'}'}}
-      }
-    }
-  });`).join('\n');
+  const weeklyAvgRpe = weekLabels.map(wl => {
+    const d = rpeByWeek[wl];
+    return d && d.count > 0 ? +(d.total / d.count).toFixed(1) : null;
+  });
 
   // ── Estimated total card HTML ────────────────────────────────────────────
   let estTotalHtml = '';
@@ -7472,18 +7514,208 @@ function exportHTMLReport(blockId, scope) {
         ${athlete?.bodyweight ? `<div class="est-total-bw">${athlete.bodyweight} ${athlete.bwUnit || 'lbs'} BW</div>` : ''}
       </div>` : '';
     estTotalHtml = `<div class="est-total-card">
-      <div class="est-total-left">
+      <div>
         <div class="est-total-label">Estimated Total</div>
-        <div class="est-total-val">${estTotal}<span class="est-total-unit"> lbs</span></div>
+        <div class="est-total-val">${estTotal.toLocaleString()}<span class="est-total-unit"> lbs</span></div>
       </div>
       ${rightSide}
     </div>`;
   }
 
-  // ── Volume legend ────────────────────────────────────────────────────────
+  // ── Volume + RPE legend ─────────────────────────────────────────────────
   const volLegendHtml = [['Squat','#C9A84C'],['Bench','#7B9FD4'],['Deadlift','#7EC89A'],['Other','#555']].map(([l,c]) =>
     `<span class="vol-legend-item"><span class="vol-legend-dot" style="background:${c}"></span>${l}</span>`
-  ).join('');
+  ).join('') + (rpeCount > 0 ? '<span class="vol-legend-item"><span class="vol-legend-dot" style="background:#E22C2C;border-radius:50%"></span>Avg RPE</span>' : '');
+
+  // ── Compact 3-up progression charts ─────────────────────────────────────
+  const progChartInits = [];
+  let progressionHtml = '<div class="progression-grid">';
+  for (const [groupKey, groupLabel] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const exercises = families[groupKey];
+    const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
+    if (!exNames.length) {
+      progressionHtml += `<div class="prog-mini"><div class="prog-mini-label">${groupLabel}</div><div style="padding:20px 0;text-align:center;color:#444;font-size:10px">No data</div></div>`;
+      continue;
+    }
+
+    const allWeekLabels = [...new Set(
+      exNames.flatMap(n => Object.keys(exercises[n]))
+    )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
+
+    // Sort: comp lifts first, then variations by best e1RM
+    const sortedExNames = [...exNames].sort((a, b) => {
+      const aComp = isCompLift(a) ? 0 : 1;
+      const bComp = isCompLift(b) ? 0 : 1;
+      if (aComp !== bComp) return aComp - bComp;
+      const aMax = Math.max(...Object.values(exercises[a]).map(w => w.e1rm));
+      const bMax = Math.max(...Object.values(exercises[b]).map(w => w.e1rm));
+      return bMax - aMax;
+    });
+    // Show top 3 variations max for compact view
+    const displayExNames = sortedExNames.slice(0, 3);
+
+    const chartId = 'prog_' + groupKey;
+    const datasets = displayExNames.map((n, i) => {
+      const isComp = isCompLift(n);
+      const color = isComp ? liftCardColors[groupKey] : FAMILY_COLORS[(i + 1) % FAMILY_COLORS.length];
+      const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
+      return {
+        label: n, data,
+        borderColor: color, backgroundColor: 'transparent',
+        pointBackgroundColor: color, pointBorderColor: tv('--bg') || '#0a0a0a', pointBorderWidth: 1,
+        borderWidth: isComp ? 2 : 1.5,
+        borderDash: isComp ? [] : [4, 3],
+        tension: 0.3, spanGaps: true, pointRadius: 2
+      };
+    });
+    progChartInits.push({ id: chartId, labels: allWeekLabels, datasets });
+
+    let varListHtml = displayExNames.map((n, i) => {
+      const isComp = isCompLift(n);
+      const color = isComp ? liftCardColors[groupKey] : FAMILY_COLORS[(i + 1) % FAMILY_COLORS.length];
+      const peakE1rm = Math.max(...Object.values(exercises[n]).map(w => w.e1rm));
+      return `<div class="prog-mini-var"><span class="prog-mini-var-dot" style="background:${color}"></span><span class="prog-mini-var-name">${n}</span><span class="prog-mini-var-val">${Math.round(peakE1rm)}</span></div>`;
+    }).join('');
+
+    progressionHtml += `<div class="prog-mini">
+      <div class="prog-mini-label">${groupLabel}</div>
+      <div class="prog-mini-chart"><canvas id="${chartId}"></canvas></div>
+      <div class="prog-mini-vars">${varListHtml}</div>
+    </div>`;
+  }
+  progressionHtml += '</div>';
+
+  // ── Sparkline init script ────────────────────────────────────────────────
+  const sparkScript = `
+function drawSparkline(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  // Filter nulls for drawing but keep positions
+  const validData = data.map((v, i) => v !== null ? { i, v } : null).filter(Boolean);
+  if (validData.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height, pad = 4;
+  const min = Math.min(...validData.map(d => d.v)) - 5;
+  const max = Math.max(...validData.map(d => d.v)) + 5;
+  const range = max - min || 1;
+  const total = data.length;
+  function getX(i) { return pad + (i / (total - 1)) * (w - pad * 2); }
+  function getY(v) { return h - pad - ((v - min) / range) * (h - pad * 2); }
+  // Fill gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, color + '30');
+  grad.addColorStop(1, color + '00');
+  ctx.beginPath();
+  ctx.moveTo(getX(validData[0].i), h);
+  for (const d of validData) ctx.lineTo(getX(d.i), getY(d.v));
+  ctx.lineTo(getX(validData[validData.length - 1].i), h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Line
+  ctx.beginPath();
+  for (let j = 0; j < validData.length; j++) {
+    const d = validData[j];
+    if (j === 0) ctx.moveTo(getX(d.i), getY(d.v));
+    else ctx.lineTo(getX(d.i), getY(d.v));
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  // End dot
+  const last = validData[validData.length - 1];
+  ctx.beginPath();
+  ctx.arc(getX(last.i), getY(last.v), 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+`;
+
+  // Build sparkline calls
+  let sparkCalls = '';
+  for (const gk of ['squat', 'bench', 'deadlift']) {
+    const cl = compLifts[gk];
+    if (cl && sparkCanvasIds[gk]) {
+      sparkCalls += `drawSparkline('${sparkCanvasIds[gk]}', ${JSON.stringify(cl.e1rmByWeek)}, '${liftCardColors[gk]}');\n`;
+    }
+  }
+
+  // ── Volume + RPE dual-axis chart script ──────────────────────────────────
+  const hasRpeData = weeklyAvgRpe.some(v => v !== null);
+  const volChartScript = `
+  new Chart(document.getElementById('volRpeChart'), {
+    type: 'bar',
+    data: {
+      labels: ${JSON.stringify(volChartLabels)},
+      datasets: [
+        { label:'Squat', data:${JSON.stringify(volChartData.squat)}, backgroundColor:'#C9A84C', borderRadius:2, order:2 },
+        { label:'Bench', data:${JSON.stringify(volChartData.bench)}, backgroundColor:'#7B9FD4', borderRadius:2, order:2 },
+        { label:'Deadlift', data:${JSON.stringify(volChartData.deadlift)}, backgroundColor:'#7EC89A', borderRadius:2, order:2 },
+        { label:'Other', data:${JSON.stringify(volChartData.other)}, backgroundColor:'#555', borderRadius:2, order:2 }
+        ${hasRpeData ? `,{
+          label:'Avg RPE', type:'line',
+          data:${JSON.stringify(weeklyAvgRpe)},
+          borderColor:'#E22C2C', backgroundColor:'transparent',
+          pointBackgroundColor:'#E22C2C', pointBorderColor:'#0a0a0a', pointBorderWidth:1.5,
+          pointRadius:3, borderWidth:2, tension:0.3, spanGaps:true,
+          yAxisID:'rpe', order:1
+        }` : ''}
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#141414', borderColor:'#222', borderWidth:1,
+          titleColor:'#888', bodyColor:'#ccc', padding:8,
+          callbacks:{
+            label: ctx => {
+              if (ctx.dataset.label === 'Avg RPE') return 'RPE: ' + ctx.parsed.y;
+              return ctx.dataset.label + ': ' + ctx.parsed.y + 'k lbs';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{stacked:true, ticks:{color:'#555',font:{family:'Barlow Condensed',size:10}}, grid:{display:false}, border:{display:false}},
+        y:{stacked:true, position:'left', ticks:{color:'#444',font:{family:'Barlow Condensed',size:10}, callback:v=>v+'k'}, grid:{color:'#1a1a1a'}, border:{display:false}}
+        ${hasRpeData ? `,rpe:{
+          position:'right', min:5, max:10,
+          ticks:{color:'#E22C2C50',font:{family:'Barlow Condensed',size:9}, callback:v=>v.toFixed(0), stepSize:1},
+          grid:{display:false}, border:{display:false}
+        }` : ''}
+      }
+    }
+  });`;
+
+  // ── Mini progression chart scripts ──────────────────────────────────────
+  const miniProgScripts = progChartInits.map(c => `
+  new Chart(document.getElementById('${c.id}'), {
+    type: 'line',
+    data: { labels: ${JSON.stringify(c.labels)}, datasets: ${JSON.stringify(c.datasets)} },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#141414', borderColor:'#222', borderWidth:1,
+          titleColor:'#888', bodyColor:'#ccc', padding:6, bodyFont:{size:10},
+          callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y }
+        }
+      },
+      scales:{ x:{display:false}, y:{display:false} },
+      elements:{point:{radius:2,hoverRadius:4}}
+    }
+  });`).join('\n');
 
   // ══════════════════════════════════════════════════════════════════════════
   // FINAL HTML
@@ -7503,16 +7735,19 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .report{max-width:480px;margin:0 auto;padding:24px 16px 80px}
 
 /* Header */
-.rpt-hdr{margin-bottom:20px}
+.rpt-hdr{margin-bottom:18px}
 .rpt-brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#C9A84C;text-transform:uppercase;margin-bottom:8px}
 .rpt-athlete{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;line-height:1;letter-spacing:.02em;text-transform:uppercase;margin-bottom:2px}
 .rpt-block{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#C9A84C;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-.rpt-meta{font-size:12px;color:${tv('--text-faint')||'#666'};display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.rpt-meta{font-size:12px;color:${tv('--text-faint')||'#666'};display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .rpt-meta span+span::before{content:'·';margin-right:6px}
-.compliance-row{display:flex;align-items:center;gap:10px}
-.compliance-track{flex:1;height:4px;background:${tv('--surface-3')||'#1a1a1a'};border-radius:2px}
-.compliance-fill{height:100%;background:#4ade80;border-radius:2px}
-.compliance-label{font-size:11px;color:${tv('--text-faint')||'#666'};white-space:nowrap}
+
+/* Stats Strip */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.strip-stat{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:8px;padding:8px;text-align:center}
+.strip-stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;line-height:1;margin-bottom:1px}
+.strip-stat-sub{font-size:10px;font-weight:500;color:${tv('--text-faint')||'#666'}}
+.strip-stat-label{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'}}
 
 /* Estimated Total */
 .est-total-card{display:flex;justify-content:space-between;align-items:center;background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px 16px;margin-bottom:12px}
@@ -7526,20 +7761,59 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .est-total-bw{font-size:10px;color:${tv('--text-dim')||'#555'};margin-top:2px}
 
 /* Comp lift cards */
-.comp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.comp-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:12px 10px;position:relative;overflow:hidden}
-.comp-card-border{height:3px;border-radius:2px;margin-bottom:8px}
-.comp-card-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
-.comp-card-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:24px;line-height:1;margin-bottom:2px}
-.comp-card-unit{font-size:12px;font-weight:600;color:${tv('--text-faint')||'#666'}}
-.comp-card-delta{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;margin-bottom:6px}
-.comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:6px}
-.comp-card-best-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:1px}
-.comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;color:${tv('--text-faint')||'#888'}}
+.comp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.comp-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px 10px 8px;position:relative;overflow:hidden}
+.comp-card-accent{height:3px;border-radius:2px;margin-bottom:6px}
+.comp-card-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
+.comp-card-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;line-height:1;margin-bottom:1px}
+.comp-card-unit{font-size:11px;font-weight:600;color:${tv('--text-faint')||'#666'}}
+.comp-card-delta{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;margin-bottom:4px}
+.comp-card-sparkline{height:28px;margin:0 -4px 4px}
+.comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:5px}
+.comp-card-best-label{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${tv('--text-dim')||'#444'};margin-bottom:1px}
+.comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:${tv('--text-faint')||'#888'};margin-bottom:6px}
+.comp-card-trend{display:flex;align-items:center;gap:5px;padding:5px 0 0;border-top:1px solid ${tv('--surface-3')||'#1a1a1a'}}
+.comp-card-trend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.comp-card-trend-dot.green{background:#4ade80}
+.comp-card-trend-dot.gold{background:#C9A84C}
+.comp-card-trend-dot.amber{background:#F59E0B}
+.comp-card-trend-dot.red{background:#E22C2C}
+.comp-card-trend-text{font-size:9px;color:${tv('--text-faint')||'#888'};line-height:1.2}
 
-/* Weekly top sets */
+/* Flags */
+.flags-section{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:12px}
+.flags-group{margin-bottom:10px}
+.flags-group:last-child{margin-bottom:0}
+.flags-group-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.flags-group-accent{width:12px;height:3px;border-radius:2px}
+.flag-row{display:flex;align-items:flex-start;gap:6px;padding:3px 0;margin-left:18px}
+.flag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.flag-dot.amber{background:#F59E0B}
+.flag-dot.red{background:#E22C2C}
+.flag-dot.green{background:#4ade80}
+.flag-dot.gold{background:#C9A84C}
+.flag-text{font-size:11px;color:${tv('--text-faint')||'#888'};line-height:1.3}
+
+/* Section cards */
 .section-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:12px}
 .section-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:10px}
+.vol-legend{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.vol-legend-item{display:flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;color:${tv('--text-faint')||'#666'};letter-spacing:.04em}
+.vol-legend-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.vol-chart-wrap{height:170px}
+
+/* Block Progression (compact 3-up) */
+.progression-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.prog-mini{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;overflow:hidden}
+.prog-mini-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:6px}
+.prog-mini-chart{height:100px;margin:0 -4px}
+.prog-mini-vars{margin-top:6px;border-top:1px solid ${tv('--surface-3')||'#1a1a1a'};padding-top:6px}
+.prog-mini-var{display:flex;align-items:center;gap:4px;padding:1px 0}
+.prog-mini-var-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.prog-mini-var-name{font-size:9px;color:${tv('--text-faint')||'#666'};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog-mini-var-val{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;color:${tv('--text-faint')||'#888'}}
+
+/* Weekly top sets */
 .weekly-table{width:100%;border-collapse:collapse;font-size:11px}
 .weekly-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};padding:4px 6px;text-align:left;border-bottom:1px solid ${tv('--border')||'#222'}}
 .weekly-table td{padding:5px 6px;color:${tv('--text-faint')||'#888'};font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:500;border-bottom:1px solid ${tv('--surface-1')||'#111'}}
@@ -7548,42 +7822,6 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .weekly-table .rpe-dim{font-size:10px;color:${tv('--text-dim')||'#555'}}
 .weekly-table tr.peak-week td{color:#C9A84C}
 .weekly-table tr.peak-week .rpe-dim{color:rgba(201,168,76,.6)}
-
-/* Volume chart */
-.vol-legend{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap}
-.vol-legend-item{display:flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;color:${tv('--text-faint')||'#666'};letter-spacing:.04em}
-.vol-legend-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
-.vol-chart-wrap{height:160px}
-
-/* Stats grid */
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.stat-pill{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px 12px}
-.stat-pill-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
-.stat-pill-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;line-height:1}
-.stat-pill-sub{font-size:11px;font-weight:500;color:${tv('--text-faint')||'#666'}}
-
-/* Intensity + rep completion */
-.intensity-row{display:flex;align-items:center;gap:8px;padding:4px 0}
-.intensity-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${tv('--text-faint')||'#888'};width:54px;flex-shrink:0}
-.intensity-bar-wrap{flex:1;height:6px;background:${tv('--surface-3')||'#1a1a1a'};border-radius:3px;overflow:hidden}
-.intensity-bar-fill{height:100%;border-radius:3px;transition:width .3s}
-.intensity-pct{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${tv('--text-dim')||'#555'};width:32px;text-align:right;flex-shrink:0}
-.rep-overall{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:40px;color:#4ade80;line-height:1;margin-bottom:2px}
-.rep-overall-pct{font-size:20px;font-weight:700}
-.rep-overall-label{font-size:11px;color:${tv('--text-faint')||'#666'};margin-bottom:10px}
-
-/* Page 2 — Progressions */
-.page-2{${scope === 'full' ? 'page-break-before:always;padding-top:20px' : 'display:none'}}
-.prog-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;overflow:hidden;margin-bottom:14px}
-.prog-header{display:flex;justify-content:space-between;align-items:center;padding:14px 14px 0}
-.prog-label{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:.02em;text-transform:uppercase}
-.prog-e1rm-badge{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#C9A84C;background:rgba(201,168,76,.1);padding:3px 8px;border-radius:6px}
-.prog-chart-wrap{height:180px;padding:8px 10px}
-.prog-var-list{padding:8px 14px 12px;border-top:1px solid ${tv('--border')||'#222'}}
-.prog-var-row{display:flex;align-items:center;gap:6px;padding:3px 0}
-.prog-var-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.prog-var-name{font-size:12px;color:${tv('--text-faint')||'#888'};flex:1}
-.prog-var-peak{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:${tv('--text-sub')||'#aaa'}}
 
 /* Footer */
 .rpt-footer{margin-top:16px;font-size:10px;color:${tv('--text-dim')||'#444'};display:flex;justify-content:space-between}
@@ -7597,8 +7835,8 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .report{padding:10px;max-width:100%}
   html,body{background:${tv('--bg')||'#0a0a0a'}}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .comp-card,.section-card,.stat-pill,.prog-card{break-inside:avoid}
-  .vol-chart-wrap,.prog-chart-wrap{break-inside:avoid}
+  .comp-card,.section-card,.prog-mini,.flags-section{break-inside:avoid}
+  .vol-chart-wrap,.prog-mini-chart{break-inside:avoid}
   @page{size:portrait;margin:8mm}
 }
 </style>
@@ -7616,9 +7854,25 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
       <span>${weeks.length} weeks</span>
       <span>${completedDays} sessions</span>
     </div>
-    <div class="compliance-row">
-      <div class="compliance-track"><div class="compliance-fill" style="width:${compliancePct}%"></div></div>
-      <div class="compliance-label">${compliancePct}% compliance</div>
+  </div>
+
+  <!-- Stats Strip -->
+  <div class="stats-strip">
+    <div class="strip-stat">
+      <div class="strip-stat-val">${compliancePct}<span class="strip-stat-sub">%</span></div>
+      <div class="strip-stat-label">Compliance</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-stat-val">${totalVolume >= 1000000 ? Math.round(totalVolume/1000) + 'k' : totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}</div>
+      <div class="strip-stat-label">Volume (lbs)</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-stat-val">${avgRpe}</div>
+      <div class="strip-stat-label">Avg RPE</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-stat-val">${totalSets}</div>
+      <div class="strip-stat-label">Sets Done</div>
     </div>
   </div>
 
@@ -7627,6 +7881,19 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
   <!-- Comp Lift Cards -->
   <div class="comp-cards">${compCardsHtml}</div>
+
+  <!-- Flags & Insights -->
+  ${flagsHtml}
+
+  <!-- Volume & RPE Trend -->
+  <div class="section-card">
+    <div class="section-title">Volume &amp; RPE Trend</div>
+    <div class="vol-legend">${volLegendHtml}</div>
+    <div class="vol-chart-wrap"><canvas id="volRpeChart"></canvas></div>
+  </div>
+
+  <!-- E1RM Progression Charts -->
+  ${progressionHtml}
 
   <!-- Weekly Top Sets -->
   <div class="section-card">
@@ -7637,59 +7904,19 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
     </table>
   </div>
 
-  <!-- Volume by Lift Family -->
-  <div class="section-card">
-    <div class="section-title">Volume by Lift Family</div>
-    <div class="vol-legend">${volLegendHtml}</div>
-    <div class="vol-chart-wrap"><canvas id="volChart"></canvas></div>
-  </div>
-
-  <!-- Stats -->
-  <div class="stats-grid">
-    <div class="stat-pill">
-      <div class="stat-pill-label">Total Volume</div>
-      <div class="stat-pill-val">${totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}<span class="stat-pill-sub"> lbs</span></div>
-    </div>
-    <div class="stat-pill">
-      <div class="stat-pill-label">Sets Completed</div>
-      <div class="stat-pill-val">${totalSets}${totalPrescribed ? '<span class="stat-pill-sub"> of ' + totalPrescribed + '</span>' : ''}</div>
-    </div>
-    <div class="stat-pill">
-      <div class="stat-pill-label">Avg RPE</div>
-      <div class="stat-pill-val">${avgRpe}</div>
-    </div>
-    <div class="stat-pill">
-      <div class="stat-pill-label">Training Days</div>
-      <div class="stat-pill-val">${completedDays}<span class="stat-pill-sub"> / ${totalDays}</span></div>
-    </div>
-  </div>
-
-  <!-- Intensity Distribution -->
-  ${intensityHtml}
-
-  <!-- Rep Completion -->
-  ${repCompletionHtml}
-
-  <!-- Footer P1 -->
+  <!-- Footer -->
   <div class="rpt-footer">
     <span>UNRACK</span>
     <span>${dateStr}</span>
   </div>
 
-  <!-- Page 2: Lift Progressions -->
-  <div class="page-2">
-    ${progressionHtml}
-    <div class="rpt-footer">
-      <span>UNRACK</span>
-      <span>${dateStr}</span>
-    </div>
-  </div>
-
 </div>
 <button class="save-btn" onclick="setTimeout(()=>window.print(),300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save as PDF</button>
 <script>
+${sparkScript}
+${sparkCalls}
 ${volChartScript}
-${lineChartScripts}
+${miniProgScripts}
 <\/script>
 </body>
 </html>`;
