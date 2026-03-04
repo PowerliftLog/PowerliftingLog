@@ -265,6 +265,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .rest-dur-value { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); min-width: 44px; text-align: center; }
 .rest-trigger-btn { margin-left: auto; display: flex; align-items: center; gap: 5px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
 .rest-trigger-btn:active { background: rgba(201,168,76,0.2); }
+.ex-unit-toggle { display: inline-flex; gap: 2px; margin-left: auto; flex-shrink: 0; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 6px; padding: 2px; }
+.ex-unit-toggle-btn { padding: 3px 8px; border-radius: 4px; border: none; background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: all 0.15s; line-height: 1; }
+.ex-unit-toggle-btn.active { background: var(--gold); color: #1a1a1a; }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin: 18px 0 8px; }
 .settings-section-label:first-of-type { margin-top: 0; }
 .settings-athlete-form { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px; margin-bottom: 6px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; flex-direction: column; gap: 12px; }
@@ -1610,7 +1613,15 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         </div>
       </div>
       <div class="settings-athlete-row">
-        <div class="settings-athlete-label" style="margin-bottom:6px">Current 1RM (lbs)</div>
+        <div class="settings-athlete-label">Weight Unit</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Unit used when logging your lifts</div>
+        <div class="settings-athlete-gender">
+          <button class="settings-athlete-gender-btn" id="ap-weight-lbs" onclick="setApWeightUnit('lbs')">LBS</button>
+          <button class="settings-athlete-gender-btn" id="ap-weight-kg" onclick="setApWeightUnit('kg')">KG</button>
+        </div>
+      </div>
+      <div class="settings-athlete-row">
+        <div class="settings-athlete-label" style="margin-bottom:6px" id="ap-1rm-label">Current 1RM (lbs)</div>
         <div style="display:flex;gap:8px">
           <div style="flex:1;text-align:center">
             <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Squat</div>
@@ -2154,16 +2165,18 @@ function buildMetrics(drillBlockId){
     if(!setIdx.startsWith('s')) continue;
 
     const setIdxNum=parseInt(setIdx.slice(1));
-    let weight=null;
-    if(val.actual){ weight=parseFloat(val.actual); }
+    let weight=null, weightUnit=getDisplayUnit();
+    if(val.actual){ weight=parseFloat(val.actual); weightUnit=getEntryUnit(val); }
     else if(val.done){ weight=getPrescribedWeight(parts[0],parts[1],parts[2],parts[3],setIdxNum); }
     if(!weight||isNaN(weight)||weight<=0) continue;
+    // Convert to display unit so all e1rm values are comparable
+    const dispWeight=convertWeight(weight,weightUnit,getDisplayUnit());
 
     const reps=val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0],parts[1],parts[2],parts[3],setIdxNum);
     if(!reps) continue;
 
     const rpe=val.rpe?parseFloat(val.rpe):null;
-    const result=calc1rm(weight,reps,rpe);
+    const result=calc1rm(dispWeight,reps,rpe);
     if(!result) continue;
 
     const group=classifyLift(exName);
@@ -2179,10 +2192,10 @@ function buildMetrics(drillBlockId){
     if(existing){
       const newIsRpe=result.method==='rpe', oldIsRpe=existing.method==='rpe';
       if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&result.value>existing.e1rm)){
-        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=weight; existing.topReps=reps;
+        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=dispWeight; existing.topReps=reps;
       }
     }
-    else rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:parts[2],exName,group,e1rm:result.value,method:result.method,topWeight:weight,topReps:reps});
+    else rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:parts[2],exName,group,e1rm:result.value,method:result.method,topWeight:dispWeight,topReps:reps});
   }
 
   if(drillBlockId){
@@ -2395,6 +2408,7 @@ function renderMetrics(){
     const si = parseInt(parts[4].slice(1));
     let weight = val.actual ? parseFloat(val.actual) : null;
     if (!weight || isNaN(weight) || weight <= 0) continue;
+    weight = convertWeight(weight, getEntryUnit(val), getDisplayUnit());
     const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
@@ -2441,7 +2455,7 @@ function renderMetrics(){
           ? '<div class="metrics-score-note" style="font-style:italic">Est. from available lifts — missing: ' + missing.join(', ') + '</div>'
           : '';
         h += `<div class="metrics-scores-section">
-          <div class="metrics-scores-label">DOTS / Wilks <span class="metrics-score-total">· ${scores.total} lb total</span></div>
+          <div class="metrics-scores-label">DOTS / Wilks <span class="metrics-score-total">· ${scores.total} ${unitLabel(true)} total</span></div>
           <div class="metrics-scores-row">
             <div class="metrics-score-pill"><div class="metrics-score-pill-label">DOTS</div><div class="metrics-score-pill-val">${scores.dots?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.dots)||''}</div></div>
             <div class="metrics-score-pill"><div class="metrics-score-pill-label">Wilks</div><div class="metrics-score-pill-val">${scores.wilks?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.wilks)||''}</div></div>
@@ -2483,7 +2497,7 @@ function renderMetrics(){
     h+=`<div class="metrics-lift-header">
       <div class="metrics-lift-title">${escH(displayTitle)}</div>
       <div style="text-align:right">
-        <div class="metrics-best">${best?best+'lb':'—'}</div>
+        <div class="metrics-best">${best?best+unitLabel(true):'—'}</div>
         <div class="metrics-best-label">Best Est. 1RM</div>
       </div>
     </div>`;
@@ -2505,14 +2519,14 @@ function renderMetrics(){
       activePts.forEach((pt,i)=>{
         const prev=activePts[i-1];
         const delta=prev?pt.e1rm-prev.e1rm:null;
-        const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}lb</span>`:'';
+        const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}${unitLabel(true)}</span>`:'';
         const methodBadge=pt.method==='rpe'
           ?`<span class="method-badge rpe-badge">RPE</span>`
           :`<span class="method-badge est-badge">EST</span>`;
         const sublabel=drill
           ?(()=>{
             const parts=[];
-            if(pt.topWeight&&pt.topReps) parts.push(`${pt.topReps}×${pt.topWeight}lb`);
+            if(pt.topWeight&&pt.topReps) parts.push(`${pt.topReps}×${pt.topWeight}${unitLabel(true)}`);
             if(pt.completedDate){
               const [y,m,d]=pt.completedDate.split('-');
               parts.push(`${m}/${d}`);
@@ -2525,7 +2539,7 @@ function renderMetrics(){
             <div class="rm-session">${pt.session}</div>
             ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
           </div>
-          <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}lb</div></div>
+          <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}${unitLabel(true)}</div></div>
         </div>`;
       });
       h+=`</div></div>`;
@@ -2639,7 +2653,7 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   ctx.fillStyle='#444'; ctx.font='10px Barlow,sans-serif'; ctx.textAlign='right';
   [0,0.5,1].forEach(t=>{
     const y=pad.top+chartH*(1-t);
-    ctx.fillText(Math.round(yMin+yRange*t)+'lb',pad.left-4,y+3);
+    ctx.fillText(Math.round(yMin+yRange*t)+unitLabel(true),pad.left-4,y+3);
   });
 
   // X labels
@@ -3149,6 +3163,53 @@ function loadAppSettings()  { try { if(_idbReady && _idbCache[APP_SETTINGS_KEY]!
 function saveAppSettings(s) { _idbPut(APP_SETTINGS_KEY, s); try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); showSaveError(); } }
 function getShowScores()    { const s = loadAppSettings(); return s.showScores    !== false; } // default ON
 
+// ── UNIT SYSTEM ──────────────────────────────────────────────────────────────
+const UNIT_OVERRIDES_KEY = 'liftlog_unit_overrides'; // { "bench press": "kg", ... }
+
+function loadUnitOverrides() {
+  try {
+    if(_idbReady && _idbCache[UNIT_OVERRIDES_KEY]!==undefined) return _idbCache[UNIT_OVERRIDES_KEY];
+    return JSON.parse(localStorage.getItem(UNIT_OVERRIDES_KEY)||'{}');
+  } catch { return {}; }
+}
+function saveUnitOverrides(o) {
+  _idbPut(UNIT_OVERRIDES_KEY, o);
+  try { localStorage.setItem(UNIT_OVERRIDES_KEY, JSON.stringify(o)); } catch(e) { console.error(e); }
+}
+
+// Global display unit preference — reads dedicated weightUnit, falls back to lbs
+function getDisplayUnit() { return loadAthlete()?.weightUnit || 'lbs'; }
+
+// Unit for a specific exercise (per-exercise override > global)
+function getExUnit(exName) {
+  const overrides = loadUnitOverrides();
+  const key = _getBaseName(exName).toLowerCase().trim();
+  if(overrides[key]) return overrides[key];
+  return getDisplayUnit();
+}
+
+// Unit stored on a log entry (backward compat: no tag = lbs)
+function getEntryUnit(logEntry) { return logEntry?.unit || 'lbs'; }
+
+// Convert weight between units
+function convertWeight(value, fromUnit, toUnit) {
+  if(fromUnit === toUnit || !value) return value;
+  return fromUnit === 'lbs' ? value / KG_TO_LBS : value * KG_TO_LBS;
+}
+
+// Convert stored value → display unit with smart rounding
+function displayWeight(value, fromUnit) {
+  const to = getDisplayUnit();
+  const v = convertWeight(value, fromUnit, to);
+  return to === 'kg' ? Math.round(v * 2) / 2 : Math.round(v);
+}
+
+// Unit label: short=true → "lb"/"kg", short=false → "lbs"/"kg"
+function unitLabel(short) {
+  const u = getDisplayUnit();
+  return short ? (u === 'kg' ? 'kg' : 'lb') : u;
+}
+
 function toggleAthleteProfileForm() {
   const form = document.getElementById('athlete-profile-form');
   const arrow = document.getElementById('athlete-profile-arrow');
@@ -3161,6 +3222,10 @@ function toggleAthleteProfileForm() {
     const unit = a.bwUnit || 'lbs';
     document.getElementById('ap-unit').textContent = unit;
     document.getElementById('ap-unit').classList.toggle('active', true);
+    const wUnit = a.weightUnit || 'lbs';
+    document.getElementById('ap-weight-lbs').classList.toggle('active', wUnit === 'lbs');
+    document.getElementById('ap-weight-kg').classList.toggle('active', wUnit === 'kg');
+    document.getElementById('ap-1rm-label').textContent = 'Current 1RM (' + wUnit + ')';
     document.getElementById('ap-male').classList.toggle('active', a.gender === 'male');
     document.getElementById('ap-female').classList.toggle('active', a.gender === 'female');
     document.getElementById('ap-max-s').value = a.tested1rm_squat || '';
@@ -3184,10 +3249,16 @@ function toggleApUnit() {
   const isLbs = btn.textContent === 'lbs';
   btn.textContent = isLbs ? 'kg' : 'lbs';
 }
+function setApWeightUnit(u) {
+  document.getElementById('ap-weight-lbs').classList.toggle('active', u === 'lbs');
+  document.getElementById('ap-weight-kg').classList.toggle('active', u === 'kg');
+  document.getElementById('ap-1rm-label').textContent = 'Current 1RM (' + u + ')';
+}
 function saveAthleteProfile() {
   const name = document.getElementById('ap-name').value.trim();
   const bw = parseFloat(document.getElementById('ap-bw').value);
   const unit = document.getElementById('ap-unit').textContent;
+  const weightUnit = document.getElementById('ap-weight-lbs').classList.contains('active') ? 'lbs' : 'kg';
   const gender = document.getElementById('ap-male').classList.contains('active') ? 'male'
                : document.getElementById('ap-female').classList.contains('active') ? 'female'
                : null;
@@ -3200,6 +3271,7 @@ function saveAthleteProfile() {
     ...(name && { name }),
     ...(gender && { gender }),
     ...(!isNaN(bw) && bw > 0 && { bodyweight: bw, bwUnit: unit }),
+    weightUnit,
     tested1rm_squat: maxS || existing.tested1rm_squat || 0,
     tested1rm_bench: maxB || existing.tested1rm_bench || 0,
     tested1rm_deadlift: maxD || existing.tested1rm_deadlift || 0
@@ -3220,6 +3292,23 @@ function toggleScoresSetting() {
   if (state.screen === 'metrics') renderMetrics();
 }
 
+// ── EXERCISE UNIT OVERRIDES ──────────────────────────────────────────────────
+function exUnitToggleHtml(exName) {
+  const cur = getExUnit(exName);
+  return `<div class="ex-unit-toggle">
+    <button class="ex-unit-toggle-btn${cur==='lbs'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${escH(exName)}','lbs')">LBS</button>
+    <button class="ex-unit-toggle-btn${cur==='kg'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${escH(exName)}','kg')">KG</button>
+  </div>`;
+}
+function setExUnitInline(exName, unit) {
+  const overrides = loadUnitOverrides();
+  const globalUnit = getDisplayUnit();
+  if (unit === globalUnit && !overrides[exName]) return; // already default
+  if (overrides[exName] === unit) { delete overrides[exName]; } // toggle off
+  else { overrides[exName] = unit; }
+  saveUnitOverrides(overrides);
+  render();
+}
 // ── REST TIMER ─────────────────────────────────────────────────────────────────
 const COMPOUND_KEYWORDS = ['squat','bench press','deadlift','dead lift','overhead press','ohp','barbell row',
   'pendlay','t-bar','front squat','back squat','incline press','decline press','romanian deadlift',
@@ -3468,8 +3557,9 @@ function getScores() {
 
   if (squat + bench + deadlift === 0) return null;
 
-  // Total in kg (logged weights are in lbs)
-  const totalKg = (squat + bench + deadlift) / 2.20462;
+  // Total in kg — e1RM values are in the display unit
+  const displayU = getDisplayUnit();
+  const totalKg = displayU === 'kg' ? (squat + bench + deadlift) : (squat + bench + deadlift) / KG_TO_LBS;
 
   const gender = athlete.gender; // 'male' | 'female'
   return {
@@ -3501,8 +3591,11 @@ function getHomePRs() {
     if (!isCompLift(parts[3])) continue;
     const group = classifyLift(parts[3]);
     if (!group || group === 'other') continue;
-    const weight = val.actual ? parseFloat(val.actual) : null;
-    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const rawWeight = val.actual ? parseFloat(val.actual) : null;
+    if (!rawWeight || isNaN(rawWeight) || rawWeight <= 0) continue;
+    // Convert to display unit
+    const wUnit = getEntryUnit(val);
+    const weight = convertWeight(rawWeight, wUnit, getDisplayUnit());
     const si = parseInt(parts[4].slice(1));
     const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], parts[3], si);
     if (!reps) continue;
@@ -3512,9 +3605,9 @@ function getHomePRs() {
     if (!peaks[group] || result.value > peaks[group]) peaks[group] = Math.round(result.value);
   }
   const out = [];
-  if (peaks.squat)    out.push({ lift:'Squat',    val:peaks.squat,    unit:'lbs' });
-  if (peaks.bench)    out.push({ lift:'Bench',     val:peaks.bench,    unit:'lbs' });
-  if (peaks.deadlift) out.push({ lift:'Deadlift',  val:peaks.deadlift, unit:'lbs' });
+  if (peaks.squat)    out.push({ lift:'Squat',    val:peaks.squat,    unit:getDisplayUnit() });
+  if (peaks.bench)    out.push({ lift:'Bench',     val:peaks.bench,    unit:getDisplayUnit() });
+  if (peaks.deadlift) out.push({ lift:'Deadlift',  val:peaks.deadlift, unit:getDisplayUnit() });
   return out;
 }
 
@@ -3543,9 +3636,12 @@ function _computeWeekSummary(block, week) {
         const val = state.logs[setKey];
         if (!val || !val.done) continue;
 
-        const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(bid, wl, dn, ex.name, si);
+        let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(bid, wl, dn, ex.name, si);
         const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(bid, wl, dn, ex.name, si);
         if (!weight || isNaN(weight) || weight <= 0 || !reps) continue;
+        // Convert to display unit for consistent volume/e1rm
+        const wUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
+        weight = convertWeight(weight, wUnit, getDisplayUnit());
 
         totalSets++;
         totalVolume += weight * reps;
@@ -3635,8 +3731,9 @@ function getSessionSummary(block, week, day) {
     const group  = classifyLift(exName);
     if (!group || group === 'other') continue;
     if (!isCompLift(exName)) continue;
-    const weight = val.actual ? parseFloat(val.actual) : null;
-    if (!weight || isNaN(weight) || weight <= 0) continue;
+    const rawWeight = val.actual ? parseFloat(val.actual) : null;
+    if (!rawWeight || isNaN(rawWeight) || rawWeight <= 0) continue;
+    const weight = convertWeight(rawWeight, getEntryUnit(val), getDisplayUnit());
     const si   = parseInt(parts[4].slice(1));
     const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
     if (!reps) continue;
@@ -3675,8 +3772,9 @@ function getSessionSummary(block, week, day) {
       if (sv.inferredComplete) continue;
       if (!sv.done) continue; // only count completed sets
 
-      const weight = sv.actual ? parseFloat(sv.actual) : null;
-      if (!weight || isNaN(weight) || weight <= 0) continue;
+      const rawWeight = sv.actual ? parseFloat(sv.actual) : null;
+      if (!rawWeight || isNaN(rawWeight) || rawWeight <= 0) continue;
+      const weight = convertWeight(rawWeight, getEntryUnit(sv), getDisplayUnit());
       const rpe = sv.rpe ? parseFloat(sv.rpe) : null;
 
       // Volume: prefer actual reps, fall back to prescribed, then 1
@@ -3845,10 +3943,11 @@ function renderLastWorkoutCard() {
   const meta = metaParts.filter(Boolean).join(' · ');
 
   // Stats
+  const _volThresh1 = getDisplayUnit() === 'kg' ? 4500 : 10000;
   const vol = summary?.totalVolume
-    ? (summary.totalVolume >= 10000 ? (summary.totalVolume / 1000).toFixed(1) + 'k' : summary.totalVolume.toLocaleString())
+    ? (summary.totalVolume >= _volThresh1 ? (summary.totalVolume / 1000).toFixed(1) + 'k' : summary.totalVolume.toLocaleString())
     : '—';
-  const volUnit = summary?.totalVolume ? (summary.totalVolume >= 10000 ? '' : ' lbs') : '';
+  const volUnit = summary?.totalVolume ? (summary.totalVolume >= _volThresh1 ? '' : ' '+getDisplayUnit()) : '';
   const sets = summary?.totalSets || '—';
   const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
 
@@ -4001,7 +4100,7 @@ function renderHome() {
           const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
           liftRows.push(`<div class="session-lift-row">
             <div class="session-lift-name">${escH(lift)}</div>
-            <div class="session-lift-set">${data.reps}×${data.weight}lb${rpeStr}</div>
+            <div class="session-lift-set">${data.reps}×${data.weight}${unitLabel(true)}${rpeStr}</div>
           </div>`);
         }
       }
@@ -4011,10 +4110,11 @@ function renderHome() {
       : '';
 
     // Stats
+    const _volThresh2 = getDisplayUnit() === 'kg' ? 4500 : 10000;
     const vol = summary?.totalVolume
-      ? (summary.totalVolume >= 10000 ? (summary.totalVolume / 1000).toFixed(1) + 'k' : summary.totalVolume.toLocaleString())
+      ? (summary.totalVolume >= _volThresh2 ? (summary.totalVolume / 1000).toFixed(1) + 'k' : summary.totalVolume.toLocaleString())
       : '—';
-    const volUnit = summary?.totalVolume ? ' lbs' : '';
+    const volUnit = summary?.totalVolume ? ' '+getDisplayUnit() : '';
     const sets = summary?.totalSets || '—';
     const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
 
@@ -4085,10 +4185,11 @@ function renderHome() {
       </div>`;
     }
 
-    const vol = weekSummary.totalVolume >= 10000
+    const volThreshold = getDisplayUnit() === 'kg' ? 4500 : 10000;
+    const vol = weekSummary.totalVolume >= volThreshold
       ? (weekSummary.totalVolume / 1000).toFixed(1) + 'k'
       : weekSummary.totalVolume.toLocaleString();
-    const volUnit = weekSummary.totalVolume >= 10000 ? '' : ' lbs';
+    const volUnit = weekSummary.totalVolume >= volThreshold ? '' : ' '+getDisplayUnit();
 
     weeklySummaryHtml = `<div class="home-week-summary">
       <div class="home-week-summary-header">
@@ -4345,10 +4446,10 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
 
   function presShortSummary(sets,simple,ranged,pres){
     if(sets.length>0){
-      const firstWeight=sets[0].isRpe?`@ ${sets[0].weight}`:`@ ${sets[0].weight}lb`;
+      const firstWeight=sets[0].isRpe?`@ ${sets[0].weight}`:`@ ${sets[0].weight}${unitLabel(true)}`;
       const allSame=sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight);
       if(allSame) return `${sets.length}×${sets[0].reps} ${firstWeight}`;
-      return sets.map(s=>s.isRpe?`${s.reps}@${s.weight}`:`${s.reps}@${s.weight}lb`).join(' · ');
+      return sets.map(s=>s.isRpe?`${s.reps}@${s.weight}`:`${s.reps}@${s.weight}${unitLabel(true)}`).join(' · ');
     }
     if(simple) return `${simple.sets}×${simple.reps}`;
     if(ranged) return `${ranged.sets}×${ranged.reps}`;
@@ -4375,7 +4476,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
               </div>
             </div>`;
     return `<div class="set-inputs-wrap">
-              <div class="set-input-group"><div class="set-input-label">Weight (lbs)</div>
+              <div class="set-input-group"><div class="set-input-label">Weight (${getDisplayUnit()})</div>
                 <input class="set-input" inputmode="decimal" placeholder="" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
               <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
@@ -4458,11 +4559,13 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Exercise</button>
           <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
           ${_restBtnHtml}
+          ${exUnitToggleHtml(ex.name)}
         </div>`;
       } else {
         h+=`<div style="display:flex;align-items:center;gap:6px;padding:10px 16px 4px">
           <button class="edit-name-btn" style="opacity:0.4" onclick="startEditEx('${esc(key)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit name</button>
           ${_restBtnHtml}
+          ${exUnitToggleHtml(ex.name)}
         </div>`;
       };
     }
@@ -4482,8 +4585,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           <div class="set-num">S${si+1}</div>
           ${(()=>{
             const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
-            const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' lb × '+s.reps;
-            const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' lb × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
+            const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
+            const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
             const _editing = state.editingRepsKey === sk;
             if(_editing){
               return `<div style="display:flex;flex-direction:column;gap:2px;align-self:flex-end;padding-bottom:8px">
@@ -4498,7 +4601,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
             }
             return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           })()}
-          ${setInputsHtml(sk,sl,s.isRpe?'lbs':s.weight+'lb')}
+          ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       });
@@ -4510,13 +4613,13 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=sets.length+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
-          const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' lb × '+(_lastS.reps||'—');
-          const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' lb × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
+          const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
+          const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
           const _extraEditing = state.editingRepsKey === _sk;
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>
             ${_extraEditing ? `<div style="display:flex;flex-direction:column;gap:2px;align-self:flex-end;padding-bottom:8px"><div class="set-reps-popover"><span class="set-reps-popover-label">Reps</span><input class="set-reps-popover-input" id="reps-popover-${esc(_sk)}" type="number" inputmode="numeric" value="${_sl.actualReps||_lastS.reps}" min="1" onblur="saveActualReps('${esc(_sk)}',this.value,'${_lastS.reps}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingRepsKey=null;renderSetRow('${esc(_sk)}');}"><button class="set-reps-popover-close" onclick="state.editingRepsKey=null;renderSetRow('${esc(_sk)}')">✕</button></div></div>` : `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`}
-            ${setInputsHtml(_sk,_sl,_lastS.isRpe?'lbs':(_lastS.weight?_lastS.weight+'lb':'lbs'))}
+            ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4528,7 +4631,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
           <div class="set-num">S${si+1}</div>${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}
-          ${setInputsHtml(sk,sl,'lbs')}
+          ${setInputsHtml(sk,sl,getDisplayUnit())}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -4540,7 +4643,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}
-            ${setInputsHtml(_sk,_sl,'lbs')}
+            ${setInputsHtml(_sk,_sl,getDisplayUnit())}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4553,7 +4656,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const isOpen=ranged.reps==='open';
         h+=`<div class="set-row">
           <div class="set-num">S${si+1}</div>${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}
-          ${setInputsHtml(sk,sl,isOpen?'open':'lbs')}
+          ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit())}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -4566,7 +4669,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}
-            ${setInputsHtml(_sk,_sl,_isOpen?'open':'lbs')}
+            ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit())}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4578,7 +4681,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
           <div class="set-num">S${si+1}</div>${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
-          ${setInputsHtml(sk,sl,'lbs')}
+          ${setInputsHtml(sk,sl,getDisplayUnit())}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -4590,7 +4693,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
-            ${setInputsHtml(_sk,_sl,'lbs')}
+            ${setInputsHtml(_sk,_sl,getDisplayUnit())}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4601,7 +4704,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
       h+=`<div class="set-row">
         <div class="set-num">S1</div><div class="set-prescribed">open</div>
-        ${setInputsHtml(sk,sl,'lbs')}
+        ${setInputsHtml(sk,sl,getDisplayUnit())}
         <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
       </div>${prevHintHtml(0)}`;
       h+=`</div>`;
@@ -5179,7 +5282,7 @@ function showNewPRPrompt(records, currentMaxes, onDone) {
         <div style="font-size:11px;color:var(--text-dim)">${escH(r.liftName)}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">${r.weight}<span style="font-size:12px;font-weight:400;color:var(--text-dim)"> lbs</span></div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">${r.weight}<span style="font-size:12px;font-weight:400;color:var(--text-dim)"> ${getDisplayUnit()}</span></div>
         ${old ? `<div style="font-size:11px;color:#4CAF50">+${diff} from ${old}</div>` : ''}
       </div>
     </div>`;
@@ -5344,7 +5447,9 @@ function _maybeAdvanceWeek() {
 function toggleSet(key){
   const l=state.logs[key]||{};
   const nowDone = !l.done;
-  state.logs[key]={...l, done: nowDone, ts: nowDone ? (l.ts || Date.now()) : l.ts};
+  const exName = _resolveExNameFromKey(key);
+  const unit = l.unit || (exName ? getExUnit(exName) : getDisplayUnit());
+  state.logs[key]={...l, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
   if (nowDone) _maybeAdvanceWeek();
   // Targeted DOM updates instead of full render() — prevents scroll jump
@@ -5405,7 +5510,9 @@ function adjustSets(key, delta){
 }
 function setActual(key,v){
   const existing = state.logs[key]||{};
-  state.logs[key]={...existing, actual:v};
+  const exName = _resolveExNameFromKey(key);
+  const unit = exName ? getExUnit(exName) : getDisplayUnit();
+  state.logs[key]={...existing, actual:v, unit:unit};
   // Auto-complete set when weight is entered
   const shouldCheck=v&&v.trim()!=='';
   state.logs[key].done=shouldCheck;
@@ -5511,7 +5618,7 @@ function showCelebration(dayName, meta, onDismiss) {
       const prBadge = best.isPR ? `<div class="cel-lift-pr">PR</div>` : '';
       return `<div class="cel-lift-row">
         <div class="cel-lift-name">${liftLabels[g]}</div>
-        <div class="cel-lift-set">${best.weight}<span class="cel-lift-sub"> lbs × ${best.reps}</span>${rpeStr ? `<span class="cel-lift-rpe">${rpeStr}</span>` : ''}</div>
+        <div class="cel-lift-set">${best.weight}<span class="cel-lift-sub"> ${getDisplayUnit()} × ${best.reps}</span>${rpeStr ? `<span class="cel-lift-rpe">${rpeStr}</span>` : ''}</div>
         ${prBadge}
       </div>`;
     }).join('');
@@ -5530,7 +5637,7 @@ function showCelebration(dayName, meta, onDismiss) {
 
   statsEl.innerHTML = `
     <div class="cel-stat">
-      <div class="cel-stat-val">${vol}<span class="cel-stat-unit">${typeof summary?.totalVolume === 'number' && summary.totalVolume >= 1000 ? '' : summary?.totalVolume ? ' lbs' : ''}</span></div>
+      <div class="cel-stat-val">${vol}<span class="cel-stat-unit">${typeof summary?.totalVolume === 'number' && summary.totalVolume >= 1000 ? '' : summary?.totalVolume ? ' '+getDisplayUnit() : ''}</span></div>
       <div class="cel-stat-label">Tonnage</div>
     </div>
     <div class="cel-stat">
@@ -6730,15 +6837,15 @@ function showCSVUnitPicker(csvText, source) {
         </div>
         <div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Weight Unit</div>
         <div style="display:flex;gap:8px;margin-bottom:20px">
-          <button class="export-scope-pill active" id="csv-unit-lbs" onclick="selectCSVUnit('lbs')">lbs</button>
-          <button class="export-scope-pill" id="csv-unit-kg" onclick="selectCSVUnit('kg')">kg</button>
+          <button class="export-scope-pill ${getDisplayUnit()==='lbs'?'active':''}" id="csv-unit-lbs" onclick="selectCSVUnit('lbs')">lbs</button>
+          <button class="export-scope-pill ${getDisplayUnit()==='kg'?'active':''}" id="csv-unit-kg" onclick="selectCSVUnit('kg')">kg</button>
         </div>
         <button class="export-action-btn" onclick="executeCSVImport()">Import</button>
       </div>
     </div>
   `;
   overlay._csvText = csvText;
-  overlay._csvUnit = 'lbs';
+  overlay._csvUnit = getDisplayUnit();
   document.body.appendChild(overlay);
 }
 
@@ -7180,8 +7287,10 @@ function exportHTMLReport(blockId) {
     if (!group || !families[group]) continue;
 
     const si = parseInt(parts[4].slice(1));
-    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
     if (!weight || isNaN(weight) || weight <= 0) continue;
+    const wUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
+    weight = convertWeight(weight, wUnit, getDisplayUnit());
     const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
@@ -7216,10 +7325,12 @@ function exportHTMLReport(blockId) {
     if (!val.done) continue;
     const exName = parts[3];
     const si = parseInt(parts[4].slice(1));
-    const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+    let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
     const prescReps = getSetReps(parts[0], parts[1], parts[2], exName, si);
     const actualReps = val.actualReps ? parseInt(val.actualReps) : prescReps;
     if (weight && !isNaN(weight) && weight > 0 && actualReps) {
+      const wUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
+      weight = convertWeight(weight, wUnit, getDisplayUnit());
       totalSets++;
       const vol = weight * actualReps;
       totalVolume += vol;
@@ -7373,9 +7484,9 @@ function exportHTMLReport(blockId) {
     // e1RM trend flag
     if (cl.delta > 0) {
       const rpeStable = rpeVals.length >= 2 && Math.abs(rpeVals[rpeVals.length - 1] - rpeVals[0]) <= 0.5;
-      flags.push({ color: 'green', text: `e1RM up +${cl.delta} lbs${rpeStable ? ' with stable RPE \u2014 strong adaptation signal' : ' across block'}` });
+      flags.push({ color: 'green', text: `e1RM up +${cl.delta} ${unitLabel(true)}${rpeStable ? ' with stable RPE \u2014 strong adaptation signal' : ' across block'}` });
     } else if (cl.delta < 0) {
-      flags.push({ color: 'red', text: `e1RM down ${cl.delta} lbs \u2014 potential overreach` });
+      flags.push({ color: 'red', text: `e1RM down ${cl.delta} ${unitLabel(true)} \u2014 potential overreach` });
     }
 
     // RPE creep detection
@@ -7437,8 +7548,10 @@ function exportHTMLReport(blockId) {
       if (group !== groupKey) continue;
       const sessionKey = parts[1] + '||' + parts[2] + '||' + exName;
       const si = parseInt(parts[4].slice(1));
-      const weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+      let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
       if (!weight || isNaN(weight) || weight <= 0) continue;
+      const fWUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
+      weight = convertWeight(weight, fWUnit, getDisplayUnit());
       const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
       if (!reps) continue;
       const rpe = val.rpe ? parseFloat(val.rpe) : null;
@@ -7467,8 +7580,9 @@ function exportHTMLReport(blockId) {
   const athlete = loadAthlete();
   let dotsScore = null, wilksScore = null;
   if (athlete?.bodyweight && athlete?.gender && estTotal > 0) {
-    const bwKg = athlete.bwUnit === 'kg' ? athlete.bodyweight : athlete.bodyweight / 2.20462;
-    const totalKg = estTotal / 2.20462;
+    const bwKg = athlete.bwUnit === 'kg' ? athlete.bodyweight : athlete.bodyweight / KG_TO_LBS;
+    const rptDisplayU = getDisplayUnit();
+    const totalKg = rptDisplayU === 'kg' ? estTotal : estTotal / KG_TO_LBS;
     dotsScore = calcDOTS(bwKg, totalKg, athlete.gender);
     wilksScore = calcWilks(bwKg, totalKg, athlete.gender);
   }
@@ -7528,8 +7642,8 @@ function exportHTMLReport(blockId) {
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-accent" style="background:${color}"></div>
       <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:9px;color:#777;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
-      <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> lbs</span></div>
-      <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} lbs</div>
+      <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
+      <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
       <div class="comp-card-sparkline"><canvas id="${sparkId}"></canvas></div>
       <div class="comp-card-divider"></div>
       <div class="comp-card-best-label">Best Set</div>
@@ -7624,7 +7738,7 @@ function exportHTMLReport(blockId) {
     estTotalHtml = `<div class="est-total-card">
       <div>
         <div class="est-total-label">Estimated Total</div>
-        <div class="est-total-val">${estTotal.toLocaleString()}<span class="est-total-unit"> lbs</span></div>
+        <div class="est-total-val">${estTotal.toLocaleString()}<span class="est-total-unit"> ${unitLabel(true)}</span></div>
       </div>
       ${rightSide}
     </div>`;
@@ -7788,7 +7902,7 @@ function drawSparkline(canvasId, data, color) {
           callbacks:{
             label: ctx => {
               if (ctx.dataset.label === 'Avg RPE') return 'RPE: ' + ctx.parsed.y;
-              return ctx.dataset.label + ': ' + ctx.parsed.y + 'k lbs';
+              return ctx.dataset.label + ': ' + ctx.parsed.y + 'k ' + unitLabel(true);
             }
           }
         }
@@ -7972,7 +8086,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
     </div>
     <div class="strip-stat">
       <div class="strip-stat-val">${totalVolume >= 1000000 ? Math.round(totalVolume/1000) + 'k' : totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}</div>
-      <div class="strip-stat-label">Volume (lbs)</div>
+      <div class="strip-stat-label">Volume (${unitLabel(true)})</div>
     </div>
     <div class="strip-stat">
       <div class="strip-stat-val">${avgRpe}</div>
@@ -8474,6 +8588,7 @@ function closeParseError() {
 // ── ONBOARDING ────────────────────────────────────────────────────────────────
 let _onboardGender = null;
 let _onboardUnit = 'lbs';
+let _onboardWeightUnit = 'lbs';
 
 function isOnboarded() { if(_idbReady && _idbCache[ONBOARDED_KEY]!==undefined) return _idbCache[ONBOARDED_KEY]==='1'||_idbCache[ONBOARDED_KEY]===1||_idbCache[ONBOARDED_KEY]===true; return localStorage.getItem(ONBOARDED_KEY) === '1'; }
 function markOnboarded() { _idbPut(ONBOARDED_KEY, '1'); try{ localStorage.setItem(ONBOARDED_KEY, '1'); }catch(e){ console.error(e); } }
@@ -8538,6 +8653,7 @@ function showOnboardingStep(step) {
     const athlete = loadAthlete() || {};
     _onboardGender = athlete.gender || null;
     _onboardUnit = athlete.bwUnit || 'lbs';
+    _onboardWeightUnit = athlete.weightUnit || 'lbs';
     body.innerHTML = `
       <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">About You</div>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Used for DOTS & Wilks scores. All fields optional.</div>
@@ -8560,6 +8676,13 @@ function showOnboardingStep(step) {
             <button class="intake-unit-btn${_onboardUnit==='lbs'?' active':''}" onclick="onboardSetUnit('lbs',this)">lbs</button>
             <button class="intake-unit-btn${_onboardUnit==='kg'?' active':''}" onclick="onboardSetUnit('kg',this)">kg</button>
           </div>
+        </div>
+
+        <div class="intake-field-label">Weight Unit</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Unit used when logging your lifts</div>
+        <div class="intake-unit-toggle" style="justify-content:flex-start">
+          <button class="intake-unit-btn${_onboardWeightUnit==='lbs'?' active':''}" onclick="onboardSetWeightUnit('lbs',this)">lbs</button>
+          <button class="intake-unit-btn${_onboardWeightUnit==='kg'?' active':''}" onclick="onboardSetWeightUnit('kg',this)">kg</button>
         </div>
       </div>
       <button class="onboard-primary-btn" onclick="onboardSaveProfile()">Continue</button>
@@ -8626,6 +8749,11 @@ function onboardSetUnit(u, el) {
   el.closest('.intake-unit-toggle').querySelectorAll('.intake-unit-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
 }
+function onboardSetWeightUnit(u, el) {
+  _onboardWeightUnit = u;
+  el.closest('.intake-unit-toggle').querySelectorAll('.intake-unit-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
 
 function onboardSaveProfile() {
   const name = document.getElementById('onboard-name')?.value.trim() || null;
@@ -8636,6 +8764,7 @@ function onboardSaveProfile() {
     gender:     _onboardGender    || existing.gender     || null,
     bodyweight: bw                ?? existing.bodyweight ?? null,
     bwUnit:     _onboardUnit      || existing.bwUnit     || 'lbs',
+    weightUnit: _onboardWeightUnit || existing.weightUnit || 'lbs',
   };
   saveAthlete(athlete);
   showOnboardingStep(3);
@@ -8796,9 +8925,9 @@ function buildCustomPres(sets, reps, weight, rpe) {
 }
 
 function buildCustomCoachNote(weight, rpe) {
-  if (weight && rpe) return `Target: ${weight}lb @ RPE ${rpe}`;
+  if (weight && rpe) return `Target: ${weight}${unitLabel(true)} @ RPE ${rpe}`;
   if (rpe) return `Target: RPE ${rpe}`;
-  if (weight) return `Target: ${weight}lb`;
+  if (weight) return `Target: ${weight}${unitLabel(true)}`;
   return null;
 }
 
@@ -8915,7 +9044,7 @@ function _openCustomExModal(existingKey, existingEx) {
     </div>
     <div class="custom-ex-row" style="grid-template-columns:1fr 1fr">
       <div class="custom-ex-field">
-        <div class="custom-ex-label">Weight (lbs)</div>
+        <div class="custom-ex-label">Weight (${getDisplayUnit()})</div>
         <input class="custom-ex-input" id="cex-weight" type="number" inputmode="decimal" placeholder="optional" value="${prefillWeight}" min="0">
       </div>
       <div class="custom-ex-field">
@@ -9550,15 +9679,15 @@ function renderCmStep3() {
       <div class="colmap-maxes-row">
         <div class="colmap-field">
           <div class="colmap-field-label">Squat</div>
-          <input class="colmap-field-input" id="cm-meta-squat" type="number" inputmode="numeric" placeholder="lbs" value="${sqMax}" oninput="_cmMeta.squat=this.value">
+          <input class="colmap-field-input" id="cm-meta-squat" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${sqMax}" oninput="_cmMeta.squat=this.value">
         </div>
         <div class="colmap-field">
           <div class="colmap-field-label">Bench</div>
-          <input class="colmap-field-input" id="cm-meta-bench" type="number" inputmode="numeric" placeholder="lbs" value="${bnMax}" oninput="_cmMeta.bench=this.value">
+          <input class="colmap-field-input" id="cm-meta-bench" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${bnMax}" oninput="_cmMeta.bench=this.value">
         </div>
         <div class="colmap-field">
           <div class="colmap-field-label">Deadlift</div>
-          <input class="colmap-field-input" id="cm-meta-deadlift" type="number" inputmode="numeric" placeholder="lbs" value="${dlMax}" oninput="_cmMeta.deadlift=this.value">
+          <input class="colmap-field-input" id="cm-meta-deadlift" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${dlMax}" oninput="_cmMeta.deadlift=this.value">
         </div>
       </div>
     </div>
