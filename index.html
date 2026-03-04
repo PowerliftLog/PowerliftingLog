@@ -2176,6 +2176,7 @@ function buildMetrics(drillBlockId){
   state.blocks.forEach((b,i)=>{ blockIndex[b.id]=i; });
 
   state.customLifts.forEach(cl=>{
+    if(!isTracked(cl.name)) return; // only show tracked custom lifts
     const g=groups[cl.group]||groups.other;
     if(!g.variations[cl.name]) g.variations[cl.name]=[];
   });
@@ -2187,7 +2188,7 @@ function buildMetrics(drillBlockId){
     const parts=key.split('||');
     if(parts.length<5) continue;
     const blockId=parts[0];
-    const exName=parts[3];
+    const exName=_getBaseName(parts[3]); // normalize — strip bracket suffixes for dedup
     const weekLabel=parts[1];
     const setIdx=parts[4];
     if(!setIdx.startsWith('s')) continue;
