@@ -414,11 +414,21 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-prescribed-chevron { font-size: 13px; opacity: 0.45; margin-left: 1px; }
 .set-prescribed-btn.has-actual { color: var(--gold); }
 .set-prescribed-btn.has-actual .set-prescribed-chevron { opacity: 0.7; }
-.set-reps-popover { display: flex; align-items: center; gap: 6px; background: var(--surface-5); border: 1px solid rgba(201,168,76,0.4); border-radius: 8px; padding: 5px 8px; margin-bottom: 4px; animation: fadeIn 0.12s ease; }
-.set-reps-popover-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
-.set-reps-popover-input { width: 52px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 4px 8px; outline: none; text-align: center; }
-.set-reps-popover-input:focus { border-color: rgba(201,168,76,0.5); }
-.set-reps-popover-close { background: none; border: none; color: var(--text-faint); font-size: 16px; cursor: pointer; padding: 2px 4px; line-height: 1; }
+/* Reps editor modal */
+.reps-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 320; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.12s ease; }
+.reps-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 300px; border: 1px solid var(--sheet-border); }
+.reps-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); text-align: center; margin-bottom: 4px; }
+.reps-modal-prescribed { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; color: var(--text-dim); text-align: center; margin-bottom: 20px; }
+.reps-modal-control { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; }
+.reps-modal-btn { width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-3, rgba(255,255,255,0.06)); color: var(--text-primary); font-size: 22px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Barlow', sans-serif; transition: background 0.1s; -webkit-tap-highlight-color: transparent; }
+.reps-modal-btn:active { background: rgba(201,168,76,0.15); }
+.reps-modal-input { width: 72px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 28px; padding: 8px; outline: none; text-align: center; }
+.reps-modal-input:focus { border-color: rgba(201,168,76,0.5); }
+.reps-modal-actions { display: flex; gap: 10px; }
+.reps-modal-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.reps-modal-cancel:active { opacity: 0.7; }
+.reps-modal-save { flex: 1; padding: 12px; border-radius: 10px; border: none; background: var(--gold); color: #1a1a1a; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.reps-modal-save:active { opacity: 0.8; }
 /* One-time rep tip tooltip */
 .rep-tip-tooltip { background: #1e1a10; border: 1px solid rgba(201,168,76,0.35); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--gold); display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 16px 8px; }
 .rep-tip-tooltip-text { line-height: 1.4; }
@@ -1706,6 +1716,24 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
 </div>
 
+<!-- Reps Editor Modal -->
+<div class="reps-modal-overlay" id="reps-modal" style="display:none" onclick="if(event.target===this)closeRepsModal()">
+  <div class="reps-modal-sheet">
+    <div class="reps-modal-title" id="reps-modal-title">SET REPS</div>
+    <div class="reps-modal-prescribed" id="reps-modal-prescribed">Prescribed: 8</div>
+    <div class="reps-modal-control">
+      <button class="reps-modal-btn" onclick="adjustRepsModal(-1)">−</button>
+      <input class="reps-modal-input" id="reps-modal-input" type="number" inputmode="numeric" min="0" value="8"
+        onkeydown="if(event.key==='Enter')saveRepsModal()">
+      <button class="reps-modal-btn" onclick="adjustRepsModal(1)">+</button>
+    </div>
+    <div class="reps-modal-actions">
+      <button class="reps-modal-cancel" onclick="closeRepsModal()">Cancel</button>
+      <button class="reps-modal-save" onclick="saveRepsModal()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Rest Timer Modal -->
 <div class="rest-modal-overlay" id="rest-timer-modal" style="display:none" onclick="if(event.target===this)closeRestTimerModal()">
   <div class="rest-modal-sheet">
@@ -1893,7 +1921,7 @@ async function _bootApp() {
   // 2. Initialize state — wrapped in try/catch so UI always boots
   try {
     const _savedBlocks = loadBlocks() || [];
-    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
 
     // 3. Restore nav position from last session
     const nav = loadNav();
@@ -1922,7 +1950,7 @@ async function _bootApp() {
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
-    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
   }
 
   // 5. Boot the UI (onboarding check → render) — always runs
@@ -4492,18 +4520,6 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     if (/\d+\s*(sec|min|s|m)\b/i.test(String(prescReps))) label = String(prescReps);
     const _hasActual = sl.actualReps && sl.actualReps !== String(prescReps);
     const _display = _hasActual ? `<span style="color:var(--gold)">${sl.actualReps}</span> reps` : label;
-    const _editing = state.editingRepsKey === sk;
-    if (_editing) {
-      return `<div style="display:flex;flex-direction:column;gap:2px;align-self:flex-end;padding-bottom:8px">
-        <div class="set-reps-popover">
-          <span class="set-reps-popover-label">Reps</span>
-          <input class="set-reps-popover-input" id="reps-popover-${esc(sk)}" type="number" inputmode="numeric" value="${sl.actualReps||prescReps}" min="1"
-            onblur="saveActualReps('${esc(sk)}',this.value,'${prescReps}')"
-            onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingRepsKey=null;renderSetRow('${esc(sk)}');}">
-          <button class="set-reps-popover-close" onclick="state.editingRepsKey=null;renderSetRow('${esc(sk)}')">✕</button>
-        </div>
-      </div>`;
-    }
     return `<button class="set-prescribed-btn ${_hasActual?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${prescReps}')">${_display}<span class="set-prescribed-chevron">›</span></button>`;
   }
 
@@ -4588,18 +4604,6 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
             const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
             const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
             const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
-            const _editing = state.editingRepsKey === sk;
-            if(_editing){
-              return `<div style="display:flex;flex-direction:column;gap:2px;align-self:flex-end;padding-bottom:8px">
-                <div class="set-reps-popover">
-                  <span class="set-reps-popover-label">Reps</span>
-                  <input class="set-reps-popover-input" id="reps-popover-${esc(sk)}" type="number" inputmode="numeric" value="${sl.actualReps||s.reps}" min="1"
-                    onblur="saveActualReps('${esc(sk)}',this.value,'${s.reps}')"
-                    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingRepsKey=null;renderSetRow('${esc(sk)}');}">
-                  <button class="set-reps-popover-close" onclick="state.editingRepsKey=null;renderSetRow('${esc(sk)}')">✕</button>
-                </div>
-              </div>`;
-            }
             return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           })()}
           ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true))}
@@ -4616,10 +4620,9 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
           const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
           const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
-          const _extraEditing = state.editingRepsKey === _sk;
           h+=`<div class="set-row">
             <div class="set-num">S${_si+1}</div>
-            ${_extraEditing ? `<div style="display:flex;flex-direction:column;gap:2px;align-self:flex-end;padding-bottom:8px"><div class="set-reps-popover"><span class="set-reps-popover-label">Reps</span><input class="set-reps-popover-input" id="reps-popover-${esc(_sk)}" type="number" inputmode="numeric" value="${_sl.actualReps||_lastS.reps}" min="1" onblur="saveActualReps('${esc(_sk)}',this.value,'${_lastS.reps}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingRepsKey=null;renderSetRow('${esc(_sk)}');}"><button class="set-reps-popover-close" onclick="state.editingRepsKey=null;renderSetRow('${esc(_sk)}')">✕</button></div></div>` : `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`}
+            <button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -8785,7 +8788,7 @@ function finishOnboarding() {
 _bootApp().catch(e => {
   console.error('[Boot] Unhandled boot error:', e);
   // Last resort — if _bootApp somehow fails entirely, init empty state and render
-  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingRepsKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 } } };
   checkOnboarding();
 });
 
@@ -9150,38 +9153,65 @@ function _confirmDeleteEx(exName, dayName, allWeeks) {
 }
 
 
-// ── ACTUAL REPS EDITOR ────────────────────────────────────────────────────────
+// ── ACTUAL REPS EDITOR (MODAL) ──────────────────────────────────────────────
+
+let _repsModalKey = null;       // set key being edited
+let _repsModalPrescribed = '';  // prescribed reps for comparison
 
 function openRepsEditor(sk, prescReps) {
   // Show one-time tooltip on first use
   if (!(_idbReady && _idbCache['liftlog_rep_tip_seen']) && !localStorage.getItem('liftlog_rep_tip_seen')) {
     showRepTip();
   }
-  state.editingRepsKey = sk;
-  renderSetRow(sk);
-  // Focus the input after render — preventScroll stops browser from jumping
-  setTimeout(() => {
-    const input = document.getElementById('reps-popover-' + sk);
-    if (input) { input.focus({preventScroll:true}); input.select(); }
-  }, 50);
+  _repsModalKey = sk;
+  _repsModalPrescribed = String(prescReps);
+  const sl = state.logs[sk] || {};
+  const current = sl.actualReps || prescReps;
+
+  // Parse set number from key (||sN)
+  const setMatch = sk.match(/\|\|s(\d+)$/);
+  const setNum = setMatch ? parseInt(setMatch[1]) + 1 : '';
+
+  document.getElementById('reps-modal-title').textContent = setNum ? `SET ${setNum} REPS` : 'SET REPS';
+  document.getElementById('reps-modal-prescribed').textContent = `Prescribed: ${prescReps}`;
+  const input = document.getElementById('reps-modal-input');
+  input.value = current;
+  document.getElementById('reps-modal').style.display = 'flex';
+  setTimeout(() => { input.focus({preventScroll:true}); input.select(); }, 60);
 }
 
-function saveActualReps(sk, value, prescReps) {
-  state.editingRepsKey = null;
-  const v = value ? String(parseInt(value)) : '';
+function closeRepsModal() {
+  document.getElementById('reps-modal').style.display = 'none';
+  _repsModalKey = null;
+}
+
+function adjustRepsModal(delta) {
+  const input = document.getElementById('reps-modal-input');
+  const cur = parseInt(input.value) || 0;
+  const next = Math.max(0, cur + delta);
+  input.value = next;
+}
+
+function saveRepsModal() {
+  if (!_repsModalKey) return;
+  const sk = _repsModalKey;
+  const input = document.getElementById('reps-modal-input');
+  const raw = input.value;
+  const v = raw ? String(parseInt(raw)) : '';
+
   // Only store if different from prescribed — clear if matches
-  if (v && v !== String(prescReps)) {
+  if (v && v !== _repsModalPrescribed) {
     state.logs[sk] = { ...(state.logs[sk] || {}), actualReps: v };
   } else {
     if (state.logs[sk]) delete state.logs[sk].actualReps;
   }
   saveLogs();
+  closeRepsModal();
   renderSetRow(sk);
 }
 
 // Lightweight re-render of a single set row without scroll disruption
 function renderSetRow(sk) {
-  // Extract exercise key from set key (remove ||sN suffix) to find anchor card
   const exKey = sk.replace(/\|\|s\d+$/, '');
   const escaped = cssEsc(exKey);
   const card = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
