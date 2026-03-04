@@ -236,18 +236,33 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .new-btn { font-size: 11px; font-weight: 600; color: var(--text-sub); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 13px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
 .settings-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--gold); transition: all 0.15s; padding: 0; }
 .settings-btn:active { background: rgba(201,168,76,0.1); }
-.settings-sheet { padding-top: 12px; padding-bottom: max(32px, env(safe-area-inset-bottom)); min-height: 75vh; display: flex; flex-direction: column; }
+.settings-sheet { padding-top: 12px; padding-bottom: max(32px, env(safe-area-inset-bottom)); min-height: 75vh; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; }
 .settings-sheet::before { content: ''; display: block; width: 36px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 0 auto 16px; flex-shrink: 0; }
 .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .settings-done-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); background: none; border: none; cursor: pointer; padding: 4px 8px; letter-spacing: 0.02em; }
 .settings-done-btn:active { opacity: 0.6; }
-.rest-timer-durations { padding: 0 8px 4px; }
-.rest-dur-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+.rest-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 310; display: flex; align-items: flex-end; }
+.rest-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px 16px 0 0; padding: 20px 20px 40px; width: 100%; max-width: 480px; margin: 0 auto; border-top: 1px solid var(--sheet-border); }
+.rest-modal-sheet::before { content: ''; display: block; width: 36px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 0 auto 16px; }
+.rest-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.rest-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; }
+.rest-modal-done { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); background: none; border: none; cursor: pointer; padding: 4px 8px; letter-spacing: 0.02em; }
+.rest-modal-done:active { opacity: 0.6; }
+.rest-mode-section { margin-bottom: 20px; }
+.rest-mode-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
+.rest-mode-options { display: flex; gap: 8px; }
+.rest-mode-pill { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3, rgba(255,255,255,0.06)); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; transition: all 0.15s ease; }
+.rest-mode-pill.active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
+.rest-mode-pill:active { opacity: 0.7; }
+.rest-mode-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.4; }
+.rest-dur-section { margin-bottom: 8px; }
+.rest-dur-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.rest-dur-row:last-child { border-bottom: none; }
 .rest-dur-label { font-size: 13px; color: var(--text-sub); }
-.rest-dur-control { display: flex; align-items: center; gap: 8px; }
-.rest-dur-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-3, rgba(255,255,255,0.06)); color: var(--text-primary); font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Barlow', sans-serif; }
+.rest-dur-control { display: flex; align-items: center; gap: 10px; }
+.rest-dur-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3, rgba(255,255,255,0.06)); color: var(--text-primary); font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Barlow', sans-serif; }
 .rest-dur-btn:active { background: rgba(201,168,76,0.15); }
-.rest-dur-value { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-primary); min-width: 40px; text-align: center; }
+.rest-dur-value { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); min-width: 44px; text-align: center; }
 .rest-trigger-btn { margin-left: auto; display: flex; align-items: center; gap: 5px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
 .rest-trigger-btn:active { background: rgba(201,168,76,0.2); }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin: 18px 0 8px; }
@@ -1346,7 +1361,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.4</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.5</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -1654,14 +1669,45 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
 
-    <button class="settings-row-btn" onclick="toggleRestTimerSetting()" style="cursor:pointer">
+    <button class="settings-row-btn" onclick="openRestTimerModal()" style="cursor:pointer">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Rest Timer
       </div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.04em" id="rest-timer-mode-label">Auto</div>
     </button>
-    <div id="rest-timer-durations" class="rest-timer-durations">
+
+    <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
+    <div class="settings-theme-pills" id="settings-theme-pills">
+      <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
+      <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
+      <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
+    </div>
+
+    <div style="text-align:center;padding-top:20px;padding-bottom:8px">
+      <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px">Privacy Policy</a>
+    </div>
+  </div>
+</div>
+
+<!-- Rest Timer Modal -->
+<div class="rest-modal-overlay" id="rest-timer-modal" style="display:none" onclick="if(event.target===this)closeRestTimerModal()">
+  <div class="rest-modal-sheet">
+    <div class="rest-modal-header">
+      <div class="rest-modal-title">Rest Timer</div>
+      <button class="rest-modal-done" onclick="closeRestTimerModal()">Done</button>
+    </div>
+    <div class="rest-mode-section">
+      <div class="rest-mode-label">Mode</div>
+      <div class="rest-mode-options">
+        <button class="rest-mode-pill" data-mode="auto" onclick="setRestTimerMode('auto')">Auto</button>
+        <button class="rest-mode-pill" data-mode="manual" onclick="setRestTimerMode('manual')">Manual</button>
+        <button class="rest-mode-pill" data-mode="off" onclick="setRestTimerMode('off')">Off</button>
+      </div>
+      <div class="rest-mode-desc" id="rest-mode-desc">Timer starts automatically after logging a set.</div>
+    </div>
+    <div class="rest-dur-section" id="rest-dur-section">
+      <div class="rest-mode-label">Durations</div>
       <div class="rest-dur-row">
         <span class="rest-dur-label">Compound / Barbell</span>
         <div class="rest-dur-control">
@@ -1686,17 +1732,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
           <button class="rest-dur-btn" onclick="adjustRestDur('bodyweight',15)">+</button>
         </div>
       </div>
-    </div>
-
-    <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
-    <div class="settings-theme-pills" id="settings-theme-pills">
-      <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
-      <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
-      <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
-    </div>
-
-    <div style="text-align:center;padding-top:20px;padding-bottom:8px">
-      <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px">Privacy Policy</a>
     </div>
   </div>
 </div>
@@ -3086,7 +3121,7 @@ const COMPOUND_KEYWORDS = ['squat','bench press','deadlift','dead lift','overhea
 let _restTimer = { intervalId: null, remaining: 0, total: 0, exName: '' };
 
 function getRestTimerMode() { const s = loadAppSettings(); return s.restTimerMode || 'auto'; }
-function setRestTimerMode(mode) { const s = loadAppSettings(); s.restTimerMode = mode; saveAppSettings(s); }
+function setRestTimerMode(mode) { const s = loadAppSettings(); s.restTimerMode = mode; saveAppSettings(s); updateRestTimerModalUI(); }
 function getRestTimerDefaults() {
   const s = loadAppSettings();
   return s.restTimerDefaults || { compound: 180, accessory: 120, bodyweight: 90 };
@@ -3175,19 +3210,39 @@ function addRestTime(sec) {
   _restTimer.total += sec;
 }
 
-function toggleRestTimerSetting() {
-  const modes = ['auto', 'manual', 'off'];
-  const cur = getRestTimerMode();
-  const next = modes[(modes.indexOf(cur) + 1) % modes.length];
-  setRestTimerMode(next);
-  updateRestTimerToggleUI();
+function openRestTimerModal() {
+  const modal = document.getElementById('rest-timer-modal');
+  if (!modal) return;
+  updateRestTimerModalUI();
+  modal.style.display = 'flex';
 }
-function updateRestTimerToggleUI() {
+function closeRestTimerModal() {
+  const modal = document.getElementById('rest-timer-modal');
+  if (modal) modal.style.display = 'none';
+}
+function updateRestTimerModalUI() {
   const mode = getRestTimerMode();
+  // Update settings row label
   const label = document.getElementById('rest-timer-mode-label');
   if (label) label.textContent = mode === 'auto' ? 'Auto' : mode === 'manual' ? 'Manual' : 'Off';
+  // Update mode pills
+  document.querySelectorAll('.rest-mode-pill').forEach(pill => {
+    pill.classList.toggle('active', pill.dataset.mode === mode);
+  });
+  // Update description
+  const desc = document.getElementById('rest-mode-desc');
+  if (desc) {
+    if (mode === 'auto') desc.textContent = 'Timer starts automatically after logging a set.';
+    else if (mode === 'manual') desc.textContent = 'Tap the rest button on any exercise to start the timer.';
+    else desc.textContent = 'Rest timer is disabled.';
+  }
+  // Show/hide durations section
+  const durSection = document.getElementById('rest-dur-section');
+  if (durSection) durSection.style.display = mode === 'off' ? 'none' : '';
   updateRestDurUI();
 }
+// Keep old name as alias for settings open call
+function updateRestTimerToggleUI() { updateRestTimerModalUI(); }
 function _fmtDur(s) { const m = Math.floor(s / 60); const sec = s % 60; return m + ':' + String(sec).padStart(2, '0'); }
 function updateRestDurUI() {
   const d = getRestTimerDefaults();
