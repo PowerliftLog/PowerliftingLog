@@ -3296,16 +3296,17 @@ function toggleScoresSetting() {
 function exUnitToggleHtml(exName) {
   const cur = getExUnit(exName);
   return `<div class="ex-unit-toggle">
-    <button class="ex-unit-toggle-btn${cur==='lbs'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${escH(exName)}','lbs')">LBS</button>
-    <button class="ex-unit-toggle-btn${cur==='kg'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${escH(exName)}','kg')">KG</button>
+    <button class="ex-unit-toggle-btn${cur==='lbs'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${esc(exName)}','lbs')">LBS</button>
+    <button class="ex-unit-toggle-btn${cur==='kg'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${esc(exName)}','kg')">KG</button>
   </div>`;
 }
 function setExUnitInline(exName, unit) {
+  const key = _getBaseName(exName).toLowerCase().trim();
   const overrides = loadUnitOverrides();
   const globalUnit = getDisplayUnit();
-  if (unit === globalUnit && !overrides[exName]) return; // already default
-  if (overrides[exName] === unit) { delete overrides[exName]; } // toggle off
-  else { overrides[exName] = unit; }
+  if (unit === globalUnit && !overrides[key]) return; // already default
+  if (overrides[key] === unit) { delete overrides[key]; } // toggle off
+  else { overrides[key] = unit; }
   saveUnitOverrides(overrides);
   render();
 }
