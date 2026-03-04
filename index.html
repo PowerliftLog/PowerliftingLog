@@ -1105,6 +1105,26 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .untracked-item.selected .untracked-item-group { color: #8a6a2a; }
 .untracked-divider { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 10px 0 6px; }
 .untracked-empty { font-size: 13px; color: var(--text-dim); padding: 8px 0; }
+.track-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 8px; }
+.tracked-group-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase; margin: 8px 0 4px; }
+.tracked-group-label:first-child { margin-top: 0; }
+.tracked-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 8px; margin-bottom: 4px; }
+.tracked-item.staged-remove { opacity: 0.4; text-decoration: line-through; }
+.tracked-item-name { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-mid); flex: 1; }
+.tracked-item-remove { background: none; border: none; color: var(--text-faint); font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.tracked-item-remove:hover { color: #E22C2C; background: rgba(226,44,44,0.1); }
+.tracked-item.staged-remove .tracked-item-remove { color: var(--gold); }
+.available-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 8px; margin-bottom: 4px; cursor: pointer; transition: border-color 0.12s; }
+.available-item:hover { border-color: #444; }
+.available-item.staged-add { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+.available-item-name { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-mid); }
+.available-item-group { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+.available-item.staged-add .available-item-name { color: var(--gold); }
+.available-item-add { font-size: 14px; color: var(--text-faint); margin-left: 8px; }
+.available-item.staged-add .available-item-add { color: var(--gold); }
+.available-list { max-height: 200px; overflow-y: auto; }
+.tracked-list { max-height: 200px; overflow-y: auto; }
+.track-no-results { font-size: 13px; color: var(--text-dim); padding: 8px 0; }
 .no-data-msg { padding: 60px 24px; text-align: center; color: var(--text-dimmer); font-size: 14px; line-height: 1.7; }
 
 /* Legend */
@@ -1511,21 +1531,16 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 
 <!-- Schedule Editor Modal -->
 <div class="add-lift-modal" id="add-lift-modal" style="display:none" onclick="if(event.target===this)closeAddLift()">
-  <div class="add-lift-sheet">
-    <div class="add-lift-title">Track a Lift</div>
-    <div id="untracked-list-wrap"></div>
-    <div class="untracked-divider">Or enter manually</div>
-    <input class="add-lift-input" id="add-lift-name" placeholder="Exercise name" oninput="onAddLiftInput(this.value)" />
-    <div class="add-lift-group-label">Group under:</div>
-    <div class="add-lift-groups">
-      <button class="group-pill active" data-group="squat" onclick="selectGroup(this)">Squat</button>
-      <button class="group-pill" data-group="bench" onclick="selectGroup(this)">Bench</button>
-      <button class="group-pill" data-group="deadlift" onclick="selectGroup(this)">Deadlift</button>
-      <button class="group-pill" data-group="other" onclick="selectGroup(this)">Other</button>
-    </div>
-    <div class="add-lift-actions">
+  <div class="add-lift-sheet" style="max-height:85vh;overflow-y:auto">
+    <div class="add-lift-title">Manage Tracked Lifts</div>
+    <div class="track-section-label">CURRENTLY TRACKED</div>
+    <div id="tracked-list-wrap"></div>
+    <div class="track-section-label" style="margin-top:16px">ADD EXERCISE</div>
+    <input class="add-lift-input" id="track-search" placeholder="Search exercises in your program..." oninput="_onTrackSearch(this.value)" />
+    <div id="available-list-wrap"></div>
+    <div class="add-lift-actions" style="margin-top:16px">
       <button class="add-lift-cancel" onclick="closeAddLift()">Cancel</button>
-      <button class="add-lift-confirm" id="add-lift-confirm-btn" onclick="confirmAddLift()" disabled>Add Lift</button>
+      <button class="add-lift-confirm" id="track-save-btn" onclick="saveTrackChanges()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -2114,6 +2129,18 @@ const BODYWEIGHT_KEYWORDS = [
 ];
 const ISOMETRIC_KEYWORDS = ['plank','wall sit','iso hold','isometric','dead hang','l-sit','hollow hold'];
 const WEIGHTED_OVERRIDES = ['db ','db\t','dumbbell','bb ','bb\t','barbell','cable','machine','kettlebell','kb ','band','weighted','smith','ez ','ez-'];
+const NON_BARBELL_PREFIXES = ['db ','db\t','dumbbell','cable','machine','kettlebell','kb ','band','smith','ez ','ez-'];
+function isBarbellMovement(name){
+  const n = name.toLowerCase().trim();
+  // Explicitly non-barbell equipment → false
+  if(NON_BARBELL_PREFIXES.some(k => n.includes(k))) return false;
+  // Explicitly barbell or comp lift → true
+  if(n.includes('barbell') || n.includes('bb ') || n.includes('bb\t')) return true;
+  if(isCompLift(name)) return true;
+  // Bare exercise names in a lift group (e.g. "Squat", "Bench Press") → assumed barbell
+  if(classifyLift(name)) return true;
+  return false;
+}
 const TIMED_PATTERN=/\d+\s*(min|sec|s|m)\b/i;
 function getExerciseInputMode(name,pres){
   const n=name.toLowerCase().trim();
@@ -2520,14 +2547,19 @@ function renderMetrics(){
 
   let hasAnyData=false;
   for(const [groupKey,group] of Object.entries(metrics)){
-    const varsWithData=Object.entries(group.variations).filter(([,pts])=>pts.length>0);
-    const varsEmpty=Object.entries(group.variations).filter(([,pts])=>pts.length===0);
-    const allVars=Object.entries(group.variations);
+    // Sort variations: comp lifts first, then alphabetical
+    const allVars=Object.entries(group.variations).sort((a,b)=>{
+      const aComp=isCompLift(a[0])?0:1, bComp=isCompLift(b[0])?0:1;
+      if(aComp!==bComp) return aComp-bComp;
+      return a[0].localeCompare(b[0]);
+    });
+    const varsWithData=allVars.filter(([,pts])=>pts.length>0);
+    const varsEmpty=allVars.filter(([,pts])=>pts.length===0);
     if(allVars.length===0) continue; // no tracked lifts in this group at all
 
     if(varsWithData.length > 0) hasAnyData=true;
 
-    // Variation pill selector — default to first var with data, preserve selection across re-renders
+    // Variation pill selector — default to first var with data (comp lift preferred), preserve selection across re-renders
     const vars = varsWithData.length > 0 ? varsWithData : allVars;
     const activeVar = (state.metricsActiveVar[groupKey] && vars.find(([vn])=>vn===state.metricsActiveVar[groupKey]))
       ? state.metricsActiveVar[groupKey] : vars[0][0];
@@ -2606,7 +2638,7 @@ function renderMetrics(){
     h+=`<div class="no-data-msg">No performance data yet.<br><br>Log actual weights during your workouts and your estimated 1RMs will appear here.</div>`;
   }
 
-  h+=`<button class="add-lift-btn" onclick="openAddLift()">+ Track Another Lift</button>`;
+  h+=`<button class="add-lift-btn" onclick="openAddLift()">Manage Tracked Lifts</button>`;
   h+=`</div>`;
   main.innerHTML=h;
 
@@ -2754,93 +2786,173 @@ function drawSingleVarChart(canvasId, pts, drillMode){
 
 
 // ── ADD CUSTOM LIFT ───────────────────────────────────────────────────────────
-let selectedGroup='squat';
-let selectedUntrackedName=null;
+// (old selectedGroup / selectedUntrackedName removed — replaced by _trackStaged* in new modal)
 
-function getUntrackedProgramLifts(){
+// ── MANAGE TRACKED LIFTS MODAL ────────────────────────────────────────────────
+let _trackStagedRemoves = new Set(); // keys staged for removal
+let _trackStagedAdds = new Set();    // keys staged for addition
+let _trackSearchQuery = '';
+
+function _getAllProgramExercises(){
+  // Returns deduped list of {name, group} from active block only
   if(!state.activeBlock) return [];
   const seen=new Set();
   const result=[];
   for(const week of state.activeBlock.weeks){
     for(const day of week.days){
       for(const ex of day.exercises){
-        const n=ex.name.trim();
-        const nl=n.toLowerCase();
-        if(seen.has(nl)) continue;
-        seen.add(nl);
-        if(isTracked(n)) continue;
-        // skip bodyweight/cardio — no meaningful weight data
-        const mode=getExerciseInputMode(n,'');
+        const baseName = _getBaseName(ex.name);
+        const key = baseName.toLowerCase().trim();
+        if(seen.has(key)) continue;
+        seen.add(key);
+        const mode=getExerciseInputMode(baseName,'');
         if(mode==='bw'||mode==='cardio') continue;
-        const group=classifyLift(n)||'other';
-        result.push({name:n,group});
+        if(!isBarbellMovement(baseName)) continue; // only barbell movements trackable
+        const group=classifyLift(baseName)||'other';
+        result.push({name:baseName, key, group});
       }
     }
   }
   return result;
 }
 
-function renderUntrackedList(){
-  const items=getUntrackedProgramLifts();
-  const wrap=document.getElementById('untracked-list-wrap');
+function _getTrackedExercises(){
+  // Returns exercises currently tracked (respecting staged changes)
+  const all = _getAllProgramExercises();
+  return all.filter(ex => {
+    if(_trackStagedRemoves.has(ex.key)) return true;  // still show, but marked
+    if(_trackStagedAdds.has(ex.key)) return false;     // moved to available
+    return isTracked(ex.name);
+  });
+}
+
+function _getAvailableExercises(){
+  // Returns exercises NOT currently tracked (respecting staged changes)
+  const all = _getAllProgramExercises();
+  return all.filter(ex => {
+    if(_trackStagedAdds.has(ex.key)) return true;      // staged to add
+    if(_trackStagedRemoves.has(ex.key)) return false;   // staged to remove, not available
+    return !isTracked(ex.name);
+  });
+}
+
+function _renderTrackedList(){
+  const wrap = document.getElementById('tracked-list-wrap');
   if(!wrap) return;
-  if(!items.length){
-    wrap.innerHTML=`<div class="untracked-empty">All exercises in your program are already tracked.</div>`;
+  const tracked = _getTrackedExercises();
+  if(!tracked.length){
+    wrap.innerHTML = `<div class="track-no-results">No exercises tracked yet.</div>`;
     return;
   }
-  wrap.innerHTML=`<div class="untracked-list">${items.map(it=>`
-    <div class="untracked-item${selectedUntrackedName===it.name?' selected':''}" onclick="selectUntrackedItem('${esc(it.name)}','${it.group}')">
-      <span class="untracked-item-name">${it.name}</span>
-      <span class="untracked-item-group">${it.group}</span>
-    </div>`).join('')}</div>`;
-}
-
-function selectUntrackedItem(name, group){
-  selectedUntrackedName=name;
-  document.getElementById('add-lift-name').value='';
-  setSelectedGroup(group);
-  renderUntrackedList();
-  document.getElementById('add-lift-confirm-btn').disabled=false;
-}
-
-function onAddLiftInput(val){
-  if(val.trim()){
-    selectedUntrackedName=null;
-    renderUntrackedList();
-    document.getElementById('add-lift-confirm-btn').disabled=false;
-  } else {
-    document.getElementById('add-lift-confirm-btn').disabled=!selectedUntrackedName;
+  // Group by S/B/D/Other
+  const groups = {squat:[], bench:[], deadlift:[], other:[]};
+  tracked.forEach(ex => (groups[ex.group]||groups.other).push(ex));
+  const labels = {squat:'Squat', bench:'Bench', deadlift:'Deadlift', other:'Other'};
+  let h = `<div class="tracked-list">`;
+  for(const [gk, items] of Object.entries(groups)){
+    if(!items.length) continue;
+    h += `<div class="tracked-group-label">${labels[gk]}</div>`;
+    items.forEach(ex => {
+      const isRemoved = _trackStagedRemoves.has(ex.key);
+      h += `<div class="tracked-item${isRemoved?' staged-remove':''}" data-key="${esc(ex.key)}">
+        <span class="tracked-item-name">${escH(ex.name)}</span>
+        <button class="tracked-item-remove" onclick="_toggleTrackRemove('${esc(ex.key)}')" title="${isRemoved?'Undo remove':'Remove'}">${isRemoved?'↩':'×'}</button>
+      </div>`;
+    });
   }
+  h += `</div>`;
+  wrap.innerHTML = h;
+}
+
+function _renderAvailableList(){
+  const wrap = document.getElementById('available-list-wrap');
+  if(!wrap) return;
+  let available = _getAvailableExercises();
+  // Apply search filter
+  if(_trackSearchQuery){
+    const q = _trackSearchQuery.toLowerCase();
+    available = available.filter(ex => ex.name.toLowerCase().includes(q));
+  }
+  if(!available.length){
+    const msg = _trackSearchQuery ? 'No matching exercises found.' : 'All exercises in your program are tracked.';
+    wrap.innerHTML = `<div class="track-no-results">${msg}</div>`;
+    return;
+  }
+  let h = `<div class="available-list">`;
+  available.forEach(ex => {
+    const isAdded = _trackStagedAdds.has(ex.key);
+    h += `<div class="available-item${isAdded?' staged-add':''}" onclick="_toggleTrackAdd('${esc(ex.key)}')">
+      <div>
+        <span class="available-item-name">${escH(ex.name)}</span>
+        <span class="available-item-group">${ex.group}</span>
+      </div>
+      <span class="available-item-add">${isAdded?'✓':'+'}</span>
+    </div>`;
+  });
+  h += `</div>`;
+  wrap.innerHTML = h;
+}
+
+function _toggleTrackRemove(key){
+  if(_trackStagedRemoves.has(key)) _trackStagedRemoves.delete(key);
+  else _trackStagedRemoves.add(key);
+  _renderTrackedList();
+  _renderAvailableList();
+  _updateTrackSaveBtn();
+}
+
+function _toggleTrackAdd(key){
+  if(_trackStagedAdds.has(key)) _trackStagedAdds.delete(key);
+  else _trackStagedAdds.add(key);
+  _renderTrackedList();
+  _renderAvailableList();
+  _updateTrackSaveBtn();
+}
+
+function _onTrackSearch(val){
+  _trackSearchQuery = val.trim();
+  _renderAvailableList();
+}
+
+function _updateTrackSaveBtn(){
+  const btn = document.getElementById('track-save-btn');
+  if(!btn) return;
+  const hasChanges = _trackStagedRemoves.size > 0 || _trackStagedAdds.size > 0;
+  btn.disabled = !hasChanges;
+  btn.textContent = hasChanges ? `Save Changes (${_trackStagedRemoves.size + _trackStagedAdds.size})` : 'Save Changes';
 }
 
 function openAddLift(){
-  selectedUntrackedName=null;
+  _trackStagedRemoves = new Set();
+  _trackStagedAdds = new Set();
+  _trackSearchQuery = '';
   document.getElementById('add-lift-modal').style.display='flex';
-  document.getElementById('add-lift-name').value='';
-  document.getElementById('add-lift-confirm-btn').disabled=true;
-  setSelectedGroup('squat');
-  renderUntrackedList();
+  const searchInput = document.getElementById('track-search');
+  if(searchInput) searchInput.value = '';
+  _renderTrackedList();
+  _renderAvailableList();
+  _updateTrackSaveBtn();
 }
 function closeAddLift(){ document.getElementById('add-lift-modal').style.display='none'; }
 
-function setSelectedGroup(group){
-  selectedGroup=group;
-  document.querySelectorAll('.group-pill').forEach(p=>{
-    p.classList.toggle('active', p.dataset.group===group);
-  });
-}
-function selectGroup(el){ setSelectedGroup(el.dataset.group); }
-
-function confirmAddLift(){
-  const manualName=document.getElementById('add-lift-name').value.trim();
-  const name=manualName||selectedUntrackedName;
-  if(!name) return;
-  if(!state.customLifts.find(c=>c.name.toLowerCase()===name.toLowerCase()))
-    state.customLifts.push({name,group:selectedGroup});
-  // also mark as tracked
-  state.trackedLifts[name.toLowerCase()]=true;
-  saveCustomLifts();
+function saveTrackChanges(){
+  // Apply staged removes
+  for(const key of _trackStagedRemoves){
+    state.trackedLifts[key] = false;
+  }
+  // Apply staged adds
+  for(const key of _trackStagedAdds){
+    state.trackedLifts[key] = true;
+    // Add to customLifts if not already classified by LIFT_GROUPS
+    const all = _getAllProgramExercises();
+    const ex = all.find(e => e.key === key);
+    if(ex && !state.customLifts.find(c => c.name.toLowerCase() === key)){
+      const group = classifyLift(ex.name);
+      if(!group) state.customLifts.push({name: ex.name, group: ex.group});
+    }
+  }
   saveTrackedLifts();
+  saveCustomLifts();
   closeAddLift();
   renderMetrics();
 }
@@ -4488,7 +4600,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   const isComp=isCompLift(ex.name);
   const group=classifyLift(ex.name);
   const tracked=isTracked(ex.name);
-  const showTrackBtn=group!==null;
+  const showTrackBtn=group!==null && isBarbellMovement(ex.name);
 
   const trackBtn=showTrackBtn
     ?`<button class="track-btn ${tracked?'tracked':''} ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="${tracked?'Remove from metrics':'Track in metrics'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>`
