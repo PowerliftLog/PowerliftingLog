@@ -1352,6 +1352,16 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .calc-stepper-val.zero { color: var(--text-dimmer); }
 .calc-reset-btn { width: 100%; padding: 12px; background: none; border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; color: var(--text-faint); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
 .calc-reset-btn:active { border-color: #E22C2C; color: #E22C2C; }
+/* Contextual plate popover (long-press on weight) */
+.plate-popover-overlay { position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; animation:fadeIn 0.15s ease; padding:16px; }
+.plate-popover { background:var(--bg); border:1px solid var(--border); border-radius:16px; width:100%; max-width:360px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+.plate-popover-title { font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:8px; text-align:center; }
+.plate-popover-weight { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; color:var(--gold); text-align:center; margin-bottom:12px; }
+.plate-popover-bar { overflow-x:auto; margin-bottom:10px; }
+.plate-popover-chips { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px; }
+.plate-popover-chip { display:flex; align-items:center; gap:4px; background:var(--surface-3); border:1px solid var(--border-2); border-radius:6px; padding:4px 8px; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; color:var(--text-mid); }
+.plate-popover-chip-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.plate-popover-note { font-family:'Barlow Condensed',sans-serif; font-size:11px; color:var(--text-faint); text-align:center; font-style:italic; }
 .calc-bar-selector { display: flex; gap: 8px; margin-bottom: 16px; }
 .calc-bar-btn { flex: 1; padding: 10px 8px; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; background: rgba(0,0,0,0.2); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.04em; cursor: pointer; text-align: center; transition: all 0.15s; line-height: 1.3; }
 .calc-bar-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
@@ -2127,7 +2137,7 @@ async function _bootApp() {
   // 2. Initialize state — wrapped in try/catch so UI always boots
   try {
     const _savedBlocks = loadBlocks() || [];
-    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'kg', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
 
     // 3. Restore nav position from last session
     const nav = loadNav();
@@ -2159,7 +2169,7 @@ async function _bootApp() {
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
-    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'kg', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   }
 
   // 5. Boot the UI (onboarding check → render) — always runs
@@ -4995,7 +5005,9 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
             const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
             const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
             const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
-            return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
+            const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
+            const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
+            return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           })()}
           ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
@@ -5013,7 +5025,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
           h+=`<div class="set-row">
             ${_setNumHtml(_sk, _si)}
-            <button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>
+            <button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${(()=>{ const _nw=!_lastS.isRpe&&_lastS.weight&&!isNaN(parseFloat(_lastS.weight))?parseFloat(_lastS.weight):0; return _nw>0?' data-weight="'+_nw+'" data-unit="'+getExUnit(ex.name)+'"':''; })()} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -10281,7 +10293,7 @@ function _builderSave() {
 _bootApp().catch(e => {
   console.error('[Boot] Unhandled boot error:', e);
   // Last resort — if _bootApp somehow fails entirely, init empty state and render
-  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'kg', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   checkOnboarding();
 });
 
@@ -12560,6 +12572,126 @@ function calcReset() {
     for (const kg of KG_PLATES) state.calc.manualCounts[kg] = 0;
   }
   renderCalc();
+}
+
+// ── CONTEXTUAL PLATE POPOVER (long-press on prescribed weight) ──────────────
+let _plateLpTimer = null;
+let _plateLpFired = false;
+
+function _initPlateLongPress() {
+  document.addEventListener('pointerdown', function(e) {
+    const btn = e.target.closest('.set-prescribed-btn[data-weight]');
+    if (!btn) return;
+    _plateLpFired = false;
+    _plateLpTimer = setTimeout(function() {
+      _plateLpFired = true;
+      e.preventDefault();
+      const weight = parseFloat(btn.dataset.weight);
+      const unit = btn.dataset.unit || 'lbs';
+      if (!isNaN(weight) && weight > 0) _showPlatePopover(weight, unit);
+    }, 500);
+  });
+  document.addEventListener('pointerup', function() {
+    if (_plateLpTimer) { clearTimeout(_plateLpTimer); _plateLpTimer = null; }
+  });
+  document.addEventListener('pointermove', function(e) {
+    // Cancel if finger moves too far
+    if (_plateLpTimer && (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5)) {
+      clearTimeout(_plateLpTimer); _plateLpTimer = null;
+    }
+  });
+  document.addEventListener('pointercancel', function() {
+    if (_plateLpTimer) { clearTimeout(_plateLpTimer); _plateLpTimer = null; }
+  });
+  // Intercept click if long-press fired
+  document.addEventListener('click', function(e) {
+    if (_plateLpFired) {
+      const btn = e.target.closest('.set-prescribed-btn[data-weight]');
+      if (btn) { e.preventDefault(); e.stopPropagation(); _plateLpFired = false; }
+    }
+  }, true);
+}
+
+function _showPlatePopover(weight, inputUnit) {
+  // Remove any existing
+  const existing = document.getElementById('plate-popover-overlay');
+  if (existing) existing.remove();
+
+  const displayUnit = loadCalcDisplayUnit();
+  const displayLbs = displayUnit === 'lbs';
+  const bar = BARS.find(b => b.id === (state.calc.barId || 'standard'));
+  let plates, totalKg, totalLbs, plateUnit;
+
+  if (displayLbs) {
+    // Convert to lbs if needed, calculate with lbs plates
+    let targetLbs = inputUnit === 'kg' ? kgToLbs(weight) : weight;
+    targetLbs = Math.round(targetLbs / 5) * 5;
+    if (targetLbs < getBaseLbs()) targetLbs = getBaseLbs();
+    const result = calcPlatesLbs(targetLbs);
+    if (!result) return;
+    plates = result.plates;
+    totalLbs = result.totalLbs;
+    totalKg = lbsToKg(totalLbs);
+    plateUnit = 'lbs';
+  } else {
+    // Convert to kg if needed, calculate with kg plates
+    let targetKg = inputUnit === 'lbs' ? lbsToKg(weight) : weight;
+    targetKg = snapToAttempt(targetKg);
+    if (targetKg < getBaseKg()) targetKg = getBaseKg();
+    const result = calcPlates(targetKg);
+    if (!result) return;
+    plates = result.plates;
+    totalKg = result.totalKg;
+    totalLbs = kgToLbs(totalKg);
+    plateUnit = 'kg';
+  }
+
+  const hasPlates = plates.some(p => p.count > 0);
+  if (!hasPlates) return;
+
+  const barSVG = renderCalcBarSVG(plates, false, plateUnit);
+  const cMap = displayLbs ? LBS_PLATE_COLORS : PLATE_COLORS;
+  const unitSuffix = displayLbs ? 'lb' : 'kg';
+
+  let chipsHtml = '';
+  for (const p of plates) {
+    if (p.count === 0) continue;
+    const pw = displayLbs ? p.lbs : p.kg;
+    chipsHtml += `<div class="plate-popover-chip">
+      <div class="plate-popover-chip-dot" style="background:${cMap[pw]}"></div>
+      ${pw}${unitSuffix} ×${p.count}
+    </div>`;
+  }
+
+  const primaryVal = displayLbs ? totalLbs : totalKg;
+  const primaryUnit = displayLbs ? 'lbs' : 'kg';
+  const secondaryVal = displayLbs ? totalKg : totalLbs;
+  const secondaryUnit = displayLbs ? 'kg' : 'lbs';
+  const fmtPrimary = primaryVal % 1 === 0 ? primaryVal.toFixed(0) : primaryVal.toFixed(1);
+  const fmtSecondary = secondaryVal % 1 === 0 ? secondaryVal.toFixed(0) : secondaryVal.toFixed(1);
+  const barLabel = displayLbs ? `${bar.label} (${bar.lbs}lb)` : `${bar.label} (${bar.kg}kg)`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'plate-popover-overlay';
+  overlay.id = 'plate-popover-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="plate-popover">
+      <div class="plate-popover-title">Plate Breakdown</div>
+      <div class="plate-popover-weight">${fmtPrimary} ${primaryUnit} <span style="font-size:16px;color:var(--text-faint);font-weight:500">(${fmtSecondary} ${secondaryUnit})</span></div>
+      <div class="plate-popover-bar">${barSVG}</div>
+      <div class="plate-popover-chips">${chipsHtml}</div>
+      <div class="plate-popover-note">${barLabel} · per side</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+// Init long-press after DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initPlateLongPress);
+} else {
+  _initPlateLongPress();
 }
 </script>
 </body>
