@@ -16,7 +16,7 @@ const LIFT_GROUPS = {
 const COMP_KEYWORDS = {
   squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat'],
   bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','sumo deadlift','comp deadlift','competition deadlift','conventional pull','sumo pull','comp pull','competition style deadlift'],
+  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift'],
 };
 
 const VARIATION_MODIFIERS = [
@@ -41,7 +41,9 @@ const VARIATION_MODIFIERS = [
   // Effort/touch modifiers
   'dead stop','speed','dynamic effort','eccentric','isometric','floating','1.5 rep',
   // Stance/position
-  'wide stance','narrow stance','sumo stance','heel elevated','beltless',
+  'wide stance','narrow stance','sumo stance','sumo deadlift','sumo pull','sumo dead','heel elevated','beltless',
+  // High bar squat — variation, not comp (some lifters use as comp but default to variation)
+  'high bar',
 ];
 
 function isCompLift(name){
@@ -65,6 +67,147 @@ function classifyLift(name){
     if(keywords.some(k=>n.includes(k))) return group;
   }
   return null;
+}
+
+// ── EXERCISE NAME SYNONYMS ───────────────────────────────────────────────────
+// Maps alternate names → one canonical display name.
+// Used for metrics grouping, var-pills, tracked lifts, and e1RM aggregation.
+// Lookup is case-insensitive; keys must be lowercase.
+const SYNONYM_MAP = {
+  // ── Comp Squat synonyms ──
+  'squat':                'Squat',
+  'back squat':           'Squat',
+  'barbell squat':        'Squat',
+  'competition squat':    'Squat',
+  'comp squat':           'Squat',
+  'low bar squat':        'Squat',
+  'squats':               'Squat',
+
+  // ── Comp Bench synonyms ──
+  'bench press':          'Bench Press',
+  'bench':                'Bench Press',
+  'barbell bench':        'Bench Press',
+  'barbell bench press':  'Bench Press',
+  'comp bench':           'Bench Press',
+  'comp bench press':     'Bench Press',
+  'barbell comp bench':   'Bench Press',
+  'barbell comp bench press': 'Bench Press',
+  'competition bench':    'Bench Press',
+  'competition bench press': 'Bench Press',
+  'competition pause bench': 'Bench Press',
+  'paused bench':         'Bench Press',
+  'paused bench press':   'Bench Press',
+  'pause bench':          'Bench Press',
+  'pause bench press':    'Bench Press',
+  'raw bench':            'Bench Press',
+
+  // ── Comp Deadlift synonyms ──
+  'deadlift':             'Deadlift',
+  'barbell deadlift':     'Deadlift',
+  'comp deadlift':        'Deadlift',
+  'competition deadlift': 'Deadlift',
+  'competition style deadlift': 'Deadlift',
+  'conv deadlift':        'Deadlift',
+  'conv. deadlift':       'Deadlift',
+  'conventional deadlift':'Deadlift',
+  'deadlifts':            'Deadlift',
+
+  // ── High Bar Squat (variation, not comp) ──
+  'high bar squats':      'High Bar Squat',
+  'hb squat':             'High Bar Squat',
+
+  // ── Pause Squat synonyms ──
+  'paused squat':         'Pause Squat',
+  'squat 2ct pause':      'Pause Squat',
+  'paused squat, 2ct':    'Pause Squat',
+  'paused squat, 2 count':'Pause Squat',
+  'squat, 2ct paused':    'Pause Squat',
+  'double paused squat':  'Pause Squat',
+  'dbl paused squat':     'Pause Squat',
+  'short pause squat':    'Pause Squat',
+
+  // ── TNG Bench synonyms ──
+  'tng bench':            'Touch and Go Bench',
+  'bench tng':            'Touch and Go Bench',
+  'barbell tng bench':    'Touch and Go Bench',
+  'tng bench press':      'Touch and Go Bench',
+  't-shirt bench press':  'Touch and Go Bench',
+
+  // ── Close Grip Bench synonyms ──
+  'close grip bench press':  'Close Grip Bench',
+  'close-grip bench':        'Close Grip Bench',
+  'close-grip bench press':  'Close Grip Bench',
+  'bench close grip':        'Close Grip Bench',
+  'cgbp':                    'Close Grip Bench',
+
+  // ── Pause Deadlift synonyms ──
+  'paused deadlift':         'Pause Deadlift',
+  'deadlift w/ pause':       'Pause Deadlift',
+  'deadlift w/pause':        'Pause Deadlift',
+  'paused deadlift, 2ct':    'Pause Deadlift',
+
+  // ── Larsen Press synonyms ──
+  'larson press':             'Larsen Press',
+
+  // ── Stiff Leg Deadlift synonyms ──
+  'stiff legged deadlift':   'Stiff Leg Deadlift',
+  'stiff legged deadlifts':  'Stiff Leg Deadlift',
+  'stiff-legged deadlift':   'Stiff Leg Deadlift',
+  'sldl':                    'Stiff Leg Deadlift',
+  'sl deadlift':             'Stiff Leg Deadlift',
+
+  // ── SSB Squat synonyms ──
+  'safety bar squat':         'SSB Squat',
+
+  // ── Snatch Grip Deadlift synonyms ──
+  'snatch grip conv. deadlift': 'Snatch Grip Deadlift',
+  'sgdl':                       'Snatch Grip Deadlift',
+
+  // ── Pin Squat synonyms ──
+  'pin squats':               'Pin Squat',
+  'squat pin':                'Pin Squat',
+  'squat to pins':            'Pin Squat',
+
+  // ── Sumo Deadlift synonyms (variation by default, user can toggle on) ──
+  'sumo pull':                'Sumo Deadlift',
+  'sumo dead':                'Sumo Deadlift',
+
+  // ── Paused Sumo Deadlift synonyms ──
+  'paused sumo deadlift, 2ct':'Paused Sumo Deadlift',
+
+  // ── RDL synonyms ──
+  'romanian deadlift':        'RDL',
+
+  // ── Rack Pull synonyms ──
+  'rack pulls':               'Rack Pull',
+
+  // ── Deficit Deadlift synonyms ──
+  'deficit deadlifts':        'Deficit Deadlift',
+  'deficit pull':             'Deficit Deadlift',
+  'defecit deadlift':         'Deficit Deadlift',
+
+  // ── Incline Bench synonyms ──
+  'incline bench press':      'Incline Bench',
+  'incline press':            'Incline Bench',
+
+  // ── Decline Bench synonyms ──
+  'decline bench press':      'Decline Bench',
+  'decline press':            'Decline Bench',
+
+  // ── Floor Press synonyms ──
+  'close grip floor press':   'Floor Press',
+};
+
+/**
+ * Canonicalize an exercise name: strips bracket suffixes, trims,
+ * and maps known synonyms to a single canonical display name.
+ * Returns the canonical name (proper-cased) or the original name if no synonym found.
+ */
+function canonicalizeLift(name) {
+  const base = _getBaseName(name).trim();
+  const key = base.toLowerCase().replace(/[,.:;!?]+$/, '').trim();
+  if (SYNONYM_MAP[key]) return SYNONYM_MAP[key];
+  return base;
 }
 
 // ── EXERCISE SPELL CORRECTION ─────────────────────────────────────────────────
@@ -5883,8 +6026,8 @@ function _mBuildExercise(name, setLines) {
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS,
-    isCompLift, classifyLift, _getBaseName,
+    LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP,
+    isCompLift, classifyLift, canonicalizeLift, _getBaseName,
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
     DAYS, detectFormat, detectE, detectF, detectG,
     parseA, parseASheet, parseB, parseBSheet,

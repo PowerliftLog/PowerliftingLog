@@ -1401,7 +1401,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.8</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.9</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2054,26 +2054,33 @@ function setScreen(s){
 }
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
-// LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, isCompLift → from parsers.js
+// LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP, isCompLift, canonicalizeLift → from parsers.js
 
 function isTracked(name){
   // Returns true if this exercise should appear in metrics
+  // Check raw name first (backwards compat with existing trackedLifts entries)
   const n=name.toLowerCase().trim();
-  if(state.trackedLifts[n]===false) return false; // explicitly deselected
-  if(state.trackedLifts[n]===true) return true;   // explicitly opted in
-  // Also check base name for deduped exercises (e.g., "Barbell Deadlift [1x1(352)]")
+  if(state.trackedLifts[n]===false) return false;
+  if(state.trackedLifts[n]===true) return true;
+  // Check base name for deduped exercises (e.g., "Barbell Deadlift [1x1(352)]")
   const base = _getBaseName(name).toLowerCase().trim();
   if(base !== n) {
     if(state.trackedLifts[base]===false) return false;
     if(state.trackedLifts[base]===true) return true;
+  }
+  // Check canonical name (synonym-merged) — e.g. "Back Squat" → "Squat"
+  const canon = canonicalizeLift(name).toLowerCase().trim();
+  if(canon !== n && canon !== base) {
+    if(state.trackedLifts[canon]===false) return false;
+    if(state.trackedLifts[canon]===true) return true;
   }
   return isCompLift(name);                          // default: comp lifts on, variations off
 }
 
 function toggleTracked(name, event){
   if(event){ event.stopPropagation(); event.preventDefault(); }
-  // Use base name so toggling one deduped variant affects all variants
-  const n=_getBaseName(name).toLowerCase().trim();
+  // Use canonical name so toggling one synonym affects all variants
+  const n=canonicalizeLift(name).toLowerCase().trim();
   const current=isTracked(name);
   state.trackedLifts[n]=!current;
   saveTrackedLifts();
@@ -2097,8 +2104,8 @@ function autoRegisterCompLifts(blocks){
     for(const week of block.weeks){
       for(const day of week.days){
         for(const ex of day.exercises){
-          // Use base name for tracked lifts key (handles deduped names like "Barbell Deadlift [1x1(352)]")
-          const n=_getBaseName(ex.name).toLowerCase().trim();
+          // Use canonical name for tracked lifts key (merges synonyms like "Back Squat" → "Squat")
+          const n=canonicalizeLift(ex.name).toLowerCase().trim();
           // Only set if not already explicitly set by user
           if(state.trackedLifts[n]===undefined&&isCompLift(ex.name)){
             state.trackedLifts[n]=true;
@@ -2215,7 +2222,7 @@ function buildMetrics(drillBlockId){
     if(drillBlockId){
       const block=state.blocks.find(b=>b.id===drillBlockId);
       if(block){
-        const found=block.weeks.some(w=>w.days.some(d=>d.exercises.some(e=>_getBaseName(e.name).toLowerCase().trim()===cl.name.toLowerCase().trim())));
+        const found=block.weeks.some(w=>w.days.some(d=>d.exercises.some(e=>canonicalizeLift(e.name).toLowerCase().trim()===cl.name.toLowerCase().trim())));
         if(!found) return;
       }
     }
@@ -2230,7 +2237,7 @@ function buildMetrics(drillBlockId){
     const parts=key.split('||');
     if(parts.length<5) continue;
     const blockId=parts[0];
-    const exName=_getBaseName(parts[3]); // normalize — strip bracket suffixes for dedup
+    const exName=canonicalizeLift(parts[3]); // normalize — strip bracket suffixes + synonym merge
     const weekLabel=parts[1];
     const setIdx=parts[4];
     if(!setIdx.startsWith('s')) continue;
@@ -2390,7 +2397,7 @@ function renderMetrics(){
     for(const week of block.weeks){
       for(const day of week.days){
         for(const ex of day.exercises){
-          const baseName = _getBaseName(ex.name);
+          const baseName = canonicalizeLift(ex.name);
           const key = baseName.toLowerCase().trim();
           if(trackedInMetrics.has(key)) continue; // already has data
           if(!isTracked(ex.name)) continue; // not tracked
@@ -2413,7 +2420,7 @@ function renderMetrics(){
       for(const week of block.weeks){
         for(const day of week.days){
           for(const ex of day.exercises){
-            if(_getBaseName(ex.name).toLowerCase().trim() === key){ displayName = _getBaseName(ex.name); break; }
+            if(canonicalizeLift(ex.name).toLowerCase().trim() === key){ displayName = canonicalizeLift(ex.name); break; }
           }
           if(displayName) break;
         }
@@ -2804,7 +2811,7 @@ function _getAllProgramExercises(){
   for(const week of state.activeBlock.weeks){
     for(const day of week.days){
       for(const ex of day.exercises){
-        const baseName = _getBaseName(ex.name);
+        const baseName = canonicalizeLift(ex.name);
         const key = baseName.toLowerCase().trim();
         if(seen.has(key)) continue;
         seen.add(key);
@@ -7162,7 +7169,7 @@ function _pruneTrackedLifts(){
     for(const week of block.weeks){
       for(const day of week.days){
         for(const ex of day.exercises){
-          activeNames.add(_getBaseName(ex.name).toLowerCase().trim());
+          activeNames.add(canonicalizeLift(ex.name).toLowerCase().trim());
         }
       }
     }
