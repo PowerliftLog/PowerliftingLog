@@ -1062,7 +1062,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .builder-add-ex { display:flex; align-items:center; justify-content:center; gap:6px; padding:12px; border:1px dashed var(--border); border-radius:10px; cursor:pointer; font-family:'Barlow',sans-serif; font-size:13px; color:var(--text-dim); transition:all 0.15s; min-height:44px; }
 .builder-add-ex:active { border-color:var(--gold); color:var(--gold); }
 .builder-picker-overlay { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:flex-end; }
-.builder-picker-sheet { width:100%; max-width:480px; margin:0 auto; background:var(--bg); border-radius:16px 16px 0 0; max-height:75vh; display:flex; flex-direction:column; animation:builderSlideUp 0.25s ease; }
+.builder-picker-sheet { width:100%; max-width:480px; margin:0 auto; background:var(--bg); border-radius:16px 16px 0 0; height:75vh; display:flex; flex-direction:column; animation:builderSlideUp 0.25s ease; }
 @keyframes builderSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 .builder-picker-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
 .builder-picker-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--text-bright); }
@@ -1859,6 +1859,16 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.04em" id="rest-timer-mode-label">Auto</div>
     </button>
+    <div class="settings-row-btn" style="cursor:default" id="calc-display-unit-row">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/></svg>
+        Plate Calculator
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="settings-athlete-gender-btn" id="calc-disp-kg" onclick="setCalcDisplayUnit('kg')" style="padding:6px 12px;font-size:12px">KG</button>
+        <button class="settings-athlete-gender-btn" id="calc-disp-lbs" onclick="setCalcDisplayUnit('lbs')" style="padding:6px 12px;font-size:12px">LBS</button>
+      </div>
+    </div>
 
     <div class="settings-section-label">Training Data</div>
     <button class="settings-row-btn" onclick="downloadBackup()">
@@ -2117,7 +2127,7 @@ async function _bootApp() {
   // 2. Initialize state — wrapped in try/catch so UI always boots
   try {
     const _savedBlocks = loadBlocks() || [];
-    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'kg', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
 
     // 3. Restore nav position from last session
     const nav = loadNav();
@@ -2149,7 +2159,7 @@ async function _bootApp() {
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
-    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'kg', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   }
 
   // 5. Boot the UI (onboarding check → render) — always runs
@@ -3845,6 +3855,11 @@ function saveSchedule(d) { _idbPut(SCHEDULE_KEY, d); try { localStorage.setItem(
 // Athlete profile
 function loadAthlete()  { try { if(_idbReady && _idbCache[ATHLETE_KEY]!==undefined) return _idbCache[ATHLETE_KEY]; return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
 function saveAthlete(d) { _idbPut(ATHLETE_KEY, d); try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
+
+// Plate calculator display unit — which plates to show on the bar (independent of input unit)
+const CALC_DISPLAY_UNIT_KEY = 'liftlog_calcDisplayUnit';
+function loadCalcDisplayUnit() { try { return localStorage.getItem(CALC_DISPLAY_UNIT_KEY) || 'kg'; } catch { return 'kg'; } }
+function saveCalcDisplayUnit(u) { try { localStorage.setItem(CALC_DISPLAY_UNIT_KEY, u); } catch(e) { console.error(e); } }
 
 
 
@@ -7587,11 +7602,30 @@ function _pruneTrackedLifts(){
 document.getElementById('new-btn') && document.getElementById('new-btn').addEventListener('click', openProgramModal);
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
+function updateCalcDisplayUnitUI() {
+  const u = loadCalcDisplayUnit();
+  const kgBtn = document.getElementById('calc-disp-kg');
+  const lbsBtn = document.getElementById('calc-disp-lbs');
+  if (kgBtn) kgBtn.classList.toggle('active', u === 'kg');
+  if (lbsBtn) lbsBtn.classList.toggle('active', u === 'lbs');
+}
+function setCalcDisplayUnit(u) {
+  saveCalcDisplayUnit(u);
+  updateCalcDisplayUnitUI();
+  // If switching to lbs, also set calc input to lbs (no toggle in lbs mode)
+  if (u === 'lbs') {
+    state.calc.inputUnit = 'lbs';
+    state.calc.collarsOn = false;
+  }
+  // If on calc screen, re-render
+  if (state.screen === 'calc') renderCalc();
+}
 function openSettings(scrollTo) {
   const modal = document.getElementById('settings-modal');
   if (!modal) return;
   updateSettingsThemePills();
   updateBackupTimestamp();
+  updateCalcDisplayUnitUI();
   updateRestTimerToggleUI();
   modal.style.display = 'flex';
   requestAnimationFrame(() => {
@@ -10247,7 +10281,7 @@ function _builderSave() {
 _bootApp().catch(e => {
   console.error('[Boot] Unhandled boot error:', e);
   // Last resort — if _bootApp somehow fails entirely, init empty state and render
-  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'kg', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   checkOnboarding();
 });
 
@@ -12162,13 +12196,15 @@ function renderCalc() {
   };
 
   let totalKg = 0, totalLbs = 0, plates = [], remainder = 0, noSolution = false;
-  const useLbs = inputUnit === 'lbs';
+  // displayUnit = which plates to show (from settings). inputUnit = what unit user types in.
+  const displayUnit = loadCalcDisplayUnit();
+  const displayLbs = displayUnit === 'lbs';
 
   if (mode === 'target') {
     const numVal = parseFloat(inputVal);
     if (!isNaN(numVal) && numVal > 0) {
-      if (useLbs) {
-        // LBS mode: calculate with lbs plates directly, snap to nearest 5lb increment
+      if (displayLbs) {
+        // LBS display: input is always lbs, calculate with lbs plates
         let targetLbs = Math.round(numVal / 5) * 5;
         if (targetLbs < getBaseLbs()) targetLbs = getBaseLbs();
         const result = calcPlatesLbs(targetLbs);
@@ -12180,8 +12216,8 @@ function renderCalc() {
           if (remainder > 0.01) noSolution = true;
         }
       } else {
-        // KG mode: existing behavior
-        let rawKg = numVal;
+        // KG display: user can input lbs or kg, bar always shows kg plates
+        let rawKg = inputUnit === 'lbs' ? lbsToKg(numVal) : numVal;
         let targetKg = snapToAttempt(rawKg);
         const baseKg = getBaseKg();
         if (targetKg < baseKg) targetKg = baseKg;
@@ -12196,8 +12232,8 @@ function renderCalc() {
       }
     }
   } else {
-    // Manual mode
-    if (useLbs) {
+    // Manual mode — plate grid always matches displayUnit
+    if (displayLbs) {
       totalLbs = manualTotalLbs();
       totalKg = lbsToKg(totalLbs);
       plates = LBS_PLATES_ALL
@@ -12213,18 +12249,18 @@ function renderCalc() {
   }
 
   const hasPlates = plates.some(p => p.count > 0);
-  const plateUnit = useLbs ? 'lbs' : 'kg';
+  const plateUnit = displayLbs ? 'lbs' : 'kg';
   const barSVG = renderCalcBarSVG(plates, state.calc.collarsOn, plateUnit);
 
-  // Plate breakdown chips (for target mode)
+  // Plate breakdown chips
   let breakdownHtml = '';
   if (hasPlates) {
-    const cMap = useLbs ? LBS_PLATE_COLORS : PLATE_COLORS;
+    const cMap = displayLbs ? LBS_PLATE_COLORS : PLATE_COLORS;
     breakdownHtml = `<div class="calc-plate-breakdown">`;
     for (const p of plates) {
       if (p.count === 0) continue;
-      const pw = useLbs ? p.lbs : p.kg;
-      const label = useLbs ? `${pw}lb` : `${pw}kg`;
+      const pw = displayLbs ? p.lbs : p.kg;
+      const label = displayLbs ? `${pw}lb` : `${pw}kg`;
       breakdownHtml += `<div class="calc-plate-chip">
         <div class="calc-plate-dot" style="background:${cMap[pw]}"></div>
         <span class="calc-plate-label">${label}</span>
@@ -12234,9 +12270,9 @@ function renderCalc() {
     breakdownHtml += `</div>`;
   }
 
-  // Manual plate rows — unit-aware
+  // Manual plate rows — based on displayUnit
   let manualRowsHtml = '';
-  if (useLbs) {
+  if (displayLbs) {
     const lbsManualOrder = [45, 25, 35, 10, 5, 2.5];
     const lbsCounts = state.calc.manualCountsLbs || {};
     for (const lb of lbsManualOrder) {
@@ -12270,21 +12306,20 @@ function renderCalc() {
   }
 
   const bar = BARS.find(b => b.id === state.calc.barId);
-  const barLabel = useLbs ? `${bar.lbs}lb` : `${bar.kg}kg`;
-  const collarNote = state.calc.collarsOn ? (useLbs ? ` + collars (${getCollarLbs()}lb)` : ` + collars (5kg)`) : '';
+  const barLabel = displayLbs ? `${bar.lbs}lb` : `${bar.kg}kg`;
+  const collarNote = state.calc.collarsOn ? ` + collars (5kg)` : '';
   const plateNote = hasPlates ? ` + ${plates.map(p => {
-    const pw = useLbs ? p.lbs : p.kg;
-    const u = useLbs ? 'lb' : 'kg';
+    const pw = displayLbs ? p.lbs : p.kg;
+    const u = displayLbs ? 'lb' : 'kg';
     return `${p.count}×${pw}${u}`;
   }).join(' + ')} per side` : '';
 
-  // Attempt snaps for target mode
-  // LBS mode: snap to 5lb increments (standard US gym plates)
-  // KG mode: snap to 2.5kg increments (competition plates)
+  // Snap suggestions for target mode
   let snapHtml = '';
   if (mode === 'target' && inputVal && !isNaN(parseFloat(inputVal))) {
     const numVal = parseFloat(inputVal);
-    if (useLbs) {
+    if (displayLbs) {
+      // LBS display: snap to 5lb increments
       const rounded = Math.round(numVal / 5) * 5;
       const down = rounded - 5; const up = rounded + 5;
       if (rounded !== numVal) {
@@ -12303,22 +12338,33 @@ function renderCalc() {
           </div>
         </div>`;
       }
-    } else if (inputUnit === 'kg') {
-      // KG mode: show valid attempt snaps (2.5kg increments)
-      const rounded = snapToAttempt(numVal);
-      if (rounded !== numVal) {
+    } else {
+      // KG display: snap to 2.5kg increments (convert from lbs input if needed)
+      const rawKg = inputUnit === 'lbs' ? lbsToKg(numVal) : numVal;
+      const rounded = snapToAttempt(rawKg);
+      if (Math.abs(rounded - rawKg) > 0.01) {
         const down = rounded - 2.5; const up = rounded + 2.5;
+        // Show snap values in the user's input unit
+        const snapLabel = (kgVal) => {
+          if (inputUnit === 'lbs') {
+            const lbVal = kgToLbs(kgVal);
+            return `${Math.round(lbVal)}lb`;
+          }
+          return `${kgVal % 1 === 0 ? kgVal.toFixed(0) : kgVal.toFixed(1)}kg`;
+        };
+        const snapFn = inputUnit === 'lbs' ? 'calcSnapLbs' : 'calcSnapToNearest';
+        const snapArg = (kgVal) => inputUnit === 'lbs' ? Math.round(kgToLbs(kgVal)) : kgVal;
         snapHtml = `<div style="margin-top:10px;">
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;text-align:center;">Valid Attempt</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
           <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapColor};">
-            <span style="color:#C9A84C;font-size:13px;">−</span><span>${down % 1 === 0 ? down.toFixed(0) : down.toFixed(1)}kg</span>
+            <span style="color:#C9A84C;font-size:13px;">−</span><span>${snapLabel(down)}</span>
           </div>
           <div onclick="calcSnapToNearest(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapMidBg};border:${T.snapMidBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapMidColor};font-weight:600;">
-            <span>→ ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}kg</span>
+            <span>→ ${snapLabel(rounded)}</span>
           </div>
           <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapColor};">
-            <span style="color:#C9A84C;font-size:13px;">+</span><span>${up % 1 === 0 ? up.toFixed(0) : up.toFixed(1)}kg</span>
+            <span style="color:#C9A84C;font-size:13px;">+</span><span>${snapLabel(up)}</span>
           </div>
           </div>
         </div>`;
@@ -12342,10 +12388,16 @@ function renderCalc() {
       <div class="calc-section" style="padding:12px;">
         <div style="display:flex;gap:8px;align-items:stretch;height:68px;">
           <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="flex:1;min-width:0;background:${T.inputBg};border:${T.inputBorder};color:${T.inputColor};" />
+          ${displayLbs ? `
+          <div style="display:flex;align-items:center;flex-shrink:0;">
+            <div style="border-radius:7px;padding:8px 14px;border:${T.unitBorder(true)};background:${T.unitBg2(true)};color:${T.unitColor(true)};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;">LBS</div>
+          </div>
+          ` : `
           <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:56px;">
             <button onclick="calcSetUnit('lbs')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='lbs')};background:${T.unitBg2(inputUnit==='lbs')};color:${T.unitColor(inputUnit==='lbs')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
             <button onclick="calcSetUnit('kg')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='kg')};background:${T.unitBg2(inputUnit==='kg')};color:${T.unitColor(inputUnit==='kg')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
           </div>
+          `}
         </div>
         ${snapHtml}
       </div>
@@ -12354,11 +12406,11 @@ function renderCalc() {
       <div class="calc-section" style="padding:12px 12px 10px;">
         <div class="calc-bar-visual-zone">
           <div class="calc-bar-wrap">${barSVG}</div>
-          ${noSolution ? `<div class="calc-no-solution"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Weight not achievable with standard ${useLbs ? 'LB' : 'KG'} plates</div>` : ''}
+          ${noSolution ? `<div class="calc-no-solution"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Weight not achievable with standard ${displayLbs ? 'LB' : 'KG'} plates</div>` : ''}
           ${breakdownHtml}
         </div>
         <div class="calc-totals-display" style="margin-top:10px;margin-bottom:4px;">
-          ${useLbs ? `
+          ${displayLbs ? `
           <div class="calc-total-box">
             <div class="calc-total-val">${totalLbs % 1 === 0 ? totalLbs.toFixed(0) : totalLbs.toFixed(1)}</div>
             <div class="calc-total-unit">Pounds</div>
@@ -12385,10 +12437,10 @@ function renderCalc() {
       <div class="calc-section" style="padding:12px;">
         <div class="calc-bar-selector" style="margin-bottom:10px;">
           ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
-            ${b.label}<span class="calc-bar-btn-sub">${useLbs ? `${b.lbs}lb` : `${b.kg}kg / ${b.lbs}lb`}</span>
+            ${b.label}<span class="calc-bar-btn-sub">${displayLbs ? `${b.lbs}lb` : `${b.kg}kg / ${b.lbs}lb`}</span>
           </button>`).join('')}
         </div>
-        ${useLbs ? '' : `<div class="calc-collar-row">
+        ${displayLbs ? '' : `<div class="calc-collar-row">
           <div>
             <div class="calc-collar-label">Collars</div>
             <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
@@ -12398,14 +12450,6 @@ function renderCalc() {
       </div>
 
     ` : `
-
-      <!-- ── MANUAL: UNIT TOGGLE ── -->
-      <div class="calc-section" style="padding:12px;">
-        <div style="display:flex;gap:4px;justify-content:center;margin-bottom:0;">
-          <button onclick="calcSetUnit('lbs')" style="flex:0 0 64px;height:32px;border-radius:7px;border:${T.unitBorder(inputUnit==='lbs')};background:${T.unitBg2(inputUnit==='lbs')};color:${T.unitColor(inputUnit==='lbs')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
-          <button onclick="calcSetUnit('kg')" style="flex:0 0 64px;height:32px;border-radius:7px;border:${T.unitBorder(inputUnit==='kg')};background:${T.unitBg2(inputUnit==='kg')};color:${T.unitColor(inputUnit==='kg')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
-        </div>
-      </div>
 
       <!-- ── MANUAL: PLATE GRID ── -->
       <div class="calc-section" style="padding:12px;">
@@ -12421,7 +12465,7 @@ function renderCalc() {
           ${breakdownHtml}
         </div>
         <div class="calc-totals-display" style="margin-top:10px;margin-bottom:4px;">
-          ${useLbs ? `
+          ${displayLbs ? `
           <div class="calc-total-box">
             <div class="calc-total-val">${totalLbs % 1 === 0 ? totalLbs.toFixed(0) : totalLbs.toFixed(1)}</div>
             <div class="calc-total-unit">Pounds</div>
@@ -12448,10 +12492,10 @@ function renderCalc() {
       <div class="calc-section" style="padding:12px;">
         <div class="calc-bar-selector" style="margin-bottom:10px;">
           ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
-            ${b.label}<span class="calc-bar-btn-sub">${useLbs ? `${b.lbs}lb` : `${b.kg}kg / ${b.lbs}lb`}</span>
+            ${b.label}<span class="calc-bar-btn-sub">${displayLbs ? `${b.lbs}lb` : `${b.kg}kg / ${b.lbs}lb`}</span>
           </button>`).join('')}
         </div>
-        ${useLbs ? '' : `<div class="calc-collar-row">
+        ${displayLbs ? '' : `<div class="calc-collar-row">
           <div>
             <div class="calc-collar-label">Collars</div>
             <div class="calc-collar-sub">2.5kg each · 5kg / 11lbs total</div>
@@ -12467,7 +12511,13 @@ function renderCalc() {
 }
 
 function calcSnapToNearest(targetKg) {
-  state.calc.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
+  // If user is entering in lbs, convert the kg snap target back to lbs for the input
+  if (state.calc.inputUnit === 'lbs') {
+    const lbVal = Math.round(kgToLbs(targetKg));
+    state.calc.inputVal = String(lbVal);
+  } else {
+    state.calc.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
+  }
   const inp = document.getElementById('calc-input');
   if (inp) inp.value = state.calc.inputVal;
   renderCalc();
@@ -12481,8 +12531,7 @@ function calcSnapLbs(targetLbs) {
 
 function calcSetMode(m) { state.calc.mode = m; renderCalc(); }
 function calcSetUnit(u) {
-  // When switching units, turn off collars if going to lbs (no competition collars)
-  if (u === 'lbs') state.calc.collarsOn = false;
+  // Only relevant in KG display mode — switches input unit between lbs/kg
   state.calc.inputUnit = u;
   renderCalc();
 }
@@ -12490,9 +12539,9 @@ function calcInput(v) { state.calc.inputVal = v; renderCalc(); }
 function calcSetBar(id) { state.calc.barId = id; renderCalc(); }
 function calcToggleCollars() { state.calc.collarsOn = !state.calc.collarsOn; renderCalc(); }
 function calcAdjust(w, delta) {
-  // Unit-aware: check if the weight is a lbs plate or kg plate
-  const isLbsPlate = LBS_PLATES_ALL.includes(w) && state.calc.inputUnit === 'lbs';
-  if (isLbsPlate) {
+  // Manual mode uses displayUnit (from settings), not inputUnit
+  const displayLbs = loadCalcDisplayUnit() === 'lbs';
+  if (displayLbs) {
     if (!state.calc.manualCountsLbs) state.calc.manualCountsLbs = {};
     const cur = state.calc.manualCountsLbs[w] || 0;
     state.calc.manualCountsLbs[w] = Math.max(0, cur + delta);
@@ -12503,7 +12552,8 @@ function calcAdjust(w, delta) {
   renderCalc();
 }
 function calcReset() {
-  if (state.calc.inputUnit === 'lbs') {
+  const displayLbs = loadCalcDisplayUnit() === 'lbs';
+  if (displayLbs) {
     if (!state.calc.manualCountsLbs) state.calc.manualCountsLbs = {};
     for (const lb of LBS_PLATES_ALL) state.calc.manualCountsLbs[lb] = 0;
   } else {
