@@ -1100,6 +1100,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 @keyframes builderFadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
 .builder-detail-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--text-bright); margin-bottom:20px; text-align:center; }
 .builder-detail-field { margin-bottom:16px; }
+.builder-rx-preview { font-family:'Barlow',sans-serif; font-size:12px; margin-top:6px; min-height:18px; }
+.rx-preview-ok { color: #4CAF50; }
+.rx-preview-warn { color: #FFB74D; }
 .builder-detail-examples { font-family:'Barlow',sans-serif; font-size:11px; color:var(--text-faint); margin-top:6px; line-height:1.6; }
 .builder-radio-group { display:flex; flex-direction:column; gap:8px; }
 .builder-radio { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:border-color 0.15s; min-height:44px; }
@@ -10073,7 +10076,8 @@ function _builderShowDetail(dayIdx, exIdx, prefillName) {
       </div>
       <div class="builder-detail-field">
         <div class="builder-label">Prescription</div>
-        <input class="builder-input" id="builder-detail-rx" type="text" placeholder="e.g. 5x3 @ 85%" value="${escH(existing ? existing.prescription : '')}" autocomplete="off" maxlength="100">
+        <input class="builder-input" id="builder-detail-rx" type="text" placeholder="e.g. 5x3 @ 85%" value="${escH(existing ? existing.prescription : '')}" autocomplete="off" maxlength="100" oninput="_builderUpdateRxPreview(this.value)">
+        <div id="builder-rx-preview" class="builder-rx-preview"></div>
         <div class="builder-detail-examples">
           <strong>Formats:</strong> 3x5 &middot; 5x3 @ 85% &middot; 3x5(225) &middot; 3x8-12 &middot; 1x3(315), 1x3(335)
         </div>
@@ -10087,6 +10091,8 @@ function _builderShowDetail(dayIdx, exIdx, prefillName) {
     </div>
   `;
   document.body.appendChild(overlay);
+  // Show preview for existing prescription
+  if (existing && existing.prescription) _builderUpdateRxPreview(existing.prescription);
   // Focus name if empty, otherwise focus prescription
   setTimeout(() => {
     const nameEl = document.getElementById('builder-detail-name');
@@ -10094,6 +10100,41 @@ function _builderShowDetail(dayIdx, exIdx, prefillName) {
     if (nameEl && !nameEl.value) nameEl.focus();
     else if (rxEl) rxEl.focus();
   }, 100);
+}
+
+function _builderUpdateRxPreview(rx) {
+  const el = document.getElementById('builder-rx-preview');
+  if (!el) return;
+  rx = (rx || '').trim();
+  if (!rx) { el.innerHTML = ''; return; }
+  const sets = parseSets(rx);
+  if (sets.length > 0) {
+    const allSame = sets.every(s => s.reps === sets[0].reps && s.weight === sets[0].weight);
+    let desc;
+    if (allSame) {
+      desc = sets[0].isRpe
+        ? `${sets.length} sets × ${sets[0].reps} reps @ RPE ${sets[0].weight}`
+        : `${sets.length} sets × ${sets[0].reps} reps @ ${sets[0].weight}`;
+    } else {
+      desc = sets.map((s, i) => s.isRpe
+        ? `Set ${i+1}: ${s.reps} reps @ RPE ${s.weight}`
+        : `Set ${i+1}: ${s.reps} reps @ ${s.weight}`
+      ).join(' · ');
+    }
+    el.innerHTML = `<span class="rx-preview-ok">✓ ${desc}</span>`;
+    return;
+  }
+  const simple = parseSimple(rx);
+  if (simple) {
+    el.innerHTML = `<span class="rx-preview-ok">✓ ${simple.sets} sets × ${simple.reps} reps</span>`;
+    return;
+  }
+  const ranged = parseRangeSet(rx);
+  if (ranged) {
+    el.innerHTML = `<span class="rx-preview-ok">✓ ${ranged.sets} sets × ${ranged.reps} reps</span>`;
+    return;
+  }
+  el.innerHTML = `<span class="rx-preview-warn">Will show as text only — no set cards</span>`;
 }
 
 function _builderSaveDetail(dayIdx, exIdx) {
@@ -10303,9 +10344,11 @@ function _builderSave() {
   state.activeBlock = block;
   state.activeWeek = 0;
   state.activeDay = 0;
+  state.screen = 'workout';
 
   // Save
   saveBlocks();
+  saveNav();
 
   // Auto-register tracked lifts for comp lifts
   if (typeof autoRegisterCompLifts === 'function') autoRegisterCompLifts();
