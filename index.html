@@ -274,7 +274,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-athlete-form.open { display: flex; }
 .settings-athlete-row { display: flex; flex-direction: column; gap: 5px; }
 .settings-athlete-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); }
-.settings-athlete-input { background: var(--input-bg); border: 1px solid var(--border-2); border-radius: 8px; padding: 9px 12px; font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-primary); width: 100%; }
+.settings-athlete-input { background: var(--input-bg); border: 1px solid var(--border-2); border-radius: 8px; padding: 9px 12px; font-family: 'Barlow', sans-serif; font-size: 16px; color: var(--text-primary); width: 100%; }
 .settings-athlete-input:focus { outline: none; border-color: var(--gold); }
 .settings-athlete-gender { display: flex; gap: 8px; }
 .settings-athlete-gender-btn { flex: 1; padding: 9px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-sub); cursor: pointer; transition: all 0.15s; }
@@ -445,7 +445,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-input { background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 7px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 7px 4px; width: 100%; text-align: center; outline: none; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); }
-.set-input::placeholder { color: var(--text-dimmer); font-size: 11px; font-weight: 400; }
+.set-input::placeholder { color: var(--text-muted); font-size: 11px; font-weight: 400; }
 .prescribed-label { width: 80px; text-align: center; font-size: 12px; color: var(--text-dimmer); }
 .set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: #4ade80; }
@@ -478,6 +478,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .edit-day-footer button { flex: 1; padding: 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; }
 .edit-day-cancel { background: var(--surface-3); color: var(--text-sub); }
 .edit-day-save { background: var(--gold); color: #000; }
+.edit-day-delete { display:block; width:calc(100% - 32px); margin:8px 16px 16px; padding:10px; background:none; border:1px solid #E57373; color:#E57373; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; border-radius:8px; cursor:pointer; }
+.edit-day-delete:active { background:rgba(229,115,115,0.15); }
 .propagation-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .propagation-sheet { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; width: min(340px, 90vw); padding: 24px; }
 .propagation-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
@@ -498,7 +500,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .add-day-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .add-day-modal { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; width: min(340px, 90vw); padding: 24px; }
 .add-day-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
-.add-day-modal input { width: 100%; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 12px; outline: none; box-sizing: border-box; }
+.add-day-modal input { width: 100%; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 16px; padding: 12px; outline: none; box-sizing: border-box; }
 .add-day-modal input:focus { border-color: var(--gold); }
 .add-day-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .add-day-chip { background: var(--surface-3); border: 1px solid var(--border-2); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
@@ -1010,7 +1012,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* Build Program wizard */
 .builder-overlay { position:fixed; inset:0; z-index:9998; background:var(--bg); display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .builder-container { width:100%; max-width:480px; margin:0 auto; padding:0 20px 40px; box-sizing:border-box; }
-.builder-header { display:flex; align-items:center; justify-content:space-between; padding:16px 0 8px; position:sticky; top:0; background:var(--bg); z-index:10; }
+.builder-header { display:flex; align-items:center; justify-content:space-between; padding:16px 0 8px; position:-webkit-sticky; position:sticky; top:0; background:var(--bg); z-index:10; }
+.builder-bottom-cancel { display:block; width:100%; background:none; border:1px solid var(--border); color:var(--text-dim); font-family:'Barlow',sans-serif; font-size:14px; padding:12px; border-radius:10px; cursor:pointer; margin-top:16px; }
+.builder-bottom-cancel:active { background:var(--surface-2); }
 .builder-back { background:none; border:none; color:var(--text-dim); font-family:'Barlow',sans-serif; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:4px; padding:8px 0; min-height:44px; }
 .builder-back svg { width:18px; height:18px; }
 .builder-close { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
@@ -1023,7 +1027,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .builder-step-desc { font-family:'Barlow',sans-serif; font-size:13px; color:var(--text-dim); margin-bottom:24px; line-height:1.5; }
 .builder-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; margin-top:20px; }
 .builder-label:first-of-type { margin-top:0; }
-.builder-input { width:100%; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-family:'Barlow',sans-serif; font-size:15px; color:var(--text-bright); box-sizing:border-box; outline:none; transition:border-color 0.15s; }
+.builder-input { width:100%; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-family:'Barlow',sans-serif; font-size:16px; color:var(--text-bright); box-sizing:border-box; outline:none; transition:border-color 0.15s; }
 .builder-input:focus { border-color:var(--gold); }
 .builder-input::placeholder { color:var(--text-faint); }
 .builder-stepper { display:flex; align-items:center; gap:12px; }
@@ -1062,7 +1066,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 @keyframes builderSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 .builder-picker-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
 .builder-picker-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--text-bright); }
-.builder-picker-search { margin:12px 20px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-family:'Barlow',sans-serif; font-size:14px; color:var(--text-bright); outline:none; width:calc(100% - 40px); box-sizing:border-box; }
+.builder-picker-search { margin:12px 20px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-family:'Barlow',sans-serif; font-size:16px; color:var(--text-bright); outline:none; width:calc(100% - 40px); box-sizing:border-box; }
 .builder-picker-search:focus { border-color:var(--gold); }
 .builder-picker-search::placeholder { color:var(--text-faint); }
 .builder-picker-list { flex:1; overflow-y:auto; padding:0 20px 20px; -webkit-overflow-scrolling:touch; }
@@ -1483,7 +1487,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 /* ── IMPORT INTAKE FIELDS ──────────────────────────────────────────────────── */
 .intake-field { margin-bottom:14px; }
 .intake-field-label { font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-sub);display:block;margin-bottom:6px; }
-.intake-field-input { width:100%;background:var(--surface-5);border:1px solid var(--border-3);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-primary);outline:none;-webkit-appearance:none; }
+.intake-field-input { width:100%;background:var(--surface-5);border:1px solid var(--border-3);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:16px;color:var(--text-primary);outline:none;-webkit-appearance:none; }
 .intake-field-input:focus { border-color:var(--gold); }
 .intake-field-input::placeholder { color:var(--text-dim); }
 .intake-maxes-row { display:flex;gap:8px; }
@@ -1509,7 +1513,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 /* Editable metadata fields */
 .colmap-field { margin-bottom:12px; }
 .colmap-field-label { font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px;font-family:'Barlow Condensed',sans-serif; }
-.colmap-field-input { width:100%;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-primary);outline:none;-webkit-appearance:none; }
+.colmap-field-input { width:100%;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:16px;color:var(--text-primary);outline:none;-webkit-appearance:none; }
 .colmap-field-input:focus { border-color:var(--gold); }
 .colmap-field-input::placeholder { color:var(--text-dim); }
 .colmap-field-hint { font-size:11px;color:var(--text-dim);margin-top:3px; }
@@ -4858,7 +4862,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
               </div>
             </div>`;
     const ghost = (si !== undefined) ? _ghostWeight(si) : '';
-    const ghostStyle = ghost ? 'color:var(--text-faint)' : '';
+    const ghostStyle = ghost ? 'color:var(--text-muted)' : '';
     return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(ex.name)})</div>
                 <input class="set-input" inputmode="decimal" placeholder="${ghost}" style="${!sl.actual && ghost ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghost}">
@@ -5367,6 +5371,10 @@ function renderWorkout(){
 
   const block=state.activeBlock;
   const week=block.weeks[state.activeWeek];
+  // Clamp activeDay to valid range (can go stale after day add/delete)
+  if (week && week.days && state.activeDay >= week.days.length) {
+    state.activeDay = Math.max(0, week.days.length - 1);
+  }
   const day=week?.days[state.activeDay];
   const active = isWorkoutActive(state.activeWeek, state.activeDay);
 
@@ -5378,7 +5386,8 @@ function renderWorkout(){
 
   if (state.editingDay) {
     // Edit Day mode — editable exercise list with reorder/delete
-    h += _renderDayEditor(block, week, day);
+    if (!day) { state.editingDay = false; state._dayEditSnapshot = null; state._dayEditIsNew = false; }
+    else h += _renderDayEditor(block, week, day);
   } else if (active) {
     // Active logging mode — full exercise cards
     h+=`<div class="exercises">`;
@@ -5815,7 +5824,15 @@ function toggleSet(key){
   const nowDone = !l.done;
   const exName = _resolveExNameFromKey(key);
   const unit = l.unit || (exName ? getExUnit(exName) : getDisplayUnit());
-  state.logs[key]={...l, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
+  // Commit ghost weight when checking a set with no weight entered
+  let actual = l.actual;
+  if (nowDone && !actual) {
+    const btn = document.querySelector(`.set-check[data-set-key="${cssEsc(key)}"]`);
+    const row = btn && btn.closest('.set-row');
+    const inp = row && row.querySelector('.set-input[data-ghost]');
+    if (inp && inp.dataset.ghost) { actual = inp.dataset.ghost; inp.value = actual; inp.style.color = ''; }
+  }
+  state.logs[key]={...l, actual: actual, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
   _prCache = null; // Invalidate PR cache on set toggle
   if (nowDone) _maybeAdvanceWeek();
@@ -9442,6 +9459,11 @@ function _renderBuilderStep() {
   else if (step === 4) _renderBuilderStep4(body, header);
   else if (step === 5) _renderBuilderStep5(body, header);
 
+  // Add bottom cancel button as secondary exit affordance
+  if (step < 5) {
+    body.insertAdjacentHTML('beforeend', '<button class="builder-bottom-cancel" onclick="cancelBuilder()">Cancel</button>');
+  }
+
   // Scroll to top
   document.getElementById('builder-overlay').scrollTop = 0;
 }
@@ -10301,6 +10323,9 @@ function _renderDayEditor(block, week, day) {
     <button class="edit-day-save" onclick="_saveDayEdits()">Save</button>
   </div>`;
 
+  // Delete Day button — separate from save/cancel footer
+  h += `<button class="edit-day-delete" onclick="_showDeleteDayPrompt()">Delete Day</button>`;
+
   return h;
 }
 
@@ -10332,6 +10357,88 @@ function _addExInEditMode() {
   });
 }
 
+// Show delete day confirmation prompt
+function _showDeleteDayPrompt() {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const dayName = ctx.day.name;
+  const wi = state.activeWeek;
+  const totalWeeks = ctx.block.weeks.length;
+  const isLastWeek = wi >= totalWeeks - 1;
+
+  // Check if this day exists in other weeks
+  const otherWeeksWithDay = ctx.block.weeks.filter((w, i) => i > wi && w.days.some(d => d.name === dayName)).length;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.id = 'delete-day-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  let btns = '';
+  if (otherWeeksWithDay > 0) {
+    btns = `
+      <button class="prop-this" style="background:#E57373;color:#000" onclick="_executeDeleteDay(false)">This Week Only</button>
+      <button class="prop-all" style="background:#E57373;color:#000" onclick="_executeDeleteDay(true)">All Weeks</button>
+      <button class="prop-cancel" onclick="document.getElementById('delete-day-overlay').remove()">Cancel</button>`;
+  } else {
+    btns = `
+      <button class="confirm-cancel" onclick="document.getElementById('delete-day-overlay').remove()">Cancel</button>
+      <button class="confirm-go" style="background:#E57373;color:#000" onclick="_executeDeleteDay(false)">Delete</button>`;
+  }
+
+  overlay.innerHTML = `
+    <div class="confirm-sheet">
+      <div class="confirm-title" style="color:#E57373">Delete Day</div>
+      <div class="confirm-desc">Delete <strong style="color:var(--text-primary)">${escH(dayName)}</strong> and all its exercises${otherWeeksWithDay > 0 ? '? This day exists in ' + otherWeeksWithDay + ' other week(s).' : '? This cannot be undone.'}</div>
+      <div class="confirm-btns">${btns}</div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Execute day deletion
+function _executeDeleteDay(allWeeks) {
+  const overlay = document.getElementById('delete-day-overlay');
+  if (overlay) overlay.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const { block, week, day } = ctx;
+  const dayName = day.name;
+  const di = state.activeDay;
+
+  // Delete from current week
+  week.days.splice(di, 1);
+  // Clean up logs for this day
+  Object.keys(state.logs).forEach(k => {
+    const parts = k.split('||');
+    if (parts[0] === block.id && parts[1] === week.label && parts[2] === dayName) delete state.logs[k];
+  });
+
+  if (allWeeks) {
+    for (let wi = state.activeWeek + 1; wi < block.weeks.length; wi++) {
+      const w = block.weeks[wi];
+      const dIdx = w.days.findIndex(d => d.name === dayName);
+      if (dIdx === -1) continue;
+      w.days.splice(dIdx, 1);
+      // Clean up logs
+      Object.keys(state.logs).forEach(k => {
+        const parts = k.split('||');
+        if (parts[0] === block.id && parts[1] === w.label && parts[2] === dayName) delete state.logs[k];
+      });
+    }
+  }
+
+  // Clear edit state and navigate to safe day
+  state.editingDay = false;
+  state._dayEditSnapshot = null;
+  state._dayEditIsNew = false;
+  state.activeDay = Math.max(0, di - 1);
+  saveBlocks();
+  saveLogs();
+  saveNav();
+  render();
+}
+
 // Cancel edit mode — revert from snapshot
 function _cancelDayEdits() {
   const ctx = getActiveContext();
@@ -10354,6 +10461,7 @@ function _cancelDayEdits() {
   state._dayEditSnapshot = null;
   state._dayEditIsNew = false;
   saveBlocks();
+  saveNav();
   render();
 }
 
@@ -10429,6 +10537,7 @@ function _finalizeDayEdit(propagateForward) {
   state._dayEditSnapshot = null;
   state._dayEditIsNew = false;
   saveBlocks();
+  saveNav();
   render();
 }
 
@@ -10491,6 +10600,7 @@ function _confirmAddDay() {
   state.editingDay = true;
 
   saveBlocks();
+  saveNav();
   render();
 }
 
