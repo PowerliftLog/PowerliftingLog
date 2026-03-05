@@ -1075,6 +1075,19 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .builder-picker-item { padding:12px 0; border-bottom:1px solid var(--border); font-family:'Barlow',sans-serif; font-size:14px; color:var(--text-bright); cursor:pointer; min-height:44px; display:flex; align-items:center; }
 .builder-picker-item:active { color:var(--gold); }
 .builder-picker-item:last-child { border-bottom:none; }
+.picker-group-card { display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--border); cursor:pointer; min-height:44px; }
+.picker-group-card:active { opacity:0.7; }
+.picker-group-card:last-child { border-bottom:none; }
+.picker-group-name { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:var(--text-bright); }
+.picker-group-subtitle { font-family:'Barlow',sans-serif; font-size:12px; color:var(--text-faint); margin-top:2px; }
+.picker-group-chevron { color:var(--text-faint); flex-shrink:0; }
+.picker-equip-label { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.08em; margin:16px 0 6px; }
+.picker-equip-label:first-child { margin-top:4px; }
+.picker-ex-tag { font-size:11px; color:var(--text-faint); margin-left:auto; padding-left:8px; white-space:nowrap; }
+.picker-back-btn { display:flex; align-items:center; gap:4px; background:none; border:none; color:var(--text-dim); font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:600; cursor:pointer; padding:8px 0; }
+.picker-back-btn svg { width:16px; height:16px; }
+.picker-back-btn:active { color:var(--text-bright); }
+.picker-auto-custom { color:var(--gold); font-weight:600; }
 .builder-detail-overlay { position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:20px; }
 .builder-detail-modal { width:100%; max-width:400px; background:var(--bg); border-radius:16px; padding:24px 20px; animation:builderFadeIn 0.2s ease; }
 @keyframes builderFadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
@@ -9352,28 +9365,143 @@ function finishOnboarding() {
 
 let _builderState = null;
 
-function _builderExerciseIndex() {
-  // Build searchable exercise list from existing blocks + known lifts
-  const names = new Set();
+// ── EXERCISE DATABASE ─────────────────────────────────────────────────────────
+const EXERCISE_DB = [
+  // PUSH — Barbell
+  { name:'Bench Press', group:'push', equip:'barbell' },
+  { name:'Close Grip Bench Press', group:'push', equip:'barbell' },
+  { name:'Incline Bench Press', group:'push', equip:'barbell' },
+  { name:'Floor Press', group:'push', equip:'barbell' },
+  { name:'Larsen Press', group:'push', equip:'barbell' },
+  { name:'Spoto Press', group:'push', equip:'barbell' },
+  { name:'Overhead Press', group:'push', equip:'barbell' },
+  { name:'Pin Press', group:'push', equip:'barbell' },
+  // PUSH — Dumbbell
+  { name:'Dumbbell Bench Press', group:'push', equip:'dumbbell' },
+  { name:'Dumbbell Shoulder Press', group:'push', equip:'dumbbell' },
+  { name:'Dumbbell Incline Press', group:'push', equip:'dumbbell' },
+  { name:'Dumbbell Fly', group:'push', equip:'dumbbell' },
+  { name:'Lateral Raise', group:'push', equip:'dumbbell' },
+  { name:'Front Raise', group:'push', equip:'dumbbell' },
+  // PUSH — Machine
+  { name:'Chest Press Machine', group:'push', equip:'machine' },
+  { name:'Pec Deck', group:'push', equip:'machine' },
+  { name:'Shoulder Press Machine', group:'push', equip:'machine' },
+  // PUSH — Cable
+  { name:'Cable Fly', group:'push', equip:'cable' },
+  { name:'Tricep Pushdown', group:'push', equip:'cable' },
+  { name:'Cable Lateral Raise', group:'push', equip:'cable' },
+  { name:'Overhead Tricep Extension', group:'push', equip:'cable' },
+  // PUSH — Bodyweight
+  { name:'Dips', group:'push', equip:'bodyweight' },
+  { name:'Push-up', group:'push', equip:'bodyweight' },
+  { name:'Pike Push-up', group:'push', equip:'bodyweight' },
+
+  // PULL — Barbell
+  { name:'Barbell Row', group:'pull', equip:'barbell' },
+  { name:'Pendlay Row', group:'pull', equip:'barbell' },
+  { name:'Barbell Curl', group:'pull', equip:'barbell' },
+  { name:'Barbell Shrug', group:'pull', equip:'barbell' },
+  { name:'Rack Pull', group:'pull', equip:'barbell' },
+  // PULL — Dumbbell
+  { name:'Dumbbell Row', group:'pull', equip:'dumbbell' },
+  { name:'Dumbbell Curl', group:'pull', equip:'dumbbell' },
+  { name:'Hammer Curl', group:'pull', equip:'dumbbell' },
+  { name:'Dumbbell Shrug', group:'pull', equip:'dumbbell' },
+  { name:'Incline Dumbbell Curl', group:'pull', equip:'dumbbell' },
+  // PULL — Machine
+  { name:'Lat Pulldown', group:'pull', equip:'machine' },
+  { name:'Seated Row Machine', group:'pull', equip:'machine' },
+  // PULL — Cable
+  { name:'Cable Row', group:'pull', equip:'cable' },
+  { name:'Face Pull', group:'pull', equip:'cable' },
+  { name:'Cable Curl', group:'pull', equip:'cable' },
+  { name:'Straight Arm Pulldown', group:'pull', equip:'cable' },
+  // PULL — Bodyweight
+  { name:'Pull-up', group:'pull', equip:'bodyweight' },
+  { name:'Chin-up', group:'pull', equip:'bodyweight' },
+  { name:'Inverted Row', group:'pull', equip:'bodyweight' },
+
+  // LEGS — Barbell
+  { name:'Squat', group:'legs', equip:'barbell' },
+  { name:'Front Squat', group:'legs', equip:'barbell' },
+  { name:'Pause Squat', group:'legs', equip:'barbell' },
+  { name:'Pin Squat', group:'legs', equip:'barbell' },
+  { name:'High Bar Squat', group:'legs', equip:'barbell' },
+  { name:'Box Squat', group:'legs', equip:'barbell' },
+  { name:'SSB Squat', group:'legs', equip:'barbell' },
+  { name:'Deadlift', group:'legs', equip:'barbell' },
+  { name:'Sumo Deadlift', group:'legs', equip:'barbell' },
+  { name:'Romanian Deadlift', group:'legs', equip:'barbell' },
+  { name:'Stiff Leg Deadlift', group:'legs', equip:'barbell' },
+  { name:'Deficit Deadlift', group:'legs', equip:'barbell' },
+  { name:'Snatch Grip Deadlift', group:'legs', equip:'barbell' },
+  { name:'Good Morning', group:'legs', equip:'barbell' },
+  { name:'Hip Thrust', group:'legs', equip:'barbell' },
+  { name:'Walking Lunge', group:'legs', equip:'barbell' },
+  { name:'Bulgarian Split Squat', group:'legs', equip:'barbell' },
+  // LEGS — Dumbbell
+  { name:'Goblet Squat', group:'legs', equip:'dumbbell' },
+  { name:'Dumbbell Lunge', group:'legs', equip:'dumbbell' },
+  { name:'Dumbbell Step-up', group:'legs', equip:'dumbbell' },
+  { name:'Dumbbell Romanian Deadlift', group:'legs', equip:'dumbbell' },
+  // LEGS — Machine
+  { name:'Leg Press', group:'legs', equip:'machine' },
+  { name:'Hack Squat', group:'legs', equip:'machine' },
+  { name:'Belt Squat', group:'legs', equip:'machine' },
+  { name:'Leg Curl', group:'legs', equip:'machine' },
+  { name:'Leg Extension', group:'legs', equip:'machine' },
+  { name:'Hip Thrust Machine', group:'legs', equip:'machine' },
+  { name:'Calf Raise Machine', group:'legs', equip:'machine' },
+  { name:'Seated Calf Raise', group:'legs', equip:'machine' },
+  // LEGS — Cable
+  { name:'Cable Pull-Through', group:'legs', equip:'cable' },
+  // LEGS — Bodyweight
+  { name:'Nordic Curl', group:'legs', equip:'bodyweight' },
+  { name:'Glute Bridge', group:'legs', equip:'bodyweight' },
+  { name:'Bodyweight Squat', group:'legs', equip:'bodyweight' },
+
+  // CORE
+  { name:'Plank', group:'core', equip:'bodyweight' },
+  { name:'Ab Wheel', group:'core', equip:'bodyweight' },
+  { name:'Hanging Leg Raise', group:'core', equip:'bodyweight' },
+  { name:'Russian Twist', group:'core', equip:'bodyweight' },
+  { name:'Dead Bug', group:'core', equip:'bodyweight' },
+  { name:'Pallof Press', group:'core', equip:'cable' },
+  { name:'Cable Woodchop', group:'core', equip:'cable' },
+  { name:'Cable Crunch', group:'core', equip:'cable' },
+  { name:'Back Extension', group:'core', equip:'machine' },
+];
+
+const EXERCISE_GROUPS = {
+  push: { label: 'Push', subtitle: 'Chest \u00b7 Shoulders \u00b7 Triceps' },
+  pull: { label: 'Pull', subtitle: 'Back \u00b7 Biceps' },
+  legs: { label: 'Legs', subtitle: 'Quads \u00b7 Hamstrings \u00b7 Glutes' },
+  core: { label: 'Core', subtitle: 'Abs \u00b7 Obliques \u00b7 Lower Back' },
+};
+
+const EQUIP_ORDER = ['barbell','dumbbell','machine','cable','bodyweight','other'];
+const EQUIP_LABELS = { barbell:'Barbell', dumbbell:'Dumbbell', machine:'Machine', cable:'Cable', bodyweight:'Bodyweight', other:'Other' };
+
+// Merge DB with user's imported exercises
+function _getExerciseDB() {
+  const dbMap = new Map();
+  EXERCISE_DB.forEach(e => dbMap.set(e.name.toLowerCase(), e));
+
+  // Add user exercises from imported blocks
   if (state.blocks) {
     state.blocks.forEach(b => {
       if (!b.weeks) return;
       b.weeks.forEach(w => w.days && w.days.forEach(d => d.exercises && d.exercises.forEach(e => {
         const cn = typeof canonicalizeLift === 'function' ? canonicalizeLift(e.name) : e.name;
-        names.add(cn);
+        const key = cn.toLowerCase();
+        if (!dbMap.has(key)) {
+          dbMap.set(key, { name: cn, group: 'uncategorized', equip: 'other' });
+        }
       })));
     });
   }
-  // Add known compound lifts
-  const compNames = ['Squat','Bench Press','Deadlift','Front Squat','Pause Squat','Close Grip Bench Press',
-    'Incline Bench Press','Sumo Deadlift','Romanian Deadlift','Deficit Deadlift','Rack Pull','Larsen Press',
-    'Spoto Press','Pin Squat','SSB Squat','Floor Press','Overhead Press','Barbell Row','Pendlay Row',
-    'Stiff Leg Deadlift','Snatch Grip Deadlift','High Bar Squat','Box Squat','Belt Squat','Hack Squat',
-    'Leg Press','Leg Curl','Leg Extension','Bulgarian Split Squat','Walking Lunge','Dumbbell Bench Press',
-    'Dumbbell Row','Pull-up','Chin-up','Lat Pulldown','Cable Row','Face Pull','Tricep Pushdown',
-    'Dumbbell Curl','Barbell Curl','Hip Thrust','Good Morning','Back Extension','Plank','Ab Wheel'];
-  compNames.forEach(n => names.add(n));
-  return Array.from(names).sort((a,b) => a.localeCompare(b));
+  return Array.from(dbMap.values()).sort((a,b) => a.name.localeCompare(b.name));
 }
 
 function startBuildProgram() {
@@ -9663,79 +9791,171 @@ function _builderMoveEx(dayIdx, exIdx, direction) {
 // ── Generic Exercise Picker ──────────────────────────────────────────────────
 // onSelect(name) called with exercise name, or '' for custom entry
 let _pickerCallback = null;
+let _pickerActiveGroup = null; // null = group view, 'push'|'pull'|'legs'|'core'|'uncategorized' = equipment sub-view
 
 function _openExercisePicker(onSelect) {
   _pickerCallback = onSelect;
-  const allExercises = _builderExerciseIndex();
+  _pickerActiveGroup = null;
 
   const overlay = document.createElement('div');
   overlay.className = 'builder-picker-overlay';
   overlay.id = 'builder-picker-overlay';
   overlay.onclick = function(e) { if (e.target === overlay) _closeExercisePicker(); };
 
-  const compLifts = ['Squat','Bench Press','Deadlift'];
-  const compounds = allExercises.filter(n => {
-    const lower = n.toLowerCase();
-    return !compLifts.includes(n) && (
-      lower.includes('squat') || lower.includes('bench') || lower.includes('press') ||
-      lower.includes('deadlift') || lower.includes('row') || lower.includes('pull')
-    );
-  });
-  const accessories = allExercises.filter(n => !compLifts.includes(n) && !compounds.includes(n));
-
-  function renderList(filter) {
-    const f = (filter || '').toLowerCase();
-    let html = '';
-    const filtered = f ? allExercises.filter(n => n.toLowerCase().includes(f)) : null;
-
-    if (filtered) {
-      filtered.forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
-      if (!filtered.length) html = `<div style="padding:20px 0;color:var(--text-faint);font-size:13px;text-align:center">No matches</div>`;
-    } else {
-      html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Competition Lifts</div>`;
-      compLifts.forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${n}')">${n}</div>`; });
-      html += `</div>`;
-      if (compounds.length) {
-        html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Compound Variations</div>`;
-        compounds.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
-        html += `</div>`;
-      }
-      if (accessories.length) {
-        html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Accessories</div>`;
-        accessories.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
-        html += `</div>`;
-      }
-    }
-    html += `<div class="builder-picker-section"><div class="builder-picker-item" onclick="_pickExercise('')" style="color:var(--gold)">+ Enter custom exercise name</div></div>`;
-    return html;
-  }
-
   overlay.innerHTML = `
     <div class="builder-picker-sheet">
-      <div class="builder-picker-header">
+      <div class="builder-picker-header" id="picker-header">
         <span class="builder-picker-title">Add Exercise</span>
         <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search exercises..." oninput="_filterExercisePicker(this.value)" autocomplete="off">
-      <div class="builder-picker-list" id="builder-picker-list">${renderList('')}</div>
+      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search or add custom..." oninput="_filterExercisePicker(this.value)" autocomplete="off">
+      <div class="builder-picker-list" id="builder-picker-list"></div>
     </div>
   `;
   document.body.appendChild(overlay);
-  overlay._renderList = renderList;
+  _renderPickerView();
   setTimeout(() => { const el = document.getElementById('builder-picker-search'); if (el) el.focus(); }, 150);
 }
 
-function _filterExercisePicker(val) {
-  const overlay = document.getElementById('builder-picker-overlay');
-  if (!overlay || !overlay._renderList) return;
+function _renderPickerView() {
   const list = document.getElementById('builder-picker-list');
-  if (list) list.innerHTML = overlay._renderList(val);
+  const header = document.getElementById('picker-header');
+  const search = document.getElementById('builder-picker-search');
+  if (!list || !header) return;
+
+  const searchVal = search ? search.value.trim() : '';
+
+  // If searching, show flat filtered results
+  if (searchVal) {
+    _renderPickerSearch(list, searchVal);
+    // Header stays as "Add Exercise" during search
+    header.innerHTML = `<span class="builder-picker-title">Add Exercise</span>
+      <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    return;
+  }
+
+  if (_pickerActiveGroup) {
+    // Equipment sub-view for selected group
+    _renderPickerEquipView(list);
+    const groupInfo = EXERCISE_GROUPS[_pickerActiveGroup] || { label: 'Other' };
+    header.innerHTML = `<button class="picker-back-btn" onclick="_pickerGoBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> ${escH(groupInfo.label)}</button>
+      <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+  } else {
+    // Group selection view
+    _renderPickerGroupView(list);
+    header.innerHTML = `<span class="builder-picker-title">Add Exercise</span>
+      <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+  }
+}
+
+function _renderPickerGroupView(list) {
+  const db = _getExerciseDB();
+  let html = '';
+  const groupKeys = Object.keys(EXERCISE_GROUPS);
+  // Check if there are uncategorized exercises
+  const hasUncat = db.some(e => e.group === 'uncategorized');
+
+  groupKeys.forEach(gk => {
+    const g = EXERCISE_GROUPS[gk];
+    const count = db.filter(e => e.group === gk).length;
+    html += `<div class="picker-group-card" onclick="_pickerSelectGroup('${gk}')">
+      <div>
+        <div class="picker-group-name">${escH(g.label)}</div>
+        <div class="picker-group-subtitle">${escH(g.subtitle)} · ${count} exercises</div>
+      </div>
+      <div class="picker-group-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>`;
+  });
+
+  if (hasUncat) {
+    const uncatCount = db.filter(e => e.group === 'uncategorized').length;
+    html += `<div class="picker-group-card" onclick="_pickerSelectGroup('uncategorized')">
+      <div>
+        <div class="picker-group-name">Other</div>
+        <div class="picker-group-subtitle">Imported exercises · ${uncatCount}</div>
+      </div>
+      <div class="picker-group-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>`;
+  }
+
+  list.innerHTML = html;
+}
+
+function _renderPickerEquipView(list) {
+  const db = _getExerciseDB();
+  const groupExercises = db.filter(e => e.group === _pickerActiveGroup);
+
+  // Group by equipment
+  const byEquip = {};
+  groupExercises.forEach(e => {
+    if (!byEquip[e.equip]) byEquip[e.equip] = [];
+    byEquip[e.equip].push(e);
+  });
+
+  let html = '';
+  EQUIP_ORDER.forEach(eq => {
+    const exs = byEquip[eq];
+    if (!exs || !exs.length) return;
+    html += `<div class="picker-equip-label">${escH(EQUIP_LABELS[eq] || eq)}</div>`;
+    exs.forEach(e => {
+      const safeName = escH(e.name).replace(/'/g, "\\'");
+      html += `<div class="builder-picker-item" onclick="_pickExercise('${safeName}')">${escH(e.name)}</div>`;
+    });
+  });
+
+  list.innerHTML = html;
+}
+
+function _renderPickerSearch(list, query) {
+  const db = _getExerciseDB();
+  const q = query.toLowerCase();
+  const matches = db.filter(e => e.name.toLowerCase().includes(q));
+
+  let html = '';
+  if (matches.length) {
+    matches.forEach(e => {
+      const safeName = escH(e.name).replace(/'/g, "\\'");
+      const groupLabel = EXERCISE_GROUPS[e.group]?.label || 'Other';
+      const equipLabel = EQUIP_LABELS[e.equip] || '';
+      html += `<div class="builder-picker-item" onclick="_pickExercise('${safeName}')">
+        <span>${escH(e.name)}</span>
+        <span class="picker-ex-tag">${escH(groupLabel)}${equipLabel ? ' · ' + escH(equipLabel) : ''}</span>
+      </div>`;
+    });
+  } else {
+    // Auto-custom: offer typed name as custom exercise
+    const safeName = escH(query).replace(/'/g, "\\'");
+    html += `<div class="builder-picker-item picker-auto-custom" onclick="_pickExercise('${safeName}')">+ Add "${escH(query)}"</div>`;
+  }
+
+  list.innerHTML = html;
+}
+
+function _pickerSelectGroup(group) {
+  _pickerActiveGroup = group;
+  // Clear search when navigating into a group
+  const search = document.getElementById('builder-picker-search');
+  if (search) search.value = '';
+  _renderPickerView();
+  // Scroll list to top
+  const list = document.getElementById('builder-picker-list');
+  if (list) list.scrollTop = 0;
+}
+
+function _pickerGoBack() {
+  _pickerActiveGroup = null;
+  _renderPickerView();
+}
+
+function _filterExercisePicker(val) {
+  _renderPickerView();
 }
 
 function _closeExercisePicker() {
   const el = document.getElementById('builder-picker-overlay');
   if (el) el.remove();
   _pickerCallback = null;
+  _pickerActiveGroup = null;
 }
 
 function _pickExercise(name) {
