@@ -7081,17 +7081,21 @@ function getPrevWeekNote(blockId,weekLabel,dayName,exName){
   return null;
 }
 function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
-  function getSets(key, matchEx){
+  function getSets(key, matchEx, srcBlockId, srcWeekLabel, srcDayName){
     const sets=[];
     const prescSets = matchEx?.prescription ? parseSets(matchEx.prescription) : [];
     const prescSimple = matchEx?.prescription ? parseSimple(matchEx.prescription) : null;
     for(let si=0;si<20;si++){
       const sl=state.logs[key+'||s'+si];
       if(!sl) break;
-      // Get reps: actualReps from log > prescribed reps from exercise
+      // Get reps: actualReps from log > prescribed reps from exercise > getSetReps fallback
       let reps = sl.actualReps || '';
       if (!reps && prescSets[si]) reps = String(prescSets[si].reps || '');
       if (!reps && prescSimple) reps = String(prescSimple.reps || '');
+      if (!reps && matchEx) {
+        const fallback = getSetReps(srcBlockId, srcWeekLabel, srcDayName, matchEx.name, si);
+        if (fallback) reps = String(fallback);
+      }
       sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',actualReps:reps,done:sl.done});
     }
     return sets;
@@ -7140,7 +7144,7 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
       if(!matchEx) continue;
       const key=[blockId,w.label,dayName,matchEx.name].join('||');
       if(!state.logs[key]?.done) continue;
-      const sets=getSets(key, matchEx);
+      const sets=getSets(key, matchEx, blockId, w.label, dayName);
       if(sets.length>0) return {label:w.label,source:null,sets};
     }
   }
@@ -7155,7 +7159,7 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
         if(!matchEx) continue;
         const key=[b.id,w.label,d.name,matchEx.name].join('||');
         if(!state.logs[key]?.done) continue;
-        const sets=getSets(key, matchEx);
+        const sets=getSets(key, matchEx, b.id, w.label, d.name);
         if(sets.length>0) return {label:w.label,source:b.name||b.id,sets};
       }
     }
