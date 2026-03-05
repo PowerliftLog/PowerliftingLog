@@ -2048,7 +2048,7 @@ function _idbMigrateFromLS() {
     const keysToMigrate = [
       'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
       'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
-      'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps',
+      'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides',
       'liftlog_last_backup', 'liftlog_rep_tip_seen'
     ];
     const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
@@ -2067,7 +2067,7 @@ function _idbMigrateFromLS() {
     // Mark migration done
     store.put({ key: _IDB_MIGRATED_KEY, value: true });
     _idbCache[_IDB_MIGRATED_KEY] = true;
-    tx.oncomplete = () => { console.log(`[IDB] Migrated ${migrated} keys from localStorage`); resolve(); };
+    tx.oncomplete = () => { resolve(); };
     tx.onerror = (e) => { console.error('[IDB] migration error:', e.target.error); resolve(); };
   });
 }
@@ -2076,7 +2076,7 @@ function _idbMigrateFromLS() {
 function _requestPersist() {
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist().then(granted => {
-      console.log('[Storage] Persistent storage ' + (granted ? 'granted' : 'denied'));
+      // persistent storage result: granted or denied
     }).catch(() => {});
   }
 }
@@ -2148,7 +2148,7 @@ function loadLogs(){ try{ if(_idbReady && _idbCache['liftlog_v4']!==undefined) r
 let _saveLogsTimer=null;
 function _saveLogsImmediate(){ _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
-window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } });
+window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
 function rePopulateSets(blocks){
   try{
     for(const block of blocks){
@@ -2393,6 +2393,7 @@ function buildMetrics(drillBlockId){
 
   // Raw weekly data — collect all points first
   const rawPoints=[]; // {blockId, blockName, weekLabel, exName, group, e1rm, method, topWeight, topReps}
+  const rawPointsMap=new Map(); // key: blockId||weekLabel||exName -> index in rawPoints
 
   for(const [key,val] of Object.entries(state.logs)){
     const parts=key.split('||');
@@ -2427,14 +2428,16 @@ function buildMetrics(drillBlockId){
 
     // Track best e1rm per exercise per week per block
     // Prefer RPE-based results over Epley estimates; tie-break by higher e1rm
-    const existing=rawPoints.find(p=>p.blockId===blockId&&p.weekLabel===weekLabel&&p.exName===exName);
-    if(existing){
+    const rpKey=`${blockId}||${weekLabel}||${exName}`;
+    const existingIdx=rawPointsMap.get(rpKey);
+    if(existingIdx!==undefined){
+      const existing=rawPoints[existingIdx];
       const newIsRpe=result.method==='rpe', oldIsRpe=existing.method==='rpe';
       if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&result.value>existing.e1rm)){
         existing.e1rm=result.value; existing.method=result.method; existing.topWeight=dispWeight; existing.topReps=reps;
       }
     }
-    else rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:parts[2],exName,group,e1rm:result.value,method:result.method,topWeight:dispWeight,topReps:reps});
+    else{ rawPointsMap.set(rpKey,rawPoints.length); rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:parts[2],exName,group,e1rm:result.value,method:result.method,topWeight:dispWeight,topReps:reps}); }
   }
 
   if(drillBlockId){
@@ -3592,18 +3595,18 @@ function saveAthleteProfile() {
                : document.getElementById('ap-female').classList.contains('active') ? 'female'
                : null;
   const existing = loadAthlete() || {};
-  const maxS = parseInt(document.getElementById('ap-max-s')?.value) || 0;
-  const maxB = parseInt(document.getElementById('ap-max-b')?.value) || 0;
-  const maxD = parseInt(document.getElementById('ap-max-d')?.value) || 0;
+  const maxS = parseFloat(document.getElementById('ap-max-s')?.value);
+  const maxB = parseFloat(document.getElementById('ap-max-b')?.value);
+  const maxD = parseFloat(document.getElementById('ap-max-d')?.value);
   const updated = {
     ...existing,
     ...(name && { name }),
     ...(gender && { gender }),
     ...(!isNaN(bw) && bw > 0 && { bodyweight: bw, bwUnit: unit }),
     weightUnit,
-    tested1rm_squat: maxS || existing.tested1rm_squat || 0,
-    tested1rm_bench: maxB || existing.tested1rm_bench || 0,
-    tested1rm_deadlift: maxD || existing.tested1rm_deadlift || 0
+    tested1rm_squat: !isNaN(maxS) ? maxS : (existing.tested1rm_squat ?? 0),
+    tested1rm_bench: !isNaN(maxB) ? maxB : (existing.tested1rm_bench ?? 0),
+    tested1rm_deadlift: !isNaN(maxD) ? maxD : (existing.tested1rm_deadlift ?? 0)
   };
   saveAthlete(updated);
   // Close form
@@ -4519,7 +4522,7 @@ function renderHome() {
       const dispW = Math.round(data.weight);
       const e1rm = calc1rm(data.weight, data.reps, data.rpe);
       const e1rmDisp = e1rm ? Math.round(e1rm.value) : null;
-      const varLabel = data.isVariation ? ` <span class="var-label">(${data.name})</span>` : '';
+      const varLabel = data.isVariation ? ` <span class="var-label">(${escH(data.name)})</span>` : '';
       liftRows += `<div class="week-summary-lift-row">
         <div class="week-summary-lift-name">${fullName}</div>
         <div class="week-summary-lift-set">${dispW}×${data.reps}${data.rpe ? `<span class="rpe-val">@${data.rpe}</span>` : ''}${varLabel}</div>
@@ -4696,12 +4699,12 @@ function renderBlockBar(block) {
     </div>`;
   }
   let h=`<div class="block-bar"><div style="display:flex;align-items:center;gap:6px">
-    <div><div class="block-name">${displayBlockName(block.name)}</div><div class="block-dates">${block.dateRange}</div></div>
+    <div><div class="block-name">${escH(displayBlockName(block.name))}</div><div class="block-dates">${block.dateRange}</div></div>
     <button class="edit-name-btn" style="opacity:0.3;font-size:11px" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
   </div>`;
   if(state.blocks.length>1){
     h+=`<select class="cycle-select" onchange="switchBlock(this.value)">`;
-    state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${displayBlockName(b.name) || b.id}</option>`);
+    state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${escH(displayBlockName(b.name) || b.id)}</option>`);
     h+=`</select>`;
   }
   h+=`</div>`;
@@ -4753,20 +4756,20 @@ function formatDayTabLabel(name){
   // If name contains a parenthetical, split there
   const parenIdx=n.indexOf('(');
   if(parenIdx>0){
-    const before=n.slice(0,parenIdx).trim().toUpperCase();
-    const after=n.slice(parenIdx).trim().toUpperCase();
+    const before=escH(n.slice(0,parenIdx).trim().toUpperCase());
+    const after=escH(n.slice(parenIdx).trim().toUpperCase());
     return `<span style="display:block">${before}</span><span style="display:block;opacity:0.75;font-size:10px">${after}</span>`;
   }
   // If name has multiple words, try to split at roughly the middle
   const words=n.toUpperCase().split(/\s+/);
   if(words.length>=3){
     const mid=Math.ceil(words.length/2);
-    const line1=words.slice(0,mid).join(' ');
-    const line2=words.slice(mid).join(' ');
+    const line1=escH(words.slice(0,mid).join(' '));
+    const line2=escH(words.slice(mid).join(' '));
     return `<span style="display:block">${line1}</span><span style="display:block;opacity:0.75;font-size:10px">${line2}</span>`;
   }
   // Short name — just uppercase it, single line
-  return n.toUpperCase();
+  return escH(n.toUpperCase());
 }
 
 function renderNextWorkoutBanner(block) {
@@ -5617,7 +5620,7 @@ function checkNewSingles(block, week, day, onDone) {
       const sl = state.logs[sk];
       if (!sl || !sl.done) continue;
       // Check if this set is a single (1 rep) with a logged actual weight
-      const reps = Number(sl.reps) || 0;
+      const reps = Number(sl.actualReps || sl.reps) || 0;
       const actual = Number(sl.actual) || 0;
       if (reps === 1 && actual > 0 && actual > currentMaxes[group]) {
         // Only keep the highest single per group
@@ -6334,6 +6337,8 @@ async function onDrivePickerCallback(data) {
   } catch (err) {
     console.error('[Drive Import]', err);
     showParseError('error', err.message || 'Failed to import file from Google Drive.');
+  } finally {
+    _driveAccessToken = null;
   }
 }
 
@@ -6436,7 +6441,7 @@ function renderIntakeStep1(body) {
     } else {
       const preferredId = _intakeMergeTarget || state.activeBlock?.id || '';
       const mergeOpts = existingBlocks.map(b =>
-        `<option value="${b.id}"${b.id===preferredId?' selected':''}>${displayBlockName(b.name) || b.id}</option>`
+        `<option value="${b.id}"${b.id===preferredId?' selected':''}>${escH(displayBlockName(b.name) || b.id)}</option>`
       ).join('');
       mergeTargetHtml = `
         <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
@@ -8249,7 +8254,7 @@ function exportHTMLReport(blockId) {
       const ts = getWeeklyTopSet(gk, wl);
       if (ts) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
-        const varLabel = ts.isVariation ? `<div style="font-size:8px;color:#666;margin-top:1px">${ts.exName}</div>` : '';
+        const varLabel = ts.isVariation ? `<div style="font-size:8px;color:#666;margin-top:1px">${escH(ts.exName)}</div>` : '';
         cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${varLabel}</td>`;
       } else {
         cells += '<td class="no-data">\u2014</td>';
@@ -8630,7 +8635,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
       <div class="strip-stat-label">Compliance</div>
     </div>
     <div class="strip-stat">
-      <div class="strip-stat-val">${totalVolume >= 1000000 ? Math.round(totalVolume/1000) + 'k' : totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}</div>
+      <div class="strip-stat-val">${totalVolume >= 1000000 ? Math.round(totalVolume/1000000) + 'm' : totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}</div>
       <div class="strip-stat-label">Volume (${unitLabel(true)})</div>
     </div>
     <div class="strip-stat">
@@ -8801,11 +8806,13 @@ function exportCSV() {
 const BACKUP_KEYS = [
   'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
   'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
-  'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps'
+  'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides'
 ];
 
 function downloadBackup() {
-  const data = { version: 1, timestamp: new Date().toISOString(), appVersion: '0.10.0', data: {} };
+  const verEl = document.querySelector('.header-logo span');
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.12.0';
+  const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -8844,6 +8851,7 @@ function triggerRestore() {
   input.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > 50 * 1024 * 1024) { _showWarningToast('Backup file is too large (max 50 MB).'); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -11289,7 +11297,7 @@ function detectDays() {
 
 // ── FORMAT C PARSER (uses column mapper mapping) ──────────────────────────────
 function parseCWorkbook(wb) {
-  if (_cmMapping.exercise < 0 || _cmMapping.prescription < 0) return [];
+  if (_cmMapping.exercise < 0 || (!_cmSplitPres && _cmMapping.prescription < 0)) return [];
 
   // Extract metadata from non-exercise rows across all sheets
   const meta = cmExtractMetadata(wb);
@@ -11392,7 +11400,7 @@ function cmIsJunkRow(exVal, row, presCol) {
     if (/^(squat|bench|deadlift)\s*$/i.test(exVal) && exVal.length < 12) return true;
   }
   // Labeled metadata rows (e.g. "Athlete: Joe", "Squat Max: 450")
-  if (/^(athlete|name|lifter|client|coach|program|block|cycle|phase)\\s*[:\-=]/i.test(exVal)) return true;
+  if (/^(athlete|name|lifter|client|coach|program|block|cycle|phase)\s*[:\-=]/i.test(exVal)) return true;
   if (/(?:1\s*rm|max)\s*[:\-=]?\s*\d/i.test(exVal)) return true;
   if (/^(squat|bench|deadlift)\s*(?:max|1rm|1\s*rm)?\s*[:\-=]\s*\d/i.test(exVal)) return true;
   // Lift specs rows (grip width, stance width, etc.)
@@ -11975,7 +11983,7 @@ function calcSnapToNearest(targetKg) {
   } else {
     state.calc.inputVal = String(targetKg % 1 === 0 ? targetKg : targetKg.toFixed(1));
   }
-  const inp = document.getElementById('calc-weight-input');
+  const inp = document.getElementById('calc-input');
   if (inp) inp.value = state.calc.inputVal;
   renderCalc();
 }

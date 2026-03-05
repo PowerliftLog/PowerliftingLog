@@ -1,6 +1,6 @@
 {
-  "name": "Unrack",
-  "short_name": "Unrack",
+  "name": "UNRACK",
+  "short_name": "UNRACK",
   "description": "Powerlifting workout tracker",
   "start_url": "/PowerliftingLog/",
   "scope": "/PowerliftingLog/",
@@ -13,13 +13,25 @@
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

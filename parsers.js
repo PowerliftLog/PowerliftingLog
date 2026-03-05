@@ -3151,7 +3151,7 @@ function parseG(wb) {
   }
 
   if (allWeeks.length === 0) return parseB(wb);
-  return [{name: blockName, weeks: allWeeks}];
+  return [{name: blockName, format: 'G', weeks: allWeeks}];
 }
 
 function _gBuildExercise(ex) {
@@ -3387,7 +3387,6 @@ function buildDPrescription(sets, reps, load, intensity, tempo, rest) {
   const loadVal = load != null ? load : null;
   const intensityStr = intensity != null ? String(intensity).trim() : '';
   const tempoStr = tempo != null ? String(tempo).trim() : '';
-  const restVal = rest != null ? rest : null;
 
   let totalSets = 0;
   const plusMatch = setsStr.match(/^(\d+)\+(\d+)[FR]$/i);
@@ -4170,7 +4169,6 @@ function parseBulgarianMethod(wb) {
 
       let curExName = null;
       let curExSets = {}; // dayNum -> [{reps, weight}]
-      let inWarmup = false;
 
       const flushExercise = () => {
         if (!curExName) return;
@@ -4224,7 +4222,7 @@ function parseBulgarianMethod(wb) {
 
         // "Your typical warmup" = warmup separator, skip
         const col1 = row[1] ? String(row[1]).trim() : '';
-        if (/warmup/i.test(col1)) { inWarmup = false; continue; }
+        if (/warmup/i.test(col1)) { continue; }
 
         // "(Optional)" or "Daily Min" / "Daily Max" labels
         if (/^\(optional\)|daily\s*(min|max)/i.test(col1)) {
@@ -6023,43 +6021,6 @@ function _mBuildExercise(name, setLines) {
   };
 }
 
-// ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP,
-    isCompLift, classifyLift, canonicalizeLift, _getBaseName,
-    EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
-    DAYS, detectFormat, detectE, detectF, detectG,
-    parseA, parseASheet, parseB, parseBSheet,
-    parseWorkbook,
-    parseE, parseE_nSuns, parseE_tabular, parseE_phaseGrid, parseE_weekText, parseE_cycleWeek, parseE_parallel531,
-    parseF, parseF_stride3, parseF_stride15, parseF_stride6, parseF_pctLoad, parseF_stride1,
-    parseG, _gBuildExercise,
-    parseCAutoFormat, extractCAutoMeta, parseCAutoSheet,
-    parseD, parseDSheet, buildDPrescription,
-    deduplicateExerciseNames,
-    parseSets, parseSimple, parseRangeSet, parseBarePres, parseWarmupSets,
-    parseCSVRows, detectCSVFormat, parseCSVImport,
-    detectTexasMethodFmt, parseTexasMethod,
-    detectHepburnFmt, parseHepburn,
-    detectBulgarianFmt, parseBulgarianMethod,
-    detectH, parseH, parseH_coan, parseH_hatch, parseH_edcoan, parseH_hatfield, parseH_deathbench,
-    detectL, parseL, _classifyCandito,
-    _parseL_standard, _parseL_benchHybrid, _parseL_advancedBench,
-    _parseL_advancedDeadlift, _parseL_advancedSquat, _parseL_linear,
-    detectM, parseM, _mBuildExercise, _mFmtReps,
-    detectN, parseN, _nClassify, _nRound, _nFmtReps,
-    detectO, parseO, _oFinalize,
-    detectP, parseP,
-    detectQ, parseQ,
-    detectR, parseR,
-    detectS, parseS,
-    detectT, parseT,
-}
-
-};
-
-
 // ── FORMAT N PARSER (Beginner LP: Greyskull, Ivysaur, Starting Strength, StrongLifts) ──
 function detectN(wb) {
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
@@ -6538,8 +6499,6 @@ function _parseN_startingStrength(wb) {
             exercises.push({ name: ex.name, prescription, note: null, lifterNote: null, loggedWeight: null });
           } else if (ex.name) {
             // Some exercises like "Back Extensions" have fixed prescription, no weight columns
-            const setsReps = ex.warmups.length > 0 ? null : null;
-            // Check if there's a prescription in the name/setsReps
             let fixedPrescription = null;
             if (ex.warmups.length === 0 && ex.working === null) {
               // Look for set/rep info at the exercise row
@@ -7063,13 +7022,6 @@ function _pExtractMaxes(inputsSheet) {
   }
 
   return maxes;
-}
-
-// Helper: Get file name from workbook (use first sheet name as hint or generic)
-function _pGetFileName(workbook) {
-  if (!workbook || workbook.SheetNames.length === 0) return 'Unknown';
-  // This will be overridden by actual file detection in parseP
-  return 'RTS Program';
 }
 
 /**
@@ -7931,7 +7883,7 @@ function _qGetCell(ws, row, col) {
 }
 
 function _qIsNumeric(val) {
-  if (val === null || val === undefined) return false;
+  if (val === null || val === undefined || val === '') return false;
   const num = Number(val);
   return !isNaN(num) && num !== '';
 }
@@ -8007,7 +7959,6 @@ function parseR(workbook) {
   // Get week count and dates from first day sheet
   const firstSheet = workbook.Sheets[daySheets[0]];
   const weekCount = _rGetWeekCount(firstSheet);
-  const dates = _rGetDates(firstSheet);
 
   // Create a single block containing all days
   const block = {
@@ -8267,7 +8218,7 @@ function _rGetWeekCount(sheet) {
     const val = _rGetCell(sheet, 0, col);
     // Check if this is a numeric week column
     if (val !== undefined && val !== '' && !isNaN(parseInt(val))) {
-      count = parseInt(val); // Track the maximum week number seen
+      count++; // Count actual week columns found
     } else if (val === undefined || val === '') {
       // Stop at the first empty column
       break;
@@ -8768,9 +8719,9 @@ function detectT(workbook) {
   const row4A = ws['A4'];
   if (row4A && row4A.v === 'Day') headerRow = 4;
 
-  // Check row 0 (Week 2+ style)
-  const row0A = ws['A0'];
-  if (row0A && row0A.v === 'Day') headerRow = 0;
+  // Check row 1 (Week 2+ style — XLSX cells are 1-based)
+  const row1A = ws['A1'];
+  if (row1A && row1A.v === 'Day') headerRow = 1;
 
   if (headerRow === null) return false;
 
@@ -8813,10 +8764,10 @@ function parseT(workbook) {
     // Week 2+ have headers at row index 0, data at 1
     // XLSX uses 0-based row addressing in cell refs like A0, A1, etc.
     let dataStartRow;
-    const firstA = ws['A0'];
+    const firstA = ws['A1'];
     if (firstA && firstA.v === 'Day') {
-      // Week 2-5 style: headers at row 0
-      dataStartRow = 1;
+      // Week 2-5 style: headers at row 1 (XLSX cells are 1-based)
+      dataStartRow = 2;
     } else {
       // Week 1 style: headers at row 3-4 area
       dataStartRow = 5;
@@ -9031,5 +8982,40 @@ function _tBuildNote(muscle, notes, exerciseName) {
   }
 
   return parts.length > 0 ? parts.join(', ') : null;
+}
+
+// ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP,
+    isCompLift, classifyLift, canonicalizeLift, _getBaseName,
+    EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
+    DAYS, detectFormat, detectE, detectF, detectG,
+    parseA, parseASheet, parseB, parseBSheet,
+    parseWorkbook,
+    parseE, parseE_nSuns, parseE_tabular, parseE_phaseGrid, parseE_weekText, parseE_cycleWeek, parseE_parallel531,
+    parseF, parseF_stride3, parseF_stride15, parseF_stride6, parseF_pctLoad, parseF_stride1,
+    parseG, _gBuildExercise,
+    parseCAutoFormat, extractCAutoMeta, parseCAutoSheet,
+    parseD, parseDSheet, buildDPrescription,
+    deduplicateExerciseNames,
+    parseSets, parseSimple, parseRangeSet, parseBarePres, parseWarmupSets,
+    parseCSVRows, detectCSVFormat, parseCSVImport,
+    detectTexasMethodFmt, parseTexasMethod,
+    detectHepburnFmt, parseHepburn,
+    detectBulgarianFmt, parseBulgarianMethod,
+    detectH, parseH, parseH_coan, parseH_hatch, parseH_edcoan, parseH_hatfield, parseH_deathbench,
+    detectL, parseL, _classifyCandito,
+    _parseL_standard, _parseL_benchHybrid, _parseL_advancedBench,
+    _parseL_advancedDeadlift, _parseL_advancedSquat, _parseL_linear,
+    detectM, parseM, _mBuildExercise, _mFmtReps,
+    detectN, parseN, _nClassify, _nRound, _nFmtReps,
+    detectO, parseO, _oFinalize,
+    detectP, parseP,
+    detectQ, parseQ,
+    detectR, parseR,
+    detectS, parseS,
+    detectT, parseT,
+  };
 }
 
