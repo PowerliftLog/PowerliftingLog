@@ -418,6 +418,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-prescribed-chevron { font-size: 13px; opacity: 0.45; margin-left: 1px; }
 .set-prescribed-btn.has-actual { color: var(--gold); }
 .set-prescribed-btn.has-actual .set-prescribed-chevron { opacity: 0.7; }
+.set-presc-split { display: flex; align-items: center; gap: 0; min-width: 70px; flex-shrink: 0; align-self: flex-end; padding-bottom: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); white-space: nowrap; }
+.set-presc-weight, .set-presc-reps { background: none; border: none; cursor: pointer; padding: 0; font: inherit; color: inherit; transition: color 0.15s; display: inline-flex; align-items: center; }
+.set-presc-weight:active, .set-presc-reps:active { color: var(--gold); }
+.set-presc-weight { padding-right: 2px; }
+.set-presc-reps { padding-left: 2px; }
+.set-presc-split.has-actual .set-presc-reps { color: var(--gold); }
+.set-presc-split.has-actual .set-prescribed-chevron { opacity: 0.7; }
 /* Reps editor modal */
 .reps-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 320; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.12s ease; }
 .reps-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 300px; border: 1px solid var(--sheet-border); }
@@ -3693,6 +3700,14 @@ const COMPOUND_KEYWORDS = ['squat','bench press','deadlift','dead lift','overhea
   'sldl','sgdl','stiff leg',
   // Abbreviations
   'cgbp','wgbp','rgbp'];
+
+// Check if exercise is a known barbell movement (for plate calc eligibility)
+function _isBarbellExercise(name) {
+  const n = name.toLowerCase();
+  if (n.includes('barbell') || n.includes('bb ') || n.startsWith('bb ')) return true;
+  return COMPOUND_KEYWORDS.some(k => n.includes(k));
+}
+
 let _restTimer = { intervalId: null, remaining: 0, total: 0, exName: '' };
 
 function getRestTimerMode() { const s = loadAppSettings(); return s.restTimerMode || 'auto'; }
@@ -3707,10 +3722,8 @@ function getRestDuration(exerciseName) {
   const mode = getExerciseInputMode(exerciseName, '');
   if (mode === 'cardio') return 0;
   if (mode === 'bw' || mode === 'bw-timed') return defaults.bodyweight;
-  const n = exerciseName.toLowerCase();
   // All barbell exercises get compound rest time
-  if (n.includes('barbell') || n.includes('bb ') || n.startsWith('bb ')) return defaults.compound;
-  if (COMPOUND_KEYWORDS.some(k => n.includes(k))) return defaults.compound;
+  if (_isBarbellExercise(exerciseName)) return defaults.compound;
   return defaults.accessory;
 }
 
@@ -5003,10 +5016,17 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           ${_setNumHtml(sk, si)}
           ${(()=>{
             const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
-            const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
-            const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
             const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
             const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
+            if (_numWeight > 0 && !s.isRpe && _isBarbellExercise(ex.name)) {
+              const _repsDisplay = _hasActualReps ? '<span style="color:var(--gold)">' + sl.actualReps + '</span>' : s.reps;
+              return `<div class="set-presc-split ${_hasActualReps?'has-actual':''}">` +
+                `<button class="set-presc-weight"${_weightAttrs} onclick="event.stopPropagation();_showPlatePopover(${_numWeight},'${getExUnit(ex.name)}')">${s.weight} ${unitLabel(true)}</button>` +
+                `<button class="set-presc-reps" onclick="openRepsEditor('${esc(sk)}','${s.reps}')"> × ${_repsDisplay}<span class="set-prescribed-chevron">›</span></button>` +
+              `</div>`;
+            }
+            const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
+            const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
             return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           })()}
           ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si)}
@@ -5021,11 +5041,23 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=sets.length+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
-          const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
-          const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
+          const _extraNw = !_lastS.isRpe && _lastS.weight && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
+          const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
+          let _extraPrescHtml;
+          if (_extraNw > 0 && !_lastS.isRpe && _isBarbellExercise(ex.name)) {
+            const _extraRepsDisplay = _extraHasActual ? '<span style="color:var(--gold)">' + _sl.actualReps + '</span>' : (_lastS.reps||'—');
+            _extraPrescHtml = `<div class="set-presc-split ${_extraHasActual?'has-actual':''}">` +
+              `<button class="set-presc-weight"${_extraWeightAttrs} onclick="event.stopPropagation();_showPlatePopover(${_extraNw},'${getExUnit(ex.name)}')">${_lastS.weight||'—'} ${unitLabel(true)}</button>` +
+              `<button class="set-presc-reps" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')"> × ${_extraRepsDisplay}<span class="set-prescribed-chevron">›</span></button>` +
+            `</div>`;
+          } else {
+            const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
+            const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
+            _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
+          }
           h+=`<div class="set-row">
             ${_setNumHtml(_sk, _si)}
-            <button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${(()=>{ const _nw=!_lastS.isRpe&&_lastS.weight&&!isNaN(parseFloat(_lastS.weight))?parseFloat(_lastS.weight):0; return _nw>0?' data-weight="'+_nw+'" data-unit="'+getExUnit(ex.name)+'"':''; })()} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>
+            ${_extraPrescHtml}
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -12579,8 +12611,9 @@ let _plateLpTimer = null;
 let _plateLpFired = false;
 
 function _initPlateLongPress() {
+  // Long-press on weight zone or unsplit prescribed button → plate popover
   document.addEventListener('pointerdown', function(e) {
-    const btn = e.target.closest('.set-prescribed-btn[data-weight]');
+    const btn = e.target.closest('.set-presc-weight[data-weight], .set-prescribed-btn[data-weight]');
     if (!btn) return;
     _plateLpFired = false;
     _plateLpTimer = setTimeout(function() {
@@ -12595,7 +12628,6 @@ function _initPlateLongPress() {
     if (_plateLpTimer) { clearTimeout(_plateLpTimer); _plateLpTimer = null; }
   });
   document.addEventListener('pointermove', function(e) {
-    // Cancel if finger moves too far
     if (_plateLpTimer && (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5)) {
       clearTimeout(_plateLpTimer); _plateLpTimer = null;
     }
@@ -12606,7 +12638,7 @@ function _initPlateLongPress() {
   // Intercept click if long-press fired
   document.addEventListener('click', function(e) {
     if (_plateLpFired) {
-      const btn = e.target.closest('.set-prescribed-btn[data-weight]');
+      const btn = e.target.closest('.set-presc-weight[data-weight], .set-prescribed-btn[data-weight]');
       if (btn) { e.preventDefault(); e.stopPropagation(); _plateLpFired = false; }
     }
   }, true);
