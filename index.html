@@ -1727,6 +1727,13 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <button class="upload-btn" style="width:100%;max-width:none;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px;flex-direction:row-reverse" onclick="closeProgramModal();document.getElementById('file-input').click()">Upload File<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or build from scratch</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="upload-btn" style="width:100%;max-width:none;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px;flex-direction:row-reverse" onclick="closeProgramModal();startBuildProgram()">Build Program<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
     <!-- Existing cycles -->
     <div id="program-list"></div>
@@ -4920,20 +4927,19 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     } else {
       const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
       const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
-      if(isCustomEx){
+      if(isCustomEx && state.editingDay){
         h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px 4px">
           <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Exercise</button>
           <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
           ${_restBtnHtml}
           ${exUnitToggleHtml(ex.name)}
         </div>`;
-      } else {
+      } else if(_showRestBtn || exUnitToggleHtml(ex.name)){
         h+=`<div style="display:flex;align-items:center;gap:6px;padding:10px 16px 4px">
-          <button class="edit-name-btn" style="opacity:0.4" onclick="startEditEx('${esc(key)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit name</button>
           ${_restBtnHtml}
           ${exUnitToggleHtml(ex.name)}
         </div>`;
-      };
+      }
     }
 
     function prevHintHtml(si){
@@ -9624,19 +9630,19 @@ function _builderMoveEx(dayIdx, exIdx, direction) {
   _renderBuilderStep();
 }
 
-// ── Exercise Picker ───────────────────────────────────────────────────────────
-let _builderPickerDayIdx = null;
+// ── Generic Exercise Picker ──────────────────────────────────────────────────
+// onSelect(name) called with exercise name, or '' for custom entry
+let _pickerCallback = null;
 
-function _builderOpenPicker(dayIdx) {
-  _builderPickerDayIdx = dayIdx;
+function _openExercisePicker(onSelect) {
+  _pickerCallback = onSelect;
   const allExercises = _builderExerciseIndex();
 
   const overlay = document.createElement('div');
   overlay.className = 'builder-picker-overlay';
   overlay.id = 'builder-picker-overlay';
-  overlay.onclick = function(e) { if (e.target === overlay) _builderClosePicker(); };
+  overlay.onclick = function(e) { if (e.target === overlay) _closeExercisePicker(); };
 
-  // Split into categories
   const compLifts = ['Squat','Bench Press','Deadlift'];
   const compounds = allExercises.filter(n => {
     const lower = n.toLowerCase();
@@ -9653,25 +9659,24 @@ function _builderOpenPicker(dayIdx) {
     const filtered = f ? allExercises.filter(n => n.toLowerCase().includes(f)) : null;
 
     if (filtered) {
-      filtered.forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
+      filtered.forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
       if (!filtered.length) html = `<div style="padding:20px 0;color:var(--text-faint);font-size:13px;text-align:center">No matches</div>`;
     } else {
       html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Competition Lifts</div>`;
-      compLifts.forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${n}')">${n}</div>`; });
+      compLifts.forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${n}')">${n}</div>`; });
       html += `</div>`;
       if (compounds.length) {
         html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Compound Variations</div>`;
-        compounds.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
+        compounds.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
         html += `</div>`;
       }
       if (accessories.length) {
         html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Accessories</div>`;
-        accessories.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
+        accessories.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_pickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
         html += `</div>`;
       }
     }
-    // Always show custom option
-    html += `<div class="builder-picker-section"><div class="builder-picker-item" onclick="_builderPickCustom()" style="color:var(--gold)">+ Enter custom exercise name</div></div>`;
+    html += `<div class="builder-picker-section"><div class="builder-picker-item" onclick="_pickExercise('')" style="color:var(--gold)">+ Enter custom exercise name</div></div>`;
     return html;
   }
 
@@ -9679,39 +9684,46 @@ function _builderOpenPicker(dayIdx) {
     <div class="builder-picker-sheet">
       <div class="builder-picker-header">
         <span class="builder-picker-title">Add Exercise</span>
-        <button class="builder-close" onclick="_builderClosePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search exercises..." oninput="_builderFilterPicker(this.value)" autocomplete="off">
+      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search exercises..." oninput="_filterExercisePicker(this.value)" autocomplete="off">
       <div class="builder-picker-list" id="builder-picker-list">${renderList('')}</div>
     </div>
   `;
   document.body.appendChild(overlay);
-  // Store render function for filtering
   overlay._renderList = renderList;
   setTimeout(() => { const el = document.getElementById('builder-picker-search'); if (el) el.focus(); }, 150);
 }
 
-function _builderFilterPicker(val) {
+function _filterExercisePicker(val) {
   const overlay = document.getElementById('builder-picker-overlay');
   if (!overlay || !overlay._renderList) return;
   const list = document.getElementById('builder-picker-list');
   if (list) list.innerHTML = overlay._renderList(val);
 }
 
-function _builderClosePicker() {
+function _closeExercisePicker() {
   const el = document.getElementById('builder-picker-overlay');
   if (el) el.remove();
-  _builderPickerDayIdx = null;
+  _pickerCallback = null;
 }
 
-function _builderPickExercise(name) {
-  _builderClosePicker();
-  _builderShowDetail(_builderPickerDayIdx !== null ? _builderPickerDayIdx : 0, null, name);
+function _pickExercise(name) {
+  const cb = _pickerCallback;
+  _closeExercisePicker();
+  if (cb) cb(name);
 }
 
-function _builderPickCustom() {
-  _builderClosePicker();
-  _builderShowDetail(_builderPickerDayIdx !== null ? _builderPickerDayIdx : 0, null, '');
+// ── Builder Picker Wrapper ──────────────────────────────────────────────────
+let _builderPickerDayIdx = null;
+
+function _builderOpenPicker(dayIdx) {
+  _builderPickerDayIdx = dayIdx;
+  _openExercisePicker(function(name) {
+    const di = _builderPickerDayIdx !== null ? _builderPickerDayIdx : 0;
+    _builderPickerDayIdx = null;
+    _builderShowDetail(di, null, name);
+  });
 }
 
 // ── Exercise Detail Modal ─────────────────────────────────────────────────────
@@ -10305,9 +10317,11 @@ function _deleteExFromDay(exIdx) {
   render();
 }
 
-// Add exercise during edit mode — reuse the existing add exercise modal
+// Add exercise during edit mode — open picker, then custom-ex modal pre-filled
 function _addExInEditMode() {
-  _openCustomExModal(null);
+  _openExercisePicker(function(name) {
+    _openCustomExModal(null, name ? { name } : null);
+  });
 }
 
 // Cancel edit mode — revert from snapshot
@@ -10475,7 +10489,9 @@ function _confirmAddDay() {
 // ── END EDIT DAY / ADD DAY ───────────────────────────────────────────────────
 
 function openAddExerciseModal() {
-  _openCustomExModal(null);
+  _openExercisePicker(function(name) {
+    _openCustomExModal(null, name ? { name } : null);
+  });
 }
 
 function openEditExerciseModal(key, evt) {
@@ -10497,8 +10513,10 @@ function _openCustomExModal(existingKey, existingEx) {
   const isEdit = !!existingKey;
   let prefillSets = '', prefillReps = '', prefillWeight = '', prefillRpe = '', prefillName = '';
 
+  // Pre-fill name from picker selection (new exercise) or edit existing
+  if (existingEx && existingEx.name) prefillName = existingEx.name;
+
   if (isEdit && existingEx) {
-    prefillName = existingEx.name;
     // Parse prescription back out
     const pres = existingEx.prescription || '';
     const m = pres.match(/^(\d+)x(\d+)/);
