@@ -406,7 +406,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .sets-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
-.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text-dimmer); width: 18px; flex-shrink: 0; }
+.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text-dimmer); width: 22px; flex-shrink: 0; cursor: pointer; text-align: center; line-height: 1; user-select: none; -webkit-user-select: none; }
+.set-num.warmup { color: #4FC3F7; font-size: 9px; }
+.set-num.dropset { color: #FF8A65; font-size: 9px; }
+.set-num.failure { color: #E57373; font-size: 9px; }
+.set-type-badge { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* ── Actual reps inline editor ───────────────────────────────────────── */
 .set-prescribed-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 3px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; transition: color 0.15s; }
@@ -446,6 +450,63 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: #4ade80; }
 .set-check svg { width: 14px; height: 14px; }
+.pr-badge { display: inline-flex; align-items: center; gap: 2px; background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px; margin-left: 6px; animation: prFlash 0.6s ease-out; }
+@keyframes prFlash { 0% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+/* ── Edit Day / Add Day ──────────────────────────────────────────────────── */
+.day-tabs-wrap { display: flex; align-items: center; gap: 0; }
+.day-overflow-btn { background: none; border: none; color: var(--text-faint); font-size: 18px; padding: 6px 8px; cursor: pointer; flex-shrink: 0; line-height: 1; font-weight: 700; letter-spacing: 2px; }
+.day-overflow-btn:active { color: var(--text-primary); }
+.day-overflow-menu { position: absolute; right: 12px; top: 100%; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 200; min-width: 160px; overflow: hidden; }
+.day-overflow-menu button { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 12px 16px; cursor: pointer; text-align: left; }
+.day-overflow-menu button:active { background: var(--surface-3); }
+.day-overflow-menu button svg { width: 16px; height: 16px; flex-shrink: 0; }
+.day-tabs-container { position: relative; flex: 1; min-width: 0; }
+.add-day-btn { background: none; border: 1.5px dashed rgba(255,255,255,0.12); color: var(--text-faint); font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.add-day-btn:active { border-color: var(--gold); color: var(--gold); }
+.edit-day-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 4px; margin: 8px 16px 0; }
+.edit-day-border { border: 2px solid var(--gold) !important; border-radius: 12px; margin: 4px 8px; }
+.edit-day-ex { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 8px; margin: 6px 12px; }
+.edit-day-ex-info { flex: 1; min-width: 0; }
+.edit-day-ex-name { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.edit-day-ex-pres { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+.edit-day-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.edit-day-actions button { background: none; border: none; color: var(--text-faint); padding: 6px; cursor: pointer; border-radius: 4px; }
+.edit-day-actions button:active { background: var(--surface-3); color: var(--text-primary); }
+.edit-day-actions button svg { width: 16px; height: 16px; }
+.edit-day-actions button.danger:active { color: #E57373; }
+.edit-day-footer { display: flex; gap: 8px; padding: 12px 16px; margin-top: 8px; }
+.edit-day-footer button { flex: 1; padding: 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; }
+.edit-day-cancel { background: var(--surface-3); color: var(--text-sub); }
+.edit-day-save { background: var(--gold); color: #000; }
+.propagation-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.propagation-sheet { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; width: min(340px, 90vw); padding: 24px; }
+.propagation-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.propagation-desc { font-size: 13px; color: var(--text-sub); margin-bottom: 20px; line-height: 1.4; }
+.propagation-btns { display: flex; flex-direction: column; gap: 8px; }
+.propagation-btns button { padding: 14px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; width: 100%; }
+.propagation-btns .prop-this { background: var(--gold); color: #000; }
+.propagation-btns .prop-all { background: var(--surface-3); color: var(--text-primary); }
+.propagation-btns .prop-cancel { background: transparent; color: var(--text-faint); font-weight: 600; }
+.confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.confirm-sheet { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; width: min(320px, 90vw); padding: 24px; }
+.confirm-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.confirm-desc { font-size: 13px; color: var(--text-sub); margin-bottom: 20px; line-height: 1.4; }
+.confirm-btns { display: flex; gap: 8px; }
+.confirm-btns button { flex: 1; padding: 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; }
+.confirm-cancel { background: var(--surface-3); color: var(--text-sub); }
+.confirm-go { background: var(--gold); color: #000; }
+.add-day-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.add-day-modal { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; width: min(340px, 90vw); padding: 24px; }
+.add-day-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+.add-day-modal input { width: 100%; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 12px; outline: none; box-sizing: border-box; }
+.add-day-modal input:focus { border-color: var(--gold); }
+.add-day-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.add-day-chip { background: var(--surface-3); border: 1px solid var(--border-2); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.add-day-chip:active { border-color: var(--gold); color: var(--gold); }
+.add-day-modal-btns { display: flex; gap: 8px; margin-top: 20px; }
+.add-day-modal-btns button { flex: 1; padding: 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; }
+.add-day-modal-cancel { background: var(--surface-3); color: var(--text-sub); }
+.add-day-modal-add { background: var(--gold); color: #000; }
 .coach-note { padding: 8px 16px; background: var(--coach-note-bg); border-top: 1px solid var(--coach-note-bdr); font-size: 12px; color: #a8a850; font-style: italic; }
 .notes-section { border-top: 1px solid var(--surface-3); }
 .notes-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
@@ -946,6 +1007,94 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .onboard-form { text-align: left; margin-bottom: 28px; }
 .onboard-form .intake-field-label:first-child { margin-top: 0; }
 
+/* Build Program wizard */
+.builder-overlay { position:fixed; inset:0; z-index:9998; background:var(--bg); display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.builder-container { width:100%; max-width:480px; margin:0 auto; padding:0 20px 40px; box-sizing:border-box; }
+.builder-header { display:flex; align-items:center; justify-content:space-between; padding:16px 0 8px; position:sticky; top:0; background:var(--bg); z-index:10; }
+.builder-back { background:none; border:none; color:var(--text-dim); font-family:'Barlow',sans-serif; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:4px; padding:8px 0; min-height:44px; }
+.builder-back svg { width:18px; height:18px; }
+.builder-close { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+.builder-close svg { width:20px; height:20px; }
+.builder-steps { display:flex; gap:6px; justify-content:center; margin-bottom:24px; }
+.builder-step-dot { width:8px; height:8px; border-radius:50%; background:var(--surface-3); transition:background 0.2s, width 0.2s; }
+.builder-step-dot.active { background:var(--gold); width:24px; border-radius:4px; }
+.builder-step-dot.done { background:rgba(var(--gold-rgb),0.4); }
+.builder-step-title { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--text-bright); margin-bottom:4px; }
+.builder-step-desc { font-family:'Barlow',sans-serif; font-size:13px; color:var(--text-dim); margin-bottom:24px; line-height:1.5; }
+.builder-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; margin-top:20px; }
+.builder-label:first-of-type { margin-top:0; }
+.builder-input { width:100%; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-family:'Barlow',sans-serif; font-size:15px; color:var(--text-bright); box-sizing:border-box; outline:none; transition:border-color 0.15s; }
+.builder-input:focus { border-color:var(--gold); }
+.builder-input::placeholder { color:var(--text-faint); }
+.builder-stepper { display:flex; align-items:center; gap:12px; }
+.builder-stepper-btn { width:44px; height:44px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border); color:var(--text-bright); font-size:20px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s; }
+.builder-stepper-btn:active { border-color:var(--gold); }
+.builder-stepper-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; color:var(--text-bright); min-width:48px; text-align:center; }
+.builder-pills { display:flex; flex-wrap:wrap; gap:8px; }
+.builder-pill { padding:10px 18px; border-radius:100px; background:var(--surface-2); border:1px solid var(--border); font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:600; color:var(--text-dim); cursor:pointer; transition:all 0.15s; min-height:44px; display:flex; align-items:center; }
+.builder-pill.selected { background:rgba(var(--gold-rgb),0.15); border-color:var(--gold); color:var(--gold); }
+.builder-pill:active { border-color:var(--gold); }
+.builder-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.builder-chip { padding:6px 12px; border-radius:100px; background:var(--surface-3); border:none; font-family:'Barlow',sans-serif; font-size:12px; color:var(--text-dim); cursor:pointer; transition:color 0.15s; }
+.builder-chip:active { color:var(--gold); }
+.builder-next-btn { width:100%; padding:16px; background:var(--gold); border:none; border-radius:100px; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#0a0a0a; cursor:pointer; transition:opacity 0.15s; margin-top:32px; }
+.builder-next-btn:active { opacity:0.85; }
+.builder-next-btn.disabled { opacity:0.35; pointer-events:none; }
+.builder-secondary-btn { width:100%; padding:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:100px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; transition:all 0.15s; margin-top:10px; }
+.builder-secondary-btn:active { border-color:var(--gold); color:var(--gold); }
+.builder-day-section { margin-bottom:16px; }
+.builder-day-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:border-color 0.15s; min-height:44px; }
+.builder-day-header.expanded { border-radius:12px 12px 0 0; border-color:var(--gold); }
+.builder-day-header-name { font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; color:var(--text-bright); }
+.builder-day-header-count { font-family:'Barlow',sans-serif; font-size:12px; color:var(--text-dim); }
+.builder-day-body { border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; padding:12px; background:var(--surface-1); }
+.builder-ex-card { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; min-height:44px; }
+.builder-ex-card-body { flex:1; min-width:0; cursor:pointer; }
+.builder-ex-card-name { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; color:var(--text-bright); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.builder-ex-card-rx { font-family:'Barlow',sans-serif; font-size:12px; color:var(--text-dim); margin-top:2px; }
+.builder-ex-actions { display:flex; gap:2px; flex-shrink:0; }
+.builder-ex-action-btn { background:none; border:none; color:var(--text-faint); cursor:pointer; padding:6px; min-width:36px; min-height:36px; display:flex; align-items:center; justify-content:center; border-radius:8px; }
+.builder-ex-action-btn:active { background:var(--surface-3); }
+.builder-add-ex { display:flex; align-items:center; justify-content:center; gap:6px; padding:12px; border:1px dashed var(--border); border-radius:10px; cursor:pointer; font-family:'Barlow',sans-serif; font-size:13px; color:var(--text-dim); transition:all 0.15s; min-height:44px; }
+.builder-add-ex:active { border-color:var(--gold); color:var(--gold); }
+.builder-picker-overlay { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:flex-end; }
+.builder-picker-sheet { width:100%; max-width:480px; margin:0 auto; background:var(--bg); border-radius:16px 16px 0 0; max-height:75vh; display:flex; flex-direction:column; animation:builderSlideUp 0.25s ease; }
+@keyframes builderSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.builder-picker-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.builder-picker-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--text-bright); }
+.builder-picker-search { margin:12px 20px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-family:'Barlow',sans-serif; font-size:14px; color:var(--text-bright); outline:none; width:calc(100% - 40px); box-sizing:border-box; }
+.builder-picker-search:focus { border-color:var(--gold); }
+.builder-picker-search::placeholder { color:var(--text-faint); }
+.builder-picker-list { flex:1; overflow-y:auto; padding:0 20px 20px; -webkit-overflow-scrolling:touch; }
+.builder-picker-section { margin-top:16px; }
+.builder-picker-section-label { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+.builder-picker-item { padding:12px 0; border-bottom:1px solid var(--border); font-family:'Barlow',sans-serif; font-size:14px; color:var(--text-bright); cursor:pointer; min-height:44px; display:flex; align-items:center; }
+.builder-picker-item:active { color:var(--gold); }
+.builder-picker-item:last-child { border-bottom:none; }
+.builder-detail-overlay { position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:20px; }
+.builder-detail-modal { width:100%; max-width:400px; background:var(--bg); border-radius:16px; padding:24px 20px; animation:builderFadeIn 0.2s ease; }
+@keyframes builderFadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+.builder-detail-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--text-bright); margin-bottom:20px; text-align:center; }
+.builder-detail-field { margin-bottom:16px; }
+.builder-detail-examples { font-family:'Barlow',sans-serif; font-size:11px; color:var(--text-faint); margin-top:6px; line-height:1.6; }
+.builder-radio-group { display:flex; flex-direction:column; gap:8px; }
+.builder-radio { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:border-color 0.15s; min-height:44px; }
+.builder-radio.selected { border-color:var(--gold); background:rgba(var(--gold-rgb),0.06); }
+.builder-radio-dot { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.builder-radio.selected .builder-radio-dot { border-color:var(--gold); }
+.builder-radio.selected .builder-radio-dot::after { content:''; width:10px; height:10px; border-radius:50%; background:var(--gold); }
+.builder-radio-text { flex:1; }
+.builder-radio-label { font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; color:var(--text-bright); }
+.builder-radio-desc { font-family:'Barlow',sans-serif; font-size:12px; color:var(--text-dim); margin-top:2px; }
+.builder-summary-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
+.builder-summary-title { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:var(--gold); margin-bottom:4px; }
+.builder-summary-meta { font-family:'Barlow',sans-serif; font-size:13px; color:var(--text-dim); }
+.builder-summary-week { margin-top:12px; }
+.builder-summary-week-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.builder-summary-day-row { display:flex; justify-content:space-between; padding:6px 0; font-family:'Barlow',sans-serif; font-size:13px; }
+.builder-summary-day-name { color:var(--text-bright); }
+.builder-summary-day-count { color:var(--text-dim); }
+
 /* Upload option cards */
 .upload-options { display: flex; flex-direction: column; gap: 0; width: 100%; text-align: left; }
 .upload-option-card { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 10px; }
@@ -1401,7 +1550,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.10.9</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.12.0</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -1516,6 +1665,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <!-- Onboarding Overlay -->
 <div class="onboarding-overlay" id="onboarding-overlay" style="display:none">
   <div class="onboarding-container" id="onboarding-body"></div>
+</div>
+
+<!-- Build Program Overlay -->
+<div class="builder-overlay" id="builder-overlay" style="display:none">
+  <div class="builder-container" id="builder-body"></div>
 </div>
 
 <!-- Intake Modal removed (dead code) -->
@@ -4494,6 +4648,21 @@ function renderUploadOptions(prefix) {
       <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
 
+    <div class="upload-option-card" onclick="startBuildProgram()">
+      <div class="upload-option-icon" style="background:rgba(var(--gold-rgb),0.12);border-color:rgba(var(--gold-rgb),0.18)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+      </div>
+      <div class="upload-option-body">
+        <div class="upload-option-title">Build Program</div>
+        <div class="upload-option-desc">Create a custom training program from scratch</div>
+      </div>
+      <svg class="upload-option-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
     <div style="text-align:center;padding-top:4px">
       <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
     </div>
@@ -4547,7 +4716,10 @@ function renderWeekPills(block) {
 
 function renderDayTabs(block, week) {
   if(!week?.days?.length) return '';
-  let h=`<div class="day-tabs" id="day-tabs-bar">`;
+  const isActive = isWorkoutActive(state.activeWeek, state.activeDay);
+  const isEditing = !!state.editingDay;
+  let h=`<div class="day-tabs-wrap">`;
+  h+=`<div class="day-tabs-container"><div class="day-tabs" id="day-tabs-bar">`;
   week.days.forEach((d,di)=>{
     const complete=isDayComplete(block,week,d);
     const label=formatDayTabLabel(d.name);
@@ -4556,6 +4728,11 @@ function renderDayTabs(block, week) {
     if(complete) classes.push('done');
     h+=`<button class="${classes.join(' ')}" data-day-idx="${di}" onclick="setDay(${di})">${label}</button>`;
   });
+  h+=`</div></div>`;
+  // Overflow menu (not during active workout or edit mode)
+  if(!isActive && !isEditing){
+    h+=`<button class="day-overflow-btn" onclick="_showDayOverflow(event)" aria-label="Day options">⋮</button>`;
+  }
   h+=`</div>`;
   return h;
 }
@@ -4639,7 +4816,21 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     return '';
   }
 
-  function setInputsHtml(sk,sl,placeholder){
+  // Ghost value: prescription weight > previous session weight > empty
+  function _ghostWeight(si) {
+    // 1) Try prescribed weight from parsed sets
+    if (hasSets && sets[si]) {
+      const w = sets[si].weight;
+      if (w && !sets[si].isRpe) return w;
+    }
+    // 2) Try previous session
+    if (prevPerf && prevPerf.sets[si] && prevPerf.sets[si].actual && prevPerf.sets[si].actual !== '—') {
+      return prevPerf.sets[si].actual;
+    }
+    return '';
+  }
+
+  function setInputsHtml(sk,sl,placeholder,si){
     if(placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
                 <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
@@ -4656,9 +4847,11 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
                 <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
               </div>
             </div>`;
+    const ghost = (si !== undefined) ? _ghostWeight(si) : '';
+    const ghostStyle = ghost ? 'color:var(--text-faint)' : '';
     return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(ex.name)})</div>
-                <input class="set-input" inputmode="decimal" placeholder="" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="decimal" placeholder="${ghost}" style="${!sl.actual && ghost ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghost}">
               </div>
               <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
                 <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
@@ -4696,15 +4889,19 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   // Fetch prev week performance for both collapsed summary + expanded inline hints
   const prevPerf=getPrevWeekPerformance(block.id,week.label,day.name,ex.name);
 
-  // Collapsed card: show one-line summary of last week's performance
+  // Collapsed card: show one-line summary of last week's performance (sets×reps×weight @RPE)
   if(!isExpanded && prevPerf){
-    const allSame=prevPerf.sets.length>1 && prevPerf.sets.every(s=>s.actual===prevPerf.sets[0].actual&&s.rpe===prevPerf.sets[0].rpe);
+    const allSame=prevPerf.sets.length>1 && prevPerf.sets.every(s=>s.actual===prevPerf.sets[0].actual&&s.rpe===prevPerf.sets[0].rpe&&s.actualReps===prevPerf.sets[0].actualReps);
     let summary;
     if(allSame){
       const s=prevPerf.sets[0];
-      summary=`${prevPerf.sets.length}×${s.actual}${s.rpe?' @'+s.rpe:''}`;
+      const repsStr=s.actualReps?'×'+s.actualReps:'';
+      summary=`${prevPerf.sets.length}${repsStr}×${s.actual}${s.rpe?' @'+s.rpe:''}`;
     } else {
-      summary=prevPerf.sets.map((s,i)=>`${s.actual}${s.rpe?' @'+s.rpe:''}`).join(' · ');
+      summary=prevPerf.sets.map((s,i)=>{
+        const repsStr=s.actualReps?s.actualReps+'×':'';
+        return `${repsStr}${s.actual}${s.rpe?' @'+s.rpe:''}`;
+      }).join(' · ');
     }
     const srcTag=prevPerf.source?` (${prevPerf.source})`:'';
     h+=`<div class="collapsed-prev-summary">Last${srcTag}: ${summary}</div>`;
@@ -4742,7 +4939,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     function prevHintHtml(si){
       if(!prevPerf||!prevPerf.sets[si]) return '';
       const ps=prevPerf.sets[si];
-      const hint=ps.actual+(ps.rpe?' @'+ps.rpe:'');
+      const repsStr=ps.actualReps?ps.actualReps+'×':'';
+      const hint=repsStr+ps.actual+(ps.rpe?' @'+ps.rpe:'');
       return `<div class="set-prev-hint">Last: ${hint}</div>`;
     }
 
@@ -4751,14 +4949,14 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       sets.forEach((s,si)=>{
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div>
+          ${_setNumHtml(sk, si)}
           ${(()=>{
             const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
             const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
             const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
             return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           })()}
-          ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true))}
+          ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       });
@@ -4773,9 +4971,9 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
           const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div>
+            ${_setNumHtml(_sk, _si)}
             <button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>
-            ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()))}
+            ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4786,8 +4984,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       for(let si=0;si<simple.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div>${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}
-          ${setInputsHtml(sk,sl,getDisplayUnit())}
+          ${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}
+          ${setInputsHtml(sk,sl,getDisplayUnit(),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -4798,8 +4996,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div>${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}
-            ${setInputsHtml(_sk,_sl,getDisplayUnit())}
+            ${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}
+            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4811,8 +5009,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         const isOpen=ranged.reps==='open';
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div>${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}
-          ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit())}
+          ${_setNumHtml(sk, si)}${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}
+          ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit(),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -4824,8 +5022,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div>${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}
-            ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit())}
+            ${_setNumHtml(_sk, _si)}${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}
+            ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit(),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4836,8 +5034,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       for(let si=0;si<bareWithRounds.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          <div class="set-num">S${si+1}</div>${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
-          ${setInputsHtml(sk,sl,getDisplayUnit())}
+          ${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
+          ${setInputsHtml(sk,sl,getDisplayUnit(),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -4848,8 +5046,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            <div class="set-num">S${_si+1}</div>${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
-            ${setInputsHtml(_sk,_sl,getDisplayUnit())}
+            ${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
+            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -4859,8 +5057,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       const sk=key+`||s0`; const sl=state.logs[sk]||{};
       h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
       h+=`<div class="set-row">
-        <div class="set-num">S1</div><div class="set-prescribed">open</div>
-        ${setInputsHtml(sk,sl,getDisplayUnit())}
+        ${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div>
+        ${setInputsHtml(sk,sl,getDisplayUnit(),0)}
         <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
       </div>${prevHintHtml(0)}`;
       h+=`</div>`;
@@ -5169,7 +5367,10 @@ function renderWorkout(){
   h+=renderDayTabs(block, week);
   h+=renderNextWorkoutBanner(block);
 
-  if (active) {
+  if (state.editingDay) {
+    // Edit Day mode — editable exercise list with reorder/delete
+    h += _renderDayEditor(block, week, day);
+  } else if (active) {
     // Active logging mode — full exercise cards
     h+=`<div class="exercises">`;
     h+=renderExerciseList(block, week, day);
@@ -5179,7 +5380,7 @@ function renderWorkout(){
     const forceLog = state.logs[lk(block.id, week.label, day.name, '__complete__')];
     const isComplete = !!forceLog?.done;
     const isHistorical = !!block.historical;
-    
+
     if (isComplete || isHistorical) {
       // Completed day — show preview list + complete message
       h += renderPreviewList(block, week, day);
@@ -5607,6 +5808,7 @@ function toggleSet(key){
   const unit = l.unit || (exName ? getExUnit(exName) : getDisplayUnit());
   state.logs[key]={...l, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
+  _prCache = null; // Invalidate PR cache on set toggle
   if (nowDone) _maybeAdvanceWeek();
   // Targeted DOM updates instead of full render() — prevents scroll jump
   updateSetCheckmark(key, nowDone);
@@ -5623,6 +5825,134 @@ function _resolveExNameFromKey(setKey) {
   // setKey format: blockId||weekLabel||dayName||exName||s0
   const parts = setKey.split('||');
   return parts.length >= 4 ? parts[3] : null;
+}
+
+// ── SET TYPE TAGGING ──────────────────────────────────────────────────────────
+const SET_TYPES = ['normal','warmup','dropset','failure'];
+const SET_TYPE_LABELS = { normal:'S', warmup:'WU', dropset:'DS', failure:'F' };
+
+function cycleSetType(setKey, event) {
+  if (event) event.stopPropagation();
+  const sl = state.logs[setKey] || {};
+  const cur = sl.setType || 'normal';
+  const idx = SET_TYPES.indexOf(cur);
+  const next = SET_TYPES[(idx + 1) % SET_TYPES.length];
+  state.logs[setKey] = { ...sl, setType: next };
+  saveLogs();
+  // Targeted DOM update
+  const numEl = document.querySelector(`.set-num[data-set-key="${cssEsc(setKey)}"]`);
+  if (numEl) {
+    const setIdx = setKey.split('||s').pop();
+    numEl.className = 'set-num' + (next !== 'normal' ? ' ' + next : '');
+    numEl.innerHTML = next !== 'normal' ? `<span class="set-type-badge">${SET_TYPE_LABELS[next]}</span>` : 'S' + (parseInt(setIdx) + 1);
+  }
+}
+
+function _autoDetectWarmup(setKey, exName, actualWeight) {
+  const sl = state.logs[setKey] || {};
+  // Don't override if user already manually set a type
+  if (sl.setType && sl.setType !== 'normal') return;
+  // Check if prescription/notes contain warmup keywords
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const ex = ctx.day.exercises.find(e => e.name === exName);
+  if (!ex) return;
+  const presLower = ((ex.prescription || '') + ' ' + (ex.note || '') + ' ' + ((ex.coachNotes || []).join(' '))).toLowerCase();
+  if (/\bwarm[-\s]?up\b|\bwu\b/.test(presLower)) {
+    state.logs[setKey] = { ...state.logs[setKey], setType: 'warmup' };
+    saveLogs();
+    return;
+  }
+  // Weight threshold fallback: if logged weight ≤60% of prescribed working weight
+  if (!actualWeight || !ex.prescription) return;
+  const weight = parseFloat(actualWeight);
+  if (!weight || weight <= 0) return;
+  const prescWeight = _extractPrescribedWeight(ex.prescription);
+  if (prescWeight > 0 && weight <= prescWeight * 0.6) {
+    // Suggest warmup — auto-tag it
+    state.logs[setKey] = { ...state.logs[setKey], setType: 'warmup' };
+    saveLogs();
+  }
+}
+
+function _extractPrescribedWeight(prescription) {
+  // Extract working weight from prescription formats
+  // "3x5(225)" → 225
+  const m1 = prescription.match(/\((\d+(?:\.\d+)?)\)/);
+  if (m1) return parseFloat(m1[1]);
+  // "5x3 @ 85%" → can't extract absolute weight, return 0
+  return 0;
+}
+
+// ── PR DETECTION (inline) ─────────────────────────────────────────────────────
+// Denormalized PR lookup: exerciseName → repCount → bestWeight
+let _prCache = null;
+
+function _buildPRCache() {
+  _prCache = {};
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (!val.done || !val.actual) continue;
+    const parts = key.split('||');
+    if (parts.length < 5) continue;
+    const exName = (typeof canonicalizeLift === 'function') ? canonicalizeLift(parts[3]) : parts[3];
+    const weight = parseFloat(val.actual);
+    if (!weight || weight <= 0) continue;
+    // Determine rep count: actual reps if logged, or prescribed reps from set index
+    const reps = val.actualReps ? parseInt(val.actualReps) : _getPrescribedRepsForKey(parts[0], parts[1], parts[2], parts[3], parts[4]);
+    if (!reps || reps <= 0) continue;
+    if (!_prCache[exName]) _prCache[exName] = {};
+    if (!_prCache[exName][reps] || weight > _prCache[exName][reps]) {
+      _prCache[exName][reps] = weight;
+    }
+  }
+}
+
+function _getPrescribedRepsForKey(blockId, weekLabel, dayName, exName, setLabel) {
+  const si = parseInt(setLabel.replace('s',''));
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return null;
+  const week = block.weeks.find(w => w.label === weekLabel);
+  if (!week) return null;
+  const day = week.days.find(d => d.name === dayName);
+  if (!day) return null;
+  const ex = day.exercises.find(e => e.name === exName);
+  if (!ex || !ex.prescription) return null;
+  if (typeof getSetReps === 'function') return getSetReps(blockId, weekLabel, dayName, exName, si);
+  return null;
+}
+
+function _checkInlinePR(setKey, exName, weight, reps) {
+  if (!_prCache) _buildPRCache();
+  if (!weight || !reps || weight <= 0 || reps <= 0) return false;
+  const canon = (typeof canonicalizeLift === 'function') ? canonicalizeLift(exName) : exName;
+  const prevBest = _prCache[canon]?.[reps] || 0;
+  if (weight > prevBest) {
+    // Update cache
+    if (!_prCache[canon]) _prCache[canon] = {};
+    _prCache[canon][reps] = weight;
+    return true;
+  }
+  return false;
+}
+
+function _showInlinePR(setKey) {
+  // Find the set row and append a PR badge
+  const checkBtn = document.querySelector(`.set-check[data-set-key="${cssEsc(setKey)}"]`);
+  if (!checkBtn) return;
+  const row = checkBtn.closest('.set-row');
+  if (!row || row.querySelector('.pr-badge')) return; // already has badge
+  const badge = document.createElement('span');
+  badge.className = 'pr-badge';
+  badge.textContent = 'PR';
+  row.appendChild(badge);
+}
+
+function _setNumHtml(sk, si) {
+  const sl = state.logs[sk] || {};
+  const st = sl.setType || 'normal';
+  const cls = 'set-num' + (st !== 'normal' ? ' ' + st : '');
+  const label = st !== 'normal' ? `<span class="set-type-badge">${SET_TYPE_LABELS[st]}</span>` : `S${si + 1}`;
+  return `<div class="${cls}" data-set-key="${esc(sk)}" onclick="cycleSetType('${esc(sk)}',event)">${label}</div>`;
 }
 function adjustSets(key, delta){
   const cur = state.extraSets[key] || 0;
@@ -5674,6 +6004,7 @@ function setActual(key,v){
   state.logs[key].done=shouldCheck;
   if(shouldCheck && !existing.ts) state.logs[key].ts = Date.now();
   saveLogs();
+  _prCache = null; // Invalidate PR cache on weight change
   if (shouldCheck) _maybeAdvanceWeek();
 
   // Start rest timer BEFORE DOM calls (which could throw and prevent timer)
@@ -5687,8 +6018,33 @@ function setActual(key,v){
   // Update set checkmark directly without full render
   updateSetCheckmark(key,shouldCheck);
 
+  // Auto-detect warmup sets based on weight threshold
+  if (shouldCheck && exName) _autoDetectWarmup(key, exName, v);
+
+  // PR detection: check if this set is a new PR
+  if (shouldCheck && exName && v) {
+    const sl = state.logs[key] || {};
+    const reps = sl.actualReps ? parseInt(sl.actualReps) : _getPrescribedRepsFromContext(exName, key);
+    const weight = parseFloat(v);
+    if (reps && weight && _checkInlinePR(key, exName, weight, reps)) {
+      setTimeout(() => _showInlinePR(key), 100);
+    }
+  }
+
   // Check if all sets are now done → auto-complete exercise
   autoCompleteExercise(key);
+}
+
+function _getPrescribedRepsFromContext(exName, setKey) {
+  const parts = setKey.split('||');
+  if (parts.length < 5) return null;
+  const si = parseInt(parts[4].replace('s',''));
+  const ctx = getActiveContext();
+  if (!ctx) return null;
+  const ex = ctx.day.exercises.find(e => e.name === exName);
+  if (!ex || !ex.prescription) return null;
+  if (typeof getSetReps === 'function') return getSetReps(ctx.block.id, ctx.week.label, ctx.day.name, exName, si);
+  return null;
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
@@ -6710,7 +7066,7 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
     for(let si=0;si<20;si++){
       const sl=state.logs[key+'||s'+si];
       if(!sl) break;
-      sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',done:sl.done});
+      sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',actualReps:sl.actualReps||'',done:sl.done});
     }
     return sets;
   }
@@ -6911,8 +7267,8 @@ function checkWeekProgression(block) {
     saveBlocks();
   }
 }
-function setWeek(wi){ state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
-function setDay(di){ state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function setWeek(wi){ if(state.editingDay){_cancelDayEdits();} state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function setDay(di){ if(state.editingDay && di!==state.activeDay){_cancelDayEdits();} state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); } }
 
 
@@ -8961,6 +9317,668 @@ function finishOnboarding() {
   render();
 }
 
+// ── BUILD PROGRAM WIZARD ──────────────────────────────────────────────────────
+
+let _builderState = null;
+
+function _builderExerciseIndex() {
+  // Build searchable exercise list from existing blocks + known lifts
+  const names = new Set();
+  if (state.blocks) {
+    state.blocks.forEach(b => {
+      if (!b.weeks) return;
+      b.weeks.forEach(w => w.days && w.days.forEach(d => d.exercises && d.exercises.forEach(e => {
+        const cn = typeof canonicalizeLift === 'function' ? canonicalizeLift(e.name) : e.name;
+        names.add(cn);
+      })));
+    });
+  }
+  // Add known compound lifts
+  const compNames = ['Squat','Bench Press','Deadlift','Front Squat','Pause Squat','Close Grip Bench Press',
+    'Incline Bench Press','Sumo Deadlift','Romanian Deadlift','Deficit Deadlift','Rack Pull','Larsen Press',
+    'Spoto Press','Pin Squat','SSB Squat','Floor Press','Overhead Press','Barbell Row','Pendlay Row',
+    'Stiff Leg Deadlift','Snatch Grip Deadlift','High Bar Squat','Box Squat','Belt Squat','Hack Squat',
+    'Leg Press','Leg Curl','Leg Extension','Bulgarian Split Squat','Walking Lunge','Dumbbell Bench Press',
+    'Dumbbell Row','Pull-up','Chin-up','Lat Pulldown','Cable Row','Face Pull','Tricep Pushdown',
+    'Dumbbell Curl','Barbell Curl','Hip Thrust','Good Morning','Back Extension','Plank','Ab Wheel'];
+  compNames.forEach(n => names.add(n));
+  return Array.from(names).sort((a,b) => a.localeCompare(b));
+}
+
+function startBuildProgram() {
+  // Close onboarding if open
+  const onboardEl = document.getElementById('onboarding-overlay');
+  if (onboardEl) onboardEl.style.display = 'none';
+  // Init state
+  _builderState = {
+    step: 1,
+    blockName: '',
+    numWeeks: 4,
+    daysPerWeek: 4,
+    dayNames: [],
+    weekData: [],       // [{days:[{name,exercises:[{name,prescription,coachNotes}]}]}]
+    expandedDay: 0,     // which day accordion is open in step 3
+    copyMode: 'copy',   // 'copy' | 'overload' | 'manual'
+    overloadPct: 5,
+    editingExIdx: null,  // {dayIdx, exIdx} for editing
+  };
+  _builderInitDayNames();
+  const overlay = document.getElementById('builder-overlay');
+  overlay.style.display = 'flex';
+  document.querySelector('.bottom-nav').style.display = 'none';
+  document.querySelector('.header').style.display = 'none';
+  _renderBuilderStep();
+}
+
+function _builderInitDayNames() {
+  if (!_builderState) return;
+  const n = _builderState.daysPerWeek;
+  const defaults = ['Squat Day','Bench Day','Deadlift Day','Upper','Lower','Accessories','Day 7'];
+  _builderState.dayNames = [];
+  for (let i = 0; i < n; i++) {
+    _builderState.dayNames.push(i < defaults.length ? '' : ''); // empty = user fills or defaults
+  }
+}
+
+function _builderDefaultDayName(i) {
+  return 'Day ' + (i + 1);
+}
+
+function cancelBuilder() {
+  // Check if user has entered data
+  const hasData = _builderState && (_builderState.blockName ||
+    _builderState.weekData.some(w => w.days.some(d => d.exercises.length > 0)));
+  if (hasData) {
+    if (!confirm('Discard this program? Your changes will be lost.')) return;
+  }
+  _closeBuilder();
+}
+
+function _closeBuilder() {
+  _builderState = null;
+  const overlay = document.getElementById('builder-overlay');
+  overlay.style.display = 'none';
+  document.querySelector('.bottom-nav').style.display = '';
+  document.querySelector('.header').style.display = '';
+  render();
+}
+
+function _renderBuilderStep() {
+  const body = document.getElementById('builder-body');
+  const s = _builderState;
+  const step = s.step;
+
+  // Step dots
+  let dots = '';
+  for (let i = 1; i <= 5; i++) {
+    const cls = i === step ? 'active' : (i < step ? 'done' : '');
+    dots += `<div class="builder-step-dot ${cls}"></div>`;
+  }
+
+  // Header with back/close
+  const backBtn = step > 1
+    ? `<button class="builder-back" onclick="_builderBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Back</button>`
+    : `<div></div>`;
+  const header = `<div class="builder-header">${backBtn}<button class="builder-close" onclick="cancelBuilder()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="builder-steps">${dots}</div>`;
+
+  if (step === 1) _renderBuilderStep1(body, header);
+  else if (step === 2) _renderBuilderStep2(body, header);
+  else if (step === 3) _renderBuilderStep3(body, header);
+  else if (step === 4) _renderBuilderStep4(body, header);
+  else if (step === 5) _renderBuilderStep5(body, header);
+
+  // Scroll to top
+  document.getElementById('builder-overlay').scrollTop = 0;
+}
+
+function _builderBack() {
+  if (_builderState.step > 1) {
+    _builderState.step--;
+    _renderBuilderStep();
+  }
+}
+
+// ── STEP 1: Program Basics ────────────────────────────────────────────────────
+function _renderBuilderStep1(body, header) {
+  const s = _builderState;
+  const dayOptions = [2,3,4,5,6];
+  let dayPills = dayOptions.map(n =>
+    `<button class="builder-pill${s.daysPerWeek===n?' selected':''}" onclick="_builderSetDays(${n})">${n} days</button>`
+  ).join('');
+
+  body.innerHTML = `${header}
+    <div class="builder-step-title">Program Basics</div>
+    <div class="builder-step-desc">Name your program and set the structure.</div>
+
+    <div class="builder-label">Program Name</div>
+    <input class="builder-input" id="builder-name" type="text" placeholder="e.g. Hypertrophy Block, Comp Prep" value="${escH(s.blockName)}" oninput="_builderState.blockName=this.value;_builderValidateStep1()" autocomplete="off" maxlength="60">
+
+    <div class="builder-label">Number of Weeks</div>
+    <div class="builder-stepper">
+      <button class="builder-stepper-btn" onclick="_builderAdjWeeks(-1)">−</button>
+      <div class="builder-stepper-val" id="builder-weeks-val">${s.numWeeks}</div>
+      <button class="builder-stepper-btn" onclick="_builderAdjWeeks(1)">+</button>
+    </div>
+
+    <div class="builder-label">Training Days per Week</div>
+    <div class="builder-pills">${dayPills}</div>
+
+    <button class="builder-next-btn${s.blockName.trim()?'':' disabled'}" id="builder-next1" onclick="_builderGoStep(2)">Next</button>
+  `;
+  // Focus name input
+  setTimeout(() => { const el = document.getElementById('builder-name'); if (el && !s.blockName) el.focus(); }, 100);
+}
+
+function _builderValidateStep1() {
+  const btn = document.getElementById('builder-next1');
+  if (btn) btn.classList.toggle('disabled', !_builderState.blockName.trim());
+}
+
+function _builderAdjWeeks(delta) {
+  _builderState.numWeeks = Math.max(1, Math.min(16, _builderState.numWeeks + delta));
+  const el = document.getElementById('builder-weeks-val');
+  if (el) el.textContent = _builderState.numWeeks;
+}
+
+function _builderSetDays(n) {
+  _builderState.daysPerWeek = n;
+  _builderInitDayNames();
+  _renderBuilderStep();
+}
+
+// ── STEP 2: Name Training Days ────────────────────────────────────────────────
+function _renderBuilderStep2(body, header) {
+  const s = _builderState;
+  // Ensure dayNames array matches daysPerWeek
+  while (s.dayNames.length < s.daysPerWeek) s.dayNames.push('');
+  while (s.dayNames.length > s.daysPerWeek) s.dayNames.pop();
+
+  const chips = ['Squat Day','Bench Day','Deadlift Day','Upper','Lower','Accessories','Pull','Push','Legs'];
+  let dayInputs = '';
+  for (let i = 0; i < s.daysPerWeek; i++) {
+    const chipHtml = chips.map(c => `<button class="builder-chip" onclick="_builderSetDayName(${i},'${c}')">${c}</button>`).join('');
+    dayInputs += `
+      <div class="builder-label">Day ${i+1}</div>
+      <input class="builder-input" type="text" placeholder="${_builderDefaultDayName(i)}" value="${escH(s.dayNames[i])}" oninput="_builderState.dayNames[${i}]=this.value" autocomplete="off" maxlength="30">
+      <div class="builder-chips">${chipHtml}</div>
+    `;
+  }
+
+  body.innerHTML = `${header}
+    <div class="builder-step-title">Name Your Days</div>
+    <div class="builder-step-desc">Give each training day a name, or leave blank for defaults.</div>
+    ${dayInputs}
+    <button class="builder-next-btn" onclick="_builderGoStep(3)">Next</button>
+  `;
+}
+
+function _builderSetDayName(idx, name) {
+  _builderState.dayNames[idx] = name;
+  _renderBuilderStep();
+}
+
+// ── Navigation helper ─────────────────────────────────────────────────────────
+function _builderGoStep(step) {
+  const s = _builderState;
+  // Validate current step
+  if (s.step === 1 && !s.blockName.trim()) return;
+
+  // When leaving step 2, init weekData structure
+  if (step === 3 && s.weekData.length === 0) {
+    _builderInitWeekData();
+  }
+  s.step = step;
+  _renderBuilderStep();
+}
+
+function _builderInitWeekData() {
+  const s = _builderState;
+  s.weekData = [];
+  // Only init Week 1 — other weeks get populated in Step 4
+  const days = [];
+  for (let d = 0; d < s.daysPerWeek; d++) {
+    days.push({
+      name: s.dayNames[d] || _builderDefaultDayName(d),
+      exercises: []
+    });
+  }
+  s.weekData.push({ days });
+}
+
+function _builderGetDayName(idx) {
+  return _builderState.dayNames[idx] || _builderDefaultDayName(idx);
+}
+
+// ── STEP 3: Build Week 1 ─────────────────────────────────────────────────────
+function _renderBuilderStep3(body, header) {
+  const s = _builderState;
+  const week = s.weekData[0];
+  if (!week) return;
+
+  let daySections = '';
+  for (let d = 0; d < week.days.length; d++) {
+    const day = week.days[d];
+    const expanded = s.expandedDay === d;
+    const exCount = day.exercises.length;
+
+    let exCards = '';
+    if (expanded) {
+      day.exercises.forEach((ex, ei) => {
+        exCards += `
+          <div class="builder-ex-card">
+            <div class="builder-ex-card-body" onclick="_builderEditEx(${d},${ei})">
+              <div class="builder-ex-card-name">${escH(ex.name)}</div>
+              <div class="builder-ex-card-rx">${escH(ex.prescription || 'No prescription')}</div>
+            </div>
+            <div class="builder-ex-actions">
+              ${ei > 0 ? `<button class="builder-ex-action-btn" onclick="_builderMoveEx(${d},${ei},-1)" title="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="18 15 12 9 6 15"/></svg></button>` : ''}
+              ${ei < day.exercises.length - 1 ? `<button class="builder-ex-action-btn" onclick="_builderMoveEx(${d},${ei},1)" title="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg></button>` : ''}
+              <button class="builder-ex-action-btn" onclick="_builderDeleteEx(${d},${ei})" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    daySections += `
+      <div class="builder-day-section">
+        <div class="builder-day-header${expanded?' expanded':''}" onclick="_builderToggleDay(${d})">
+          <span class="builder-day-header-name">${escH(day.name)}</span>
+          <span class="builder-day-header-count">${exCount} exercise${exCount!==1?'s':''}</span>
+        </div>
+        ${expanded ? `<div class="builder-day-body">
+          ${exCards}
+          <div class="builder-add-ex" onclick="_builderOpenPicker(${d})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Exercise
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+  }
+
+  body.innerHTML = `${header}
+    <div class="builder-step-title">Week 1 Exercises</div>
+    <div class="builder-step-desc">Add exercises to each training day. Tap a day to expand it.</div>
+    ${daySections}
+    <button class="builder-next-btn" onclick="_builderGoStep(4)">Next</button>
+  `;
+}
+
+function _builderToggleDay(d) {
+  _builderState.expandedDay = _builderState.expandedDay === d ? -1 : d;
+  _renderBuilderStep();
+}
+
+function _builderDeleteEx(dayIdx, exIdx) {
+  _builderState.weekData[0].days[dayIdx].exercises.splice(exIdx, 1);
+  _renderBuilderStep();
+}
+
+function _builderMoveEx(dayIdx, exIdx, direction) {
+  const exs = _builderState.weekData[0].days[dayIdx].exercises;
+  const newIdx = exIdx + direction;
+  if (newIdx < 0 || newIdx >= exs.length) return;
+  [exs[exIdx], exs[newIdx]] = [exs[newIdx], exs[exIdx]];
+  _renderBuilderStep();
+}
+
+// ── Exercise Picker ───────────────────────────────────────────────────────────
+let _builderPickerDayIdx = null;
+
+function _builderOpenPicker(dayIdx) {
+  _builderPickerDayIdx = dayIdx;
+  const allExercises = _builderExerciseIndex();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'builder-picker-overlay';
+  overlay.id = 'builder-picker-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) _builderClosePicker(); };
+
+  // Split into categories
+  const compLifts = ['Squat','Bench Press','Deadlift'];
+  const compounds = allExercises.filter(n => {
+    const lower = n.toLowerCase();
+    return !compLifts.includes(n) && (
+      lower.includes('squat') || lower.includes('bench') || lower.includes('press') ||
+      lower.includes('deadlift') || lower.includes('row') || lower.includes('pull')
+    );
+  });
+  const accessories = allExercises.filter(n => !compLifts.includes(n) && !compounds.includes(n));
+
+  function renderList(filter) {
+    const f = (filter || '').toLowerCase();
+    let html = '';
+    const filtered = f ? allExercises.filter(n => n.toLowerCase().includes(f)) : null;
+
+    if (filtered) {
+      filtered.forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
+      if (!filtered.length) html = `<div style="padding:20px 0;color:var(--text-faint);font-size:13px;text-align:center">No matches</div>`;
+    } else {
+      html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Competition Lifts</div>`;
+      compLifts.forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${n}')">${n}</div>`; });
+      html += `</div>`;
+      if (compounds.length) {
+        html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Compound Variations</div>`;
+        compounds.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
+        html += `</div>`;
+      }
+      if (accessories.length) {
+        html += `<div class="builder-picker-section"><div class="builder-picker-section-label">Accessories</div>`;
+        accessories.slice(0, 20).forEach(n => { html += `<div class="builder-picker-item" onclick="_builderPickExercise('${escH(n).replace(/'/g,"\\'")}')">${escH(n)}</div>`; });
+        html += `</div>`;
+      }
+    }
+    // Always show custom option
+    html += `<div class="builder-picker-section"><div class="builder-picker-item" onclick="_builderPickCustom()" style="color:var(--gold)">+ Enter custom exercise name</div></div>`;
+    return html;
+  }
+
+  overlay.innerHTML = `
+    <div class="builder-picker-sheet">
+      <div class="builder-picker-header">
+        <span class="builder-picker-title">Add Exercise</span>
+        <button class="builder-close" onclick="_builderClosePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search exercises..." oninput="_builderFilterPicker(this.value)" autocomplete="off">
+      <div class="builder-picker-list" id="builder-picker-list">${renderList('')}</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  // Store render function for filtering
+  overlay._renderList = renderList;
+  setTimeout(() => { const el = document.getElementById('builder-picker-search'); if (el) el.focus(); }, 150);
+}
+
+function _builderFilterPicker(val) {
+  const overlay = document.getElementById('builder-picker-overlay');
+  if (!overlay || !overlay._renderList) return;
+  const list = document.getElementById('builder-picker-list');
+  if (list) list.innerHTML = overlay._renderList(val);
+}
+
+function _builderClosePicker() {
+  const el = document.getElementById('builder-picker-overlay');
+  if (el) el.remove();
+  _builderPickerDayIdx = null;
+}
+
+function _builderPickExercise(name) {
+  _builderClosePicker();
+  _builderShowDetail(_builderPickerDayIdx !== null ? _builderPickerDayIdx : 0, null, name);
+}
+
+function _builderPickCustom() {
+  _builderClosePicker();
+  _builderShowDetail(_builderPickerDayIdx !== null ? _builderPickerDayIdx : 0, null, '');
+}
+
+// ── Exercise Detail Modal ─────────────────────────────────────────────────────
+function _builderShowDetail(dayIdx, exIdx, prefillName) {
+  const isEdit = exIdx !== null && exIdx !== undefined;
+  const existing = isEdit ? _builderState.weekData[0].days[dayIdx].exercises[exIdx] : null;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'builder-detail-overlay';
+  overlay.id = 'builder-detail-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = `
+    <div class="builder-detail-modal">
+      <div class="builder-detail-title">${isEdit ? 'Edit' : 'Add'} Exercise</div>
+      <div class="builder-detail-field">
+        <div class="builder-label">Exercise Name</div>
+        <input class="builder-input" id="builder-detail-name" type="text" placeholder="e.g. Competition Squat" value="${escH(existing ? existing.name : (prefillName || ''))}" autocomplete="off" maxlength="80">
+      </div>
+      <div class="builder-detail-field">
+        <div class="builder-label">Prescription</div>
+        <input class="builder-input" id="builder-detail-rx" type="text" placeholder="e.g. 5x3 @ 85%" value="${escH(existing ? existing.prescription : '')}" autocomplete="off" maxlength="100">
+        <div class="builder-detail-examples">
+          <strong>Formats:</strong> 3x5 &middot; 5x3 @ 85% &middot; 3x5(225) &middot; 3x8-12 &middot; 1x3(315), 1x3(335)
+        </div>
+      </div>
+      <div class="builder-detail-field">
+        <div class="builder-label">Notes <span style="font-weight:400;color:var(--text-faint)">(optional)</span></div>
+        <input class="builder-input" id="builder-detail-notes" type="text" placeholder="e.g. Pause 2 sec at bottom" value="${escH(existing ? (existing.coachNotes||'') : '')}" autocomplete="off" maxlength="200">
+      </div>
+      <button class="builder-next-btn" onclick="_builderSaveDetail(${dayIdx},${isEdit?exIdx:'null'})" style="margin-top:20px">Save</button>
+      <button class="builder-secondary-btn" onclick="document.getElementById('builder-detail-overlay').remove()">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  // Focus name if empty, otherwise focus prescription
+  setTimeout(() => {
+    const nameEl = document.getElementById('builder-detail-name');
+    const rxEl = document.getElementById('builder-detail-rx');
+    if (nameEl && !nameEl.value) nameEl.focus();
+    else if (rxEl) rxEl.focus();
+  }, 100);
+}
+
+function _builderSaveDetail(dayIdx, exIdx) {
+  const nameEl = document.getElementById('builder-detail-name');
+  const rxEl = document.getElementById('builder-detail-rx');
+  const notesEl = document.getElementById('builder-detail-notes');
+  const name = (nameEl ? nameEl.value : '').trim();
+  if (!name) { if (nameEl) nameEl.style.borderColor = '#e74c3c'; return; }
+  const rx = (rxEl ? rxEl.value : '').trim();
+  const notes = (notesEl ? notesEl.value : '').trim();
+
+  const exObj = { name, prescription: rx, note: '', coachNotes: notes, supersetGroup: null };
+
+  if (exIdx !== null && exIdx !== undefined) {
+    _builderState.weekData[0].days[dayIdx].exercises[exIdx] = exObj;
+  } else {
+    _builderState.weekData[0].days[dayIdx].exercises.push(exObj);
+  }
+
+  document.getElementById('builder-detail-overlay').remove();
+  _renderBuilderStep();
+}
+
+function _builderEditEx(dayIdx, exIdx) {
+  _builderShowDetail(dayIdx, exIdx, null);
+}
+
+// ── STEP 4: Copy to Remaining Weeks ──────────────────────────────────────────
+function _renderBuilderStep4(body, header) {
+  const s = _builderState;
+  if (s.numWeeks <= 1) {
+    // Single week program — skip copy step
+    _builderGoStep(5);
+    return;
+  }
+
+  body.innerHTML = `${header}
+    <div class="builder-step-title">Copy Structure</div>
+    <div class="builder-step-desc">You've built Week 1. How should the remaining ${s.numWeeks - 1} week${s.numWeeks>2?'s':''} work?</div>
+
+    <div class="builder-radio-group">
+      <div class="builder-radio${s.copyMode==='copy'?' selected':''}" onclick="_builderSetCopyMode('copy')">
+        <div class="builder-radio-dot"></div>
+        <div class="builder-radio-text">
+          <div class="builder-radio-label">Copy Week 1</div>
+          <div class="builder-radio-desc">Same exercises and prescriptions every week</div>
+        </div>
+      </div>
+      <div class="builder-radio${s.copyMode==='overload'?' selected':''}" onclick="_builderSetCopyMode('overload')">
+        <div class="builder-radio-dot"></div>
+        <div class="builder-radio-text">
+          <div class="builder-radio-label">Progressive Overload</div>
+          <div class="builder-radio-desc">Copy structure, increase weight each week</div>
+        </div>
+      </div>
+      ${s.copyMode === 'overload' ? `
+        <div style="padding:8px 0 0 32px">
+          <div class="builder-label" style="margin-top:0">Increase per week</div>
+          <div class="builder-stepper">
+            <button class="builder-stepper-btn" onclick="_builderAdjOverload(-1)">−</button>
+            <div class="builder-stepper-val" id="builder-overload-val">${s.overloadPct}%</div>
+            <button class="builder-stepper-btn" onclick="_builderAdjOverload(1)">+</button>
+          </div>
+        </div>
+      ` : ''}
+      <div class="builder-radio${s.copyMode==='manual'?' selected':''}" onclick="_builderSetCopyMode('manual')">
+        <div class="builder-radio-dot"></div>
+        <div class="builder-radio-text">
+          <div class="builder-radio-label">I'll Edit Each Week</div>
+          <div class="builder-radio-desc">Copy structure, then manually adjust each week</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="builder-next-btn" onclick="_builderGoStep(5)">Next</button>
+  `;
+}
+
+function _builderSetCopyMode(mode) {
+  _builderState.copyMode = mode;
+  _renderBuilderStep();
+}
+
+function _builderAdjOverload(delta) {
+  _builderState.overloadPct = Math.max(1, Math.min(20, _builderState.overloadPct + delta));
+  const el = document.getElementById('builder-overload-val');
+  if (el) el.textContent = _builderState.overloadPct + '%';
+}
+
+// ── STEP 5: Review & Save ────────────────────────────────────────────────────
+function _renderBuilderStep5(body, header) {
+  const s = _builderState;
+  // Generate the full block first so we can display summary
+  _builderGenerateWeeks();
+
+  const week1 = s.weekData[0];
+  let weekSummaries = '';
+  for (let w = 0; w < s.numWeeks; w++) {
+    const wk = s.weekData[w] || s.weekData[0]; // Fallback to week 1 shape
+    let dayRows = '';
+    wk.days.forEach(d => {
+      dayRows += `<div class="builder-summary-day-row"><span class="builder-summary-day-name">${escH(d.name)}</span><span class="builder-summary-day-count">${d.exercises.length} exercise${d.exercises.length!==1?'s':''}</span></div>`;
+    });
+    weekSummaries += `
+      <div class="builder-summary-week">
+        <div class="builder-summary-week-label" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+          Week ${w+1}${w > 0 && s.copyMode==='overload' ? ` (+${s.overloadPct * w}%)` : ''}
+        </div>
+        <div style="${w > 0 ? 'display:none' : ''}">${dayRows}</div>
+      </div>
+    `;
+  }
+
+  const totalExercises = week1.days.reduce((sum, d) => sum + d.exercises.length, 0);
+
+  body.innerHTML = `${header}
+    <div class="builder-step-title">Review & Save</div>
+    <div class="builder-step-desc">Everything look good? You can always edit later.</div>
+
+    <div class="builder-summary-card">
+      <div class="builder-summary-title">${escH(s.blockName)}</div>
+      <div class="builder-summary-meta">${s.numWeeks} week${s.numWeeks>1?'s':''} &middot; ${s.daysPerWeek} days/week &middot; ${totalExercises} exercises</div>
+      ${weekSummaries}
+    </div>
+
+    <button class="builder-next-btn" onclick="_builderSave()">Save & Start</button>
+    <button class="builder-secondary-btn" onclick="_builderBack()">Go Back</button>
+  `;
+}
+
+function _builderGenerateWeeks() {
+  const s = _builderState;
+  if (s.weekData.length >= s.numWeeks) return; // Already generated
+  const week1 = s.weekData[0];
+  for (let w = 1; w < s.numWeeks; w++) {
+    const clonedDays = week1.days.map(d => ({
+      name: d.name,
+      exercises: d.exercises.map(ex => {
+        let rx = ex.prescription;
+        if (s.copyMode === 'overload' && rx) {
+          rx = _builderApplyOverload(rx, w, s.overloadPct);
+        }
+        return { name: ex.name, prescription: rx, note: ex.note || '', coachNotes: ex.coachNotes || '', supersetGroup: ex.supersetGroup || null };
+      })
+    }));
+    s.weekData.push({ days: clonedDays });
+  }
+}
+
+function _builderApplyOverload(prescription, weekNum, pctPerWeek) {
+  const totalPct = weekNum * pctPerWeek;
+  // Handle "5x3 @ 85%" format
+  let m = prescription.match(/^(.+?)\s*@\s*([\d.]+)%$/);
+  if (m) {
+    const newPct = Math.round((parseFloat(m[2]) + totalPct) * 10) / 10;
+    return `${m[1].trim()} @ ${newPct}%`;
+  }
+  // Handle "3x5(225)" format
+  m = prescription.match(/^(\d+)x(\d+)\((\d+(?:\.\d+)?)\)$/);
+  if (m) {
+    const newWt = Math.round(parseFloat(m[3]) * (1 + totalPct / 100));
+    return `${m[1]}x${m[2]}(${newWt})`;
+  }
+  // Handle ramping "1x3(315), 1x3(335), 1x3(355)" format
+  if (prescription.includes(',') && prescription.includes('(')) {
+    const parts = prescription.split(',').map(p => p.trim());
+    const adjusted = parts.map(p => {
+      const rm = p.match(/^(\d+)x(\d+)\((\d+(?:\.\d+)?)\)$/);
+      if (rm) {
+        const newWt = Math.round(parseFloat(rm[3]) * (1 + totalPct / 100));
+        return `${rm[1]}x${rm[2]}(${newWt})`;
+      }
+      return p;
+    });
+    return adjusted.join(', ');
+  }
+  // Otherwise return unchanged (rep ranges, plain sets x reps)
+  return prescription;
+}
+
+function _builderSave() {
+  const s = _builderState;
+  // Build the block object
+  const block = {
+    id: 'block_' + Date.now(),
+    name: s.blockName.trim(),
+    format: 'manual',
+    athleteName: (state.athlete && state.athlete.name) || 'Athlete',
+    weeks: s.weekData.map((w, wi) => ({
+      label: 'Week ' + (wi + 1),
+      days: w.days.map(d => ({
+        name: d.name,
+        exercises: d.exercises.map(ex => ({
+          name: ex.name,
+          prescription: ex.prescription || '',
+          note: ex.note || '',
+          coachNotes: ex.coachNotes || '',
+          supersetGroup: ex.supersetGroup || null
+        }))
+      }))
+    }))
+  };
+
+  // Add to state
+  state.blocks.push(block);
+  state.activeBlock = block;
+  state.activeWeek = 0;
+  state.activeDay = 0;
+
+  // Save
+  saveBlocks();
+
+  // Auto-register tracked lifts for comp lifts
+  if (typeof autoRegisterCompLifts === 'function') autoRegisterCompLifts();
+
+  // Close wizard
+  _closeBuilder();
+
+  // If we were in onboarding, finish it
+  if (typeof markOnboarded === 'function') markOnboarded();
+}
+
+// ── END BUILD PROGRAM WIZARD ─────────────────────────────────────────────────
+
 // ── END ONBOARDING ────────────────────────────────────────────────────────────
 
 // Boot the app — opens IndexedDB, migrates data, initializes state, renders
@@ -9165,6 +10183,297 @@ function removeCustomEx(block, dayName, exName, allWeeks) {
   render();
 }
 
+// ── EDIT DAY / ADD DAY ───────────────────────────────────────────────────────
+
+// Show the overflow menu next to day tabs
+function _showDayOverflow(e) {
+  e.stopPropagation();
+  // Remove existing menu if open
+  const old = document.getElementById('day-overflow-menu');
+  if (old) { old.remove(); return; }
+
+  const container = document.querySelector('.day-tabs-container');
+  if (!container) return;
+
+  const menu = document.createElement('div');
+  menu.className = 'day-overflow-menu';
+  menu.id = 'day-overflow-menu';
+  menu.innerHTML = `
+    <button onclick="_confirmEditDay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Day</button>
+    <button onclick="_showAddDayModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Day</button>`;
+  container.appendChild(menu);
+
+  // Close on outside click
+  const close = (ev) => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', close); } };
+  setTimeout(() => document.addEventListener('click', close), 0);
+}
+
+// Show confirmation dialog before entering edit mode
+function _confirmEditDay() {
+  const old = document.getElementById('day-overflow-menu');
+  if (old) old.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.id = 'confirm-edit-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="confirm-sheet">
+      <div class="confirm-title">Edit Day</div>
+      <div class="confirm-desc">You'll be able to add, remove, and reorder exercises for <strong style="color:var(--text-primary)">${escH(ctx.day.name)}</strong>. Logged data won't be affected.</div>
+      <div class="confirm-btns">
+        <button class="confirm-cancel" onclick="this.closest('.confirm-overlay').remove()">Cancel</button>
+        <button class="confirm-go" onclick="_enterDayEditMode()">Edit</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Snapshot current day exercises and enter edit mode
+function _enterDayEditMode() {
+  const overlay = document.getElementById('confirm-edit-overlay');
+  if (overlay) overlay.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+
+  // Deep snapshot for revert on Cancel
+  state._dayEditSnapshot = JSON.parse(JSON.stringify(ctx.day.exercises));
+  state._dayEditIsNew = false;
+  state.editingDay = true;
+  render();
+}
+
+// Render the day editor (used in both Edit Day and Add Day)
+function _renderDayEditor(block, week, day) {
+  let h = '';
+  h += `<div class="edit-day-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editing ${escH(day.name)}</div>`;
+  h += `<div class="edit-day-border">`;
+
+  if (!day.exercises || day.exercises.length === 0) {
+    h += `<div style="padding:24px 16px;text-align:center;color:var(--text-faint);font-size:13px">No exercises yet. Tap + Add Exercise below.</div>`;
+  } else {
+    day.exercises.forEach((ex, ei) => {
+      const isFirst = ei === 0;
+      const isLast = ei === day.exercises.length - 1;
+      h += `<div class="edit-day-ex">
+        <div class="edit-day-ex-info">
+          <div class="edit-day-ex-name">${escH(ex.displayName || ex.name)}</div>
+          <div class="edit-day-ex-pres">${escH(ex.prescription || 'No prescription')}</div>
+        </div>
+        <div class="edit-day-actions">
+          ${!isFirst ? `<button onclick="_moveExInDay(${ei},-1)" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>` : ''}
+          ${!isLast ? `<button onclick="_moveExInDay(${ei},1)" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>` : ''}
+          <button class="danger" onclick="_deleteExFromDay(${ei})" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        </div>
+      </div>`;
+    });
+  }
+
+  h += `<button class="add-exercise-btn" onclick="_addExInEditMode()" style="margin:8px 12px 12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
+  h += `</div>`;
+
+  h += `<div class="edit-day-footer">
+    <button class="edit-day-cancel" onclick="_cancelDayEdits()">Cancel</button>
+    <button class="edit-day-save" onclick="_saveDayEdits()">Save</button>
+  </div>`;
+
+  return h;
+}
+
+// Move exercise up or down in current day
+function _moveExInDay(exIdx, dir) {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const exs = ctx.day.exercises;
+  const newIdx = exIdx + dir;
+  if (newIdx < 0 || newIdx >= exs.length) return;
+  [exs[exIdx], exs[newIdx]] = [exs[newIdx], exs[exIdx]];
+  render();
+}
+
+// Delete exercise from current day (in edit mode)
+function _deleteExFromDay(exIdx) {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const ex = ctx.day.exercises[exIdx];
+  if (!ex) return;
+  ctx.day.exercises.splice(exIdx, 1);
+  render();
+}
+
+// Add exercise during edit mode — reuse the existing add exercise modal
+function _addExInEditMode() {
+  _openCustomExModal(null);
+}
+
+// Cancel edit mode — revert from snapshot
+function _cancelDayEdits() {
+  const ctx = getActiveContext();
+  if (ctx) {
+    if (state._dayEditIsNew) {
+      // New day that was added — remove it
+      const wi = state.activeWeek;
+      const week = ctx.block.weeks[wi];
+      if (week) {
+        const di = state.activeDay;
+        week.days.splice(di, 1);
+        state.activeDay = Math.max(0, di - 1);
+      }
+    } else if (state._dayEditSnapshot) {
+      ctx.day.exercises = JSON.parse(JSON.stringify(state._dayEditSnapshot));
+    }
+  }
+  // Always clear edit state, even if ctx is null
+  state.editingDay = false;
+  state._dayEditSnapshot = null;
+  state._dayEditIsNew = false;
+  saveBlocks();
+  render();
+}
+
+// Save day edits — show propagation prompt
+function _saveDayEdits() {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+
+  const wi = state.activeWeek;
+  const totalWeeks = ctx.block.weeks.length;
+  const isLastWeek = wi >= totalWeeks - 1;
+
+  if (isLastWeek) {
+    // No following weeks — just save
+    _finalizeDayEdit(false);
+  } else {
+    // Show propagation prompt
+    _showPropagationPrompt();
+  }
+}
+
+// Show "This Week" vs "All Following Weeks" prompt
+function _showPropagationPrompt() {
+  const overlay = document.createElement('div');
+  overlay.className = 'propagation-overlay';
+  overlay.id = 'propagation-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="propagation-sheet">
+      <div class="propagation-title">Apply Changes</div>
+      <div class="propagation-desc">Apply these changes to this week only, or also update the same day in all following weeks?</div>
+      <div class="propagation-btns">
+        <button class="prop-this" onclick="_finalizeDayEdit(false)">This Week Only</button>
+        <button class="prop-all" onclick="_finalizeDayEdit(true)">All Following Weeks</button>
+        <button class="prop-cancel" onclick="document.getElementById('propagation-overlay').remove()">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Finalize the day edit — optionally propagate to following weeks
+function _finalizeDayEdit(propagateForward) {
+  const overlay = document.getElementById('propagation-overlay');
+  if (overlay) overlay.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const { block, week, day } = ctx;
+  const dayName = day.name;
+
+  if (propagateForward) {
+    // Get the current exercise list as the new template
+    const newExercises = JSON.parse(JSON.stringify(day.exercises));
+
+    for (let wi = state.activeWeek + 1; wi < block.weeks.length; wi++) {
+      const futureWeek = block.weeks[wi];
+      const futureDay = futureWeek.days.find(d => d.name === dayName);
+      if (!futureDay) {
+        // Day doesn't exist in this week (was added) — create it
+        if (state._dayEditIsNew) {
+          futureWeek.days.push({ name: dayName, exercises: JSON.parse(JSON.stringify(newExercises)) });
+        }
+        continue;
+      }
+      // Only update uncompleted days — preserve logged data
+      if (isDayComplete(block, futureWeek, futureDay)) continue;
+      // Replace exercise list but keep any logged set data
+      futureDay.exercises = JSON.parse(JSON.stringify(newExercises));
+    }
+  }
+
+  state.editingDay = false;
+  state._dayEditSnapshot = null;
+  state._dayEditIsNew = false;
+  saveBlocks();
+  render();
+}
+
+// ── ADD DAY ──────────────────────────────────────────────────────────────────
+
+// Show modal for naming the new day
+function _showAddDayModal() {
+  const old = document.getElementById('day-overflow-menu');
+  if (old) old.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const existingNames = ctx.week.days.map(d => d.name);
+  const nextNum = existingNames.length + 1;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'add-day-modal-overlay';
+  overlay.id = 'add-day-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const chips = ['Squat Day','Bench Day','Deadlift Day','Upper','Lower','Accessories','Cardio','Recovery']
+    .filter(c => !existingNames.includes(c));
+
+  overlay.innerHTML = `
+    <div class="add-day-modal">
+      <div class="add-day-modal-title">Add Day to ${escH(ctx.week.label)}</div>
+      <input id="add-day-name-input" type="text" placeholder="Day name (e.g. Squat Day)" value="Day ${nextNum}" autocomplete="off" autocorrect="off">
+      <div class="add-day-chips">${chips.map(c => `<button class="add-day-chip" onclick="document.getElementById('add-day-name-input').value='${c}'">${c}</button>`).join('')}</div>
+      <div class="add-day-modal-btns">
+        <button class="add-day-modal-cancel" onclick="document.getElementById('add-day-overlay').remove()">Cancel</button>
+        <button class="add-day-modal-add" onclick="_confirmAddDay()">Add</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => { const inp = document.getElementById('add-day-name-input'); if (inp) { inp.focus(); inp.select(); } }, 100);
+}
+
+// Create the new day and enter edit mode
+function _confirmAddDay() {
+  const nameInput = document.getElementById('add-day-name-input');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) return;
+
+  const overlay = document.getElementById('add-day-overlay');
+  if (overlay) overlay.remove();
+
+  const ctx = getActiveContext();
+  if (!ctx) return;
+
+  // Add empty day to current week
+  const newDay = { name, exercises: [] };
+  ctx.week.days.push(newDay);
+
+  // Switch to the new day
+  state.activeDay = ctx.week.days.length - 1;
+
+  // Enter edit mode with the new flag
+  state._dayEditSnapshot = [];
+  state._dayEditIsNew = true;
+  state.editingDay = true;
+
+  saveBlocks();
+  render();
+}
+
+// ── END EDIT DAY / ADD DAY ───────────────────────────────────────────────────
+
 function openAddExerciseModal() {
   _openCustomExModal(null);
 }
@@ -9284,6 +10593,9 @@ function _saveCustomEx(existingKey) {
       ex.name = name;
       ex.prescription = pres;
     });
+  } else if (state.editingDay) {
+    // In day edit mode — add to current day only (propagation happens on save)
+    day.exercises.push({ ...exObj });
   } else {
     // Add mode — apply to current + forward uncompleted days
     applyCustomExForward(block, state.activeWeek, day.name, exObj);
