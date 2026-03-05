@@ -406,7 +406,10 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .sets-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
-.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text-dimmer); width: 22px; flex-shrink: 0; cursor: pointer; text-align: center; line-height: 1; user-select: none; -webkit-user-select: none; }
+.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text-faint); width: 22px; flex-shrink: 0; cursor: pointer; text-align: center; line-height: 1; user-select: none; -webkit-user-select: none; }
+.set-calc-btn { width: 20px; height: 20px; flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-faint); display: flex; align-items: center; justify-content: center; transition: color 0.15s; -webkit-tap-highlight-color: transparent; margin-right: -2px; }
+.set-calc-btn:active { color: var(--gold); }
+.set-calc-btn svg { width: 15px; height: 15px; }
 .set-num.warmup { color: #4FC3F7; font-size: 9px; }
 .set-num.dropset { color: #FF8A65; font-size: 9px; }
 .set-num.failure { color: #E57373; font-size: 9px; }
@@ -415,16 +418,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* ── Actual reps inline editor ───────────────────────────────────────── */
 .set-prescribed-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 3px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; transition: color 0.15s; }
 .set-prescribed-btn:active { color: var(--gold); }
-.set-prescribed-chevron { font-size: 13px; opacity: 0.45; margin-left: 1px; }
+.set-prescribed-chevron { font-size: 13px; opacity: 0.6; margin-left: 1px; }
 .set-prescribed-btn.has-actual { color: var(--gold); }
 .set-prescribed-btn.has-actual .set-prescribed-chevron { opacity: 0.7; }
-.set-presc-split { display: flex; align-items: center; gap: 0; min-width: 70px; flex-shrink: 0; align-self: flex-end; padding-bottom: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); white-space: nowrap; }
-.set-presc-weight, .set-presc-reps { background: none; border: none; cursor: pointer; padding: 0; font: inherit; color: inherit; transition: color 0.15s; display: inline-flex; align-items: center; }
-.set-presc-weight:active, .set-presc-reps:active { color: var(--gold); }
-.set-presc-weight { padding-right: 2px; }
-.set-presc-reps { padding-left: 2px; }
-.set-presc-split.has-actual .set-presc-reps { color: var(--gold); }
-.set-presc-split.has-actual .set-prescribed-chevron { opacity: 0.7; }
 /* Reps editor modal */
 .reps-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 320; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.12s ease; }
 .reps-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 300px; border: 1px solid var(--sheet-border); }
@@ -448,7 +444,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.set-input-label { font-size: 9px; color: var(--text-dimmer); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
+.set-input-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
 .set-input { background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 7px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 7px 4px; width: 100%; text-align: center; outline: none; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); }
@@ -518,7 +514,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .add-day-modal-add { background: var(--gold); color: #000; }
 .coach-note { padding: 8px 16px; background: var(--coach-note-bg); border-top: 1px solid var(--coach-note-bdr); font-size: 12px; color: #a8a850; font-style: italic; }
 .notes-section { border-top: 1px solid var(--surface-3); }
-.notes-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
+.notes-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
 .notes-label svg { width: 12px; height: 12px; flex-shrink: 0; }
 .upload-icon svg { width: 36px; height: 54px; }
 .edit-name-btn svg { width: 12px; height: 12px; vertical-align: middle; }
@@ -530,8 +526,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .notes-input { width: 100%; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 6px; color: var(--text-sub); font-family: 'Barlow', sans-serif; font-size: 13px; padding: 8px 10px; resize: none; outline: none; min-height: 36px; }
 .notes-input:focus { border-color: #333; color: var(--text-primary); }
 .notes-input::placeholder { color: var(--text-faint); }
-.lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: var(--text-muted); font-style: italic; }
-.prev-performance-src { font-size: 10px; color: #6a5a2a; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 16px 2px; }
+.lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: var(--text-sub); font-style: italic; }
+.prev-performance-src { font-size: 10px; color: #8a7a3a; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 16px 2px; }
 .set-prev-hint { font-size: 11px; color: #b8902a; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.03em; padding: 2px 2px 2px 28px; margin-top: -2px; margin-bottom: 4px; opacity: 0.9; }
 .set-row:has(.set-check.done) + .set-prev-hint { opacity: 0.45; }
 .collapsed-prev-summary { font-size: 11px; color: #b8902a; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; padding: 0 16px 10px; opacity: 0.8; }
@@ -4898,6 +4894,12 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     return '';
   }
 
+  const _calcIconSvg = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg>`;
+  function calcBtnHtml(weight, unit) {
+    if (!weight || weight <= 0) return '';
+    return `<button class="set-calc-btn" onclick="event.stopPropagation();_showPlatePopover(${weight},'${unit}')" aria-label="Plate calculator">${_calcIconSvg}</button>`;
+  }
+
   function setInputsHtml(sk,sl,placeholder,si){
     if(placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
@@ -5013,25 +5015,17 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
 
     if(hasSets){
       h+=`<div class="sets-grid">`;
+      const _isBarbell = _isBarbellExercise(ex.name);
       sets.forEach((s,si)=>{
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
+        const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
+        const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
+        const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
+        const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
+        const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
         h+=`<div class="set-row">
-          ${_setNumHtml(sk, si)}
-          ${(()=>{
-            const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
-            const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
-            const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
-            if (_numWeight > 0 && !s.isRpe && _isBarbellExercise(ex.name)) {
-              const _repsDisplay = _hasActualReps ? '<span style="color:var(--gold)">' + sl.actualReps + '</span>' : s.reps;
-              return `<div class="set-presc-split ${_hasActualReps?'has-actual':''}">` +
-                `<button class="set-presc-weight"${_weightAttrs} onclick="event.stopPropagation();_showPlatePopover(${_numWeight},'${getExUnit(ex.name)}')">${s.weight} ${unitLabel(true)}</button>` +
-                `<button class="set-presc-reps" onclick="openRepsEditor('${esc(sk)}','${s.reps}')"> × ${_repsDisplay}<span class="set-prescribed-chevron">›</span></button>` +
-              `</div>`;
-            }
-            const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
-            const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
-            return `<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>`;
-          })()}
+          ${_isBarbell && _numWeight > 0 ? calcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}${_setNumHtml(sk, si)}
+          <button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>
           ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
@@ -5046,20 +5040,11 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
           const _extraNw = !_lastS.isRpe && _lastS.weight && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
           const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
-          let _extraPrescHtml;
-          if (_extraNw > 0 && !_lastS.isRpe && _isBarbellExercise(ex.name)) {
-            const _extraRepsDisplay = _extraHasActual ? '<span style="color:var(--gold)">' + _sl.actualReps + '</span>' : (_lastS.reps||'—');
-            _extraPrescHtml = `<div class="set-presc-split ${_extraHasActual?'has-actual':''}">` +
-              `<button class="set-presc-weight"${_extraWeightAttrs} onclick="event.stopPropagation();_showPlatePopover(${_extraNw},'${getExUnit(ex.name)}')">${_lastS.weight||'—'} ${unitLabel(true)}</button>` +
-              `<button class="set-presc-reps" onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')"> × ${_extraRepsDisplay}<span class="set-prescribed-chevron">›</span></button>` +
-            `</div>`;
-          } else {
-            const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
-            const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
-            _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
-          }
+          const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
+          const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
+          const _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           h+=`<div class="set-row">
-            ${_setNumHtml(_sk, _si)}
+            ${_isBarbell && _extraNw > 0 ? calcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}${_setNumHtml(_sk, _si)}
             ${_extraPrescHtml}
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
@@ -12656,7 +12641,7 @@ let _plateLpFired = false;
 function _initPlateLongPress() {
   // Long-press on weight zone or unsplit prescribed button → plate popover
   document.addEventListener('pointerdown', function(e) {
-    const btn = e.target.closest('.set-presc-weight[data-weight], .set-prescribed-btn[data-weight]');
+    const btn = e.target.closest('.set-prescribed-btn[data-weight]');
     if (!btn) return;
     _plateLpFired = false;
     _plateLpTimer = setTimeout(function() {
@@ -12681,7 +12666,7 @@ function _initPlateLongPress() {
   // Intercept click if long-press fired
   document.addEventListener('click', function(e) {
     if (_plateLpFired) {
-      const btn = e.target.closest('.set-presc-weight[data-weight], .set-prescribed-btn[data-weight]');
+      const btn = e.target.closest('.set-prescribed-btn[data-weight]');
       if (btn) { e.preventDefault(); e.stopPropagation(); _plateLpFired = false; }
     }
   }, true);
