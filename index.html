@@ -406,17 +406,14 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .sets-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
-.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text-faint); width: 22px; flex-shrink: 0; cursor: pointer; text-align: center; line-height: 1; user-select: none; -webkit-user-select: none; }
-.set-calc-btn { width: 20px; height: 20px; flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-faint); display: flex; align-items: center; justify-content: center; transition: color 0.15s; -webkit-tap-highlight-color: transparent; margin-right: -2px; }
+.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; user-select: none; -webkit-user-select: none; }
+.set-presc-col { display: flex; flex-direction: column; gap: 1px; min-width: 70px; flex-shrink: 0; align-self: flex-end; padding-bottom: 4px; }
+.set-calc-btn { width: 26px; height: 26px; flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-sub); display: flex; align-items: center; justify-content: center; transition: color 0.15s; -webkit-tap-highlight-color: transparent; align-self: flex-end; }
 .set-calc-btn:active { color: var(--gold); }
-.set-calc-btn svg { width: 15px; height: 15px; }
-.set-num.warmup { color: #4FC3F7; font-size: 9px; }
-.set-num.dropset { color: #FF8A65; font-size: 9px; }
-.set-num.failure { color: #E57373; font-size: 9px; }
-.set-type-badge { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.set-calc-btn svg { width: 18px; height: 18px; }
 
 /* ── Actual reps inline editor ───────────────────────────────────────── */
-.set-prescribed-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 3px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; transition: color 0.15s; }
+.set-prescribed-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 3px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); white-space: nowrap; transition: color 0.15s; }
 .set-prescribed-btn:active { color: var(--gold); }
 .set-prescribed-chevron { font-size: 13px; opacity: 0.6; margin-left: 1px; }
 .set-prescribed-btn.has-actual { color: var(--gold); }
@@ -441,7 +438,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .rep-tip-tooltip-text { line-height: 1.4; }
 .rep-tip-dismiss { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 16px; opacity: 0.6; padding: 2px; flex-shrink: 0; }
 
-.set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); min-width: 70px; flex-shrink: 0; white-space: nowrap; align-self: flex-end; padding-bottom: 8px; }
+.set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); white-space: nowrap; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .set-input-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
@@ -528,7 +525,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .notes-input::placeholder { color: var(--text-faint); }
 .lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: var(--text-sub); font-style: italic; }
 .prev-performance-src { font-size: 10px; color: #8a7a3a; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 16px 2px; }
-.set-prev-hint { font-size: 11px; color: #b8902a; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.03em; padding: 2px 2px 2px 28px; margin-top: -2px; margin-bottom: 4px; opacity: 0.9; }
+.set-prev-hint { font-size: 11px; color: #b8902a; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.03em; padding: 2px 2px 2px 4px; margin-top: -2px; margin-bottom: 4px; opacity: 0.9; }
 .set-row:has(.set-check.done) + .set-prev-hint { opacity: 0.45; }
 .collapsed-prev-summary { font-size: 11px; color: #b8902a; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; padding: 0 16px 10px; opacity: 0.8; }
 .rest-msg { text-align: center; color: var(--text-dimmer); padding-top: 60px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
@@ -4962,16 +4959,15 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   // Collapsed card: show one-line summary of last week's performance (sets×reps×weight @RPE)
   if(!isExpanded && prevPerf){
     const allSame=prevPerf.sets.length>1 && prevPerf.sets.every(s=>s.actual===prevPerf.sets[0].actual&&s.rpe===prevPerf.sets[0].rpe&&s.actualReps===prevPerf.sets[0].actualReps);
+    function _prevSetStr(s) {
+      const repsStr=s.actualReps?' × '+s.actualReps:'';
+      return `${s.actual}${repsStr}${s.rpe?' @'+s.rpe:''}`;
+    }
     let summary;
     if(allSame){
-      const s=prevPerf.sets[0];
-      const repsStr=s.actualReps?'×'+s.actualReps:'';
-      summary=`${prevPerf.sets.length}${repsStr}×${s.actual}${s.rpe?' @'+s.rpe:''}`;
+      summary=`${prevPerf.sets.length} × ${_prevSetStr(prevPerf.sets[0])}`;
     } else {
-      summary=prevPerf.sets.map((s,i)=>{
-        const repsStr=s.actualReps?s.actualReps+'×':'';
-        return `${repsStr}${s.actual}${s.rpe?' @'+s.rpe:''}`;
-      }).join(' · ');
+      summary=prevPerf.sets.map(s=>_prevSetStr(s)).join(' · ');
     }
     const srcTag=prevPerf.source?` (${prevPerf.source})`:'';
     h+=`<div class="collapsed-prev-summary">Last${srcTag}: ${summary}</div>`;
@@ -5008,8 +5004,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     function prevHintHtml(si){
       if(!prevPerf||!prevPerf.sets[si]) return '';
       const ps=prevPerf.sets[si];
-      const repsStr=ps.actualReps?ps.actualReps+'×':'';
-      const hint=repsStr+ps.actual+(ps.rpe?' @'+ps.rpe:'');
+      const repsStr=ps.actualReps?' × '+ps.actualReps:'';
+      const hint=ps.actual+repsStr+(ps.rpe?' @'+ps.rpe:'');
       return `<div class="set-prev-hint">Last: ${hint}</div>`;
     }
 
@@ -5024,8 +5020,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
         const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
         h+=`<div class="set-row">
-          ${_isBarbell && _numWeight > 0 ? calcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}${_setNumHtml(sk, si)}
-          <button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button>
+          ${_isBarbell && _numWeight > 0 ? calcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button></div>
           ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
@@ -5044,8 +5039,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
           const _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           h+=`<div class="set-row">
-            ${_isBarbell && _extraNw > 0 ? calcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}${_setNumHtml(_sk, _si)}
-            ${_extraPrescHtml}
+            ${_isBarbell && _extraNw > 0 ? calcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
             ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -5057,7 +5051,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       for(let si=0;si<simple.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          ${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}
+          <div class="set-presc-col">${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}</div>
           ${setInputsHtml(sk,sl,getDisplayUnit(),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
@@ -5069,7 +5063,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            ${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}</div>
             ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -5082,7 +5076,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         const isOpen=ranged.reps==='open';
         h+=`<div class="set-row">
-          ${_setNumHtml(sk, si)}${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}
+          <div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}</div>
           ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit(),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
@@ -5095,7 +5089,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            ${_setNumHtml(_sk, _si)}${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}</div>
             ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit(),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -5107,7 +5101,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       for(let si=0;si<bareWithRounds.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
-          ${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
+          <div class="set-presc-col">${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
           ${setInputsHtml(sk,sl,getDisplayUnit(),si)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
@@ -5119,7 +5113,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         for(let _i=0;_i<_extra;_i++){
           const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
-            ${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
             ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -5130,7 +5124,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       const sk=key+`||s0`; const sl=state.logs[sk]||{};
       h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
       h+=`<div class="set-row">
-        ${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div>
+        <div class="set-presc-col">${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div></div>
         ${setInputsHtml(sk,sl,getDisplayUnit(),0)}
         <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
       </div>${prevHintHtml(0)}`;
@@ -5913,62 +5907,7 @@ function _resolveExNameFromKey(setKey) {
   return parts.length >= 4 ? parts[3] : null;
 }
 
-// ── SET TYPE TAGGING ──────────────────────────────────────────────────────────
-const SET_TYPES = ['normal','warmup','dropset','failure'];
-const SET_TYPE_LABELS = { normal:'S', warmup:'WU', dropset:'DS', failure:'F' };
-
-function cycleSetType(setKey, event) {
-  if (event) event.stopPropagation();
-  const sl = state.logs[setKey] || {};
-  const cur = sl.setType || 'normal';
-  const idx = SET_TYPES.indexOf(cur);
-  const next = SET_TYPES[(idx + 1) % SET_TYPES.length];
-  state.logs[setKey] = { ...sl, setType: next };
-  saveLogs();
-  // Targeted DOM update
-  const numEl = document.querySelector(`.set-num[data-set-key="${cssEsc(setKey)}"]`);
-  if (numEl) {
-    const setIdx = setKey.split('||s').pop();
-    numEl.className = 'set-num' + (next !== 'normal' ? ' ' + next : '');
-    numEl.innerHTML = next !== 'normal' ? `<span class="set-type-badge">${SET_TYPE_LABELS[next]}</span>` : 'S' + (parseInt(setIdx) + 1);
-  }
-}
-
-function _autoDetectWarmup(setKey, exName, actualWeight) {
-  const sl = state.logs[setKey] || {};
-  // Don't override if user already manually set a type
-  if (sl.setType && sl.setType !== 'normal') return;
-  // Check if prescription/notes contain warmup keywords
-  const ctx = getActiveContext();
-  if (!ctx) return;
-  const ex = ctx.day.exercises.find(e => e.name === exName);
-  if (!ex) return;
-  const presLower = ((ex.prescription || '') + ' ' + (ex.note || '') + ' ' + ((ex.coachNotes || []).join(' '))).toLowerCase();
-  if (/\bwarm[-\s]?up\b|\bwu\b/.test(presLower)) {
-    state.logs[setKey] = { ...state.logs[setKey], setType: 'warmup' };
-    saveLogs();
-    return;
-  }
-  // Weight threshold fallback: if logged weight ≤60% of prescribed working weight
-  if (!actualWeight || !ex.prescription) return;
-  const weight = parseFloat(actualWeight);
-  if (!weight || weight <= 0) return;
-  const prescWeight = _extractPrescribedWeight(ex.prescription);
-  if (prescWeight > 0 && weight <= prescWeight * 0.6) {
-    // Suggest warmup — auto-tag it
-    state.logs[setKey] = { ...state.logs[setKey], setType: 'warmup' };
-    saveLogs();
-  }
-}
-
-function _extractPrescribedWeight(prescription) {
-  // Extract working weight from prescription formats
-  // "3x5(225)" → 225
-  const m1 = prescription.match(/\((\d+(?:\.\d+)?)\)/);
-  if (m1) return parseFloat(m1[1]);
-  // "5x3 @ 85%" → can't extract absolute weight, return 0
-  return 0;
-}
+// ── SET TYPE TAGGING (removed — kept stub for log compat) ─────────────────────
 
 // ── PR DETECTION (inline) ─────────────────────────────────────────────────────
 // Denormalized PR lookup: exerciseName → repCount → bestWeight
@@ -6034,11 +5973,7 @@ function _showInlinePR(setKey) {
 }
 
 function _setNumHtml(sk, si) {
-  const sl = state.logs[sk] || {};
-  const st = sl.setType || 'normal';
-  const cls = 'set-num' + (st !== 'normal' ? ' ' + st : '');
-  const label = st !== 'normal' ? `<span class="set-type-badge">${SET_TYPE_LABELS[st]}</span>` : `S${si + 1}`;
-  return `<div class="${cls}" data-set-key="${esc(sk)}" onclick="cycleSetType('${esc(sk)}',event)">${label}</div>`;
+  return `<div class="set-num">S${si + 1}</div>`;
 }
 function adjustSets(key, delta){
   const cur = state.extraSets[key] || 0;
@@ -6103,9 +6038,6 @@ function setActual(key,v){
 
   // Update set checkmark directly without full render
   updateSetCheckmark(key,shouldCheck);
-
-  // Auto-detect warmup sets based on weight threshold
-  if (shouldCheck && exName) _autoDetectWarmup(key, exName, v);
 
   // PR detection: check if this set is a new PR
   if (shouldCheck && exName && v) {
@@ -7149,12 +7081,18 @@ function getPrevWeekNote(blockId,weekLabel,dayName,exName){
   return null;
 }
 function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
-  function getSets(key){
+  function getSets(key, matchEx){
     const sets=[];
+    const prescSets = matchEx?.prescription ? parseSets(matchEx.prescription) : [];
+    const prescSimple = matchEx?.prescription ? parseSimple(matchEx.prescription) : null;
     for(let si=0;si<20;si++){
       const sl=state.logs[key+'||s'+si];
       if(!sl) break;
-      sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',actualReps:sl.actualReps||'',done:sl.done});
+      // Get reps: actualReps from log > prescribed reps from exercise
+      let reps = sl.actualReps || '';
+      if (!reps && prescSets[si]) reps = String(prescSets[si].reps || '');
+      if (!reps && prescSimple) reps = String(prescSimple.reps || '');
+      sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',actualReps:reps,done:sl.done});
     }
     return sets;
   }
@@ -7202,7 +7140,7 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
       if(!matchEx) continue;
       const key=[blockId,w.label,dayName,matchEx.name].join('||');
       if(!state.logs[key]?.done) continue;
-      const sets=getSets(key);
+      const sets=getSets(key, matchEx);
       if(sets.length>0) return {label:w.label,source:null,sets};
     }
   }
@@ -7217,7 +7155,7 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
         if(!matchEx) continue;
         const key=[b.id,w.label,d.name,matchEx.name].join('||');
         if(!state.logs[key]?.done) continue;
-        const sets=getSets(key);
+        const sets=getSets(key, matchEx);
         if(sets.length>0) return {label:w.label,source:b.name||b.id,sets};
       }
     }
