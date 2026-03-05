@@ -27,8 +27,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  // Don't skipWaiting automatically — let the page show an update banner
-  // and the user decides when to activate the new version
+  self.skipWaiting();
 });
 
 // Activate — clean up old caches
