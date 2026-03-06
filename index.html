@@ -128,6 +128,9 @@
   --green-border:  rgba(74,222,128,0.3);
   --red:           #E22C2C;
   --red-bg:        rgba(226,44,44,0.12);
+  --amber:         #F59E0B;
+  --amber-soft:    #FFB74D;
+  --red-soft:      #E57373;
   --hint-color:    #b8902a;
   --coach-note-text: #a8a850;
   --accent-data:   #a78bfa;
@@ -230,6 +233,9 @@
   --green-border:  rgba(22,163,74,0.3);
   --red:           #dc2626;
   --red-bg:        rgba(220,38,38,0.1);
+  --amber:         #d97706;
+  --amber-soft:    #e6a030;
+  --red-soft:      #dc4444;
   --hint-color:    #7A6520;
   --coach-note-text: #7A7230;
   --accent-data:   #7c3aed;
@@ -312,6 +318,14 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-athlete-unit-btn { padding: 9px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
 .settings-athlete-unit-btn.active { border-color: var(--gold); background: rgba(var(--gold-rgb),0.1); color: var(--gold); }
 .settings-athlete-save { width: 100%; padding: 10px; background: var(--gold); border: none; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; margin-top: 2px; }
+.settings-athlete-input--centered { max-width: 100px; text-align: center; }
+.settings-athlete-unit-group { flex: 0 0 auto; gap: 6px; }
+.settings-athlete-gender-btn--sm { padding: 9px 12px; font-size: 12px; }
+.settings-athlete-hint { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.settings-athlete-label--spaced { margin-bottom: 6px; }
+.settings-athlete-maxes-row { display: flex; gap: 8px; }
+.settings-athlete-maxes-col { flex: 1; text-align: center; }
+.settings-athlete-maxes-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
 .settings-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 6px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .settings-row-btn:active { border-color: var(--gold); background: var(--surface-3); }
 .settings-row-left { display: flex; align-items: center; gap: 10px; font-family: 'Barlow', sans-serif; font-size: 15px; color: var(--text-mid); }
@@ -350,7 +364,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .max-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 28px; color: var(--gold-data); line-height: 1; letter-spacing: -0.01em; }
 .max-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.07em; text-transform: uppercase; margin-top: 4px; }
 .max-delta-badge { position:absolute;top:6px;right:6px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;padding:2px 5px;border-radius:6px;line-height:1.2;transition:opacity 0.2s; }
-.max-delta-badge.up { background:rgba(76,175,80,0.15);color:#4CAF50; }
+.max-delta-badge.up { background:var(--green-bg);color:var(--green); }
 .max-delta-badge.down { background:rgba(226,44,44,0.15);color:var(--red); }
 .max-item.expanded .max-delta-badge { opacity:0; }
 .max-tested-drawer { max-height:0;overflow:hidden;transition:max-height 0.25s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;opacity:0; }
@@ -359,7 +373,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .max-tested-row { display:flex;align-items:baseline;justify-content:center;gap:6px;padding-top:8px; }
 .max-tested-val { font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text-sub); }
 .max-tested-delta { font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700; }
-.max-tested-delta.up { color:#4CAF50; }
+.max-tested-delta.up { color:var(--green); }
 .max-tested-delta.down { color:var(--red); }
 .max-tested-label { font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;text-align:center;padding-top:2px;padding-bottom:2px; }
 
@@ -417,7 +431,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .skip-btn { font-size: 12px; color: var(--text-muted); background: none; border: 1px solid #333; border-radius: 5px; padding: 8px 14px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
 .skip-btn.active { color: var(--text-sub); border-color: #555; background: var(--surface-3); }
 .skip-row { padding: 0 16px 14px; display: flex; justify-content: flex-end; gap: 8px; }
-.set-adjust-btn { font-size: 12px; color: var(--text-muted); background: none; border: 1px solid #333; border-radius: 5px; padding: 8px 14px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
+.set-adjust-btn { font-size: 12px; color: var(--text-muted); background: none; border: 1px solid #333; border-radius: 5px; padding: 10px 14px; min-height: 36px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
 .set-adjust-btn:active { color: var(--gold); border-color: var(--gold); }
 .skipped-badge { font-size: 10px; color: var(--text-faint); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; }
 .edit-name-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--gold); opacity: 0.0; padding: 2px 4px; transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
@@ -470,7 +484,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .set-input-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
-.set-input { background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 7px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 7px 4px; width: 100%; text-align: center; outline: none; }
+.set-input { background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 7px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 8px 6px; min-height: 40px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); }
 .set-input::placeholder { color: var(--text-muted); font-size: 11px; font-weight: 400; }
@@ -501,13 +515,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .edit-day-actions button { background: none; border: none; color: var(--text-faint); padding: 6px; cursor: pointer; border-radius: 4px; }
 .edit-day-actions button:active { background: var(--surface-3); color: var(--text-primary); }
 .edit-day-actions button svg { width: 16px; height: 16px; }
-.edit-day-actions button.danger:active { color: #E57373; }
+.edit-day-actions button.danger:active { color: var(--red-soft); }
 .edit-day-footer { display: flex; gap: 8px; padding: 12px 16px; margin-top: 8px; }
 .edit-day-footer button { flex: 1; padding: 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; }
 .edit-day-cancel { background: var(--surface-3); color: var(--text-sub); }
 .edit-day-save { background: var(--gold); color: #000; }
-.edit-day-delete { display:block; width:calc(100% - 32px); margin:8px 16px 16px; padding:10px; background:none; border:1px solid #E57373; color:#E57373; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; border-radius:8px; cursor:pointer; }
-.edit-day-delete:active { background:rgba(229,115,115,0.15); }
+.edit-day-delete { display:block; width:calc(100% - 32px); margin:8px 16px 16px; padding:10px; background:none; border:1px solid var(--red-soft); color:var(--red-soft); font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; border-radius:8px; cursor:pointer; }
+.edit-day-delete:active { background:rgba(229,115,115,0.15); opacity:0.75; }
 .propagation-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .propagation-sheet { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; width: min(340px, 90vw); padding: 24px; }
 .propagation-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
@@ -683,10 +697,10 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
 .home-screen { padding: 48px 16px 80px; overflow: hidden; }
-.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
+.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 2px; }
 
 /* Hero card */
-.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-hero:active { transform: scale(0.98); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
 .home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
@@ -729,6 +743,25 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .session-stat { text-align: center; }
 .session-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-bright); line-height: 1.1; }
 .session-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+/* PR Prompt Modal */
+.pr-prompt-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px); }
+.pr-prompt-card { background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
+.pr-prompt-header { text-align:center;margin-bottom:16px; }
+.pr-prompt-emoji { font-size:28px;margin-bottom:6px; }
+.pr-prompt-title { font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold); }
+.pr-prompt-sub { font-size:12px;color:var(--text-dim);margin-top:4px; }
+.pr-prompt-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border); }
+.pr-prompt-lift { font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-sub); }
+.pr-prompt-name { font-size:11px;color:var(--text-dim); }
+.pr-prompt-val { font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--gold);text-align:right; }
+.pr-prompt-unit { font-size:12px;font-weight:400;color:var(--text-dim); }
+.pr-prompt-delta { font-size:11px;color:var(--green); }
+.pr-prompt-btns { display:flex;gap:10px;margin-top:18px; }
+.pr-prompt-btns button { flex:1;padding:12px;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;transition:opacity 0.15s; }
+.pr-prompt-btns button:active { opacity:0.75; }
+.pr-prompt-skip { border:1px solid var(--border);background:transparent;color:var(--text-sub); }
+.pr-prompt-accept { border:none;background:var(--gold);color:#111; }
 
 /* Workout Celebration Overlay */
 #celebration-overlay {
@@ -881,7 +914,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* Import Intent Modal */
 .import-intent-card {
   display: flex; align-items: flex-start; gap: 14px;
-  padding: 14px 16px; border-radius: 14px;
+  padding: 14px 16px; border-radius: 16px;
   border: 1.5px solid var(--glass-border); background: var(--glass-bg);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   cursor: pointer; margin-bottom: 10px;
@@ -909,7 +942,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .import-intent-card:not(.selected) .import-intent-icon svg { fill: var(--text-faint); transition: fill 0.15s; }
 
 /* Two-col cards row */
-.home-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px 14px 12px; display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.home-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 12px 14px 12px; display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-card-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
 
 /* Home two-column row */
@@ -952,7 +985,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 [data-theme="light"] .workout-resume-banner { border-color: rgba(var(--gold-rgb),0.2); }
 
 /* e1RM + scores card */
-.home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; }
+.home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; }
 .home-pr-card:active { transform: scale(0.98); }
 /* Weekly Summary card on home */
 .home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px 16px; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -1122,8 +1155,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .builder-detail-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--text-bright); margin-bottom:20px; text-align:center; }
 .builder-detail-field { margin-bottom:16px; }
 .builder-rx-preview { font-family:'Barlow',sans-serif; font-size:12px; margin-top:6px; min-height:18px; }
-.rx-preview-ok { color: #4CAF50; }
-.rx-preview-warn { color: #FFB74D; }
+.rx-preview-ok { color: var(--green); }
+.rx-preview-warn { color: var(--amber-soft); }
 .builder-detail-examples { font-family:'Barlow',sans-serif; font-size:11px; color:var(--text-faint); margin-top:6px; line-height:1.6; }
 .builder-radio-group { display:flex; flex-direction:column; gap:8px; }
 .builder-radio { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:border-color 0.15s; min-height:44px; }
@@ -1416,11 +1449,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .week-pill { color: var(--text-sub); border-color: var(--border); background: var(--surface-2); }
 [data-theme="light"] .week-pill.active { color: var(--gold); border-color: var(--gold); background: rgba(184,146,42,0.06); }
 [data-theme="light"] .week-pill.done { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.35); color: rgba(74,222,128,0.7); }
-[data-theme="light"] .week-pill.done.active { border-color: var(--gold); color: #22c55e; background: rgba(74,222,128,0.08); }
+[data-theme="light"] .week-pill.done.active { border-color: var(--gold); color: var(--green); background: rgba(74,222,128,0.08); }
 [data-theme="light"] .day-tab { color: var(--text-sub); border-bottom-color: transparent; }
 [data-theme="light"] .day-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(184,146,42,0.06) 0%, transparent 100%); }
 [data-theme="light"] .day-tab.done { color: rgba(74,222,128,0.6); border-bottom-color: rgba(74,222,128,0.4); }
-[data-theme="light"] .day-tab.done.active { color: #22c55e; border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 100%); }
+[data-theme="light"] .day-tab.done.active { color: var(--green); border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 100%); }
 [data-theme="light"] .rep-tip-tooltip { background: #fffbe8; border-color: rgba(184,146,42,0.4); color: #8a6a1a; }
 [data-theme="light"] .skip-btn { color: var(--text-sub); border-color: var(--border); }
 [data-theme="light"] .skip-btn.active { color: var(--text-mid); background: var(--surface-3); }
@@ -1610,7 +1643,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.14.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">b0306b</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.16.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">b0306d</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -1703,7 +1736,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="colmap-modal" id="colmap-modal">
   <div class="colmap-header">
     <div>
-      <div class="colmap-header-title">Map Your Spreadsheet</div>
+      <h2 class="colmap-header-title">Map Your Spreadsheet</h2>
       <div class="colmap-header-sub">Customize how your file is read</div>
     </div>
     <div class="colmap-close" onclick="closeColumnMapper()">
@@ -1747,11 +1780,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <!-- Schedule Editor Modal -->
 <div class="add-lift-modal" id="add-lift-modal" role="dialog" aria-modal="true" aria-labelledby="add-lift-title" style="display:none" onclick="if(event.target===this)closeAddLift()">
   <div class="add-lift-sheet" style="max-height:85vh;overflow-y:auto">
-    <div class="add-lift-title" id="add-lift-title">Manage Tracked Lifts</div>
+    <h2 class="add-lift-title" id="add-lift-title">Manage Tracked Lifts</h2>
     <div class="track-section-label">CURRENTLY TRACKED</div>
     <div id="tracked-list-wrap"></div>
     <div class="track-section-label" style="margin-top:16px">ADD EXERCISE</div>
-    <input class="add-lift-input" id="track-search" placeholder="Search exercises in your program..." oninput="_onTrackSearch(this.value)" />
+    <input class="add-lift-input" id="track-search" placeholder="Search exercises in your program..." oninput="_onTrackSearch(this.value)" aria-label="Search exercises in your program" />
     <div id="available-list-wrap"></div>
     <div class="add-lift-actions" style="margin-top:16px">
       <button class="add-lift-cancel" onclick="closeAddLift()">Cancel</button>
@@ -1764,7 +1797,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="add-lift-modal" id="program-modal" role="dialog" aria-modal="true" aria-labelledby="program-modal-title" style="display:none" onclick="if(event.target===this)closeProgramModal()">
   <div class="add-lift-sheet" style="max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div class="add-lift-title" id="program-modal-title" style="margin-bottom:0">Programs</div>
+      <h2 class="add-lift-title" id="program-modal-title" style="margin-bottom:0">Programs</h2>
       <button onclick="closeProgramModal()" style="background:none;border:none;color:var(--text-faint);font-size:22px;cursor:pointer;padding:4px">×</button>
     </div>
     <!-- Add new section -->
@@ -1804,7 +1837,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <!-- Delete Confirm Modal -->
 <div class="add-lift-modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display:none;z-index:400" onclick="if(event.target===this)closeDeleteModal()">
   <div class="add-lift-sheet">
-    <div class="add-lift-title" id="delete-modal-title" style="color:var(--red)">Delete Program?</div>
+    <h2 class="add-lift-title" id="delete-modal-title" style="color:var(--red)">Delete Program?</h2>
     <div style="font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:20px">
       This will permanently delete <strong id="delete-modal-name" style="color:var(--text-primary)"></strong> and all logged workout data for this cycle. This cannot be undone.
     </div>
@@ -1819,11 +1852,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="add-lift-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" style="display:none" onclick="if(event.target===this)closeSettings()">
   <div class="add-lift-sheet settings-sheet">
     <div class="settings-header">
-      <div class="add-lift-title" id="settings-modal-title">Settings</div>
+      <h2 class="add-lift-title" id="settings-modal-title">Settings</h2>
       <button class="settings-done-btn" onclick="closeSettings()">Done</button>
     </div>
 
-    <div class="settings-section-label">Programs</div>
+    <h3 class="settings-section-label">Programs</h3>
     <button class="settings-row-btn" onclick="closeSettings();openProgramModal()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1832,7 +1865,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
-    <div class="settings-section-label">Preferences</div>
+    <h3 class="settings-section-label">Preferences</h3>
     <button class="settings-row-btn" onclick="toggleAthleteProfileForm()" id="athlete-profile-row">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1843,7 +1876,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <div class="settings-athlete-form" id="athlete-profile-form">
       <div class="settings-athlete-row">
         <div class="settings-athlete-label">Name</div>
-        <input class="settings-athlete-input" id="ap-name" type="text" placeholder="Your name" autocomplete="off">
+        <input class="settings-athlete-input" id="ap-name" type="text" placeholder="Your name" autocomplete="off" aria-label="Athlete name">
       </div>
       <div class="settings-athlete-row">
         <div class="settings-athlete-label">Gender</div>
@@ -1855,35 +1888,35 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <div class="settings-athlete-row">
         <div class="settings-athlete-label">Bodyweight</div>
         <div class="settings-athlete-bw-row">
-          <input class="settings-athlete-input" id="ap-bw" type="number" inputmode="decimal" placeholder="0" style="max-width:100px;text-align:center">
-          <div class="settings-athlete-gender" style="flex:0 0 auto;gap:6px">
-            <button class="settings-athlete-gender-btn" id="ap-bw-lbs" onclick="setApBwUnit('lbs')" style="padding:9px 12px;font-size:12px">LBS</button>
-            <button class="settings-athlete-gender-btn" id="ap-bw-kg" onclick="setApBwUnit('kg')" style="padding:9px 12px;font-size:12px">KG</button>
+          <input class="settings-athlete-input settings-athlete-input--centered" id="ap-bw" type="number" inputmode="decimal" placeholder="0" aria-label="Bodyweight">
+          <div class="settings-athlete-gender settings-athlete-unit-group">
+            <button class="settings-athlete-gender-btn settings-athlete-gender-btn--sm" id="ap-bw-lbs" onclick="setApBwUnit('lbs')">LBS</button>
+            <button class="settings-athlete-gender-btn settings-athlete-gender-btn--sm" id="ap-bw-kg" onclick="setApBwUnit('kg')">KG</button>
           </div>
         </div>
       </div>
       <div class="settings-athlete-row">
         <div class="settings-athlete-label">Weight Unit</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Unit used when logging your lifts</div>
+        <div class="settings-athlete-hint">Unit used when logging your lifts</div>
         <div class="settings-athlete-gender">
           <button class="settings-athlete-gender-btn" id="ap-weight-lbs" onclick="setApWeightUnit('lbs')">LBS</button>
           <button class="settings-athlete-gender-btn" id="ap-weight-kg" onclick="setApWeightUnit('kg')">KG</button>
         </div>
       </div>
       <div class="settings-athlete-row">
-        <div class="settings-athlete-label" style="margin-bottom:6px" id="ap-1rm-label">Current 1RM (lbs)</div>
-        <div style="display:flex;gap:8px">
-          <div style="flex:1;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Squat</div>
-            <input class="settings-athlete-input" id="ap-max-s" type="number" inputmode="numeric" placeholder="—" style="text-align:center">
+        <div class="settings-athlete-label settings-athlete-label--spaced" id="ap-1rm-label">Current 1RM (lbs)</div>
+        <div class="settings-athlete-maxes-row">
+          <div class="settings-athlete-maxes-col">
+            <div class="settings-athlete-maxes-label">Squat</div>
+            <input class="settings-athlete-input settings-athlete-input--centered" id="ap-max-s" type="number" inputmode="numeric" placeholder="—" aria-label="Squat 1RM">
           </div>
-          <div style="flex:1;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Bench</div>
-            <input class="settings-athlete-input" id="ap-max-b" type="number" inputmode="numeric" placeholder="—" style="text-align:center">
+          <div class="settings-athlete-maxes-col">
+            <div class="settings-athlete-maxes-label">Bench</div>
+            <input class="settings-athlete-input settings-athlete-input--centered" id="ap-max-b" type="number" inputmode="numeric" placeholder="—" aria-label="Bench 1RM">
           </div>
-          <div style="flex:1;text-align:center">
-            <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Deadlift</div>
-            <input class="settings-athlete-input" id="ap-max-d" type="number" inputmode="numeric" placeholder="—" style="text-align:center">
+          <div class="settings-athlete-maxes-col">
+            <div class="settings-athlete-maxes-label">Deadlift</div>
+            <input class="settings-athlete-input settings-athlete-input--centered" id="ap-max-d" type="number" inputmode="numeric" placeholder="—" aria-label="Deadlift 1RM">
           </div>
         </div>
       </div>
@@ -1914,7 +1947,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </div>
 
-    <div class="settings-section-label">Training Data</div>
+    <h3 class="settings-section-label">Training Data</h3>
     <button class="settings-row-btn" onclick="downloadBackup()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1945,7 +1978,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
-    <div class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</div>
+    <h3 class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</h3>
     <div class="settings-theme-pills" id="settings-theme-pills">
       <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
       <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
@@ -1969,12 +2002,12 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <!-- Reps Editor Modal -->
 <div class="reps-modal-overlay" id="reps-modal" role="dialog" aria-modal="true" aria-labelledby="reps-modal-title" style="display:none" onclick="if(event.target===this)closeRepsModal()">
   <div class="reps-modal-sheet">
-    <div class="reps-modal-title" id="reps-modal-title">SET REPS</div>
+    <h2 class="reps-modal-title" id="reps-modal-title">SET REPS</h2>
     <div class="reps-modal-prescribed" id="reps-modal-prescribed">Prescribed: 8</div>
     <div class="reps-modal-control">
       <button class="reps-modal-btn" onclick="adjustRepsModal(-1)">−</button>
       <input class="reps-modal-input" id="reps-modal-input" type="number" inputmode="numeric" min="0" value="8"
-        onkeydown="if(event.key==='Enter')saveRepsModal()">
+        onkeydown="if(event.key==='Enter')saveRepsModal()" aria-label="Reps">
       <button class="reps-modal-btn" onclick="adjustRepsModal(1)">+</button>
     </div>
     <div class="reps-modal-actions">
@@ -1988,7 +2021,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="rest-modal-overlay" id="rest-timer-modal" role="dialog" aria-modal="true" aria-labelledby="rest-timer-modal-title" style="display:none" onclick="if(event.target===this)closeRestTimerModal()">
   <div class="rest-modal-sheet">
     <div class="rest-modal-header">
-      <div class="rest-modal-title" id="rest-timer-modal-title">Rest Timer</div>
+      <h2 class="rest-modal-title" id="rest-timer-modal-title">Rest Timer</h2>
       <button class="rest-modal-done" onclick="closeRestTimerModal()">Done</button>
     </div>
     <div class="rest-mode-section">
@@ -2030,7 +2063,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
   </div>
 </div>
 
-<input type="file" id="file-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none">
+<input type="file" id="file-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none" aria-label="Upload training program file">
 
 <script>
 // ── IndexedDB variables (declared early so loadTheme/saveTheme can reference them) ──
@@ -2692,11 +2725,11 @@ function renderMetrics(){
     ['Squat','Bench','Deadlift'].forEach(label=>{
       h+=`<div class="metrics-lift-group" style="margin-bottom:16px">
         <div class="metrics-lift-header">
-          <div class="metrics-lift-title">${label}</div>
+          <h2 class="metrics-lift-title">${label}</h2>
           <div style="text-align:right"><div class="metrics-best" style="color:var(--border)">—</div><div class="metrics-best-label">Best Est. 1RM</div></div>
         </div>
         <div class="chart-wrap" style="position:relative">
-          <canvas class="rm-chart" width="400" height="120" style="opacity:0.15"></canvas>
+          <canvas class="rm-chart" width="400" height="120" style="opacity:0.15" aria-label="Estimated 1RM chart — no data yet"></canvas>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-dimmer);letter-spacing:0.06em;text-transform:uppercase">No data</div>
         </div>
       </div>`;
@@ -2832,7 +2865,7 @@ function renderMetrics(){
     // When only one variation, show specific exercise name; when multiple, show group label
     const displayTitle = allVars.length === 1 ? allVars[0][0] : group.label;
     h+=`<div class="metrics-lift-header">
-      <div class="metrics-lift-title">${escH(displayTitle)}</div>
+      <h2 class="metrics-lift-title">${escH(displayTitle)}</h2>
       <div style="text-align:right">
         <div class="metrics-best">${best?best+unitLabel(true):'—'}</div>
         <div class="metrics-best-label">Best Est. 1RM</div>
@@ -2849,7 +2882,7 @@ function renderMetrics(){
       h+=`</div>`;
     }
 
-    h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160"></canvas></div>`;
+    h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160" aria-label="Estimated 1RM progression for ${escH(groupKey)}"></canvas></div>`;
 
     if(hasData){
       h+=`<div class="rm-datapoints"><div class="var-section">`;
@@ -4428,10 +4461,10 @@ function renderHome() {
   // No program loaded
   if (!block || !block.weeks || block.weeks.length === 0) {
     content.innerHTML = `<div class="home-screen">
-      <div class="home-greeting">${getGreeting()}</div>
+      <h1 class="home-greeting">${getGreeting()}</h1>
       <div class="home-empty">
         <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
-        <div class="home-empty-title">No Program Loaded</div>
+        <h2 class="home-empty-title">No Program Loaded</h2>
         <div class="home-empty-desc">Upload your training program to get started.</div>
         ${renderUploadOptions('home-')}
       </div>
@@ -4494,7 +4527,7 @@ function renderHome() {
       <div class="home-hero-bg"></div>
       <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       <div class="home-hero-inner">
-        <div class="home-hero-label">Up Next</div>
+        <h2 class="home-hero-label">Up Next</h2>
         <div class="home-hero-day">${escH(day.name || 'Workout')}</div>
         <div class="home-hero-meta">${escH(meta)}</div>
         <div class="home-hero-exercises">
@@ -4512,7 +4545,7 @@ function renderHome() {
     heroHtml = `<div class="home-hero done">
       <div class="home-hero-bg"></div>
       <div class="home-hero-inner">
-        <div class="home-hero-label">✓ All Weeks Complete</div>
+        <h2 class="home-hero-label">✓ All Weeks Complete</h2>
         <div class="home-hero-day">Block Finished</div>
         <div class="home-hero-meta">${escH(displayBlockName(block.name))}</div>
         <div class="home-hero-cta" onclick="setScreen('metrics')">
@@ -4571,7 +4604,7 @@ function renderHome() {
     heroHtml = `<div class="session-hero" onclick="goToWorkout(${weekIdx},${dayIdx})">
       <div class="session-hero-bg"></div>
       <div class="session-hero-inner">
-        <div class="session-hero-label"><div class="session-hero-label-dot"></div>${heroLabel}</div>
+        <h2 class="session-hero-label"><div class="session-hero-label-dot"></div>${heroLabel}</h2>
         <div class="session-hero-day">${escH(dayName)}</div>
         <div class="session-hero-meta">${escH(meta)}</div>
         ${liftRowsHtml}
@@ -4590,7 +4623,7 @@ function renderHome() {
       <div class="home-hero-bg"></div>
       <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       <div class="home-hero-inner">
-        <div class="home-hero-label">Ready to Start</div>
+        <h2 class="home-hero-label">Ready to Start</h2>
         <div class="home-hero-day">${escH(firstDay?.name || 'Day 1')}</div>
         <div class="home-hero-meta">${escH(displayBlockName(block.name) || 'New Block')}</div>
         <div class="home-hero-cta">
@@ -4640,7 +4673,7 @@ function renderHome() {
 
     weeklySummaryHtml = `<div class="home-week-summary">
       <div class="home-week-summary-header">
-        <div class="home-week-summary-label">${isFallback ? 'Last Week' : 'This Week'} · ${escH(weekSummary.weekLabel)}</div>
+        <h2 class="home-week-summary-label">${isFallback ? 'Last Week' : 'This Week'} · ${escH(weekSummary.weekLabel)}</h2>
         <div class="home-week-summary-meta">${completedCount}/${totalDayCount} days</div>
       </div>
       ${liftRows ? `<div class="week-summary-lifts">${liftRows}</div>` : ''}
@@ -4665,7 +4698,7 @@ function renderHome() {
   const updateBannerHtml = document.getElementById('update-banner') ? '<div id="update-banner-slot"></div>' : '';
 
   content.innerHTML = `<div class="home-screen">
-    <div class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</div>
+    <h1 class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</h1>
     ${updateBannerHtml}
     ${heroHtml}
     ${middleRowHtml}
@@ -4796,7 +4829,7 @@ function renderUploadScreen() {
 function renderBlockBar(block) {
   if(state.editingBlockName){
     return `<div class="block-bar">
-      <input class="block-name-edit" id="block-name-input" value="${escH(block.name)}"
+      <input class="block-name-edit" id="block-name-input" value="${escH(block.name)}" aria-label="Program block name"
         onblur="saveBlockName()"
         onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingBlockName=false;render();}">
       <div class="block-dates">${block.dateRange}</div>
@@ -4807,7 +4840,7 @@ function renderBlockBar(block) {
     <button class="edit-name-btn" style="opacity:0.3;font-size:11px" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
   </div>`;
   if(state.blocks.length>1){
-    h+=`<select class="cycle-select" onchange="switchBlock(this.value)">`;
+    h+=`<select class="cycle-select" onchange="switchBlock(this.value)" aria-label="Switch program">`;
     state.blocks.forEach(b=>h+=`<option value="${b.id}" ${b.id===block.id?'selected':''}>${escH(displayBlockName(b.name) || b.id)}</option>`);
     h+=`</select>`;
   }
@@ -4953,28 +4986,28 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   function setInputsHtml(sk,sl,placeholder,si){
     if(placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
               </div>
             </div>`;
     if(inputMode==='bw') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="numeric" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" inputmode="numeric" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
               </div>
             </div>`;
     if(inputMode==='cardio') return '';
     if(inputMode==='bw-timed') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Time</div>
-                <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)">
+                <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Time completed">
               </div>
             </div>`;
     const ghost = (si !== undefined) ? _ghostWeight(si) : '';
     const ghostStyle = ghost ? 'color:var(--text-muted)' : '';
     return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(ex.name)})</div>
-                <input class="set-input" inputmode="decimal" placeholder="${ghost}" style="${!sl.actual && ghost ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghost}">
+                <input class="set-input" inputmode="decimal" placeholder="${ghost}" style="${!sl.actual && ghost ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghost}" aria-label="Weight lifted">
               </div>
               <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
-                <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)">
+                <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
               </div>
             </div>`;
   }
@@ -5028,7 +5061,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     const editingThis=state.editingExKey===key;
     if(editingThis){
       h+=`<div class="exercise-header" style="padding:10px 16px 4px">
-        <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${escH((ex.displayName||ex.name).trim())}"
+        <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${escH((ex.displayName||ex.name).trim())}" aria-label="Exercise name"
           onblur="saveExName('${esc(key)}','${esc(ex.name)}')"
           onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;render();}">
       </div>`;
@@ -5262,7 +5295,7 @@ function renderExerciseList(block, week, day) {
 
   // Historical blocks: locked green, no controls
   if (isHistorical) {
-    h+=`<div class="workout-complete-msg">Workout Complete</div>`;
+    h+=`<h2 class="workout-complete-msg">Workout Complete</h2>`;
     return h;
   }
 
@@ -5273,13 +5306,13 @@ function renderExerciseList(block, week, day) {
 
   // Imported completed workout — green card, no Finish Workout, no trash
   if (isImportedComplete) {
-    h+=`<div class="workout-complete-msg">Workout Complete</div>`;
+    h+=`<h2 class="workout-complete-msg">Workout Complete</h2>`;
     return h;
   }
 
   // Live workout — user explicitly tapped Finish Workout
   if (isLiveComplete) {
-    h+=`<div class="workout-complete-msg">Workout Complete</div>`;
+    h+=`<h2 class="workout-complete-msg">Workout Complete</h2>`;
     h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset Workout</button></div>`;
     return h;
   }
@@ -5507,11 +5540,11 @@ function renderWorkout(){
       // Completed day — show preview list + complete message
       h += renderPreviewList(block, week, day);
       if (isHistorical) {
-        h += `<div class="workout-complete-msg">Workout Complete</div>`;
+        h += `<h2 class="workout-complete-msg">Workout Complete</h2>`;
       } else if (forceLog?.importedComplete) {
-        h += `<div class="workout-complete-msg">Workout Complete</div>`;
+        h += `<h2 class="workout-complete-msg">Workout Complete</h2>`;
       } else {
-        h += `<div class="workout-complete-msg">Workout Complete</div>`;
+        h += `<h2 class="workout-complete-msg">Workout Complete</h2>`;
         h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset Workout</button></div>`;
       }
     } else {
@@ -5755,31 +5788,34 @@ function showNewPRPrompt(records, currentMaxes, onDone) {
   const rows = records.map(r => {
     const old = currentMaxes[r.group];
     const diff = r.weight - old;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+    return `<div class="pr-prompt-row">
       <div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-sub)">${liftLabels[r.group]}</div>
-        <div style="font-size:11px;color:var(--text-dim)">${escH(r.liftName)}</div>
+        <div class="pr-prompt-lift">${liftLabels[r.group]}</div>
+        <div class="pr-prompt-name">${escH(r.liftName)}</div>
       </div>
-      <div style="text-align:right">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">${r.weight}<span style="font-size:12px;font-weight:400;color:var(--text-dim)"> ${getDisplayUnit()}</span></div>
-        ${old ? `<div style="font-size:11px;color:#4CAF50">+${diff} from ${old}</div>` : ''}
+      <div>
+        <div class="pr-prompt-val">${r.weight}<span class="pr-prompt-unit"> ${getDisplayUnit()}</span></div>
+        ${old ? `<div class="pr-prompt-delta">+${diff} from ${old}</div>` : ''}
       </div>
     </div>`;
   }).join('');
 
   const overlay = document.createElement('div');
   overlay.id = 'pr-prompt-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
-  overlay.innerHTML = `<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:24px 20px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="font-size:28px;margin-bottom:6px">🏆</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold)">New 1RM!</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Update your Current 1RM?</div>
+  overlay.className = 'pr-prompt-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'New Personal Record');
+  overlay.innerHTML = `<div class="pr-prompt-card">
+    <div class="pr-prompt-header">
+      <div class="pr-prompt-emoji">🏆</div>
+      <div class="pr-prompt-title">New 1RM!</div>
+      <div class="pr-prompt-sub">Update your Current 1RM?</div>
     </div>
     ${rows}
-    <div style="display:flex;gap:10px;margin-top:18px">
-      <button onclick="dismissPRPrompt(false)" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text-sub);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Skip</button>
-      <button onclick="dismissPRPrompt(true)" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--gold);color:#111;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Update</button>
+    <div class="pr-prompt-btns">
+      <button class="pr-prompt-skip" onclick="dismissPRPrompt(false)">Skip</button>
+      <button class="pr-prompt-accept" onclick="dismissPRPrompt(true)">Update</button>
     </div>
   </div>`;
 
@@ -6509,7 +6545,7 @@ function renderIntakeStep1(body) {
       mergeTargetHtml = `
         <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
           <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
-          <select id="import-merge-target" class="intake-field-input">${mergeOpts}</select>
+          <select id="import-merge-target" class="intake-field-input" aria-label="Select program to merge into">${mergeOpts}</select>
         </div>`;
     }
   }
@@ -6558,21 +6594,21 @@ function renderIntakeStep1(body) {
     <div class="intake-maxes-row">
       <div class="intake-field">
         <label class="intake-field-label">Squat</label>
-        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="—" value="${preMaxS}">
+        <input class="intake-field-input" id="intake-max-s" type="number" inputmode="numeric" placeholder="—" value="${preMaxS}" aria-label="Squat 1RM">
       </div>
       <div class="intake-field">
         <label class="intake-field-label">Bench</label>
-        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="—" value="${preMaxB}">
+        <input class="intake-field-input" id="intake-max-b" type="number" inputmode="numeric" placeholder="—" value="${preMaxB}" aria-label="Bench 1RM">
       </div>
       <div class="intake-field">
         <label class="intake-field-label">Deadlift</label>
-        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="—" value="${preMaxD}">
+        <input class="intake-field-input" id="intake-max-d" type="number" inputmode="numeric" placeholder="—" value="${preMaxD}" aria-label="Deadlift 1RM">
       </div>
     </div>
 
     <div class="intake-section-label">${isHistorical ? 'When did this block start?' : 'Start Date'}</div>
     <div class="intake-field">
-      <input class="intake-field-input" id="intake-start-date" type="date" value="${preDate}">
+      <input class="intake-field-input" id="intake-start-date" type="date" value="${preDate}" aria-label="Program start date">
     </div>
     ${isHistorical ? `
     <div style="margin-top:4px;padding:10px 12px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
@@ -8289,7 +8325,7 @@ function exportHTMLReport(blockId) {
       <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:9px;color:#777;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
-      <div class="comp-card-sparkline"><canvas id="${sparkId}"></canvas></div>
+      <div class="comp-card-sparkline"><canvas id="${sparkId}" aria-label="${label} sparkline trend"></canvas></div>
       <div class="comp-card-divider"></div>
       <div class="comp-card-best-label">Best Set</div>
       <div class="comp-card-best">${cl.bestWeight}\u00d7${cl.bestReps}${cl.bestRpe ? ' @' + cl.bestRpe : ''}</div>
@@ -8446,7 +8482,7 @@ function exportHTMLReport(blockId) {
 
     progressionHtml += `<div class="prog-mini">
       <div class="prog-mini-label">${groupLabel}</div>
-      <div class="prog-mini-chart"><canvas id="${chartId}"></canvas></div>
+      <div class="prog-mini-chart"><canvas id="${chartId}" aria-label="${groupLabel} e1RM progression"></canvas></div>
       <div class="prog-mini-vars">${varListHtml}</div>
     </div>`;
   }
@@ -8643,7 +8679,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .comp-card-trend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .comp-card-trend-dot.green{background:var(--green)}
 .comp-card-trend-dot.gold{background:var(--gold)}
-.comp-card-trend-dot.amber{background:#F59E0B}
+.comp-card-trend-dot.amber{background:var(--amber)}
 .comp-card-trend-dot.red{background:var(--red)}
 .comp-card-trend-text{font-size:9px;color:${tv('--text-faint')||'#888'};line-height:1.2}
 
@@ -8655,7 +8691,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .flags-group-accent{width:12px;height:3px;border-radius:2px}
 .flag-row{display:flex;align-items:flex-start;gap:6px;padding:3px 0;margin-left:18px}
 .flag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.flag-dot.amber{background:#F59E0B}
+.flag-dot.amber{background:var(--amber)}
 .flag-dot.red{background:var(--red)}
 .flag-dot.green{background:var(--green)}
 .flag-dot.gold{background:var(--gold)}
@@ -8756,7 +8792,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <div class="section-card">
     <div class="section-title">Volume &amp; RPE Trend</div>
     <div class="vol-legend">${volLegendHtml}</div>
-    <div class="vol-chart-wrap"><canvas id="volRpeChart"></canvas></div>
+    <div class="vol-chart-wrap"><canvas id="volRpeChart" aria-label="Volume and RPE trend over time"></canvas></div>
   </div>
 
   <!-- E1RM Progression Charts -->
@@ -8906,7 +8942,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.14.0';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.16.0';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
@@ -9265,7 +9301,7 @@ function showOnboardingStep(step) {
       <div class="onboard-icon">
         <svg viewBox="0 0 28 40" fill="var(--gold)" width="56" height="80"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
       </div>
-      <div class="onboard-title">UNRACK</div>
+      <h1 class="onboard-title">UNRACK</h1>
       <div class="onboard-sub">Log it. Track it. Lift it.</div>
       <div class="onboard-features">
         <div class="onboard-feature">
@@ -9303,12 +9339,12 @@ function showOnboardingStep(step) {
     _onboardUnit = athlete.bwUnit || 'lbs';
     _onboardWeightUnit = athlete.weightUnit || athlete.bwUnit || 'lbs';
     body.innerHTML = `
-      <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">About You</div>
+      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">About You</h1>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Used for DOTS & Wilks scores. All fields optional.</div>
       <div class="onboard-form">
         <div class="intake-field-label">Name</div>
         <input class="intake-input" id="onboard-name" type="text" placeholder="Your name"
-          value="${escH(athlete.name || '')}" autocomplete="given-name">
+          value="${escH(athlete.name || '')}" autocomplete="given-name" aria-label="Your name">
 
         <div class="intake-field-label">Gender</div>
         <div class="intake-gender-row">
@@ -9319,7 +9355,7 @@ function showOnboardingStep(step) {
         <div class="intake-field-label">Bodyweight</div>
         <div class="intake-bw-row">
           <input class="intake-input intake-bw-input" id="onboard-bw" type="number" min="30" max="400" placeholder="Weight"
-            value="${athlete.bodyweight || ''}" inputmode="decimal">
+            value="${athlete.bodyweight || ''}" inputmode="decimal" aria-label="Bodyweight">
           <div class="intake-unit-toggle">
             <button class="intake-unit-btn${_onboardUnit==='lbs'?' active':''}" onclick="onboardSetUnit('lbs',this)">lbs</button>
             <button class="intake-unit-btn${_onboardUnit==='kg'?' active':''}" onclick="onboardSetUnit('kg',this)">kg</button>
@@ -9344,7 +9380,7 @@ function showOnboardingStep(step) {
   else if (step === 3) {
     const curMode = getRestTimerMode();
     body.innerHTML = `
-      <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Rest Timer</div>
+      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Rest Timer</h1>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Automatic rest timer between sets. You can change this anytime in Settings.</div>
       <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px;margin:0 auto">
         <button class="intake-gender-btn${curMode==='auto'?' selected':''}" onclick="onboardSetRestTimer('auto',this)" style="padding:14px;font-size:15px">
@@ -9369,7 +9405,7 @@ function showOnboardingStep(step) {
 
   else if (step === 4) {
     body.innerHTML = `
-      <div class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</div>
+      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</h1>
       <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training program.</div>
       ${renderUploadOptions('ob-')}
       <button class="onboard-skip-btn" onclick="finishOnboarding()" style="margin-top:12px">I'll do this later</button>
@@ -9825,11 +9861,11 @@ function _renderBuilderStep1(body, header) {
   ).join('');
 
   body.innerHTML = `${header}
-    <div class="builder-step-title">Program Basics</div>
+    <h1 class="builder-step-title">Program Basics</h1>
     <div class="builder-step-desc">Name your program and set the structure.</div>
 
     <div class="builder-label">Program Name</div>
-    <input class="builder-input" id="builder-name" type="text" placeholder="e.g. Hypertrophy Block, Comp Prep" value="${escH(s.blockName)}" oninput="_builderState.blockName=this.value;_builderValidateStep1()" autocomplete="off" maxlength="60">
+    <input class="builder-input" id="builder-name" type="text" placeholder="e.g. Hypertrophy Block, Comp Prep" value="${escH(s.blockName)}" oninput="_builderState.blockName=this.value;_builderValidateStep1()" autocomplete="off" maxlength="60" aria-label="Program name">
 
     <div class="builder-label">Number of Weeks</div>
     <div class="builder-stepper">
@@ -9877,13 +9913,13 @@ function _renderBuilderStep2(body, header) {
     const chipHtml = chips.map(c => `<button class="builder-chip" onclick="_builderSetDayName(${i},'${c}')">${c}</button>`).join('');
     dayInputs += `
       <div class="builder-label">Day ${i+1}</div>
-      <input class="builder-input" type="text" placeholder="${_builderDefaultDayName(i)}" value="${escH(s.dayNames[i])}" oninput="_builderState.dayNames[${i}]=this.value" autocomplete="off" maxlength="30">
+      <input class="builder-input" type="text" placeholder="${_builderDefaultDayName(i)}" value="${escH(s.dayNames[i])}" oninput="_builderState.dayNames[${i}]=this.value" autocomplete="off" maxlength="30" aria-label="Day ${i+1} name">
       <div class="builder-chips">${chipHtml}</div>
     `;
   }
 
   body.innerHTML = `${header}
-    <div class="builder-step-title">Name Your Days</div>
+    <h1 class="builder-step-title">Name Your Days</h1>
     <div class="builder-step-desc">Give each training day a name, or leave blank for defaults.</div>
     ${dayInputs}
     <button class="builder-next-btn" onclick="_builderGoStep(3)">Next</button>
@@ -9976,7 +10012,7 @@ function _renderBuilderStep3(body, header) {
   }
 
   body.innerHTML = `${header}
-    <div class="builder-step-title">Week 1 Exercises</div>
+    <h1 class="builder-step-title">Week 1 Exercises</h1>
     <div class="builder-step-desc">Add exercises to each training day. Tap a day to expand it.</div>
     ${daySections}
     <button class="builder-next-btn" onclick="_builderGoStep(4)">Next</button>
@@ -10018,10 +10054,10 @@ function _openExercisePicker(onSelect) {
   overlay.innerHTML = `
     <div class="builder-picker-sheet">
       <div class="builder-picker-header" id="picker-header">
-        <span class="builder-picker-title">Add Exercise</span>
+        <h2 class="builder-picker-title">Add Exercise</h2>
         <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search or add custom..." oninput="_filterExercisePicker(this.value)" autocomplete="off">
+      <input class="builder-picker-search" id="builder-picker-search" type="text" placeholder="Search or add custom..." oninput="_filterExercisePicker(this.value)" autocomplete="off" aria-label="Search exercises">
       <div class="builder-picker-list" id="builder-picker-list"></div>
     </div>
   `;
@@ -10042,7 +10078,7 @@ function _renderPickerView() {
   if (searchVal) {
     _renderPickerSearch(list, searchVal);
     // Header stays as "Add Exercise" during search
-    header.innerHTML = `<span class="builder-picker-title">Add Exercise</span>
+    header.innerHTML = `<h2 class="builder-picker-title">Add Exercise</h2>
       <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
     return;
   }
@@ -10056,7 +10092,7 @@ function _renderPickerView() {
   } else {
     // Group selection view
     _renderPickerGroupView(list);
-    header.innerHTML = `<span class="builder-picker-title">Add Exercise</span>
+    header.innerHTML = `<h2 class="builder-picker-title">Add Exercise</h2>
       <button class="builder-close" onclick="_closeExercisePicker()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
   }
 }
@@ -10201,14 +10237,14 @@ function _builderShowDetail(dayIdx, exIdx, prefillName) {
 
   overlay.innerHTML = `
     <div class="builder-detail-modal">
-      <div class="builder-detail-title">${isEdit ? 'Edit' : 'Add'} Exercise</div>
+      <h2 class="builder-detail-title">${isEdit ? 'Edit' : 'Add'} Exercise</h2>
       <div class="builder-detail-field">
         <div class="builder-label">Exercise Name</div>
-        <input class="builder-input" id="builder-detail-name" type="text" placeholder="e.g. Competition Squat" value="${escH(existing ? existing.name : (prefillName || ''))}" autocomplete="off" maxlength="80">
+        <input class="builder-input" id="builder-detail-name" type="text" placeholder="e.g. Competition Squat" value="${escH(existing ? existing.name : (prefillName || ''))}" autocomplete="off" maxlength="80" aria-label="Exercise name">
       </div>
       <div class="builder-detail-field">
         <div class="builder-label">Prescription</div>
-        <input class="builder-input" id="builder-detail-rx" type="text" placeholder="e.g. 5x3 @ 85%" value="${escH(existing ? existing.prescription : '')}" autocomplete="off" maxlength="100" oninput="_builderUpdateRxPreview(this.value)">
+        <input class="builder-input" id="builder-detail-rx" type="text" placeholder="e.g. 5x3 @ 85%" value="${escH(existing ? existing.prescription : '')}" autocomplete="off" maxlength="100" oninput="_builderUpdateRxPreview(this.value)" aria-label="Prescription">
         <div id="builder-rx-preview" class="builder-rx-preview"></div>
         <div class="builder-detail-examples">
           <strong>Formats:</strong> 3x5 &middot; 5x3 @ 85% &middot; 3x5(225) &middot; 3x8-12 &middot; 1x3(315), 1x3(335)
@@ -10216,7 +10252,7 @@ function _builderShowDetail(dayIdx, exIdx, prefillName) {
       </div>
       <div class="builder-detail-field">
         <div class="builder-label">Notes <span style="font-weight:400;color:var(--text-faint)">(optional)</span></div>
-        <input class="builder-input" id="builder-detail-notes" type="text" placeholder="e.g. Pause 2 sec at bottom" value="${escH(existing ? (existing.coachNotes||'') : '')}" autocomplete="off" maxlength="200">
+        <input class="builder-input" id="builder-detail-notes" type="text" placeholder="e.g. Pause 2 sec at bottom" value="${escH(existing ? (existing.coachNotes||'') : '')}" autocomplete="off" maxlength="200" aria-label="Coach notes">
       </div>
       <button class="builder-next-btn" onclick="_builderSaveDetail(${dayIdx},${isEdit?exIdx:'null'})" style="margin-top:20px">Save</button>
       <button class="builder-secondary-btn" onclick="document.getElementById('builder-detail-overlay').remove()">Cancel</button>
@@ -10304,7 +10340,7 @@ function _renderBuilderStep4(body, header) {
   }
 
   body.innerHTML = `${header}
-    <div class="builder-step-title">Copy Structure</div>
+    <h1 class="builder-step-title">Copy Structure</h1>
     <div class="builder-step-desc">You've built Week 1. How should the remaining ${s.numWeeks - 1} week${s.numWeeks>2?'s':''} work?</div>
 
     <div class="builder-radio-group">
@@ -10384,7 +10420,7 @@ function _renderBuilderStep5(body, header) {
   const totalExercises = week1.days.reduce((sum, d) => sum + d.exercises.length, 0);
 
   body.innerHTML = `${header}
-    <div class="builder-step-title">Review & Save</div>
+    <h1 class="builder-step-title">Review & Save</h1>
     <div class="builder-step-desc">Everything look good? You can always edit later.</div>
 
     <div class="builder-summary-card">
@@ -10850,18 +10886,18 @@ function _showDeleteDayPrompt() {
   let btns = '';
   if (otherWeeksWithDay > 0) {
     btns = `
-      <button class="prop-this" style="background:#E57373;color:#000" onclick="_executeDeleteDay(false)">This Week Only</button>
-      <button class="prop-all" style="background:#E57373;color:#000" onclick="_executeDeleteDay(true)">All Weeks</button>
+      <button class="prop-this" style="background:var(--red-soft);color:#000" onclick="_executeDeleteDay(false)">This Week Only</button>
+      <button class="prop-all" style="background:var(--red-soft);color:#000" onclick="_executeDeleteDay(true)">All Weeks</button>
       <button class="prop-cancel" onclick="document.getElementById('delete-day-overlay').remove()">Cancel</button>`;
   } else {
     btns = `
       <button class="confirm-cancel" onclick="document.getElementById('delete-day-overlay').remove()">Cancel</button>
-      <button class="confirm-go" style="background:#E57373;color:#000" onclick="_executeDeleteDay(false)">Delete</button>`;
+      <button class="confirm-go" style="background:var(--red-soft);color:#000" onclick="_executeDeleteDay(false)">Delete</button>`;
   }
 
   overlay.innerHTML = `
     <div class="confirm-sheet">
-      <div class="confirm-title" style="color:#E57373">Delete Day</div>
+      <div class="confirm-title" style="color:var(--red-soft)">Delete Day</div>
       <div class="confirm-desc">Delete <strong style="color:var(--text-primary)">${escH(dayName)}</strong> and all its exercises${otherWeeksWithDay > 0 ? '? This day exists in ' + otherWeeksWithDay + ' other week(s).' : '? This cannot be undone.'}</div>
       <div class="confirm-btns">${btns}</div>
     </div>`;
@@ -11036,8 +11072,8 @@ function _showAddDayModal() {
 
   overlay.innerHTML = `
     <div class="add-day-modal">
-      <div class="add-day-modal-title">Add Day to ${escH(ctx.week.label)}</div>
-      <input id="add-day-name-input" type="text" placeholder="Day name (e.g. Squat Day)" value="Day ${nextNum}" autocomplete="off" autocorrect="off">
+      <h2 class="add-day-modal-title">Add Day to ${escH(ctx.week.label)}</h2>
+      <input id="add-day-name-input" type="text" placeholder="Day name (e.g. Squat Day)" value="Day ${nextNum}" autocomplete="off" autocorrect="off" aria-label="Day name">
       <div class="add-day-chips">${chips.map(c => `<button class="add-day-chip" onclick="document.getElementById('add-day-name-input').value='${c}'">${c}</button>`).join('')}</div>
       <div class="add-day-modal-btns">
         <button class="add-day-modal-cancel" onclick="document.getElementById('add-day-overlay').remove()">Cancel</button>
@@ -11129,31 +11165,31 @@ function _openCustomExModal(existingKey, existingEx) {
   overlay.innerHTML = `
   <div class="custom-ex-sheet">
     <div class="custom-ex-sheet-header">
-      <span class="custom-ex-sheet-title">${isEdit ? 'Edit Exercise' : 'Add Exercise'}</span>
+      <h2 class="custom-ex-sheet-title">${isEdit ? 'Edit Exercise' : 'Add Exercise'}</h2>
       <button class="custom-ex-close" onclick="closeCustomExModal()">✕</button>
     </div>
     <div class="custom-ex-field">
       <div class="custom-ex-label">Exercise Name</div>
-      <input class="custom-ex-input" id="cex-name" type="text" placeholder="e.g. Hip Thrust" value="${escH(prefillName)}" autocomplete="off" autocorrect="off" spellcheck="false">
+      <input class="custom-ex-input" id="cex-name" type="text" placeholder="e.g. Hip Thrust" value="${escH(prefillName)}" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Exercise name">
     </div>
     <div class="custom-ex-row">
       <div class="custom-ex-field">
         <div class="custom-ex-label">Sets</div>
-        <input class="custom-ex-input" id="cex-sets" type="number" inputmode="numeric" placeholder="3" value="${prefillSets}" min="1">
+        <input class="custom-ex-input" id="cex-sets" type="number" inputmode="numeric" placeholder="3" value="${prefillSets}" min="1" aria-label="Sets">
       </div>
       <div class="custom-ex-field">
         <div class="custom-ex-label">Reps</div>
-        <input class="custom-ex-input" id="cex-reps" type="number" inputmode="numeric" placeholder="10" value="${prefillReps}" min="1">
+        <input class="custom-ex-input" id="cex-reps" type="number" inputmode="numeric" placeholder="10" value="${prefillReps}" min="1" aria-label="Reps">
       </div>
     </div>
     <div class="custom-ex-row" style="grid-template-columns:1fr 1fr">
       <div class="custom-ex-field">
         <div class="custom-ex-label">Weight (${getDisplayUnit()})</div>
-        <input class="custom-ex-input" id="cex-weight" type="number" inputmode="decimal" placeholder="optional" value="${prefillWeight}" min="0">
+        <input class="custom-ex-input" id="cex-weight" type="number" inputmode="decimal" placeholder="optional" value="${prefillWeight}" min="0" aria-label="Weight">
       </div>
       <div class="custom-ex-field">
         <div class="custom-ex-label">RPE (1–10)</div>
-        <input class="custom-ex-input" id="cex-rpe" type="number" inputmode="decimal" placeholder="optional" value="${prefillRpe}" min="1" max="10" step="0.5">
+        <input class="custom-ex-input" id="cex-rpe" type="number" inputmode="decimal" placeholder="optional" value="${prefillRpe}" min="1" max="10" step="0.5" aria-label="RPE">
       </div>
     </div>
     <div class="custom-ex-error" id="cex-error">Weight or RPE is required.</div>
@@ -11799,11 +11835,11 @@ function renderCmStep3() {
       <div class="colmap-card-title">Program Details</div>
       <div class="colmap-field">
         <div class="colmap-field-label">Athlete Name</div>
-        <input class="colmap-field-input" id="cm-meta-athlete" type="text" placeholder="Your name" value="${escH(athlete)}" oninput="_cmMeta.athlete=this.value">
+        <input class="colmap-field-input" id="cm-meta-athlete" type="text" placeholder="Your name" value="${escH(athlete)}" oninput="_cmMeta.athlete=this.value" aria-label="Athlete name">
       </div>
       <div class="colmap-field">
         <div class="colmap-field-label">Program Name</div>
-        <input class="colmap-field-input" id="cm-meta-program" type="text" placeholder="e.g. Hypertrophy Block 1" value="${escH(program)}" oninput="_cmMeta.program=this.value">
+        <input class="colmap-field-input" id="cm-meta-program" type="text" placeholder="e.g. Hypertrophy Block 1" value="${escH(program)}" oninput="_cmMeta.program=this.value" aria-label="Program name">
       </div>
     </div>
 
@@ -11813,15 +11849,15 @@ function renderCmStep3() {
       <div class="colmap-maxes-row">
         <div class="colmap-field">
           <div class="colmap-field-label">Squat</div>
-          <input class="colmap-field-input" id="cm-meta-squat" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${sqMax}" oninput="_cmMeta.squat=this.value">
+          <input class="colmap-field-input" id="cm-meta-squat" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${sqMax}" oninput="_cmMeta.squat=this.value" aria-label="Squat max">
         </div>
         <div class="colmap-field">
           <div class="colmap-field-label">Bench</div>
-          <input class="colmap-field-input" id="cm-meta-bench" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${bnMax}" oninput="_cmMeta.bench=this.value">
+          <input class="colmap-field-input" id="cm-meta-bench" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${bnMax}" oninput="_cmMeta.bench=this.value" aria-label="Bench max">
         </div>
         <div class="colmap-field">
           <div class="colmap-field-label">Deadlift</div>
-          <input class="colmap-field-input" id="cm-meta-deadlift" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${dlMax}" oninput="_cmMeta.deadlift=this.value">
+          <input class="colmap-field-input" id="cm-meta-deadlift" type="number" inputmode="numeric" placeholder="${getDisplayUnit()}" value="${dlMax}" oninput="_cmMeta.deadlift=this.value" aria-label="Deadlift max">
         </div>
       </div>
     </div>
@@ -12609,7 +12645,7 @@ function renderCalc() {
       <!-- ── TARGET: INPUT ── -->
       <div class="calc-section" style="padding:12px;">
         <div style="display:flex;gap:8px;align-items:stretch;height:68px;">
-          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" style="flex:1;min-width:0;background:${T.inputBg};border:${T.inputBorder};color:${T.inputColor};" />
+          <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" aria-label="Target weight" style="flex:1;min-width:0;background:${T.inputBg};border:${T.inputBorder};color:${T.inputColor};" />
           ${displayLbs ? `
           <div style="display:flex;align-items:center;flex-shrink:0;">
             <div style="border-radius:7px;padding:8px 14px;border:${T.unitBorder(true)};background:${T.unitBg2(true)};color:${T.unitColor(true)};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;">LBS</div>
