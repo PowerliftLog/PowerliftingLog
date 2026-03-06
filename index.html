@@ -772,6 +772,25 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .pr-prompt-skip { border:1px solid var(--border);background:transparent;color:var(--text-sub); }
 .pr-prompt-accept { border:none;background:var(--gold);color:#111; }
 
+/* ── Percent prompt (1RM modal for % programs) ─────────────── */
+.pct-prompt-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fadeIn 0.15s ease; }
+.pct-prompt-card { background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
+.pct-prompt-header { text-align:center;margin-bottom:16px; }
+.pct-prompt-icon { font-size:28px;margin-bottom:6px; }
+.pct-prompt-title { font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold); }
+.pct-prompt-sub { font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.5; }
+.pct-prompt-fields { display:flex;gap:8px;margin-top:14px; }
+.pct-prompt-field { flex:1;text-align:center; }
+.pct-prompt-label { font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px; }
+.pct-prompt-input { width:100%;padding:10px 4px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-bright);text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;outline:none;transition:border-color 0.15s; }
+.pct-prompt-input:focus { border-color:var(--gold); }
+.pct-prompt-input::placeholder { color:var(--text-dim);font-weight:400; }
+.pct-prompt-btns { display:flex;gap:10px;margin-top:18px; }
+.pct-prompt-btns button { flex:1;padding:12px;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;transition:opacity 0.15s; }
+.pct-prompt-btns button:active { opacity:0.75; }
+.pct-prompt-skip { border:1px solid var(--border);background:transparent;color:var(--text-sub); }
+.pct-prompt-apply { border:none;background:var(--gold);color:#111; }
+
 /* Workout Celebration Overlay */
 #celebration-overlay {
   position: fixed; inset: 0; z-index: 9999;
@@ -1652,7 +1671,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.16.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">b0306d</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.17.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/06/26e</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -4474,8 +4493,12 @@ function renderHome() {
       <div class="home-empty">
         <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
         <h2 class="home-empty-title">No Program Loaded</h2>
-        <div class="home-empty-desc">Upload your training program to get started.</div>
+        <div class="home-empty-desc">Upload a spreadsheet, try a sample program, or build your own.</div>
         ${renderUploadOptions('home-')}
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button onclick="loadDemoProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Try Sample Program</button>
+          <button onclick="startBuildProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Build Your Own</button>
+        </div>
       </div>
     </div>`;
     return;
@@ -4504,6 +4527,18 @@ function renderHome() {
   const athleteName = (_athlete && _athlete.name)
     ? _athlete.name
     : (block.athleteName && block.athleteName !== 'Athlete' ? block.athleteName : null);
+
+  // Demo program banner
+  const _isDemoBlock = isDemoProgram(block);
+  const demoBannerHtml = _isDemoBlock ? `
+    <div id="demo-banner" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(var(--gold-rgb),0.08);border:1px solid rgba(var(--gold-rgb),0.2);border-radius:12px;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('file-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="flex:1">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.02em">Sample Program</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim)">Tap to upload your own training program</div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>` : '';
 
   // Hero card — determine what to show
   const nwInfo    = getNextWorkoutInfo();
@@ -4708,6 +4743,7 @@ function renderHome() {
 
   content.innerHTML = `<div class="home-screen">
     <h1 class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</h1>
+    ${demoBannerHtml}
     ${updateBannerHtml}
     ${heroHtml}
     ${middleRowHtml}
@@ -6377,7 +6413,7 @@ async function openDrivePicker() {
         onDrivePickerCallback(data);
         // If user cancelled and was in onboarding, return to onboarding
         if (data.action === google.picker.Action.CANCEL && wasOnboarding) {
-          showOnboardingStep(4);
+          showOnboardingStep(2);
         }
       })
       .build();
@@ -6390,7 +6426,7 @@ async function openDrivePicker() {
     }
     // If sign-in was cancelled and was in onboarding, return to onboarding
     if (wasOnboarding) {
-      showOnboardingStep(4);
+      showOnboardingStep(2);
     }
   }
 }
@@ -6501,7 +6537,7 @@ function closeImportIntent() {
   _pendingImportBlocks = null;
   // If not yet onboarded, return to upload step
   if (!isOnboarded()) {
-    showOnboardingStep(4);
+    showOnboardingStep(2);
   }
 }
 
@@ -6827,9 +6863,11 @@ function confirmImportIntent() {
 
   closeImportIntent();
 
-  // Close onboarding if still open and mark as complete
+  // If still in onboarding, continue to About You step (profile + rest timer)
   if (!isOnboarded()) {
-    finishOnboarding();
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    showOnboardingStep(3);
   }
 
   if (_importIntent === 'active') {
@@ -6842,6 +6880,27 @@ function confirmImportIntent() {
     state.activeDay  = _n.dayIdx;
     saveBlocks(); saveNav(); saveLogs();
     setScreen('home');
+
+    // Percentage-based program: resolve or prompt for 1RM
+    const pctBlocks = blocks.filter(b => blockHasPercentPrescriptions(b));
+    if (pctBlocks.length > 0) {
+      // If maxes already provided (from intake form), resolve immediately
+      let allResolved = true;
+      for (const b of pctBlocks) {
+        const groups = _percentLiftGroups(b);
+        for (const g of groups) {
+          if (!b.maxes || !b.maxes[g] || parseFloat(b.maxes[g]) <= 0) { allResolved = false; break; }
+        }
+        if (!allResolved) break;
+      }
+      if (allResolved) {
+        pctBlocks.forEach(b => resolvePercentPrescriptions(b));
+        saveBlocks();
+      } else {
+        // Defer prompt to after render
+        setTimeout(() => showPercentPrompt(pctBlocks), 100);
+      }
+    }
   } else if (_importIntent === 'merge') {
     mergeWeeksIntoBlock(blocks);
   } else {
@@ -7428,7 +7487,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
       const isHevy = testHeaders.includes('exercise_title') && testHeaders.includes('set_index');
       if (!isStrong && !isHevy) {
         showParseError('error', 'This CSV doesn\'t appear to be a Strong or Hevy export. Expected columns like "Workout Name" (Strong) or "exercise_title" (Hevy).');
-        if (wasOnboarding) showOnboardingStep(4);
+        if (wasOnboarding) showOnboardingStep(2);
         e.target.value = '';
         return;
       }
@@ -7436,7 +7495,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
       showCSVUnitPicker(text, isStrong ? 'Strong' : 'Hevy');
     } catch (err) {
       showParseError('error', err.message); console.error(err);
-      if (wasOnboarding) showOnboardingStep(4);
+      if (wasOnboarding) showOnboardingStep(2);
     }
     e.target.value = '';
     return;
@@ -7455,7 +7514,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     openImportIntent(blocks);
   }catch(err){
     showParseError('error', err.message); console.error(err);
-    if (wasOnboarding) { showOnboardingStep(4); }
+    if (wasOnboarding) { showOnboardingStep(2); }
   }
   e.target.value='';
 });
@@ -8951,7 +9010,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.16.0';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.17.0';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
@@ -9283,6 +9342,241 @@ let _onboardGender = null;
 let _onboardUnit = 'lbs';
 let _onboardWeightUnit = 'lbs';
 
+// ── DEMO PROGRAM ──────────────────────────────────────────────────────────────
+const DEMO_PROGRAM = {
+  id: 'demo_program',
+  name: 'Unrack Sample Program',
+  format: 'demo',
+  athleteName: 'Athlete',
+  maxes: {},
+  weeks: [1,2,3,4].map(wn => ({
+    label: 'Week ' + wn,
+    days: [
+      { name: 'Squat Day', exercises: [
+        { name: 'Back Squat', prescription: '4x5 @ 75%', note: '', coachNotes: 'Focus on bracing and depth', supersetGroup: null },
+        { name: 'Pause Squat', prescription: '3x3 @ RPE 7', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Leg Press', prescription: '3x10', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Walking Lunges', prescription: '3x12 each', note: '', coachNotes: '', supersetGroup: null }
+      ]},
+      { name: 'Bench Day', exercises: [
+        { name: 'Bench Press', prescription: '4x5 @ 75%', note: '', coachNotes: 'Pause on chest each rep', supersetGroup: null },
+        { name: 'Close Grip Bench Press', prescription: '3x8 @ RPE 7', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Dumbbell Row', prescription: '4x10', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Lateral Raise', prescription: '3x15', note: '', coachNotes: '', supersetGroup: null }
+      ]},
+      { name: 'Deadlift Day', exercises: [
+        { name: 'Deadlift', prescription: '3x3 @ 80%', note: '', coachNotes: 'Reset each rep — no touch and go', supersetGroup: null },
+        { name: 'Romanian Deadlift', prescription: '3x8 @ RPE 7', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Barbell Row', prescription: '4x8', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Plank', prescription: '3x45s', note: '', coachNotes: '', supersetGroup: null }
+      ]}
+    ]
+  }))
+};
+
+function loadDemoProgram() {
+  const demo = JSON.parse(JSON.stringify(DEMO_PROGRAM)); // deep clone
+  demo.id = 'demo_' + Date.now();
+  // Set start date to today and compute date range
+  const now = new Date();
+  demo.startDate = now.toISOString().split('T')[0];
+  const endDate = new Date(now.getTime() + (demo.weeks.length * 7 - 1) * 86400000);
+  const fmt = (dt) => (dt.getMonth()+1) + '/' + dt.getDate() + '/' + String(dt.getFullYear()).slice(2);
+  demo.dateRange = fmt(now) + ' – ' + fmt(endDate);
+  state.blocks.push(demo);
+  state.activeBlock = demo;
+  state.activeWeek = 0;
+  state.activeDay = 0;
+  saveBlocks();
+  saveNav();
+  if (typeof autoRegisterCompLifts === 'function') autoRegisterCompLifts([demo]);
+  finishOnboarding();
+}
+
+function isDemoProgram(block) {
+  return block && block.format === 'demo';
+}
+
+// ── Percentage-based program detection & resolution ──────────────────────────
+// Detect if a block has any "@ X%" prescriptions
+function blockHasPercentPrescriptions(block) {
+  if (!block || !block.weeks) return false;
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        if (ex.prescription && /\s*@\s*[\d.]+%/.test(ex.prescription)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Detect which lift groups have % prescriptions (squat/bench/deadlift)
+function _percentLiftGroups(block) {
+  const groups = new Set();
+  if (!block || !block.weeks) return groups;
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        if (ex.prescription && /\s*@\s*[\d.]+%/.test(ex.prescription)) {
+          const g = classifyLift(ex.name);
+          if (g) groups.add(g);
+        }
+      }
+    }
+  }
+  return groups;
+}
+
+// Round weight to nearest bar increment: 5 lbs or 2.5 kg
+function _roundToBar(weight, unit) {
+  const inc = (unit === 'kg') ? 2.5 : 5;
+  return Math.round(weight / inc) * inc;
+}
+
+// Resolve all "@ X%" prescriptions in a block using its maxes
+// Stores original prescription in ex.originalPrescription before replacing
+function resolvePercentPrescriptions(block) {
+  if (!block || !block.maxes || !block.weeks) return;
+  const unit = getDisplayUnit();
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        if (!ex.prescription) continue;
+        const m = ex.prescription.match(/^(.+?)\s*@\s*([\d.]+)%$/);
+        if (!m) continue;
+        const group = classifyLift(ex.name);
+        if (!group) continue;
+        const max = parseFloat(block.maxes[group]);
+        if (!max || max <= 0) continue;
+        const pct = parseFloat(m[2]);
+        const resolved = _roundToBar(max * pct / 100, unit);
+        // Preserve original, write resolved
+        if (!ex.originalPrescription) ex.originalPrescription = ex.prescription;
+        // Convert "4x5 @ 75%" → "4x5(375)" for parseSets compatibility
+        const setsReps = m[1].trim();
+        const srMatch = setsReps.match(/^(\d+)\s*x\s*(\d+)$/i);
+        if (srMatch) {
+          ex.prescription = `${srMatch[1]}x${srMatch[2]}(${resolved})`;
+        } else {
+          // Non-standard format like "3x3-5 @ 80%" — append weight as note
+          ex.prescription = `${setsReps} @ ${resolved}${unit === 'kg' ? 'kg' : ''}`;
+        }
+      }
+    }
+  }
+}
+
+// Check if blocks need 1RM prompt: has % prescriptions AND missing maxes for those groups
+function _blocksNeedPercentPrompt(blocks) {
+  for (const block of blocks) {
+    if (!blockHasPercentPrescriptions(block)) continue;
+    const groups = _percentLiftGroups(block);
+    for (const g of groups) {
+      if (!block.maxes || !block.maxes[g] || parseFloat(block.maxes[g]) <= 0) return true;
+    }
+  }
+  return false;
+}
+
+// Show 1RM prompt for percentage-based programs
+function showPercentPrompt(blocks, onDone) {
+  // Collect which lift groups need maxes across all blocks
+  const neededGroups = new Set();
+  for (const block of blocks) {
+    const groups = _percentLiftGroups(block);
+    for (const g of groups) {
+      if (!block.maxes || !block.maxes[g] || parseFloat(block.maxes[g]) <= 0) {
+        neededGroups.add(g);
+      }
+    }
+  }
+  if (neededGroups.size === 0) { if (onDone) onDone(); return; }
+
+  const unit = getDisplayUnit();
+  const liftLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
+  const ath = loadAthlete() || {};
+
+  // Pre-fill from athlete profile if available
+  const preFills = {
+    squat: ath.tested1rm_squat || '',
+    bench: ath.tested1rm_bench || '',
+    deadlift: ath.tested1rm_deadlift || '',
+  };
+
+  const fieldsHtml = ['squat', 'bench', 'deadlift'].filter(g => neededGroups.has(g)).map(g => `
+    <div class="pct-prompt-field">
+      <div class="pct-prompt-label">${liftLabels[g]}</div>
+      <input class="pct-prompt-input" id="pct-input-${g}" type="number" inputmode="numeric" placeholder="—" value="${preFills[g]}" aria-label="${liftLabels[g]} 1RM">
+    </div>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pct-prompt-overlay';
+  overlay.className = 'pct-prompt-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Add Training Maxes');
+  overlay.innerHTML = `<div class="pct-prompt-card">
+    <div class="pct-prompt-header">
+      <div class="pct-prompt-icon">⚡</div>
+      <div class="pct-prompt-title">Percentage Program</div>
+      <div class="pct-prompt-sub">We noticed your program uses percentage-based weights. Add your current 1RM to calculate training loads.</div>
+    </div>
+    <div class="pct-prompt-fields">${fieldsHtml}</div>
+    <div style="text-align:center;margin-top:6px;font-size:11px;color:var(--text-dim)">Weight in ${unit}</div>
+    <div class="pct-prompt-btns">
+      <button class="pct-prompt-skip" onclick="dismissPercentPrompt(false)">Skip</button>
+      <button class="pct-prompt-apply" onclick="dismissPercentPrompt(true)">Apply</button>
+    </div>
+  </div>`;
+
+  overlay._blocks = blocks;
+  overlay._onDone = onDone;
+  overlay._neededGroups = neededGroups;
+  document.body.appendChild(overlay);
+}
+
+function dismissPercentPrompt(accepted) {
+  const overlay = document.getElementById('pct-prompt-overlay');
+  if (!overlay) return;
+  const blocks = overlay._blocks;
+  const onDone = overlay._onDone;
+  const neededGroups = overlay._neededGroups;
+
+  if (accepted) {
+    // Read values from inputs
+    const maxes = {};
+    for (const g of neededGroups) {
+      const val = parseFloat(document.getElementById('pct-input-' + g)?.value);
+      if (val > 0) maxes[g] = val;
+    }
+
+    // Apply maxes to blocks and resolve
+    if (Object.keys(maxes).length > 0) {
+      // Update athlete profile
+      const ath = loadAthlete() || {};
+      for (const [g, v] of Object.entries(maxes)) {
+        ath['tested1rm_' + g] = v;
+      }
+      saveAthlete(ath);
+
+      // Apply to blocks and resolve
+      for (const block of blocks) {
+        block.maxes = block.maxes || {};
+        for (const [g, v] of Object.entries(maxes)) {
+          if (!block.maxes[g] || parseFloat(block.maxes[g]) <= 0) block.maxes[g] = v;
+        }
+        resolvePercentPrescriptions(block);
+      }
+      saveBlocks();
+      render();
+    }
+  }
+
+  overlay.remove();
+  if (onDone) onDone();
+}
+
 function isOnboarded() { if(_idbReady && _idbCache[ONBOARDED_KEY]!==undefined) return _idbCache[ONBOARDED_KEY]==='1'||_idbCache[ONBOARDED_KEY]===1||_idbCache[ONBOARDED_KEY]===true; return localStorage.getItem(ONBOARDED_KEY) === '1'; }
 function markOnboarded() { _idbPut(ONBOARDED_KEY, '1'); try{ localStorage.setItem(ONBOARDED_KEY, '1'); }catch(e){ console.error(e); } }
 
@@ -9305,6 +9599,7 @@ function showOnboardingStep(step) {
   document.querySelector('.bottom-nav').style.display = 'none';
   document.querySelector('.header').style.display = 'none';
 
+  // Step 1: Welcome splash
   if (step === 1) {
     body.innerHTML = `
       <div class="onboard-icon">
@@ -9342,7 +9637,72 @@ function showOnboardingStep(step) {
     body.style.animation = 'onboardFadeIn 0.4s ease';
   }
 
+  // Step 2: Upload Your Program (moved up — highest-value action)
   else if (step === 2) {
+    body.innerHTML = `
+      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</h1>
+      <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training spreadsheet or CSV.</div>
+      ${renderUploadOptions('ob-')}
+      <button class="onboard-skip-btn" onclick="showOnboardingStep('2b')" style="margin-top:12px">I don't have a file</button>
+    `;
+    body.style.animation = 'none';
+    body.offsetHeight;
+    body.style.animation = 'onboardFadeIn 0.4s ease';
+  }
+
+  // Step 2b: No-file path — sample program or build your own
+  else if (step === '2b') {
+    body.innerHTML = `
+      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">No Problem</h1>
+      <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Try a sample program or build your own. You can upload a spreadsheet anytime from the Programs menu.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin:0 auto 24px">
+        <button class="onboard-nofile-card" onclick="loadDemoProgram()" style="display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;transition:opacity 0.15s">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(var(--gold-rgb),0.1);border:1px solid rgba(var(--gold-rgb),0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 28 40" fill="var(--gold)" width="16" height="24"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+          </div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em">Try Sample Program</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);margin-top:2px">3-day powerlifting split — squat, bench, deadlift</div>
+          </div>
+        </button>
+        <button class="onboard-nofile-card" onclick="startBuildProgram()" style="display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;transition:opacity 0.15s">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(var(--gold-rgb),0.1);border:1px solid rgba(var(--gold-rgb),0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em">Build Your Own</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);margin-top:2px">Create a custom program from scratch</div>
+          </div>
+        </button>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;text-align:center">What you'll see</div>
+        <div style="display:flex;gap:8px;overflow-x:auto;padding:0 4px;scroll-snap-type:x mandatory">
+          <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+            <div style="font-size:28px;margin-bottom:6px">🏋️</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Workout Tracking</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5">Log sets, weight, and RPE. See your prescribed weights with one-tap plate calculator on barbell exercises.</div>
+          </div>
+          <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+            <div style="font-size:28px;margin-bottom:6px">📈</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Progress & PRs</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5">Estimated 1RM charts, PR detection, and DOTS/Wilks/GL scoring — all automatic.</div>
+          </div>
+          <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+            <div style="font-size:28px;margin-bottom:6px">📊</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Training Reports</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5">Volume, intensity, and completion reports. Export as HTML or CSV anytime.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    body.style.animation = 'none';
+    body.offsetHeight;
+    body.style.animation = 'onboardFadeIn 0.4s ease';
+  }
+
+  // Step 3: About You (was step 2)
+  else if (step === 3) {
     const athlete = loadAthlete() || {};
     _onboardGender = athlete.gender || null;
     _onboardUnit = athlete.bwUnit || 'lbs';
@@ -9379,14 +9739,15 @@ function showOnboardingStep(step) {
         </div>
       </div>
       <button class="onboard-primary-btn" onclick="onboardSaveProfile()">Continue</button>
-      <button class="onboard-skip-btn" onclick="showOnboardingStep(3)">Skip for now</button>
+      <button class="onboard-skip-btn" onclick="showOnboardingStep(4)">Skip for now</button>
     `;
     body.style.animation = 'none';
     body.offsetHeight;
     body.style.animation = 'onboardFadeIn 0.4s ease';
   }
 
-  else if (step === 3) {
+  // Step 4: Rest Timer (was step 3)
+  else if (step === 4) {
     const curMode = getRestTimerMode();
     body.innerHTML = `
       <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Rest Timer</h1>
@@ -9405,19 +9766,7 @@ function showOnboardingStep(step) {
           <div style="font-size:12px;opacity:0.7;margin-top:2px">No rest timer</div>
         </button>
       </div>
-      <button class="onboard-primary-btn" onclick="showOnboardingStep(4)" style="margin-top:20px">Continue</button>
-    `;
-    body.style.animation = 'none';
-    body.offsetHeight;
-    body.style.animation = 'onboardFadeIn 0.4s ease';
-  }
-
-  else if (step === 4) {
-    body.innerHTML = `
-      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</h1>
-      <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training program.</div>
-      ${renderUploadOptions('ob-')}
-      <button class="onboard-skip-btn" onclick="finishOnboarding()" style="margin-top:12px">I'll do this later</button>
+      <button class="onboard-primary-btn" onclick="finishOnboarding()" style="margin-top:20px">Done</button>
     `;
     body.style.animation = 'none';
     body.offsetHeight;
@@ -9460,7 +9809,7 @@ function onboardSaveProfile() {
     weightUnit: _onboardWeightUnit || existing.weightUnit || 'lbs',
   };
   saveAthlete(athlete);
-  showOnboardingStep(3);
+  showOnboardingStep(4);
 }
 
 function finishOnboarding() {
@@ -10541,6 +10890,18 @@ function _builderSave() {
 
   // If we were in onboarding, finish it
   if (typeof markOnboarded === 'function') markOnboarded();
+
+  // Check for percentage-based prescriptions and prompt for 1RM
+  if (blockHasPercentPrescriptions(block)) {
+    if (_blocksNeedPercentPrompt([block])) {
+      setTimeout(() => showPercentPrompt([block]), 100);
+    } else {
+      resolvePercentPrescriptions(block);
+      saveBlocks();
+    }
+  }
+
+  render();
 }
 
 // ── END BUILD PROGRAM WIZARD ─────────────────────────────────────────────────
