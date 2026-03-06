@@ -4956,20 +4956,16 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   // Fetch prev week performance for both collapsed summary + expanded inline hints
   const prevPerf=getPrevWeekPerformance(block.id,week.label,day.name,ex.name);
 
-  // Collapsed card: show one-line summary of last week's performance (sets×reps×weight @RPE)
-  if(!isExpanded && prevPerf){
-    const allSame=prevPerf.sets.length>1 && prevPerf.sets.every(s=>s.actual===prevPerf.sets[0].actual&&s.rpe===prevPerf.sets[0].rpe&&s.actualReps===prevPerf.sets[0].actualReps);
-    function _prevSetStr(s) {
-      const repsStr=s.actualReps?' × '+s.actualReps:'';
-      return `${s.actual}${repsStr}${s.rpe?' @'+s.rpe:''}`;
-    }
-    let summary;
-    if(allSame){
-      summary=`${prevPerf.sets.length} × ${_prevSetStr(prevPerf.sets[0])}`;
-    } else {
-      summary=prevPerf.sets.map(s=>_prevSetStr(s)).join(' · ');
-    }
-    const srcTag=prevPerf.source?` (${prevPerf.source})`:'';
+  // Collapsed card: show top set (highest weight) from last week
+  if(!isExpanded && prevPerf && prevPerf.sets.length > 0){
+    const top = prevPerf.sets.reduce((best, s) => {
+      const w = parseFloat(s.actual) || 0;
+      const bw = parseFloat(best.actual) || 0;
+      return w > bw ? s : best;
+    }, prevPerf.sets[0]);
+    const repsStr = top.actualReps ? ' × ' + top.actualReps : '';
+    const summary = `${top.actual}${repsStr}${top.rpe ? ' @' + top.rpe : ''}`;
+    const srcTag = prevPerf.source ? ` (${prevPerf.source})` : '';
     h+=`<div class="collapsed-prev-summary">Last${srcTag}: ${summary}</div>`;
   }
 
@@ -5004,6 +5000,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     function prevHintHtml(si){
       if(!prevPerf||!prevPerf.sets[si]) return '';
       const ps=prevPerf.sets[si];
+      if(!ps.actual || ps.actual === '—') return '';
       const repsStr=ps.actualReps?' × '+ps.actualReps:'';
       const hint=ps.actual+repsStr+(ps.rpe?' @'+ps.rpe:'');
       return `<div class="set-prev-hint">Last: ${hint}</div>`;
@@ -7096,7 +7093,9 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
         const fallback = getSetReps(srcBlockId, srcWeekLabel, srcDayName, matchEx.name, si);
         if (fallback) reps = String(fallback);
       }
-      sets.push({actual:sl.actual||'—',rpe:sl.rpe||'',actualReps:reps,done:sl.done});
+      // Only include sets with actual logged weight
+      if (!sl.actual || sl.actual === '—') continue;
+      sets.push({actual:sl.actual,rpe:sl.rpe||'',actualReps:reps,done:sl.done});
     }
     return sets;
   }
