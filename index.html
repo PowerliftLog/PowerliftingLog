@@ -245,6 +245,15 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
 *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+/* Button utilities */
+.btn-primary { background: var(--gold); color: #0a0a0a; border: none; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; padding: 14px 24px; cursor: pointer; transition: opacity 0.15s; }
+.btn-primary:active { opacity: 0.75; }
+.btn-primary:disabled { opacity: 0.4; cursor: default; }
+.btn-secondary { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; padding: 14px 24px; cursor: pointer; transition: opacity 0.15s; }
+.btn-secondary:active { opacity: 0.75; }
+.btn-danger { background: var(--red); color: #fff; border: none; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; padding: 14px 24px; cursor: pointer; transition: opacity 0.15s; }
+.btn-danger:active { opacity: 0.75; }
 html { background: var(--bg); }
 body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 'Barlow', sans-serif; min-height: 100dvh; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom); }
 #main-content { padding-bottom: 100px; }
@@ -261,7 +270,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-done-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); background: none; border: none; cursor: pointer; padding: 4px 8px; letter-spacing: 0.02em; }
 .settings-done-btn:active { opacity: 0.6; }
 .rest-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 310; display: flex; align-items: flex-end; }
-.rest-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px 16px 0 0; padding: 20px 20px 40px; width: 100%; max-width: 480px; margin: 0 auto; border-top: 1px solid var(--sheet-border); }
+.rest-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 18px 18px 0 0; padding: 20px 20px 40px; width: 100%; max-width: 480px; margin: 0 auto; border-top: 1px solid var(--sheet-border); }
 .rest-modal-sheet::before { content: ''; display: block; width: 36px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 0 auto 16px; }
 .rest-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .rest-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; }
@@ -272,7 +281,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .rest-mode-options { display: flex; gap: 8px; }
 .rest-mode-pill { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3, rgba(255,255,255,0.06)); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; transition: all 0.15s ease; }
 .rest-mode-pill.active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
-.rest-mode-pill:active { opacity: 0.7; }
+.rest-mode-pill:active { opacity: 0.75; }
 .rest-mode-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.4; }
 .rest-dur-section { margin-bottom: 8px; }
 .rest-dur-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -323,15 +332,15 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 34px; letter-spacing: 0.02em; margin-bottom: 12px; color: var(--text-primary); }
 .upload-desc { color: var(--text-muted); font-size: 14px; line-height: 1.75; margin-bottom: 32px; max-width: 290px; }
 .upload-btn { background: var(--gold); color: #000; border: none; padding: 16px 28px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; max-width: 300px; transition: opacity 0.15s; }
-.upload-btn:active { opacity: 0.85; }
+.upload-btn:active { opacity: 0.75; }
 .upload-hint { margin-top: 20px; font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 260px; }
 .upload-divider { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 300px; margin: 16px 0; }
 .upload-divider::before, .upload-divider::after { content: ''; flex: 1; height: 1px; background: #222; }
 .upload-divider span { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid #333; padding: 13px 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.drive-btn:active { opacity: 0.85; }
+.drive-btn:active { opacity: 0.75; }
 .block-bar { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); }
-.block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.03em; color: var(--text-bright); }
+.block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.03em; color: var(--text-bright); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .block-dates { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.03em; }
 .cycle-select { background: rgba(255,255,255,0.05); color: var(--text-sub); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.04em; outline: none; max-width: 160px; cursor: pointer; }
 .maxes-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px 16px 4px; }
@@ -365,7 +374,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .metrics-score-est { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 400; color: var(--text-dim); vertical-align: middle; letter-spacing: 0; }
 .metrics-score-note { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
 .metrics-score-total { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 400; color: var(--text-dim); letter-spacing: 0; }
-.week-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; background: rgba(255,255,255,0.01); }
+.week-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none; background: rgba(255,255,255,0.01); -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); mask-image: linear-gradient(to right, black 85%, transparent 100%); }
 .week-bar::-webkit-scrollbar { display: none; }
 .week-pill { flex-shrink: 0; padding: 8px 20px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-muted); cursor: pointer; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
 .week-pill.active { background: rgba(201,168,76,0.1); color: var(--gold); border-color: rgba(201,168,76,0.6); border-width: 1.5px; box-shadow: 0 1px 8px rgba(201,168,76,0.15), inset 0 1px 0 rgba(201,168,76,0.1); }
@@ -402,7 +411,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .ex-summary-pres { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; color: var(--text-muted); letter-spacing: 0.02em; }
 .ex-summary-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .ex-expand-handle { display: flex; justify-content: center; padding: 0 0 8px; cursor: pointer; }
-.ex-expand-pill { width: 32px; height: 3px; border-radius: 2px; background: var(--text-dimmer); opacity: 0.7; transition: opacity 0.15s; }
+.ex-expand-pill { width: 40px; height: 4px; border-radius: 2px; background: var(--text-dimmer); opacity: 0.9; transition: opacity 0.15s; }
 .ex-expand-handle:active .ex-expand-pill { opacity: 1; background: var(--text-muted); }
 .ex-detail { border-top: 1px solid rgba(255,255,255,0.05); }
 .skip-btn { font-size: 12px; color: var(--text-muted); background: none; border: 1px solid #333; border-radius: 5px; padding: 8px 14px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
@@ -422,7 +431,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .exercise-check.inferred { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2); color: rgba(74,222,128,0.5); }
 .prescription { padding: 0 16px 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; color: var(--gold-data); letter-spacing: 0.03em; }
 .prescription.purple { color: var(--gold-data); }
-.sets-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 0; }
+.sets-grid { padding: 4px 16px 14px; display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
 .set-num { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; user-select: none; -webkit-user-select: none; }
@@ -449,7 +458,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .reps-modal-input:focus { border-color: rgba(201,168,76,0.5); }
 .reps-modal-actions { display: flex; gap: 10px; }
 .reps-modal-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3); color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
-.reps-modal-cancel:active { opacity: 0.7; }
+.reps-modal-cancel:active { opacity: 0.75; }
 .reps-modal-save { flex: 1; padding: 12px; border-radius: 10px; border: none; background: var(--gold); color: #1a1a1a; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
 .reps-modal-save:active { opacity: 0.8; }
 /* One-time rep tip tooltip */
@@ -528,7 +537,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .add-day-modal-btns button { flex: 1; padding: 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; }
 .add-day-modal-cancel { background: var(--surface-3); color: var(--text-sub); }
 .add-day-modal-add { background: var(--gold); color: #000; }
-.coach-note { padding: 8px 16px; background: var(--coach-note-bg); border-top: 1px solid var(--coach-note-bdr); font-size: 12px; color: #a8a850; font-style: italic; }
+.coach-note { padding: 8px 16px; background: var(--coach-note-bg); border-top: 1px solid var(--coach-note-bdr); font-size: 12px; color: var(--coach-note-text); font-style: italic; }
 .notes-section { border-top: 1px solid var(--surface-3); }
 .notes-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 16px 4px; display: flex; align-items: center; gap: 5px; }
 .notes-label svg { width: 12px; height: 12px; flex-shrink: 0; }
@@ -540,7 +549,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .calc-no-solution svg { width: 14px; height: 14px; vertical-align: middle; }
 .notes-area { padding: 0 16px 12px; }
 .notes-input { width: 100%; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 6px; color: var(--text-sub); font-family: 'Barlow', sans-serif; font-size: 13px; padding: 8px 10px; resize: none; outline: none; min-height: 36px; }
-.notes-input:focus { border-color: #333; color: var(--text-primary); }
+.notes-input:focus { border-color: var(--gold); color: var(--text-primary); }
 .notes-input::placeholder { color: var(--text-faint); }
 .lifter-prev-note { padding: 0 16px 6px; font-size: 12px; color: var(--text-sub); font-style: italic; }
 .prev-performance-src { font-size: 10px; color: #8a7a3a; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 16px 2px; }
@@ -580,7 +589,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .custom-ex-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1100; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
 .custom-ex-sheet { background: var(--modal-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--border-2); border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 20px 16px 32px; }
 .custom-ex-sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.custom-ex-sheet-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-primary); }
+.custom-ex-sheet-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-primary); }
 .custom-ex-close { background: none; border: none; color: var(--text-sub); cursor: pointer; padding: 4px; line-height: 1; font-size: 20px; }
 .custom-ex-field { margin-bottom: 14px; }
 .custom-ex-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
@@ -594,7 +603,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* Delete confirmation sheet */
 .delete-ex-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1200; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
 .delete-ex-sheet { background: var(--modal-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--border-2); border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 24px 16px 32px; }
-.delete-ex-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-primary); margin-bottom: 6px; }
+.delete-ex-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-primary); margin-bottom: 6px; }
 .delete-ex-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
 .delete-ex-btn { display: block; width: 100%; padding: 14px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; cursor: pointer; text-align: center; transition: all 0.15s; margin-bottom: 10px; }
 .delete-ex-btn.danger { background: rgba(226,44,44,0.12); border: 1px solid rgba(226,44,44,0.35); color: var(--red); }
@@ -622,7 +631,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .workout-reset-row { text-align: center; padding: 0 16px 24px; margin-top: -12px; }
 .workout-reset-btn { background: none; border: 1px solid var(--border-2); border-radius: 8px; padding: 8px 16px; color: var(--text-faint); font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
 .workout-reset-btn:hover { color: var(--text-sub); border-color: var(--text-dim); }
-.workout-reset-btn:active { transform: scale(0.97); }
+.workout-reset-btn:active { transform: scale(0.98); }
 .workout-reset-btn svg { opacity: 0.7; }
 
 /* ── Workout Preview Mode ── */
@@ -666,7 +675,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .track-btn.tracked { color: var(--gold); }
 .track-btn.is-comp { color: var(--text-dimmer); }
 .track-btn.is-comp.tracked { color: var(--gold); }
-.track-btn:active { transform: scale(1.3); }
+.track-btn:active { transform: scale(1.1); }
 .track-btn svg { width: 18px; height: 18px; display: block; }
 .track-hint { padding: 0 16px 10px; font-size: 11px; color: var(--text-dim); font-style: italic; display: flex; align-items: center; gap: 5px; }
 .track-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
@@ -867,7 +876,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
   text-transform: uppercase; cursor: pointer; text-align: center;
   transition: opacity 0.15s, transform 0.1s;
 }
-.import-confirm-btn:active { opacity: 0.85; transform: scale(0.98); }
+.import-confirm-btn:active { opacity: 0.75; }
 
 /* Import Intent Modal */
 .import-intent-card {
@@ -910,7 +919,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 
 /* Last workout card */
 .last-workout-card { cursor: pointer; transition: transform 0.15s, border-color 0.15s; position: relative; overflow: hidden; }
-.last-workout-card:active { transform: scale(0.97); }
+.last-workout-card:active { transform: scale(0.98); }
 .last-workout-card .home-card-label { color: rgba(74,222,128,0.5); }
 .last-workout-card-day { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 900; color: var(--text-bright); line-height: 1.15; margin-bottom: 2px; letter-spacing: 0.02em; }
 .last-workout-card-meta { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-bottom: 8px; }
@@ -971,7 +980,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .home-empty-icon { margin: 0 auto 20px; opacity: 0.15; }
 .home-empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--text-bright); margin-bottom: 8px; letter-spacing: 0.04em; }
 .home-empty-desc { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-faint); line-height: 1.6; margin-bottom: 24px; }
-.home-upload-btn { padding: 14px 28px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; }
+.home-upload-btn { padding: 14px 28px; background: var(--gold); border: none; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; }
 
 /* Shared modal overlay/handle */
 .checkin-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
@@ -1022,7 +1031,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .onboard-feature-label { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-bright); letter-spacing: 0.02em; }
 .onboard-feature-desc { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
 .onboard-primary-btn { width: 100%; padding: 16px; background: var(--gold); border: none; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; transition: opacity 0.15s; }
-.onboard-primary-btn:active { opacity: 0.85; }
+.onboard-primary-btn:active { opacity: 0.75; }
 .onboard-primary-btn.disabled { opacity: 0.35; pointer-events: none; }
 .onboard-skip-btn { width: 100%; padding: 12px; background: none; border: none; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); cursor: pointer; margin-top: 4px; }
 .onboard-form { text-align: left; margin-bottom: 28px; }
@@ -1186,7 +1195,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 
 /* Bottom nav */
 .bottom-nav { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: var(--surface-5); border: 1px solid var(--card-border); border-radius: 100px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; border-radius: 100px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
+.nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; border-radius: 100px; cursor: pointer; color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(201,168,76,0.14); box-shadow: inset 0 1px 0 rgba(201,168,76,0.15); }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 22px; height: 22px; fill: currentColor; }
@@ -1199,7 +1208,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .metrics-cycle-toggle { display: flex; gap: 8px; padding: 0 0 16px; }
 .metrics-toggle-pill { flex: 1; padding: 8px 12px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; border: 1px solid #222; background: transparent; color: var(--text-faint); cursor: pointer; transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .metrics-toggle-pill.active { color: var(--gold); border-color: var(--gold); border-width: 2px; }
-.metrics-toggle-pill:active { opacity: 0.7; }
+.metrics-toggle-pill:active { opacity: 0.75; }
 .metrics-drill-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.04em; color: var(--gold); }
 .metrics-cycle-hint { font-size: 11px; color: var(--text-dimmer); text-align: center; padding: 0 0 12px; font-style: italic; letter-spacing: 0.04em; }
 .program-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -1271,8 +1280,9 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .add-lift-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 17px; letter-spacing: 0.04em; cursor: pointer; margin-bottom: 16px; transition: all 0.15s; }
 .add-lift-btn:hover { border-color: #444; color: var(--text-sub); }
 .add-lift-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 300; display: flex; align-items: flex-end; }
-.add-lift-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px 16px 0 0; padding: 24px 20px 40px; width: 100%; max-width: 480px; margin: 0 auto; border-top: 1px solid var(--sheet-border); }
-.add-lift-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; margin-bottom: 16px; }
+.add-lift-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 18px 18px 0 0; padding: 24px 20px 40px; width: 100%; max-width: 480px; margin: 0 auto; border-top: 1px solid var(--sheet-border); }
+.add-lift-sheet::before { content: ''; display: block; width: 36px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 0 auto 16px; }
+.add-lift-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.04em; margin-bottom: 16px; }
 .add-lift-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 16px; padding: 12px 14px; outline: none; margin-bottom: 8px; }
 .add-lift-input:focus { border-color: var(--gold); color: var(--text-primary); }
 .add-lift-group-label { font-size: 12px; color: var(--text-faint); margin-bottom: 6px; }
@@ -1319,7 +1329,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .var-pill-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .var-pill { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .var-pill.active { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.5); color: var(--gold); }
-.var-pill:active { opacity: 0.7; }
+.var-pill:active { opacity: 0.75; }
 .legend-item { display: flex; align-items: center; gap: 6px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legend-label { font-size: 12px; color: var(--text-sub); }
@@ -1412,7 +1422,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .day-tab.done { color: rgba(74,222,128,0.6); border-bottom-color: rgba(74,222,128,0.4); }
 [data-theme="light"] .day-tab.done.active { color: #22c55e; border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 100%); }
 [data-theme="light"] .rep-tip-tooltip { background: #fffbe8; border-color: rgba(184,146,42,0.4); color: #8a6a1a; }
-[data-theme="light"] .coach-note { color: #7A7230; }
 [data-theme="light"] .skip-btn { color: var(--text-sub); border-color: var(--border); }
 [data-theme="light"] .skip-btn.active { color: var(--text-mid); background: var(--surface-3); }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
@@ -1590,7 +1599,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 .install-banner-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.4; }
 .install-banner-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
 .install-banner-btn { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 13px; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: opacity 0.15s; }
-.install-banner-btn:active { opacity: 0.7; }
+.install-banner-btn:active { opacity: 0.75; }
 .install-banner-btn.primary { background: var(--gold); color: #000; }
 .install-banner-btn.dismiss { background: transparent; color: var(--text-dim); }
 @keyframes installSlideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
@@ -1601,16 +1610,17 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.13.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">b0306a</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.14.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">b0306b</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
       <svg viewBox="0 0 28 40" fill="currentColor" width="14" height="20" aria-hidden="true"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
     </button>
   </div>
-  <div id="main-content"></div>
+  <main id="main-content"></main>
+  <div id="sr-announce" aria-live="polite" aria-atomic="true" class="sr-only"></div>
   <!-- Workout Celebration Overlay -->
-  <div id="celebration-overlay" onclick="dismissCelebration()">
+  <div id="celebration-overlay" role="dialog" aria-modal="true" aria-label="Workout Complete" onclick="dismissCelebration()">
     <div class="cel-scroll">
       <div class="cel-inner">
         <!-- Header -->
@@ -1675,7 +1685,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Format Example Modal -->
-<div class="format-example-modal" id="format-example-modal" style="display:none">
+<div class="format-example-modal" id="format-example-modal" role="dialog" aria-modal="true" aria-label="Format Example" style="display:none">
   <div class="checkin-overlay" onclick="closeFormatExample()"></div>
   <div class="format-example-sheet">
     <div class="checkin-handle"></div>
@@ -1714,12 +1724,12 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Onboarding Overlay -->
-<div class="onboarding-overlay" id="onboarding-overlay" style="display:none">
+<div class="onboarding-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome to Unrack" style="display:none">
   <div class="onboarding-container" id="onboarding-body"></div>
 </div>
 
 <!-- Build Program Overlay -->
-<div class="builder-overlay" id="builder-overlay" style="display:none">
+<div class="builder-overlay" id="builder-overlay" role="dialog" aria-modal="true" aria-label="Build Program" style="display:none">
   <div class="builder-container" id="builder-body"></div>
 </div>
 
@@ -1735,9 +1745,9 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Schedule Editor Modal -->
-<div class="add-lift-modal" id="add-lift-modal" style="display:none" onclick="if(event.target===this)closeAddLift()">
+<div class="add-lift-modal" id="add-lift-modal" role="dialog" aria-modal="true" aria-labelledby="add-lift-title" style="display:none" onclick="if(event.target===this)closeAddLift()">
   <div class="add-lift-sheet" style="max-height:85vh;overflow-y:auto">
-    <div class="add-lift-title">Manage Tracked Lifts</div>
+    <div class="add-lift-title" id="add-lift-title">Manage Tracked Lifts</div>
     <div class="track-section-label">CURRENTLY TRACKED</div>
     <div id="tracked-list-wrap"></div>
     <div class="track-section-label" style="margin-top:16px">ADD EXERCISE</div>
@@ -1751,10 +1761,10 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Program Manager Modal -->
-<div class="add-lift-modal" id="program-modal" style="display:none" onclick="if(event.target===this)closeProgramModal()">
+<div class="add-lift-modal" id="program-modal" role="dialog" aria-modal="true" aria-labelledby="program-modal-title" style="display:none" onclick="if(event.target===this)closeProgramModal()">
   <div class="add-lift-sheet" style="max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div class="add-lift-title" style="margin-bottom:0">Programs</div>
+      <div class="add-lift-title" id="program-modal-title" style="margin-bottom:0">Programs</div>
       <button onclick="closeProgramModal()" style="background:none;border:none;color:var(--text-faint);font-size:22px;cursor:pointer;padding:4px">×</button>
     </div>
     <!-- Add new section -->
@@ -1792,9 +1802,9 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Delete Confirm Modal -->
-<div class="add-lift-modal" id="delete-modal" style="display:none;z-index:400" onclick="if(event.target===this)closeDeleteModal()">
+<div class="add-lift-modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display:none;z-index:400" onclick="if(event.target===this)closeDeleteModal()">
   <div class="add-lift-sheet">
-    <div class="add-lift-title" style="color:var(--red)">Delete Program?</div>
+    <div class="add-lift-title" id="delete-modal-title" style="color:var(--red)">Delete Program?</div>
     <div style="font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:20px">
       This will permanently delete <strong id="delete-modal-name" style="color:var(--text-primary)"></strong> and all logged workout data for this cycle. This cannot be undone.
     </div>
@@ -1806,10 +1816,10 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Settings Modal -->
-<div class="add-lift-modal" id="settings-modal" style="display:none" onclick="if(event.target===this)closeSettings()">
+<div class="add-lift-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" style="display:none" onclick="if(event.target===this)closeSettings()">
   <div class="add-lift-sheet settings-sheet">
     <div class="settings-header">
-      <div class="add-lift-title">Settings</div>
+      <div class="add-lift-title" id="settings-modal-title">Settings</div>
       <button class="settings-done-btn" onclick="closeSettings()">Done</button>
     </div>
 
@@ -1957,7 +1967,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Reps Editor Modal -->
-<div class="reps-modal-overlay" id="reps-modal" style="display:none" onclick="if(event.target===this)closeRepsModal()">
+<div class="reps-modal-overlay" id="reps-modal" role="dialog" aria-modal="true" aria-labelledby="reps-modal-title" style="display:none" onclick="if(event.target===this)closeRepsModal()">
   <div class="reps-modal-sheet">
     <div class="reps-modal-title" id="reps-modal-title">SET REPS</div>
     <div class="reps-modal-prescribed" id="reps-modal-prescribed">Prescribed: 8</div>
@@ -1975,10 +1985,10 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 </div>
 
 <!-- Rest Timer Modal -->
-<div class="rest-modal-overlay" id="rest-timer-modal" style="display:none" onclick="if(event.target===this)closeRestTimerModal()">
+<div class="rest-modal-overlay" id="rest-timer-modal" role="dialog" aria-modal="true" aria-labelledby="rest-timer-modal-title" style="display:none" onclick="if(event.target===this)closeRestTimerModal()">
   <div class="rest-modal-sheet">
     <div class="rest-modal-header">
-      <div class="rest-modal-title">Rest Timer</div>
+      <div class="rest-modal-title" id="rest-timer-modal-title">Rest Timer</div>
       <button class="rest-modal-done" onclick="closeRestTimerModal()">Done</button>
     </div>
     <div class="rest-mode-section">
@@ -2216,7 +2226,8 @@ async function _bootApp() {
 // This fills in missing set keys that may not have existed in older versions
 function showSaveError(){if(window._saveErrorShown)return;window._saveErrorShown=true;const toast=document.createElement('div');toast.className='save-error-toast';toast.textContent='Storage full \u2014 some data may not be saved. Consider exporting your data.';document.body.appendChild(toast);setTimeout(()=>toast.remove(),8000);}
 
-function _showWarningToast(msg,type){const t=document.createElement('div');t.className='save-error-toast'+(type==='success'?' toast-success':type==='warn'?' toast-warn':'');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),type==='success'?4000:8000);}
+function _announce(msg){const el=document.getElementById('sr-announce');if(el){el.textContent='';requestAnimationFrame(()=>{el.textContent=msg;});}}
+function _showWarningToast(msg,type){const t=document.createElement('div');t.className='save-error-toast'+(type==='success'?' toast-success':type==='warn'?' toast-warn':'');t.textContent=msg;document.body.appendChild(t);_announce(msg);setTimeout(()=>t.remove(),type==='success'?4000:8000);}
 function loadLogs(){ try{ if(_idbReady && _idbCache['liftlog_v4']!==undefined) return _idbCache['liftlog_v4']; return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>_showWarningToast('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
 let _saveLogsTimer=null;
 function _saveLogsImmediate(){ _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
@@ -4706,6 +4717,8 @@ function render(){
     const el=document.getElementById('nav-'+s);
     if(el) el.classList.toggle('active', state.screen===s);
   });
+  const screenNames={home:'Home',workout:'Workout',metrics:'Metrics',calc:'Calculator'};
+  _announce((screenNames[state.screen]||state.screen)+' screen');
   if(state.screen==='home'){ renderHome(); return; }
   if(state.screen==='metrics'){ renderMetrics(); return; }
   if(state.screen==='calc'){ renderCalc(); return; }
@@ -5814,6 +5827,9 @@ function clearWorkout(){
   const overlay=document.createElement('div');
   overlay.id='clear-workout-overlay';
   overlay.className='delete-ex-overlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Clear Workout Data');
   overlay.onclick=(e)=>{if(e.target===overlay)overlay.remove();};
   overlay.innerHTML=`
   <div class="delete-ex-sheet">
@@ -5926,6 +5942,7 @@ function toggleSet(key){
   state.logs[key]={...l, actual: actual, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
   _prCache = null; // Invalidate PR cache on set toggle
+  if (nowDone && navigator.vibrate) navigator.vibrate(10);
   if (nowDone) _maybeAdvanceWeek();
   // Targeted DOM updates instead of full render() — prevents scroll jump
   updateSetCheckmark(key, nowDone);
@@ -7025,6 +7042,7 @@ function autoCompleteExercise(setKey){
   if(allDone&&!state.logs[exKey]?.done){
     state.logs[exKey]={...(state.logs[exKey]||{}),done:true};
     saveLogs();
+    if (navigator.vibrate) navigator.vibrate(25);
     // Update main exercise checkmark without full render
     updateExerciseCheckmark(exKey,true);
     // Check if whole day is now resolved — activate finish button and scroll it into view
@@ -8888,7 +8906,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.13.0';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.14.0';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
@@ -11103,6 +11121,9 @@ function _openCustomExModal(existingKey, existingEx) {
   const overlay = document.createElement('div');
   overlay.className = 'custom-ex-overlay';
   overlay.id = 'custom-ex-overlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Custom Exercise');
   overlay.onclick = (e) => { if (e.target === overlay) closeCustomExModal(); };
 
   overlay.innerHTML = `
