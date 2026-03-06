@@ -326,6 +326,15 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-athlete-maxes-row { display: flex; gap: 8px; }
 .settings-athlete-maxes-col { flex: 1; text-align: center; }
 .settings-athlete-maxes-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.settings-row-btn--static { cursor: default; }
+.settings-rest-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--gold); letter-spacing: 0.04em; }
+.settings-unit-pill-group { display: flex; gap: 4px; }
+.settings-unit-pill--sm { padding: 6px 12px; font-size: 12px; }
+.settings-backup-time { font-size: 11px; color: var(--text-dim); padding: 4px 18px 0; display: none; }
+.settings-section-label--theme { margin-top: auto; padding-top: 24px; }
+.settings-reset-btn { margin-top: 16px; }
+.settings-footer { text-align: center; padding-top: 20px; padding-bottom: 8px; }
+.settings-footer-link { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px; }
 .settings-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 6px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .settings-row-btn:active { border-color: var(--gold); background: var(--surface-3); }
 .settings-row-left { display: flex; align-items: center; gap: 10px; font-family: 'Barlow', sans-serif; font-size: 15px; color: var(--text-mid); }
@@ -1922,28 +1931,28 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <button class="settings-athlete-save" onclick="saveAthleteProfile()">Save</button>
     </div>
-    <button id="scores-settings-row" class="settings-row-btn" onclick="toggleScoresSetting()" style="cursor:pointer">
+    <button id="scores-settings-row" class="settings-row-btn" onclick="toggleScoresSetting()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         DOTS / Wilks Scores
       </div>
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
-    <button class="settings-row-btn" onclick="openRestTimerModal()" style="cursor:pointer">
+    <button class="settings-row-btn" onclick="openRestTimerModal()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Rest Timer
       </div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.04em" id="rest-timer-mode-label">Auto</div>
+      <div class="settings-rest-label" id="rest-timer-mode-label">Auto</div>
     </button>
-    <div class="settings-row-btn" style="cursor:default" id="calc-display-unit-row">
+    <div class="settings-row-btn settings-row-btn--static" id="calc-display-unit-row">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/></svg>
         Plate Calculator
       </div>
-      <div style="display:flex;gap:4px">
-        <button class="settings-athlete-gender-btn" id="calc-disp-kg" onclick="setCalcDisplayUnit('kg')" style="padding:6px 12px;font-size:12px">KG</button>
-        <button class="settings-athlete-gender-btn" id="calc-disp-lbs" onclick="setCalcDisplayUnit('lbs')" style="padding:6px 12px;font-size:12px">LBS</button>
+      <div class="settings-unit-pill-group">
+        <button class="settings-athlete-gender-btn settings-unit-pill--sm" id="calc-disp-kg" onclick="setCalcDisplayUnit('kg')">KG</button>
+        <button class="settings-athlete-gender-btn settings-unit-pill--sm" id="calc-disp-lbs" onclick="setCalcDisplayUnit('lbs')">LBS</button>
       </div>
     </div>
 
@@ -1962,7 +1971,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <div id="last-backup-time" style="font-size:11px;color:var(--text-dim);padding:4px 18px 0;display:none"></div>
+    <div id="last-backup-time" class="settings-backup-time"></div>
     <button class="settings-row-btn" onclick="closeSettings();openExportFromSettings()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1978,7 +1987,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
-    <h3 class="settings-section-label" style="margin-top:auto;padding-top:24px">Theme</h3>
+    <h3 class="settings-section-label settings-section-label--theme">Theme</h3>
     <div class="settings-theme-pills" id="settings-theme-pills">
       <button class="settings-theme-pill" data-theme="dark" onclick="applyTheme('dark');updateSettingsThemePills()">Dark</button>
       <button class="settings-theme-pill" data-theme="navy" onclick="applyTheme('navy');updateSettingsThemePills()">Navy</button>
@@ -1986,15 +1995,15 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     </div>
 
     <!-- TODO: Remove before public release -->
-    <button class="settings-row-btn" onclick="resetOnboarding()" style="cursor:pointer;margin-top:16px">
+    <button class="settings-row-btn settings-reset-btn" onclick="resetOnboarding()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Reset Onboarding (Testing)
       </div>
     </button>
 
-    <div style="text-align:center;padding-top:20px;padding-bottom:8px">
-      <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px">Privacy Policy</a>
+    <div class="settings-footer">
+      <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
   </div>
 </div>
@@ -9619,6 +9628,8 @@ const EXERCISE_DB = [
   { name:'Barbell Hack Squat', group:'legs', equip:'barbell' },
   { name:'Landmine Squat', group:'legs', equip:'barbell' },
   { name:'Deadlift', group:'legs', equip:'barbell' },
+  { name:'Barbell Deadlift', group:'legs', equip:'barbell' },
+  { name:'Conventional Deadlift', group:'legs', equip:'barbell' },
   { name:'Sumo Deadlift', group:'legs', equip:'barbell' },
   { name:'Romanian Deadlift', group:'legs', equip:'barbell' },
   { name:'Stiff Leg Deadlift', group:'legs', equip:'barbell' },
@@ -10294,12 +10305,16 @@ function _builderUpdateRxPreview(rx) {
   }
   const simple = parseSimple(rx);
   if (simple) {
-    el.innerHTML = `<span class="rx-preview-ok">✓ ${simple.sets} sets × ${simple.reps} reps</span>`;
+    const wm = rx.match(/@\s*(?:RPE\s*)?([\d.%\-]+)/i);
+    const wt = wm ? (wm[0].toLowerCase().includes('rpe') ? ` @ RPE ${wm[1]}` : ` @ ${wm[1]}`) : '';
+    el.innerHTML = `<span class="rx-preview-ok">✓ ${simple.sets} sets × ${simple.reps} reps${wt}</span>`;
     return;
   }
   const ranged = parseRangeSet(rx);
   if (ranged) {
-    el.innerHTML = `<span class="rx-preview-ok">✓ ${ranged.sets} sets × ${ranged.reps} reps</span>`;
+    const wm = rx.match(/@\s*(?:RPE\s*)?([\d.%\-]+)/i);
+    const wt = wm ? (wm[0].toLowerCase().includes('rpe') ? ` @ RPE ${wm[1]}` : ` @ ${wm[1]}`) : '';
+    el.innerHTML = `<span class="rx-preview-ok">✓ ${ranged.sets} sets × ${ranged.reps} reps${wt}</span>`;
     return;
   }
   el.innerHTML = `<span class="rx-preview-warn">Will show as text only — no set cards</span>`;
@@ -10519,7 +10534,7 @@ function _builderSave() {
   saveNav();
 
   // Auto-register tracked lifts for comp lifts
-  if (typeof autoRegisterCompLifts === 'function') autoRegisterCompLifts();
+  if (typeof autoRegisterCompLifts === 'function') autoRegisterCompLifts([block]);
 
   // Close wizard
   _closeBuilder();
