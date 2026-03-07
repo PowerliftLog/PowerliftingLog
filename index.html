@@ -496,7 +496,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-input { background: var(--surface-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 8px 6px; min-height: 40px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
-.set-input::placeholder { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+.set-input::placeholder { color: var(--text-muted); font-size: 11px; font-weight: 400; font-style: italic; opacity: 0.6; }
 .prescribed-label { width: 80px; text-align: center; font-size: 12px; color: var(--text-dimmer); }
 .set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
@@ -1037,6 +1037,41 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-summary-stat-val .unit { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
 .week-summary-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 .week-summary-empty { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-dim); text-align: center; padding: 8px 0; }
+
+/* ── Program Overview Card ── */
+.program-overview { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.program-overview-header { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 16px 10px; }
+.program-overview-title { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); }
+.program-overview-dates { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-dim); }
+.program-overview-stats { display: flex; padding: 0 16px 14px; }
+.program-overview-stat { flex: 1; text-align: center; position: relative; }
+.program-overview-stat::after { content: ''; position: absolute; right: 0; top: 2px; bottom: 2px; width: 1px; background: var(--border-2); }
+.program-overview-stat:last-child::after { display: none; }
+.program-overview-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+.program-overview-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+.program-overview-weeks { display: flex; border-top: 1px solid var(--border-2); }
+.program-overview-week { flex: 1; padding: 10px 6px; text-align: center; border-right: 1px solid var(--border-2); cursor: pointer; transition: background 0.15s; }
+.program-overview-week:last-child { border-right: none; }
+.program-overview-week.current { background: rgba(var(--gold-rgb), 0.05); }
+.program-overview-week-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-dim); }
+.program-overview-week.current .program-overview-week-label { color: var(--gold); }
+.program-overview-week.done .program-overview-week-label { color: var(--green); }
+.program-overview-week-progress { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+.program-overview-week.current .program-overview-week-progress { color: var(--text-muted); }
+.program-overview-week-bar { height: 3px; background: var(--border-2); border-radius: 2px; margin: 6px 8px 0; overflow: hidden; }
+.program-overview-week.current .program-overview-week-bar { background: rgba(var(--gold-rgb), 0.15); }
+.program-overview-week-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.program-overview-week-bar-fill.in-progress { background: var(--gold); }
+.program-overview-week-bar-fill.complete { background: var(--green); }
+.program-overview-split { border-top: 1px solid var(--border-2); padding: 10px 16px; }
+.program-overview-split-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+.program-overview-split-row { display: flex; align-items: center; padding: 6px 0; gap: 10px; border-bottom: 1px solid var(--border-2); }
+.program-overview-split-row:last-child { border-bottom: none; }
+.program-overview-split-day { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-sub); width: 78px; flex-shrink: 0; }
+.program-overview-split-day.next { color: var(--gold); }
+.program-overview-split-day.done { color: var(--green); }
+.program-overview-split-exercises { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-dim); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.program-overview-split-count { font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 
 /* No-program state */
 .home-empty { text-align: center; padding: 60px 24px; }
@@ -1676,7 +1711,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26k</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26m</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -4451,6 +4486,87 @@ function renderWeekCard() {
     + '</div>';
 }
 
+function renderProgramOverview() {
+  const block = state.activeBlock;
+  if (!block || !block.weeks || block.weeks.length === 0) return '';
+
+  const nw = findNextWorkout(block);
+  const currentWeekIdx = nw.weekIdx;
+  const currentDayIdx = nw.dayIdx;
+  const totalWeeks = block.weeks.length;
+  const daysPerWeek = block.weeks[0]?.days?.length || 0;
+  const totalSessions = block.weeks.reduce((sum, w) => sum + (w.days?.length || 0), 0);
+
+  // Count unique exercises across the block
+  const exSet = new Set();
+  block.weeks.forEach(w => (w.days || []).forEach(d => (d.exercises || []).forEach(ex => exSet.add(ex.name))));
+  const totalExercises = exSet.size;
+
+  // Stats strip
+  let h = '<div class="program-overview">';
+  h += '<div class="program-overview-header">';
+  h += '<div class="program-overview-title">' + escH(displayBlockName(block.name) || 'Program') + '</div>';
+  if (block.dateRange) h += '<div class="program-overview-dates">' + escH(block.dateRange) + '</div>';
+  h += '</div>';
+
+  h += '<div class="program-overview-stats">';
+  h += '<div class="program-overview-stat"><div class="program-overview-stat-val">' + totalWeeks + '</div><div class="program-overview-stat-label">Weeks</div></div>';
+  h += '<div class="program-overview-stat"><div class="program-overview-stat-val">' + daysPerWeek + '</div><div class="program-overview-stat-label">Days / Wk</div></div>';
+  h += '<div class="program-overview-stat"><div class="program-overview-stat-val">' + totalSessions + '</div><div class="program-overview-stat-label">Sessions</div></div>';
+  h += '<div class="program-overview-stat"><div class="program-overview-stat-val">' + totalExercises + '</div><div class="program-overview-stat-label">Exercises</div></div>';
+  h += '</div>';
+
+  // Week progress blocks
+  h += '<div class="program-overview-weeks">';
+  for (let wi = 0; wi < totalWeeks; wi++) {
+    const week = block.weeks[wi];
+    const days = week.days || [];
+    const doneCount = days.filter(d => isDayComplete(block, week, d)).length;
+    const totalDays = days.length;
+    const pct = totalDays > 0 ? Math.round((doneCount / totalDays) * 100) : 0;
+    const isCurrent = wi === currentWeekIdx;
+    const isDone = doneCount === totalDays && totalDays > 0;
+    let cls = 'program-overview-week';
+    if (isCurrent && !nw.allDone) cls += ' current';
+    if (isDone) cls += ' done';
+
+    const fillCls = isDone ? 'complete' : (doneCount > 0 ? 'in-progress' : '');
+
+    h += '<div class="' + cls + '" onclick="state.activeWeek=' + wi + ';state.activeDay=0;setScreen(\'workout\');saveNav();render()">';
+    h += '<div class="program-overview-week-label">' + escH(week.label || ('W' + (wi + 1))) + '</div>';
+    h += '<div class="program-overview-week-progress">' + (doneCount > 0 || isCurrent ? doneCount + ' / ' + totalDays : totalDays + ' days') + '</div>';
+    h += '<div class="program-overview-week-bar"><div class="program-overview-week-bar-fill ' + fillCls + '" style="width:' + pct + '%"></div></div>';
+    h += '</div>';
+  }
+  h += '</div>';
+
+  // Training split — show current week's days
+  const splitWeek = block.weeks[currentWeekIdx] || block.weeks[0];
+  if (splitWeek && splitWeek.days && splitWeek.days.length > 0) {
+    h += '<div class="program-overview-split">';
+    h += '<div class="program-overview-split-label">Training Split</div>';
+    for (let di = 0; di < splitWeek.days.length; di++) {
+      const day = splitWeek.days[di];
+      const exNames = (day.exercises || []).slice(0, 4).map(ex => ex.displayName || ex.name);
+      const preview = exNames.join(', ') + (day.exercises.length > 4 ? '…' : '');
+      const dayDone = isDayComplete(block, splitWeek, day);
+      const isNext = !nw.allDone && currentWeekIdx === (block._currentWeekIdx || 0) && di === currentDayIdx;
+      let dayCls = 'program-overview-split-day';
+      if (isNext) dayCls += ' next';
+      else if (dayDone) dayCls += ' done';
+      h += '<div class="program-overview-split-row">';
+      h += '<div class="' + dayCls + '">' + escH(day.name) + '</div>';
+      h += '<div class="program-overview-split-exercises">' + escH(preview) + '</div>';
+      h += '<div class="program-overview-split-count">' + (day.exercises?.length || 0) + '</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+
+  h += '</div>';
+  return h;
+}
+
 function renderLastWorkoutCard() {
   const block = state.activeBlock;
   if (!block) return '';
@@ -4700,11 +4816,15 @@ function renderHome() {
     </div>`;
   }
 
-  // ── Middle row: Last Workout + Week Ring ──
-  const weekCardHtml = renderWeekCard();
+  // ── Middle row: Last Workout + Week Ring (only when workouts exist) ──
   const lastWorkoutHtml = (nwInfo && !nwInfo.allDone) ? renderLastWorkoutCard() : '';
+  const hasCompletedWorkouts = !!getLastCompletedWorkout();
+  const weekCardHtml = hasCompletedWorkouts ? renderWeekCard() : '';
   const middleRowHtml = (lastWorkoutHtml || weekCardHtml)
     ? `<div class="home-row">${lastWorkoutHtml}${weekCardHtml}</div>` : '';
+
+  // ── Program Overview card (replaces "This Week" when no workouts done) ──
+  const programOverviewHtml = !hasCompletedWorkouts ? renderProgramOverview() : '';
 
   // ── Weekly Summary card ──
   const weekSummary = getWeeklySummary();
@@ -4769,6 +4889,7 @@ function renderHome() {
     ${updateBannerHtml}
     ${heroHtml}
     ${middleRowHtml}
+    ${programOverviewHtml}
     ${weeklySummaryHtml}
   </div>`;
 
@@ -5036,7 +5157,11 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       return sets.map(s=>s.isRpe?`${s.reps}@${s.weight}`:`${s.reps}@${s.weight}${unitLabel(true)}`).join(' · ');
     }
     if(simple) return `${simple.sets}×${simple.reps}`;
-    if(ranged) return `${ranged.sets}×${ranged.reps}`;
+    if(ranged) {
+      const setsLabel = ranged.maxSets ? `${ranged.sets}–${ranged.maxSets}` : `${ranged.sets}`;
+      const weightLabel = ranged.weight ? (ranged.isRpe ? ` @ ${ranged.weight}` : ` @ ${ranged.weight}${unitLabel(true)}`) : '';
+      return `${setsLabel}×${ranged.reps}${weightLabel}`;
+    }
     if(bareWithRounds) return `${bareWithRounds.sets>1?bareWithRounds.sets+'×':''}${bareWithRounds.reps}`;
     if(pres) return pres;
     return '';
@@ -5049,6 +5174,8 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       const w = sets[si].weight;
       if (w && !sets[si].isRpe) return w;
     }
+    // 1b) Try ranged prescription weight (e.g. "3-5x1 (405)")
+    if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
     // 2) Try previous session
     if (prevPerf && prevPerf.sets[si] && prevPerf.sets[si].actual && prevPerf.sets[si].actual !== '—') {
       return prevPerf.sets[si].actual;
@@ -5233,7 +5360,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       }
       h+=`</div>`;
     } else if(pres&&ranged){
-      h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
+      h+=`<div class="sets-grid">`;
       for(let si=0;si<ranged.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         const isOpen=ranged.reps==='open';

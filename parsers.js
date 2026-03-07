@@ -3875,6 +3875,8 @@ function deduplicateExerciseNames(blocks) {
 // ── SET PARSERS ───────────────────────────────────────────────────────────────
 function parseSets(pres){
   if(!pres) return [];
+  // Bail out if prescription is a set range like "3-5x1 (405)" — let parseRangeSet handle it
+  if(/^\d+[\-–]\d+\s*x/i.test(pres.trim())) return [];
   const sets=[]; const pat=/(\d+x)?(\d+)\s*\(([^)]+)\)/g; let m;
   while((m=pat.exec(pres))!==null){
     const mult=m[1]?parseInt(m[1]):1;
@@ -3895,14 +3897,25 @@ function parseSimple(pres){
 
 function parseRangeSet(pres){
   if(!pres) return null;
-  const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
+  // Range with optional weight: "3-5x1 (405)" or "3-5x1"
+  const mw=pres.match(/^(\d+)[\-–](\d+)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)\s*\(([^)]+)\)/i);
+  if(mw){
+    const sets=parseInt(mw[1]);
+    const maxSets=parseInt(mw[2]);
+    const reps=mw[3].trim();
+    const weight=mw[4].trim();
+    const isRpe=isNaN(Number(weight));
+    return{sets,maxSets,reps,weight,isRpe};
+  }
+  const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(m){
     const sets=parseInt(m[1]);
+    const maxSets=m[2]?parseInt(m[2]):null;
     const reps=m[3].trim();
-    return{sets,reps};
+    return{sets,maxSets,reps};
   }
   const s=pres.match(/^(\d+)[\-–](\d+)\s*sets?/i);
-  if(s) return{sets:parseInt(s[1]),reps:'open'};
+  if(s) return{sets:parseInt(s[1]),maxSets:parseInt(s[2]),reps:'open'};
   return null;
 }
 
