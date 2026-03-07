@@ -6467,7 +6467,7 @@ async function onDrivePickerCallback(data) {
     }
 
     if(buffer.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
-    const wb = XLSX.read(buffer);
+    const wb = XLSX.read(buffer, { cellDates: true });
     wb._plFilename = fileName.replace(/\.\w+$/, '');
     const blocks = parseWorkbook(wb);
 
@@ -7510,7 +7510,7 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
   try{
     const data=await file.arrayBuffer();
     if(data.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
-    const wb=XLSX.read(data);
+    const wb=XLSX.read(data, { cellDates: true });
     wb._plFilename = file.name;
     const blocks=parseWorkbook(wb);
     if(!blocks||blocks.length===0){ openColumnMapper(wb); return; }

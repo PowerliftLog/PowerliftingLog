@@ -276,6 +276,36 @@ function spellCorrectExerciseName(name){
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const DAYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
+// Fix Excel date serialization: when a cell like "6-8" is stored as a date,
+// cell.v becomes a serial number (e.g. 45816). Use cell.w (formatted text) instead.
+function fixDateSerials(ws, rows) {
+  if (!ws || !ws['!ref']) return rows;
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let r = 0; r < rows.length; r++) {
+    if (!rows[r]) continue;
+    for (let c = 0; c < rows[r].length; c++) {
+      const val = rows[r][c];
+      // With cellDates:true, date-encoded cells become Date objects in the rows array
+      if (val instanceof Date) {
+        const cellAddr = XLSX.utils.encode_cell({r: r + range.s.r, c: c + range.s.c});
+        const cell = ws[cellAddr];
+        // Use cell.w (formatted text like "6-8") if available, otherwise stringify
+        rows[r][c] = (cell && cell.w) ? cell.w : String(val);
+      }
+      // Keep the old number check as a safety net (in case cellDates misses something)
+      else if (typeof val === 'number' && val > 40000) {
+        const cellAddr = XLSX.utils.encode_cell({r: r + range.s.r, c: c + range.s.c});
+        const cell = ws[cellAddr];
+        if (cell && cell.w && /^\d+[-\/]\d+$/.test(cell.w)) {
+          rows[r][c] = cell.w;
+        }
+      }
+    }
+  }
+  return rows;
+}
+
 // ── FORMAT DETECTION ──────────────────────────────────────────────────────────
 function detectFormat(wb){
   try{
@@ -831,6 +861,46 @@ function parseBSheet(sn,rows){
 
 
 
+// ── POST-PROCESSING UTILITIES ─────────────────────────────────────────────────
+
+function _fixParenTypos(pres) {
+  if (!pres) return pres;
+  return pres.replace(/(\d+)(L|MH|M|H)\)/gi, '$1($2)');
+}
+
+function _isCircuitPrefix(name) {
+  if (!name) return null;
+  const s = name.trim();
+  const m = s.match(/^(\d+)\s*rounds?[\s:]*$/i) ||
+            s.match(/^(\d+)\s*circuits?[\s:]*$/i) ||
+            s.match(/^(\d+)\s*sets?\s+of[\s:]*$/i);
+  if (m) return s.replace(/[\s:]+$/, '').trim();
+  if (/^superset[\s:]*$/i.test(s)) return 'superset';
+  if (/^giant\s*set[\s:]*$/i.test(s)) return 'giant set';
+  if (/^circuit[\s:]*$/i.test(s)) return 'circuit';
+  return null;
+}
+
+function _isCoachInstruction(name) {
+  if (!name) return false;
+  const s = name.trim();
+  if (/^\(.*\)$/.test(s)) return true;
+  if (/^(goal|note:|remember|focus on)\b/i.test(s)) return true;
+  const words = s.split(/\s+/);
+  if (words.length >= 4 && s.endsWith('.') && !/\d+x\d+/i.test(s) && !/\d+\([^)]+\)/.test(s)) return true;
+  return false;
+}
+
+function _isSectionHeader(name, pres) {
+  if (!name) return false;
+  const s = name.trim();
+  if (pres && pres.trim()) return false;
+  if (/^-+.+-+$/.test(s)) return true;
+  if (/^=+.+=+$/.test(s)) return true;
+  if (/^\*+.+\*+$/.test(s)) return true;
+  return false;
+}
+
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
 function parseWorkbook(wb){
   const fmt = detectFormat(wb);
@@ -857,6 +927,125 @@ function parseWorkbook(wb){
   else if (fmt === 'C') blocks = parseCAutoFormat(wb);
   else if (fmt === 'D') blocks = parseD(wb);
   else blocks = parseB(wb);
+
+  // ── Post-processing (all fixes apply to ALL parser formats) ──────────────
+
+  if (blocks && Array.isArray(blocks)) {
+
+    // Fix 1: Duplicate Block Name Detection
+    if (blocks.length > 1) {
+      const nameCount = {};
+      for (const b of blocks) nameCount[b.name] = (nameCount[b.name] || 0) + 1;
+      const hasDupes = Object.values(nameCount).some(c => c > 1);
+      if (hasDupes && blocks.length === wb.SheetNames.length) {
+        const sheetNameCount = {};
+        for (const sn of wb.SheetNames) sheetNameCount[sn] = (sheetNameCount[sn] || 0) + 1;
+        const sheetNamesUnique = Object.values(sheetNameCount).every(c => c === 1);
+        if (sheetNamesUnique) {
+          for (let i = 0; i < blocks.length; i++) {
+            blocks[i].name = wb.SheetNames[i];
+          }
+        }
+      }
+      // Fallback: append suffix for any remaining duplicates
+      const seen = {};
+      for (const b of blocks) {
+        seen[b.name] = (seen[b.name] || 0) + 1;
+        if (seen[b.name] > 1) {
+          b.name = b.name + ' (' + seen[b.name] + ')';
+        }
+      }
+    }
+
+    // Fixes 2–5: Exercise-level post-processing
+    for (const block of blocks) {
+      if (!block.weeks) continue;
+      for (const week of block.weeks) {
+        if (!week.days) continue;
+        for (const day of week.days) {
+          if (!day.exercises) continue;
+
+          // Fix 3: Paren typos on all prescriptions
+          for (const ex of day.exercises) {
+            if (ex.prescription) ex.prescription = _fixParenTypos(ex.prescription);
+          }
+
+          // Fixes 2, 4, 5: Filter and restructure exercises
+          const filtered = [];
+          let circuitLabel = null;
+
+          for (let i = 0; i < day.exercises.length; i++) {
+            const ex = day.exercises[i];
+            const name = (ex.name || '').trim();
+            const pres = (ex.prescription || '').trim();
+
+            // Fix 5: Section headers — remove
+            if (_isSectionHeader(name, pres)) {
+              continue;
+            }
+
+            // Fix 2: Circuit prefix — remove, capture label
+            const prefix = _isCircuitPrefix(name);
+            if (prefix && !pres) {
+              circuitLabel = prefix;
+              continue;
+            }
+
+            // Fix 4: Coach instructions — remove, attach to adjacent exercise
+            if (_isCoachInstruction(name) && !pres) {
+              if (filtered.length > 0) {
+                const prev = filtered[filtered.length - 1];
+                prev.note = prev.note ? prev.note + '; ' + name : name;
+              }
+              continue;
+            }
+
+            // Fix 2: Extract embedded rep-range from exercise name
+            if (!pres) {
+              const rangeMatch = name.match(/^(\d+[-\u2013]\d+)\s+(.+)$/);
+              if (rangeMatch) {
+                ex.prescription = rangeMatch[1];
+                ex.name = rangeMatch[2].trim();
+              }
+            }
+
+            // Fix 2: Apply circuit context (from removed prefix or supersetGroup)
+            const effectiveCircuit = circuitLabel || (ex.supersetGroup && !pres ? ex.supersetGroup.label : null);
+            if (effectiveCircuit && !pres) {
+              if (!ex.note || !ex.note.includes(effectiveCircuit)) {
+                ex.note = ex.note ? effectiveCircuit + '; ' + ex.note : effectiveCircuit;
+              }
+            }
+
+            // Reset circuit label when hitting an exercise that already had a prescription
+            if (pres) {
+              circuitLabel = null;
+            }
+
+            filtered.push(ex);
+          }
+
+          day.exercises = filtered;
+        }
+      }
+    }
+
+    // Normalize null fields to empty strings across all blocks
+    for (const block of blocks) {
+      if (!block.weeks) continue;
+      for (const week of block.weeks) {
+        if (!week.days) continue;
+        for (const day of week.days) {
+          if (!day.exercises) continue;
+          for (const ex of day.exercises) {
+            if (ex.prescription == null) ex.prescription = '';
+            if (ex.note == null) ex.note = '';
+            if (ex.loggedWeight == null) ex.loggedWeight = '';
+          }
+        }
+      }
+    }
+  }
 
   return blocks;
 }
@@ -1999,6 +2188,7 @@ function parseCAutoFormat(wb) {
   for (const sn of wb.SheetNames) {
     try {
       const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
+      fixDateSerials(wb.Sheets[sn], rawRows);
       const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
       const week = parseCAutoSheet(sn, rows);
       if (week) blocks.push(week);
@@ -2006,14 +2196,15 @@ function parseCAutoFormat(wb) {
   }
   if (blocks.length === 0) return [];
 
-  const firstRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null})
-    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+  const firstRawRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null});
+  fixDateSerials(wb.Sheets[wb.SheetNames[0]], firstRawRows);
+  const firstRows = firstRawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
   const meta = extractCAutoMeta(firstRows);
 
   const blockName = meta.blockName || wb._plFilename || 'Program';
   const id = 'c_' + blockName.replace(/\s+/g,'_').substring(0,30) + '_' + Date.now();
   return [{
-    id, name: blockName, weeks: blocks, athlete: meta.athlete || '',
+    id, name: blockName, format: 'C', weeks: blocks, athlete: meta.athlete || '',
     maxes: meta.maxes || {}, dateRange: meta.dateRange || '',
     startDate: meta.startDate || null
   }];
@@ -2346,7 +2537,7 @@ function parseF_stride3(wb) {
           const s = String(v).trim();
           if (DAYS.some(dd => s.toLowerCase() === dd || s.toLowerCase().startsWith(dd + ' '))) continue;
           if (/^day\s*\d/i.test(s)) continue;
-          if (/[a-zA-Z]{2,}/.test(s) && !/^(Week|Exercise)/i.test(s)) { exName = s; break; }
+          if (/[a-zA-Z]{2,}/.test(s) && !/^(Week|Exercise|Sets?|Reps?|Weight|Notes?|Load|Percentage)$/i.test(s)) { exName = s; break; }
         }
         let hasData = false;
         for (const g of weekColGroups) {
@@ -2395,20 +2586,28 @@ function parseF_stride3(wb) {
           if (w >= ex.weekSets.length) continue;
           const sets = ex.weekSets[w];
           if (sets.length === 0) continue;
-          // Determine exercise name: use per-week name if available
-          const useName = (sets[0].weekExName && /[a-zA-Z]{2,}/.test(sets[0].weekExName) && !/^(Exercise|Week)/i.test(sets[0].weekExName))
-            ? sets[0].weekExName : ex.name;
-          const presParts = [];
+          // Group sets by resolved weekExName to handle rows with different exercises per week
+          const _resolveName = (s) => (s.weekExName && /[a-zA-Z]{2,}/.test(s.weekExName) && !/^(Exercise|Week)/i.test(s.weekExName))
+            ? s.weekExName : ex.name;
+          const nameGroups = new Map();
           for (const s of sets) {
-            const sc = s.setsNum > 0 ? s.setsNum : 1;
-            if (s.weight != null && s.weight > 0 && s.reps) {
-              presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')');
-            } else if (s.reps) {
-              presParts.push(sc + 'x' + s.reps);
-            }
+            const nm = _resolveName(s);
+            if (!nameGroups.has(nm)) nameGroups.set(nm, []);
+            nameGroups.get(nm).push(s);
           }
-          if (presParts.length === 0) continue;
-          exercises.push({name: useName, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: ''});
+          for (const [useName, groupSets] of nameGroups) {
+            const presParts = [];
+            for (const s of groupSets) {
+              const sc = s.setsNum > 0 ? s.setsNum : 1;
+              if (s.weight != null && s.weight > 0 && s.reps) {
+                presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')');
+              } else if (s.reps) {
+                presParts.push(sc + 'x' + s.reps);
+              }
+            }
+            if (presParts.length === 0) continue;
+            exercises.push({name: useName, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: ''});
+          }
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
       }
@@ -2419,7 +2618,7 @@ function parseF_stride3(wb) {
   }
 
   if (allWeeks.length === 0) return null;
-  return [{name: blockName, weeks: allWeeks, format: 'F'}];
+  return [{id: 'F_' + (blockName || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: blockName, weeks: allWeeks, format: 'F'}];
 }
 
 // F2: stride-15 — nested exercises per week (531 Esl3fko)
@@ -2510,7 +2709,7 @@ function parseF_stride15(wb) {
       }
     }
 
-    if (allWeeks.length > 0) return [{name: sn, weeks: allWeeks}];
+    if (allWeeks.length > 0) return [{id: 'F_' + (sn || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: sn, format: 'F', weeks: allWeeks}];
   }
   return null;
 }
@@ -2610,7 +2809,7 @@ function parseF_stride6(wb) {
       if (days.length > 0) allWeeks.push({label: 'Week ' + wk, days});
     }
 
-    if (allWeeks.length > 0) return [{name: sn || 'Training Program', weeks: allWeeks}];
+    if (allWeeks.length > 0) return [{id: 'F_' + (sn || 'Training_Program').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: sn || 'Training Program', format: 'F', weeks: allWeeks}];
   }
   return null;
 }
@@ -2712,7 +2911,7 @@ function parseF_pctLoad(wb) {
   }
 
   if (allWeeks.length === 0) return null;
-  return [{name: blockName, weeks: allWeeks}];
+  return [{id: 'F_' + (blockName || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: blockName, format: 'F', weeks: allWeeks}];
 }
 
 // F3: stride-1 — single column per week (Madcow 5x5)
@@ -2835,7 +3034,7 @@ function parseF_stride1(wb) {
       if (weekDays.length > 0) allWeeks.push({label: weekColumns[w].label, days: weekDays});
     }
 
-    if (allWeeks.length > 0) return [{name: sn, weeks: allWeeks}];
+    if (allWeeks.length > 0) return [{id: 'F_' + (sn || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: sn, format: 'F', weeks: allWeeks}];
   }
   return null;
 }
@@ -3031,7 +3230,7 @@ function parseF_coach(wb) {
   }
 
   if (allWeeks.length === 0) return null;
-  return [{name: blockName, weeks: allWeeks, format: 'F'}];
+  return [{id: 'F_' + (blockName || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: blockName, weeks: allWeeks, format: 'F'}];
 }
 
 // ── FORMAT G DETECTION (Sheiko numbered exercises) ───────────────────────────
@@ -3140,6 +3339,8 @@ function parseG(wb) {
               });
             }
           } else if (currentEx && (colC != null || colD != null || colE != null)) {
+            // Skip volume/tonnage summary rows: colB names a lift but colC has no percentage
+            if (colB != null && String(colB).trim() && colC == null) continue;
             // Continuation row for current exercise
             currentEx.sets.push({
               pct: typeof colC === 'number' ? colC : null,
@@ -3163,7 +3364,8 @@ function parseG(wb) {
   }
 
   if (allWeeks.length === 0) return parseB(wb);
-  return [{name: blockName, format: 'G', weeks: allWeeks}];
+  const maxes = _extractMaxesFromSheet(wb);
+  return [{id: 'G_' + (blockName || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: blockName, format: 'G', weeks: allWeeks, maxes}];
 }
 
 function _gBuildExercise(ex) {
@@ -3207,6 +3409,7 @@ function parseD(wb) {
     if (skipSheets.has(sn)) continue;
     const ws = wb.Sheets[sn];
     const rawRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    fixDateSerials(ws, rawRows);
     const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
     if (!rows.length) continue;
 
@@ -4414,6 +4617,7 @@ function getCellValue(ws, cellAddr) {
   try {
     if (!ws[cellAddr]) return null;
     const cell = ws[cellAddr];
+    if (cell.v instanceof Date) return cell.w || String(cell.v);
     return cell.v !== undefined ? cell.v : null;
   } catch (e) {
     return null;
@@ -5352,11 +5556,12 @@ function _classifyCandito(wb) {
 // L helpers
 function _lGetCellVal(ws, addr) {
   const c = ws[addr];
-  return c ? c.v : null;
+  if (!c) return null;
+  return (c.v instanceof Date) ? (c.w || String(c.v)) : c.v;
 }
 
 function _lIsDateSerial(v) {
-  return typeof v === 'number' && v > 40000 && v < 50000;
+  return (v instanceof Date) || (typeof v === 'number' && v > 40000 && v < 50000);
 }
 
 function _lParseReps(text) {
@@ -5516,6 +5721,7 @@ function _parseL_benchHybrid(wb) {
       const rpe = String(row[3] || '').trim();
       const sets = typeof row[4] === 'number' ? Math.round(row[4]) : null;
       let reps = row[5];
+      if (reps instanceof Date) reps = null;
       if (typeof reps === 'number' && reps > 1000) reps = null;
       if (typeof reps === 'number') reps = Math.round(reps);
       if (!sets && !reps) continue;
@@ -6936,7 +7142,7 @@ function _pGetCell(sheet, row, col) {
   if (!sheet || row < 0 || col < 0) return null;
   const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
   if (!cell) return null;
-  const val = cell.v;
+  const val = (cell.v instanceof Date) ? (cell.w || String(cell.v)) : cell.v;
   if (val === undefined || val === null || val === '#N/A') return null;
   return val;
 }
@@ -7451,6 +7657,9 @@ function _parseQ_v1(wb) {
 
     // Detect week marker (but not "Weekly Total")
     if (colBText.includes('Week') && !colBText.includes('Total')) {
+      if (currentDay && currentWeek) {
+        currentWeek.days.push(currentDay);
+      }
       if (currentWeek) {
         weeks.push(currentWeek);
       }
@@ -7927,7 +8136,7 @@ function _qGetCell(ws, row, col) {
   const cell = ws[cellRef];
   if (!cell) return null;
 
-  const val = cell.v;
+  const val = (cell.v instanceof Date) ? (cell.w || String(cell.v)) : cell.v;
 
   // Handle error/NA values
   if (val === '#N/A' || val === null || val === undefined) {
@@ -8326,7 +8535,7 @@ function _rGetCell(sheet, row, col) {
   if (!cell) return undefined;
 
   // Return the value
-  return cell.v;
+  return (cell.v instanceof Date) ? (cell.w || String(cell.v)) : cell.v;
 }
 
 /**
@@ -8616,7 +8825,8 @@ function _sGetWorksheetRows(ws) {
       const cell = ws[cellRef];
 
       if (cell && cell.v !== undefined) {
-        row.push(cell.v);
+        if (cell.v instanceof Date) { row.push(cell.w || String(cell.v)); }
+        else { row.push(cell.v); }
       } else {
         row.push('');
       }
@@ -8793,7 +9003,7 @@ function detectT(workbook) {
   const row = {};
   for (const col of ['A', 'B', 'C', 'D', 'E']) {
     const cell = ws[`${col}${headerRow}`];
-    if (cell) row[col] = cell.v;
+    if (cell) row[col] = (cell.v instanceof Date) ? (cell.w || String(cell.v)) : cell.v;
   }
 
   return (
@@ -9052,7 +9262,7 @@ function _tBuildNote(muscle, notes, exerciseName) {
 function _extractMaxesFromSheet(wb) {
   const maxes = {};
   for (const sn of wb.SheetNames) {
-    if (/^(maxes?|inputs?|1rm|calculator|calc|max\s*weight)/i.test(sn.trim())) {
+    if (/^(max(es)?|inputs?|1rm|calculator|calc|max\s*weight)/i.test(sn.trim())) {
       const ws = wb.Sheets[sn];
       if (!ws) continue;
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
@@ -9882,6 +10092,7 @@ if (typeof module !== 'undefined' && module.exports) {
     _extractMaxesFromSheet,
     detectU, parseU, _parseU_multiSheet, _parseU_singleSheet, _uBuildPrescription,
     detectV, parseV, _vBuildPrescription,
+    _fixParenTypos, _isCircuitPrefix, _isCoachInstruction, _isSectionHeader,
   };
 }
 
