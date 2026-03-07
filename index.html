@@ -6377,7 +6377,9 @@ const DRIVE_API_KEY = 'AIzaSyC_lOxtDPt4sElQgYKXyfSI4V1dS78cv0o';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 let _driveAccessToken = null;
 let _pickerApiLoaded = false;
-let _driveTokenClient = null; // Reuse across calls — creating multiple causes mobile popup issues
+let _driveTokenResolve = null;
+let _driveTokenReject = null;
+let _driveTokenClient = null;
 
 function loadPickerApi() {
   return new Promise((resolve) => {
@@ -6386,22 +6388,28 @@ function loadPickerApi() {
   });
 }
 
+function _onDriveTokenResponse(resp) {
+  if (resp.error) {
+    if (_driveTokenReject) _driveTokenReject(new Error(resp.error));
+  } else {
+    _driveAccessToken = resp.access_token;
+    if (_driveTokenResolve) _driveTokenResolve(resp.access_token);
+  }
+  _driveTokenResolve = null;
+  _driveTokenReject = null;
+}
+
 function requestDriveToken() {
   return new Promise((resolve, reject) => {
-    // Create client once and reuse — initTokenClient called multiple times
-    // causes silent popup failures on mobile PWAs
+    _driveTokenResolve = resolve;
+    _driveTokenReject = reject;
     if (!_driveTokenClient) {
       _driveTokenClient = google.accounts.oauth2.initTokenClient({
         client_id: DRIVE_CLIENT_ID,
         scope: DRIVE_SCOPE,
-        callback: () => {}, // Replaced per call below
+        callback: _onDriveTokenResponse,
       });
     }
-    _driveTokenClient.callback = (resp) => {
-      if (resp.error) { reject(new Error(resp.error)); return; }
-      _driveAccessToken = resp.access_token;
-      resolve(resp.access_token);
-    };
     _driveTokenClient.requestAccessToken();
   });
 }
