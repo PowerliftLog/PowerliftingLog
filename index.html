@@ -1257,7 +1257,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(30,30,30,0.85); border: 1px solid var(--card-border); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.bottom-nav { position: fixed; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.55); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.5); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
 .nav-btn.active .nav-icon { color: #ffffff; }
@@ -1492,7 +1492,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
 [data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
-[data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.85); border-color: rgba(255,255,255,0.7); box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08); }
+[data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.55); border-color: rgba(255,255,255,0.10); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+[data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.55); border-color: rgba(255,255,255,0.7); box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
 [data-theme="light"] .nav-btn.active .nav-icon { color: var(--text-primary); }
 [data-theme="light"] .add-lift-btn { color: var(--text-dim); border-color: var(--border); }
 [data-theme="light"] .group-pill.active { color: var(--gold); border-color: var(--gold); }
@@ -1675,7 +1676,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.0</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/06/26e</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.1</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26e</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -9014,7 +9015,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.0';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.1';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
