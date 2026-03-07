@@ -363,7 +363,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid #333; padding: 13px 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .drive-btn:active { opacity: 0.75; }
 .block-bar { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); }
-.block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.03em; color: var(--text-bright); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.03em; color: var(--text-bright); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .block-dates { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.03em; }
 .cycle-select { background: rgba(255,255,255,0.05); color: var(--text-sub); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.04em; outline: none; max-width: 160px; cursor: pointer; }
 .maxes-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px 16px 4px; }
@@ -1676,7 +1676,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26i</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26k</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -4036,8 +4036,8 @@ function displayBlockName(name) {
   let clean = name.replace(/_\d{10,}$/, '');
   // Clean up underscores from filename-based names
   clean = clean.replace(/_/g, ' ').trim();
-  // Truncate to 24 chars
-  if (clean.length > 24) clean = clean.slice(0, 22) + '…';
+  // Truncate to 36 chars
+  if (clean.length > 36) clean = clean.slice(0, 34) + '…';
   return clean;
 }
 
@@ -4978,7 +4978,18 @@ function formatDayTabLabel(name){
 
 function renderNextWorkoutBanner(block) {
   const _next=findNextWorkout(block);
-  if(_next.allDone) return ''; // Block complete — no next workout
+  if(_next.allDone) {
+    // This block is fully complete — check if there's a different active block with incomplete work
+    const activeBlock = state.blocks.find(b => b.id !== block.id && !findNextWorkout(b).allDone);
+    if (!activeBlock) return ''; // All blocks done, no banner
+    const abNext = findNextWorkout(activeBlock);
+    const abWeek = activeBlock.weeks[abNext.weekIdx];
+    const abDay = abWeek?.days[abNext.dayIdx];
+    if (!abDay) return '';
+    return `<div class="next-workout-banner" onclick="switchBlock('${activeBlock.id}');setTimeout(()=>{state.activeWeek=${abNext.weekIdx};state.activeDay=${abNext.dayIdx};state.expandedEx=new Set();saveNav();render();},50)">
+      <span class="next-workout-banner-text"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Next workout: ${escH(displayBlockName(activeBlock.name))} ${escH(abWeek.label)} — ${escH(abDay.name)}</span><span class="next-workout-banner-arrow">→</span>
+    </div>`;
+  }
   if(_next.weekIdx===state.activeWeek && _next.dayIdx===state.activeDay) return '';
   const nw=block.weeks[_next.weekIdx]; const nd=nw?.days[_next.dayIdx];
   if(!nd) return '';
@@ -7616,10 +7627,15 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
   // For deduplicated exercises, find the matching exercise in another week's day
   // by base name + position (since prescription-based suffix changes week to week)
   function _findMatchingEx(day, targetName) {
-    // Exact match first
+    // 1. Exact match first
     const exact = day.exercises.find(e => e.name === targetName);
     if (exact) return exact;
-    // For deduped names: match by displayName + position among same-base siblings
+    // 2. Smart match fallback (synonym map + edit distance for typos)
+    const smartMatch = day.exercises.find(e =>
+      typeof _smartExerciseMatch === 'function' && _smartExerciseMatch(e.name, targetName)
+    );
+    if (smartMatch) return smartMatch;
+    // 3. For deduped names: match by displayName + position among same-base siblings
     const baseName = _getBaseName(targetName);
     if (baseName === targetName) return null; // not a deduped name, no match
     // Find position of targetName among same-base exercises in current context
@@ -7711,7 +7727,7 @@ function findNextWorkout(block){
   }
   // All complete from startWi onward — stay on last day of last week
   const lastWi=block.weeks.length-1;
-  return {weekIdx:lastWi, dayIdx:(block.weeks[lastWi]?.days.length||1)-1};
+  return {weekIdx:lastWi, dayIdx:(block.weeks[lastWi]?.days.length||1)-1, allDone:true};
 }
 
 // Silent calendar: track current training week with Sunday midnight boundaries.

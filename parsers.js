@@ -244,6 +244,32 @@ const SYNONYM_MAP = {
 
   // ── Floor Press synonyms ──
   'close grip floor press':   'Floor Press',
+
+  // ── Abbreviations ──
+  'dl':   'Deadlift',
+  'rdl':  'RDL',
+  'cgb':  'Close Grip Bench',
+  'wb':   'Wide Grip Bench',
+  'wgb':  'Wide Grip Bench',
+  'wgbp': 'Wide Grip Bench Press',
+  'tng':  'Touch and Go Bench',
+  'tag':  'Touch and Go Bench',
+  'ssb':  'SSB Squat',
+
+  // ── Verb-Adjective Variations ──
+  'paused bench press':    'Bench Press',
+  'paused deadlift':       'Pause Deadlift',
+
+  // ── Compound Synonyms ──
+  'conventional pull':     'Deadlift',
+  'sumo dead':             'Sumo Deadlift',
+  'rack deadlift':         'Rack Pull',
+
+  // ── Bench Variations ──
+  'spoto':                 'Spoto Press',
+  'spoto press':           'Spoto Press',
+  'jm press':              'JM Press',
+  'comp dl':               'Deadlift',
 };
 
 /**
@@ -301,6 +327,48 @@ function editDistance(a,b){
   for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
     dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
   return dp[m][n];
+}
+
+/**
+ * Smart exercise name matching with hierarchical fallback.
+ * 1. Exact match (zero false positives)
+ * 2. Synonym mapping via canonicalizeLift (handles known variations)
+ * 3. Levenshtein distance with common-word safety (handles typos)
+ */
+function _smartExerciseMatch(a, b, opts = {}) {
+  if (!a || !b) return false;
+  const normA = a.toLowerCase().trim();
+  const normB = b.toLowerCase().trim();
+  // 1. EXACT
+  if (normA === normB) return true;
+  // 2. SYNONYM MAP
+  const canonA = canonicalizeLift(a);
+  const canonB = canonicalizeLift(b);
+  if (canonA && canonB && canonA.toLowerCase() === canonB.toLowerCase()) return true;
+  // 3. EDIT DISTANCE (typos only — require shared base word for safety)
+  const maxDist = opts.maxEditDistance || 2;
+  const dist = editDistance(normA, normB);
+  if (dist <= maxDist) {
+    const wordsA = normA.split(/\s+/);
+    const wordsB = normB.split(/\s+/);
+    const hasCommon = wordsA.some(w => wordsB.some(v => editDistance(w, v) <= 1));
+    if (hasCommon) return true;
+  }
+  return false;
+}
+
+/**
+ * Extract the primary lift keyword for a name in a given category.
+ * Used for category-aware matching to find core lift.
+ */
+function _extractPrimaryKeyword(name, group) {
+  if (!LIFT_GROUPS[group]) return null;
+  const lower = name.toLowerCase();
+  const keywords = LIFT_GROUPS[group].slice().sort((a, b) => b.length - a.length);
+  for (const keyword of keywords) {
+    if (lower.includes(keyword)) return keyword;
+  }
+  return null;
 }
 
 function spellCorrectWord(word){
@@ -10179,6 +10247,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP,
     isCompLift, classifyLift, canonicalizeLift, _getBaseName,
+    _smartExerciseMatch, _extractPrimaryKeyword,
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
     DAYS, detectFormat, detectE, detectF, detectG,
     parseA, parseASheet, parseB, parseBSheet,
