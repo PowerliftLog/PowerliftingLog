@@ -1676,7 +1676,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.2</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26f</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26g</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -6526,28 +6526,7 @@ async function onDrivePickerCallback(data) {
 let _pendingImportBlocks = null;
 let _importIntent = 'active'; // 'active' | 'history'
 
-// ── BLOCK FINGERPRINTING (multi-cycle import diffing) ──────────────────────
-function blockFingerprint(block) {
-  const weeks = block.weeks || [];
-  if (!weeks.length) return '';
-  // Sample: first, middle, last week for robust matching
-  const indices = [...new Set([0, Math.floor(weeks.length / 2), weeks.length - 1])];
-  const parts = [];
-  for (const idx of indices) {
-    const week = weeks[idx];
-    if (!week) continue;
-    for (const day of (week.days || [])) {
-      const names = (day.exercises || [])
-        .map(ex => (ex.name || '').toLowerCase().trim())
-        .filter(n => n)
-        .sort()
-        .join(',');
-      parts.push((day.name || '') + '|' + names);
-    }
-  }
-  return parts.join('||');
-}
-
+// ── MULTI-CYCLE IMPORT HELPERS ─────────────────────────────────────────────
 function blockHasLoggedData(block) {
   for (const week of (block.weeks || [])) {
     for (const day of (week.days || [])) {
@@ -6560,37 +6539,25 @@ function blockHasLoggedData(block) {
   return false;
 }
 
-// Returns array of { incoming, matched } pairs and unmatched incoming blocks
-function diffIncomingBlocks(incomingBlocks) {
-  const existing = state.blocks || [];
-  const matched = [];   // { incoming, existing } — blocks already in app
-  const newBlocks = [];  // incoming blocks with no match
-  const usedExistingIds = new Set(); // prevent double-matching
+// Find existing block by name match (case-insensitive, whitespace-normalized)
+function findExistingBlockByName(incomingName) {
+  const clean = (incomingName || '').toLowerCase().replace(/\s+/g, '');
+  if (!clean) return null;
+  return (state.blocks || []).find(eb => {
+    const ebClean = (eb.name || '').toLowerCase().replace(/\s+/g, '');
+    return ebClean === clean || ebClean.includes(clean) || clean.includes(ebClean);
+  });
+}
 
-  for (const inc of incomingBlocks) {
-    const fp = blockFingerprint(inc);
-    if (!fp) { newBlocks.push(inc); continue; }
-
-    const incName = (inc.name || '').toLowerCase().replace(/\s+/g, '');
-
-    // Find best match: same name + same fingerprint + has logged data + not already matched
-    const match = existing.find(eb => {
-      if (usedExistingIds.has(eb.id)) return false;
-      const ebName = (eb.name || '').toLowerCase().replace(/\s+/g, '');
-      const nameMatch = ebName === incName || ebName.includes(incName) || incName.includes(ebName);
-      if (!nameMatch) return false;
-      const efp = blockFingerprint(eb);
-      return efp === fp && blockHasLoggedData(eb);
-    });
-
-    if (match) {
-      usedExistingIds.add(match.id);
-      matched.push({ incoming: inc, existing: match });
-    } else {
-      newBlocks.push(inc);
-    }
-  }
-  return { matched, newBlocks };
+// Annotate incoming blocks with status: { block, existingMatch, hasLogs, isNew }
+function annotateIncomingBlocks(incomingBlocks) {
+  const usedIds = new Set();
+  return incomingBlocks.map(block => {
+    const match = findExistingBlockByName(block.name);
+    const hasLogs = match && !usedIds.has(match.id) && blockHasLoggedData(match);
+    if (match && hasLogs) usedIds.add(match.id);
+    return { block, existingMatch: hasLogs ? match : null, isNew: !hasLogs };
+  });
 }
 
 // ── IMPORT INTAKE (multi-step) ─────────────────────────────────────────────
@@ -6603,53 +6570,54 @@ function openImportIntent(blocks) {
   // ── Auto-detect best import intent ──────────────────────────────────────
   _importIntent = 'active'; // safe default
   _importIntentReason = '';  // hint shown in UI
-  _importDiff = null;        // fingerprint diff results
+  _importAnnotated = null;
 
   const existing = state.blocks || [];
   const b0 = blocks[0] || {};
 
-  if (existing.length > 0) {
-    // Use content fingerprinting to detect already-imported cycles
-    const diff = diffIncomingBlocks(blocks);
-    _importDiff = diff;
+  if (existing.length > 0 && blocks.length > 1) {
+    // Multi-tab file — annotate each block with status and show selection
+    const annotated = annotateIncomingBlocks(blocks);
+    _importAnnotated = annotated;
+    _importIntent = 'select';
+    const hasCompleted = annotated.some(a => !a.isNew);
+    const hasNew = annotated.some(a => a.isNew);
+    if (hasCompleted && hasNew) {
+      _importIntentReason = 'This file has programs already in the app and new ones.';
+    } else if (hasCompleted && !hasNew) {
+      _importIntentReason = 'All programs in this file are already in the app.';
+    } else {
+      _importIntentReason = 'Multiple programs found. Select which to import.';
+    }
+  }
 
-    if (diff.matched.length > 0 && diff.newBlocks.length > 0) {
-      // Some cycles already exist, some are new → suggest "Add to Current"
-      _importIntent = 'merge';
-      _intakeMergeTarget = diff.matched[diff.matched.length - 1].existing.id;
-      const skipNames = diff.matched.map(m => displayBlockName(m.existing.name)).join(', ');
-      const newNames = diff.newBlocks.map(b => displayBlockName(b.name)).join(', ');
-      _importIntentReason = `${skipNames} already completed. ${newNames} will be imported as new.`;
-    } else if (diff.matched.length > 0 && diff.newBlocks.length === 0) {
-      // All cycles already exist — default to "Start New" (user might be re-running)
-      _importIntent = 'active';
-      _importIntentReason = 'All programs in this file match ones already in the app. Starting fresh.';
-    } else if (b0.format) {
-      // No fingerprint matches — check format/name for merge hint
-      const matchByFormat = existing.filter(eb => eb.format === b0.format);
-      if (matchByFormat.length > 0) {
-        const nameMatch = matchByFormat.find(eb => {
-          const eName = (eb.name || '').toLowerCase().replace(/\s+/g, '');
-          const bName = (b0.name || '').toLowerCase().replace(/\s+/g, '');
-          return eName === bName || eName.includes(bName) || bName.includes(eName);
-        });
-        if (nameMatch) {
-          _importIntent = 'merge';
-          _intakeMergeTarget = nameMatch.id;
-          _importIntentReason = `This looks like more weeks for "${displayBlockName(nameMatch.name)}".`;
-        } else {
-          _importIntent = 'active';
-          _importIntentReason = 'Same format as an existing program, but different name — starting fresh.';
-        }
+  if (_importIntent === 'active' && existing.length > 0 && b0.format) {
+    // Single-tab or no matches — check format/name for merge hint
+    const matchByFormat = existing.filter(eb => eb.format === b0.format);
+    if (matchByFormat.length > 0) {
+      const nameMatch = matchByFormat.find(eb => {
+        const eName = (eb.name || '').toLowerCase().replace(/\s+/g, '');
+        const bName = (b0.name || '').toLowerCase().replace(/\s+/g, '');
+        return eName === bName || eName.includes(bName) || bName.includes(eName);
+      });
+      if (nameMatch) {
+        _importIntent = 'merge';
+        _intakeMergeTarget = nameMatch.id;
+        _importIntentReason = `This looks like more weeks for "${displayBlockName(nameMatch.name)}".`;
       }
     }
   }
 
   document.getElementById('import-intent-modal').style.display = 'flex';
+
+  // For 'select' intent, skip step 1 and go directly to selection screen
+  if (_importIntent === 'select') {
+    _intakeStep = 2;
+  }
   renderIntakeStep();
 }
 let _importIntentReason = '';
-let _importDiff = null; // { matched: [{incoming, existing}], newBlocks: [] }
+let _importAnnotated = null; // [{ block, existingMatch, isNew }]
 
 function closeImportIntent() {
   document.getElementById('import-intent-modal').style.display = 'none';
@@ -6796,56 +6764,59 @@ function renderIntakeStep2(body) {
   const blocks = _pendingImportBlocks || [];
   const b0 = blocks[0] || {};
 
-  // For merge mode, check for multi-cycle diff first, then fall back to week-level merge
-  if (_importIntent === 'merge') {
-    // Multi-cycle diff: fingerprint detected completed blocks + new ones
-    if (_importDiff && _importDiff.matched.length > 0 && _importDiff.newBlocks.length > 0) {
-      // Show block-level diff summary
-      let diffHtml = '';
-      for (const m of _importDiff.matched) {
-        const weekCount = m.existing.weeks?.length || 0;
-        diffHtml += `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-3);border-radius:8px;margin-bottom:6px">
-            <div style="color:var(--green);font-size:18px;flex-shrink:0">✓</div>
-            <div style="flex:1">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright)">${escH(displayBlockName(m.existing.name))}</div>
-              <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-sub)">${weekCount} week${weekCount===1?'':'s'} — completed</div>
-            </div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim)">Skipping</div>
-          </div>`;
-      }
-      for (const nb of _importDiff.newBlocks) {
-        const weekCount = nb.weeks?.length || 0;
-        // Show first day exercises as preview
-        const day1 = nb.weeks?.[0]?.days?.[0];
-        const previewExercises = day1 ? (day1.exercises || []).slice(0, 3).map(ex => ex.name || 'Unnamed').join(', ') : '';
-        diffHtml += `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-3);border-radius:8px;margin-bottom:6px;border:1px solid var(--gold)">
-            <div style="color:var(--gold);font-size:18px;flex-shrink:0">⊕</div>
-            <div style="flex:1">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright)">${escH(displayBlockName(nb.name))}</div>
-              <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-sub)">${weekCount} week${weekCount===1?'':'s'} — new program</div>
-              ${previewExercises ? `<div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:2px">${escH(previewExercises)}${(day1?.exercises?.length||0) > 3 ? '…' : ''}</div>` : ''}
-            </div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--gold);font-weight:700">Importing</div>
-          </div>`;
-      }
+  // ── Select mode: user picks which programs to import ──────────────────
+  if (_importIntent === 'select' && _importAnnotated) {
+    let selectHtml = '';
+    for (let i = 0; i < _importAnnotated.length; i++) {
+      const a = _importAnnotated[i];
+      const weekCount = a.block.weeks?.length || 0;
+      const hasMatch = !!a.existingMatch;
+      const statusLabel = hasMatch ? 'completed in app' : 'new program';
+      const statusColor = hasMatch ? 'var(--green)' : 'var(--gold)';
+      const statusIcon = hasMatch ? '✓' : '★';
+      const checked = a.isNew ? 'checked' : '';
+      const day1 = a.block.weeks?.[0]?.days?.[0];
+      const previewExercises = day1 ? (day1.exercises || []).slice(0, 3).map(ex => ex.name || 'Unnamed').join(', ') : '';
 
-      body.innerHTML = `
-        <div style="margin-bottom:10px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Summary</div>
-          <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">We found completed programs and new ones in this file</div>
-        </div>
-        <div style="margin-bottom:12px">${diffHtml}</div>
-        <button class="import-confirm-btn" onclick="confirmImportIntent()">Import New Program${_importDiff.newBlocks.length > 1 ? 's' : ''}</button>
-        <div style="display:flex;justify-content:center;margin-top:8px">
-          <span class="intake-skip-link" onclick="intakeBack()">← Back</span>
-        </div>
-      `;
-      return;
+      selectHtml += `
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-3);border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid var(--border);transition:border-color .15s">
+          <input type="checkbox" name="import-select-block" value="${i}" ${checked} onchange="updateSelectImportBtn()" style="width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;cursor:pointer">
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright)">${escH(displayBlockName(a.block.name))}</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-sub)">${weekCount} week${weekCount===1?'':'s'}</div>
+            ${previewExercises ? `<div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(previewExercises)}${(day1?.exercises?.length||0) > 3 ? '…' : ''}</div>` : ''}
+          </div>
+          <div style="font-family:'Barlow',sans-serif;font-size:11px;color:${statusColor};font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:3px">
+            <span>${statusIcon}</span> ${statusLabel}
+          </div>
+        </label>`;
     }
 
-    // Week-level merge: no block-level diff, fall back to existing week merge logic
+    const preChecked = _importAnnotated.filter(a => a.isNew).length;
+    body.innerHTML = `
+      <div style="margin-bottom:10px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Select Programs to Import</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${escH(_importIntentReason)}</div>
+      </div>
+      <div style="margin-bottom:12px">${selectHtml}</div>
+      <button class="import-confirm-btn" id="import-select-btn" onclick="confirmSelectImport()" ${preChecked === 0 ? 'disabled style="opacity:0.5"' : ''}>Import Selected (${preChecked})</button>
+      <div style="display:flex;justify-content:center;margin-top:8px">
+        <span class="intake-skip-link" onclick="closeImportIntent()">Cancel</span>
+      </div>
+    `;
+    // Set initial border highlights
+    setTimeout(() => {
+      document.querySelectorAll('input[name="import-select-block"]').forEach(cb => {
+        const label = cb.closest('label');
+        if (label) label.style.borderColor = cb.checked ? 'var(--gold)' : 'var(--border)';
+      });
+    }, 0);
+    return;
+  }
+
+  // For merge mode, do week-level merge
+  if (_importIntent === 'merge') {
+    // Week-level merge: existing week merge logic
     const targetId = _intakeMergeTarget || document.getElementById('import-merge-target')?.value;
     const target = state.blocks.find(b => b.id === targetId);
     if (!target) { confirmImportIntent(); return; }
@@ -7018,6 +6989,93 @@ function intakeBack() {
   renderIntakeStep();
 }
 
+function updateSelectImportBtn() {
+  const checked = document.querySelectorAll('input[name="import-select-block"]:checked');
+  const btn = document.getElementById('import-select-btn');
+  if (btn) {
+    btn.textContent = `Import Selected (${checked.length})`;
+    btn.disabled = checked.length === 0;
+    btn.style.opacity = checked.length === 0 ? '0.5' : '1';
+  }
+  // Update border highlights
+  document.querySelectorAll('input[name="import-select-block"]').forEach(cb => {
+    const label = cb.closest('label');
+    if (label) label.style.borderColor = cb.checked ? 'var(--gold)' : 'var(--border)';
+  });
+}
+
+function confirmSelectImport() {
+  if (!_importAnnotated || !_pendingImportBlocks) return;
+
+  const checked = document.querySelectorAll('input[name="import-select-block"]:checked');
+  const selectedIndices = new Set(Array.from(checked).map(cb => parseInt(cb.value)));
+  if (selectedIndices.size === 0) return;
+
+  const selectedBlocks = [];
+  for (const idx of selectedIndices) {
+    if (_importAnnotated[idx]) {
+      selectedBlocks.push(_importAnnotated[idx].block);
+    }
+  }
+  if (selectedBlocks.length === 0) return;
+
+  // Find the most recent existing block to link from (for e1RM deltas)
+  const existingBlocks = state.blocks || [];
+  let linkFromId = null;
+  if (existingBlocks.length > 0) {
+    // Use the last completed block or last block overall
+    const completed = existingBlocks.filter(b => blockHasLoggedData(b));
+    linkFromId = completed.length > 0 ? completed[completed.length - 1].id : existingBlocks[existingBlocks.length - 1].id;
+  }
+
+  // Set start dates and chain linkedFromBlockId
+  selectedBlocks.forEach((b, i) => {
+    if (!b.startDate) b.startDate = new Date().toISOString().split('T')[0];
+    if (i === 0) {
+      b.linkedFromBlockId = linkFromId;
+    } else {
+      b.linkedFromBlockId = selectedBlocks[i - 1].id;
+    }
+  });
+
+  closeImportIntent();
+
+  // Import as new active programs
+  mergeBlocks(selectedBlocks);
+  autoRegisterCompLifts(selectedBlocks);
+  populateLogsFromSheet(selectedBlocks);
+
+  const _n = findNextWorkout(state.activeBlock);
+  state.activeWeek = _n.weekIdx;
+  state.activeDay = _n.dayIdx;
+  saveBlocks(); saveNav(); saveLogs();
+  setScreen('home');
+
+  // Percentage-based: resolve or prompt
+  const pctBlocks = selectedBlocks.filter(b => blockHasPercentPrescriptions(b));
+  if (pctBlocks.length > 0) {
+    let allResolved = true;
+    for (const b of pctBlocks) {
+      const groups = _percentLiftGroups(b);
+      for (const g of groups) {
+        if (!b.maxes || !b.maxes[g] || parseFloat(b.maxes[g]) <= 0) { allResolved = false; break; }
+      }
+      if (!allResolved) break;
+    }
+    if (allResolved) {
+      pctBlocks.forEach(b => resolvePercentPrescriptions(b));
+      saveBlocks();
+    } else {
+      setTimeout(() => showPercentPrompt(pctBlocks), 100);
+    }
+  }
+
+  _intakeCache = null;
+  _intakeMergeTarget = null;
+  _importAnnotated = null;
+  render();
+}
+
 function confirmImportIntent() {
   const blocks = _pendingImportBlocks;
   if (!blocks) return;
@@ -7069,63 +7127,14 @@ function confirmImportIntent() {
       }
     }
   } else if (_importIntent === 'merge') {
-    // Multi-cycle diff: import only new blocks as separate programs with linking
-    if (_importDiff && _importDiff.matched.length > 0 && _importDiff.newBlocks.length > 0) {
-      const newBlocks = _importDiff.newBlocks;
-      // Find the most recent matched block to link from (by startDate or import order)
-      const lastMatched = _importDiff.matched[_importDiff.matched.length - 1].existing;
-
-      // Set start dates and link
-      newBlocks.forEach((b, i) => {
-        if (!b.startDate) b.startDate = new Date().toISOString().split('T')[0];
-        // Link first new block to last completed block; chain subsequent ones
-        b.linkedFromBlockId = (i === 0) ? lastMatched.id : null;
-      });
-
-      applyIntakeToBlocks(newBlocks, intake);
-      mergeBlocks(newBlocks);
-      autoRegisterCompLifts(newBlocks);
-      populateLogsFromSheet(newBlocks);
-
-      // Chain linkedFromBlockId for subsequent new blocks
-      for (let i = 1; i < newBlocks.length; i++) {
-        newBlocks[i].linkedFromBlockId = newBlocks[i - 1].id;
-      }
-
-      const _n = findNextWorkout(state.activeBlock);
-      state.activeWeek = _n.weekIdx;
-      state.activeDay = _n.dayIdx;
-      saveBlocks(); saveNav(); saveLogs();
-      setScreen('home');
-
-      // Percentage-based program: resolve or prompt for 1RM
-      const pctBlocks = newBlocks.filter(b => blockHasPercentPrescriptions(b));
-      if (pctBlocks.length > 0) {
-        let allResolved = true;
-        for (const b of pctBlocks) {
-          const groups = _percentLiftGroups(b);
-          for (const g of groups) {
-            if (!b.maxes || !b.maxes[g] || parseFloat(b.maxes[g]) <= 0) { allResolved = false; break; }
-          }
-          if (!allResolved) break;
-        }
-        if (allResolved) {
-          pctBlocks.forEach(b => resolvePercentPrescriptions(b));
-          saveBlocks();
-        } else {
-          setTimeout(() => showPercentPrompt(pctBlocks), 100);
-        }
-      }
-    } else {
-      // Standard week-level merge (no multi-cycle diff)
-      mergeWeeksIntoBlock(blocks);
-    }
+    // Standard week-level merge
+    mergeWeeksIntoBlock(blocks);
   } else {
     importHistoricalBlock(blocks);
   }
   _intakeCache = null;
   _intakeMergeTarget = null;
-  _importDiff = null;
+  _importAnnotated = null;
   render();
 }
 
@@ -9228,7 +9237,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.2';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.3';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
