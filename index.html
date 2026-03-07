@@ -6565,18 +6565,26 @@ function diffIncomingBlocks(incomingBlocks) {
   const existing = state.blocks || [];
   const matched = [];   // { incoming, existing } — blocks already in app
   const newBlocks = [];  // incoming blocks with no match
+  const usedExistingIds = new Set(); // prevent double-matching
 
   for (const inc of incomingBlocks) {
     const fp = blockFingerprint(inc);
     if (!fp) { newBlocks.push(inc); continue; }
 
-    // Find best match: same fingerprint + has logged data
+    const incName = (inc.name || '').toLowerCase().replace(/\s+/g, '');
+
+    // Find best match: same name + same fingerprint + has logged data + not already matched
     const match = existing.find(eb => {
+      if (usedExistingIds.has(eb.id)) return false;
+      const ebName = (eb.name || '').toLowerCase().replace(/\s+/g, '');
+      const nameMatch = ebName === incName || ebName.includes(incName) || incName.includes(ebName);
+      if (!nameMatch) return false;
       const efp = blockFingerprint(eb);
       return efp === fp && blockHasLoggedData(eb);
     });
 
     if (match) {
+      usedExistingIds.add(match.id);
       matched.push({ incoming: inc, existing: match });
     } else {
       newBlocks.push(inc);
