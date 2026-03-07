@@ -46,6 +46,54 @@ const VARIATION_MODIFIERS = [
   'high bar',
 ];
 
+// ── EXERCISE ALIAS DICTIONARY ────────────────────────────────────────────────
+const EXERCISE_ALIASES = {
+  // Exact shorthand aliases — full string match (case-insensitive)
+  exact: {
+    'comp squat': 'Competition Squat',
+    'comp bench': 'Competition Bench Press',
+    'comp deadlift': 'Competition Deadlift',
+    'comp dl': 'Competition Deadlift',
+    'pause squat': 'Paused Squat',
+    'pause bench': 'Paused Bench Press',
+    'pin squat': 'Pin Squat',
+    'spoto press': 'Spoto Press',
+    'sumo': 'Sumo Deadlift',
+    'conv': 'Conventional Deadlift',
+    'front sq': 'Front Squat',
+    'rear delt fly': 'Rear Delt Fly',
+    'face pull': 'Face Pull',
+    'pull up': 'Pull-Up',
+    'chin up': 'Chin-Up',
+    'dip': 'Dip',
+    't-bar row': 'T-Bar Row',
+    'pend row': 'Pendlay Row',
+    'lat pull': 'Lat Pulldown',
+    'lat pd': 'Lat Pulldown',
+  },
+  // Word-level abbreviation expansions (case-insensitive)
+  abbrevs: {
+    'bb': 'Barbell',
+    'db': 'Dumbbell',
+    'kb': 'Kettlebell',
+    'ohp': 'Overhead Press',
+    'rdl': 'Romanian Deadlift',
+    'sldl': 'Stiff-Leg Deadlift',
+    'dl': 'Deadlift',
+    'sq': 'Squat',
+    'bp': 'Bench Press',
+    'cg': 'Close Grip',
+    'cgbp': 'Close Grip Bench Press',
+    'tri': 'Tricep',
+    'bi': 'Bicep',
+    'inc': 'Incline',
+    'dec': 'Decline',
+    'ext': 'Extension',
+    'ham': 'Hamstring',
+    'pd': 'Pulldown',
+  },
+};
+
 function isCompLift(name){
   // Strip dedup bracket suffix: "Barbell Deadlift [1x1(352)]" → "barbell deadlift"
   const n = name.toLowerCase().trim().replace(/\s*\[.*\]$/, '');
@@ -901,6 +949,63 @@ function _isSectionHeader(name, pres) {
   return false;
 }
 
+const HEADER_BLOCKLIST = new Set([
+  'sets', 'reps', 'weight', 'load', 'intensity',
+  'rpe', 'rir', 'tempo', 'rest', 'notes', 'note',
+  'exercise', 'exercises', 'movement', 'movements',
+  'day', 'week', 'date', 'session',
+  'warm up', 'warmup', 'warm-up',
+  'cool down', 'cooldown', 'cool-down',
+  'volume', 'tonnage', 'total',
+  'set', 'rep', 'wt', 'wt.',
+  '%', 'percent', 'percentage',
+  '#', 'no.', 'number'
+]);
+
+function _isHeaderTerm(name) {
+  if (!name || typeof name !== 'string') return false;
+  const cleaned = name.trim().toLowerCase();
+  if (HEADER_BLOCKLIST.has(cleaned)) return true;
+  if (/^(week|day|session|phase|block|cycle)\s*\d+$/i.test(cleaned)) return true;
+  return false;
+}
+
+function _normalizeExerciseName(name) {
+  if (!name) return name;
+  let s = name.trim();
+  if (!s) return s;
+
+  // 1. Check exact match first (case-insensitive) against full shorthand aliases
+  const lower = s.toLowerCase();
+  if (EXERCISE_ALIASES.exact[lower]) {
+    return EXERCISE_ALIASES.exact[lower];
+  }
+
+  // 2. Word-level abbreviation expansion
+  let changed = false;
+  const words = s.split(/\s+/);
+  const expanded = words.map(word => {
+    const canonical = EXERCISE_ALIASES.abbrevs[word.toLowerCase()];
+    if (canonical) {
+      changed = true;
+      return canonical;
+    }
+    return word;
+  });
+
+  if (!changed) {
+    return s.replace(/\s+/g, ' ');
+  }
+
+  // 3. Rejoin and normalize spacing
+  s = expanded.join(' ').replace(/\s+/g, ' ');
+
+  // 4. Title-case the result
+  s = s.replace(/(^|[\s-])(\w)/g, (m, pre, ch) => pre + ch.toUpperCase());
+
+  return s;
+}
+
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
 function parseWorkbook(wb){
   const fmt = detectFormat(wb);
@@ -984,6 +1089,11 @@ function parseWorkbook(wb){
               continue;
             }
 
+            // Fix 7: Header term blocklist — remove leaked spreadsheet headers
+            if (_isHeaderTerm(name) && (!pres || _isHeaderTerm(pres))) {
+              continue;
+            }
+
             // Fix 2: Circuit prefix — remove, capture label
             const prefix = _isCircuitPrefix(name);
             if (prefix && !pres) {
@@ -1026,6 +1136,11 @@ function parseWorkbook(wb){
           }
 
           day.exercises = filtered;
+
+          // Fix 6: Exercise name normalization (alias dictionary)
+          for (const ex of day.exercises) {
+            if (ex.name) ex.name = _normalizeExerciseName(ex.name);
+          }
         }
       }
     }
@@ -10092,7 +10207,8 @@ if (typeof module !== 'undefined' && module.exports) {
     _extractMaxesFromSheet,
     detectU, parseU, _parseU_multiSheet, _parseU_singleSheet, _uBuildPrescription,
     detectV, parseV, _vBuildPrescription,
-    _fixParenTypos, _isCircuitPrefix, _isCoachInstruction, _isSectionHeader,
+    _fixParenTypos, _isCircuitPrefix, _isCoachInstruction, _isSectionHeader, _isHeaderTerm, HEADER_BLOCKLIST,
+    EXERCISE_ALIASES, _normalizeExerciseName,
   };
 }
 
