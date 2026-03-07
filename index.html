@@ -1676,7 +1676,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.1</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26e</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.2</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26f</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2299,6 +2299,18 @@ let _saveLogsTimer=null;
 function _saveLogsImmediate(){ _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
+
+// Fix iOS PWA scroll freeze when app is backgrounded and resumed
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Force scroll recalculation — iOS Safari can freeze scroll after background
+    requestAnimationFrame(() => {
+      const main = document.querySelector('.main-content') || document.body;
+      main.style.overflow = 'auto';
+      void main.offsetHeight; // force reflow
+    });
+  }
+});
 function rePopulateSets(blocks){
   try{
     for(const block of blocks){
@@ -6365,6 +6377,7 @@ const DRIVE_API_KEY = 'AIzaSyC_lOxtDPt4sElQgYKXyfSI4V1dS78cv0o';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 let _driveAccessToken = null;
 let _pickerApiLoaded = false;
+let _driveTokenClient = null; // Reuse across calls — creating multiple causes mobile popup issues
 
 function loadPickerApi() {
   return new Promise((resolve) => {
@@ -6375,16 +6388,21 @@ function loadPickerApi() {
 
 function requestDriveToken() {
   return new Promise((resolve, reject) => {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: DRIVE_CLIENT_ID,
-      scope: DRIVE_SCOPE,
-      callback: (resp) => {
-        if (resp.error) { reject(new Error(resp.error)); return; }
-        _driveAccessToken = resp.access_token;
-        resolve(resp.access_token);
-      },
-    });
-    client.requestAccessToken();
+    // Create client once and reuse — initTokenClient called multiple times
+    // causes silent popup failures on mobile PWAs
+    if (!_driveTokenClient) {
+      _driveTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: DRIVE_CLIENT_ID,
+        scope: DRIVE_SCOPE,
+        callback: () => {}, // Replaced per call below
+      });
+    }
+    _driveTokenClient.callback = (resp) => {
+      if (resp.error) { reject(new Error(resp.error)); return; }
+      _driveAccessToken = resp.access_token;
+      resolve(resp.access_token);
+    };
+    _driveTokenClient.requestAccessToken();
   });
 }
 
@@ -6487,10 +6505,12 @@ async function onDrivePickerCallback(data) {
 
     openImportIntent(blocks);
   } catch (err) {
+    // Only null token on auth-related errors, not general import failures
+    if (err.message?.includes('401') || err.message?.includes('403')) {
+      _driveAccessToken = null;
+    }
     console.error('[Drive Import]', err);
     showParseError('error', err.message || 'Failed to import file from Google Drive.');
-  } finally {
-    _driveAccessToken = null;
   }
 }
 
@@ -9192,7 +9212,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.1';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.2';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
