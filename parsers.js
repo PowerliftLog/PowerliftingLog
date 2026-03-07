@@ -3807,7 +3807,7 @@ function deduplicateExerciseNames(blocks) {
 // ── SET PARSERS ───────────────────────────────────────────────────────────────
 function parseSets(pres){
   if(!pres) return [];
-  const sets=[]; const pat=/(\d+x)?(\d+)\(([^)]+)\)/g; let m;
+  const sets=[]; const pat=/(\d+x)?(\d+)\s*\(([^)]+)\)/g; let m;
   while((m=pat.exec(pres))!==null){
     const mult=m[1]?parseInt(m[1]):1;
     for(let i=0;i<mult;i++) sets.push({reps:parseInt(m[2]),weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim()))});
