@@ -1676,7 +1676,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26h</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26i</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -3405,8 +3405,8 @@ function classifyTracking(raw){
 // ── COUNT SETS IN PRESCRIPTION ────────────────────────────────────────────────
 // Returns the expected number of sets for an exercise prescription, used
 // to distribute slash-weights or spread a single weight across all sets.
-function countPrescrSets(pres){
-  if(!pres) return 1;
+function countPrescrSets(pres, supersetRounds){
+  if(!pres) return supersetRounds || 1;
   const s=parseSets(pres);
   if(s.length>0) return s.length;
   const wu=parseWarmupSets(pres);
@@ -3415,7 +3415,9 @@ function countPrescrSets(pres){
   if(simple) return simple.sets;
   const range=parseRangeSet(pres);
   if(range) return range.sets;
-  return 1;
+  const bare=parseBarePres(pres);
+  if(bare) return supersetRounds || bare.sets;
+  return supersetRounds || 1;
 }
 
 // ── POPULATE LOGS FROM SHEET ──────────────────────────────────────────────────
@@ -3447,7 +3449,7 @@ function populateLogsFromSheet(blocks, options={}){
             const isBW=getExerciseInputMode(ex.name,ex.prescription)==='bw'||
                         getExerciseInputMode(ex.name,ex.prescription)==='bw-timed';
 
-            const setCount=countPrescrSets(ex.prescription);
+            const setCount=countPrescrSets(ex.prescription, ex.supersetGroup?.rounds);
             const exEntry={done:true};
             if(cls.lifterNote) exEntry.lifterNote=cls.lifterNote;
 
@@ -3502,7 +3504,7 @@ function populateLogsFromSheet(blocks, options={}){
           for(const ex of day.exercises){
             const key=lk(block.id,week.label,day.name,ex.name);
             if(state.logs[key]?.done) continue;
-            const setCount=countPrescrSets(ex.prescription);
+            const setCount=countPrescrSets(ex.prescription, ex.supersetGroup?.rounds);
             state.logs[key]={done:true,inferredComplete:true};
             for(let si=0;si<setCount;si++){
               if(!state.logs[key+`||s${si}`])
@@ -3538,7 +3540,7 @@ function populateLogsFromSheet(blocks, options={}){
             const cls=classifyTracking(ex.loggedWeight);
             const isBW=getExerciseInputMode(ex.name,ex.prescription)==='bw'||
                         getExerciseInputMode(ex.name,ex.prescription)==='bw-timed';
-            const setCount=countPrescrSets(ex.prescription);
+            const setCount=countPrescrSets(ex.prescription, ex.supersetGroup?.rounds);
 
             const exEntry={done:true};
             // Format B has dedicated lifterNote column — always capture it
@@ -3588,7 +3590,7 @@ function populateLogsFromSheet(blocks, options={}){
           for(const ex of day.exercises){
             const key=lk(block.id,week.label,day.name,ex.name);
             if(state.logs[key]?.done) continue; // already handled
-            const setCount=countPrescrSets(ex.prescription);
+            const setCount=countPrescrSets(ex.prescription, ex.supersetGroup?.rounds);
             state.logs[key]={done:true,inferredComplete:true};
             for(let si=0;si<setCount;si++){
               if(!state.logs[key+`||s${si}`])
@@ -3631,7 +3633,7 @@ function inferStaticCompletions(block, onlyWeekLabels=null){
           const key=lk(block.id,week.label,day.name,ex.name);
           if(state.logs[key]?.done) continue; // already logged
           // Mark done with no weight — inferred completion
-          const setCount=countPrescrSets(ex.prescription);
+          const setCount=countPrescrSets(ex.prescription, ex.supersetGroup?.rounds);
           state.logs[key]={done:true,inferredComplete:true};
           for(let si=0;si<setCount;si++){
             const sk=key+`||s${si}`;
@@ -4150,7 +4152,8 @@ function _computeWeekSummary(block, week) {
       const isComp = isCompLift(ex.name);
       const pres = ex.prescription || '';
       const parsed = parseSimple(pres) || parseRangeSet(pres) || parseBarePres(pres);
-      const numSets = parsed ? (parsed.sets || 1) : 4;
+      const _ssRs = ex.supersetGroup?.rounds || 0;
+      const numSets = parsed ? (_ssRs || parsed.sets || 1) : (_ssRs || 4);
       const extraCount = state.extraSets?.[lk(bid, wl, dn, ex.name)] || 0;
       const maxSets = numSets + extraCount + 5;
 
@@ -5089,7 +5092,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   const isExpanded=state.expandedEx.has(expandKey);
   const presSum=presShortSummary(sets,simple,ranged,pres);
   const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
-  const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bare?.sets||0)||(pres?1:0);
+  const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0);
 
   h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
   h+=`<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
@@ -5417,7 +5420,9 @@ function getDayProgress(block, week, day) {
     if (!sets.length) { const wu = parseWarmupSets(pres); if (wu.length) sets.push(...wu); }
     const simple = parseSimple(pres);
     const ranged = (!sets.length && !simple) ? parseRangeSet(pres) : null;
-    const numSets = sets.length || (simple?.sets || 0) || (ranged?.sets || 0) || 1;
+    const _ssr = ex.supersetGroup?.rounds || 0;
+    const _br = (!sets.length && !simple && !ranged) ? parseBarePres(pres) : null;
+    const numSets = sets.length || (simple?.sets || 0) || (ranged?.sets || 0) || (_br ? (_ssr || _br.sets) : 0) || _ssr || 1;
     for (let si = 0; si < numSets; si++) {
       const sk = key + `||s${si}`;
       const sl = state.logs[sk] || {};
@@ -5709,7 +5714,9 @@ function toggleEx(key){
     if(!sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
     const simple=parseSimple(pres);
     const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
-    numSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
+    const ssRounds = ex.supersetGroup?.rounds || 0;
+    const bare=(!sets.length&&!simple&&!ranged)?parseBarePres(pres):null;
+    numSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bare ? (ssRounds || bare.sets) : 0)||(ssRounds)||(pres?1:0)||1;
     numSets += (state.extraSets[key] || 0);
   }
   
@@ -5767,7 +5774,9 @@ function completeWorkout(){
       if(!sets.length) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
       const simple=parseSimple(pres);
       const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
-      const numSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||1;
+      const _ssR=ex.supersetGroup?.rounds||0;
+      const _bare=(!sets.length&&!simple&&!ranged)?parseBarePres(pres):null;
+      const numSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(_bare?(_ssR||_bare.sets):0)||_ssR||1;
       for(let si=0;si<numSets;si++){
         const sk=key+`||s${si}`;
         const sl=state.logs[sk]||{};
@@ -5825,7 +5834,9 @@ function checkNewSingles(block, week, day, onDone) {
     const sets = parseSets(pres);
     const simple = parseSimple(pres);
     const ranged = (!sets.length && !simple) ? parseRangeSet(pres) : null;
-    const numSets = sets.length || (simple?.sets || 0) || (ranged?.sets || 0) || 1;
+    const _ssr2 = ex.supersetGroup?.rounds || 0;
+    const _br2 = (!sets.length && !simple && !ranged) ? parseBarePres(pres) : null;
+    const numSets = sets.length || (simple?.sets || 0) || (ranged?.sets || 0) || (_br2 ? (_ssr2 || _br2.sets) : 0) || _ssr2 || 1;
     for (let si = 0; si < numSets; si++) {
       const sk = key + `||s${si}`;
       const sl = state.logs[sk];
@@ -7423,7 +7434,7 @@ function markAllBlocksComplete(blocks) {
             state.logs[key] = { done: true, inferredComplete: true };
           }
           // Mark sets
-          const setCount = countPrescrSets(ex.prescription);
+          const setCount = countPrescrSets(ex.prescription, ex.supersetGroup?.rounds);
           for (let si = 0; si < setCount; si++) {
             const sk = key + '||s' + si;
             if (!state.logs[sk]?.done || state.logs[sk]?.inferredComplete) {
@@ -7472,8 +7483,10 @@ function autoCompleteExercise(setKey){
   if(!sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
   const simple=parseSimple(pres);
   const ranged=(!sets.length&&!simple)?parseRangeSet(pres):null;
-  const totalSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(pres?1:0)||1;
-  
+  const _ssr3=ex.supersetGroup?.rounds||0;
+  const _br3=(!sets.length&&!simple&&!ranged)?parseBarePres(pres):null;
+  const totalSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(_br3?(_ssr3||_br3.sets):0)||_ssr3||(pres?1:0)||1;
+
   // Check if all sets done
   let allDone=true;
   for(let si=0;si<totalSets;si++){
@@ -8266,7 +8279,8 @@ function exportTrainingLog(blockId) {
           const simple = parseSimple(ex.prescription);
           const ranged = parseRangeSet(ex.prescription);
           const bare = parseBarePres(ex.prescription);
-          setCount = (simple && simple.sets) || (ranged && ranged.sets) || (bare && bare.sets) || 1;
+          const _ssR4 = ex.supersetGroup?.rounds || 0;
+          setCount = (simple && simple.sets) || (ranged && ranged.sets) || (bare ? (_ssR4 || bare.sets) : 0) || _ssR4 || 1;
           fallbackReps = (simple && simple.reps) || (ranged && ranged.reps) || (bare && bare.reps) || null;
         }
 
@@ -9269,7 +9283,8 @@ function exportCSV() {
             const simple = parseSimple(ex.prescription);
             const ranged = parseRangeSet(ex.prescription);
             const bare = parseBarePres(ex.prescription);
-            setCount = (simple && simple.sets) || (ranged && ranged.sets) || (bare && bare.sets) || 1;
+            const _ssR5 = ex.supersetGroup?.rounds || 0;
+            setCount = (simple && simple.sets) || (ranged && ranged.sets) || (bare ? (_ssR5 || bare.sets) : 0) || _ssR5 || 1;
             fallbackReps = (simple && simple.reps) || (ranged && ranged.reps) || (bare && bare.reps) || null;
           }
           const extra = state.extraSets ? (state.extraSets[exKey] || 0) : 0;

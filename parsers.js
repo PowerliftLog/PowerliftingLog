@@ -3843,6 +3843,8 @@ function parseBarePres(pres){
   const p=pres.trim();
   if(/^\d+$/.test(p)) return{sets:1,reps:p};
   if(/^\d+:\d{2}$/.test(p)) return{sets:1,reps:p};
+  // Rep range like "15-20" or "8-12"
+  if(/^\d+[\-–]\d+$/.test(p)) return{sets:1,reps:p};
   return null;
 }
 
