@@ -1310,6 +1310,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .metrics-toggle-pill:active { opacity: 0.75; }
 .metrics-drill-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.04em; color: var(--gold); }
 .metrics-cycle-hint { font-size: 11px; color: var(--text-dimmer); text-align: center; padding: 0 0 12px; font-style: italic; letter-spacing: 0.04em; }
+.pm-add-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.pm-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; background: var(--surface-2); border: 1px solid var(--border-2, rgba(255,255,255,0.06)); border-radius: 12px; cursor: pointer; transition: border-color 0.15s; }
+.pm-add-card:active { border-color: var(--gold); }
+.pm-add-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+.pm-add-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); text-align: center; line-height: 1.2; }
+.pm-progress { height: 3px; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.pm-progress-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width 0.3s; }
 .program-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .program-item:last-child { border-bottom: none; }
 .program-item-info { display: flex; flex-direction: column; gap: 3px; flex: 1; cursor: pointer; }
@@ -1345,6 +1352,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .export-action-btn:active { opacity: 0.8; }
 .export-action-row { display: flex; gap: 8px; }
 .export-drive-btn { background: var(--surface-4, rgba(255,255,255,0.06)); color: var(--text-mid); border: 1px solid var(--border, rgba(255,255,255,0.1)); }
+.export-block-select { width: 100%; padding: 9px 12px; background: var(--surface-2, #1a1a1a); border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 8px; color: var(--text-bright, #fff); font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .02em; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; cursor: pointer; }
+.backup-auto-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0 0; border: none; background: none; cursor: pointer; border-top: 1px solid var(--border-2, rgba(255,255,255,0.06)); margin-top: 2px; }
+.backup-auto-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-faint); letter-spacing: .03em; }
 .metrics-screen { padding: 16px 16px 100px; }
 .cycle-tabs { display: flex; gap: 8px; padding: 0 0 14px; overflow-x: auto; scrollbar-width: none; }
 .cycle-tabs::-webkit-scrollbar { display: none; }
@@ -1866,40 +1876,41 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <!-- Program Manager Modal -->
 <div class="add-lift-modal" id="program-modal" role="dialog" aria-modal="true" aria-labelledby="program-modal-title" style="display:none" onclick="if(event.target===this)closeProgramModal()">
   <div class="add-lift-sheet" style="max-height:80vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h2 class="add-lift-title" id="program-modal-title" style="margin-bottom:0">Programs</h2>
       <button onclick="closeProgramModal()" style="background:none;border:none;color:var(--text-faint);font-size:22px;cursor:pointer;padding:4px">×</button>
     </div>
-    <!-- Add new section -->
-    <div style="margin-bottom:20px">
-      <div class="add-lift-group-label" style="margin-bottom:10px">Add New Program</div>
-      <button class="drive-btn" onclick="closeProgramModal();openDrivePicker()" style="margin:0 auto;width:100%;justify-content:center;flex-direction:row-reverse">
-        <svg viewBox="0 0 87.3 78" width="20" height="18">
-          <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
-          <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
-          <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/>
-          <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/>
-          <path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/>
-          <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
-        </svg>
-        Import from Drive
+
+    <!-- Add New — two cards side by side -->
+    <div class="pm-add-grid">
+      <button class="pm-add-card" onclick="closeProgramModal();openDrivePicker()">
+        <div class="pm-add-icon">
+          <svg viewBox="0 0 87.3 78" width="22" height="20">
+            <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
+            <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
+            <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/>
+            <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/>
+            <path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/>
+            <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
+          </svg>
+        </div>
+        <div class="pm-add-label">Import from Drive</div>
       </button>
-
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or upload from device</div>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <button class="upload-btn" style="width:100%;max-width:none;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px;flex-direction:row-reverse" onclick="closeProgramModal();document.getElementById('file-input').click()">Upload File<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <div style="font-size:11px;color:var(--text-faint);font-family:'Barlow',sans-serif;letter-spacing:0.08em;text-transform:uppercase">or build from scratch</div>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <button class="upload-btn" style="width:100%;max-width:none;padding:11px 14px;font-size:13px;letter-spacing:0.05em;display:flex;align-items:center;justify-content:center;gap:7px;flex-direction:row-reverse" onclick="closeProgramModal();startBuildProgram()">Build Program<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="pm-add-card" onclick="closeProgramModal();document.getElementById('file-input').click()">
+        <div class="pm-add-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="pm-add-label">Upload File</div>
+      </button>
+      <button class="pm-add-card" onclick="closeProgramModal();startBuildProgram()">
+        <div class="pm-add-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="pm-add-label">Build Program</div>
+      </button>
     </div>
-    <!-- Existing cycles -->
+
+    <!-- Existing programs -->
     <div id="program-list"></div>
   </div>
 </div>
@@ -2017,49 +2028,19 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </div>
 
-    <h3 class="settings-section-label">Google Drive</h3>
-    <button id="drive-backup-btn" class="settings-row-btn" onclick="backupToDrive()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 0 1 0 9z"/><polyline points="12 13 12 17"/><polyline points="10 15 12 13 14 15"/></svg>
-        Back Up to Drive
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <button class="settings-row-btn" onclick="restoreFromDrive()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 0 1 0 9z"/><polyline points="12 17 12 13"/><polyline points="10 15 12 17 14 15"/></svg>
-        Restore from Drive
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <button class="settings-row-btn" onclick="toggleAutoBackup()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        Auto-backup after workouts
-      </div>
-      <div class="settings-toggle" id="auto-backup-toggle" role="switch" aria-checked="false" aria-label="Auto-backup toggle"></div>
-    </button>
-
-    <h3 class="settings-section-label">Training Data</h3>
-    <button class="settings-row-btn" onclick="downloadBackup()">
+    <h3 class="settings-section-label">Data</h3>
+    <div id="last-backup-time" class="settings-backup-time"></div>
+    <button class="settings-row-btn" onclick="closeSettings();openBackupModal()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Backup
+        Backup &amp; Sync
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <button class="settings-row-btn" onclick="triggerRestore()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Restore from Backup
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div id="last-backup-time" class="settings-backup-time"></div>
     <button class="settings-row-btn" onclick="closeSettings();openExportFromSettings()">
       <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Training Log &amp; Report
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Export
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -2079,6 +2060,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.3 · Build 3/07/26m</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -8659,14 +8641,20 @@ function closeProgramModal(){
 function renderProgramList(){
   const list=document.getElementById('program-list');
   if(!state.blocks.length){ list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:8px 0">No programs loaded yet.</div>'; return; }
-  let h='<div class="add-lift-group-label" style="margin-bottom:8px">Existing Programs</div>';
+  let h='<div class="add-lift-group-label" style="margin-bottom:8px">Your Programs</div>';
   state.blocks.forEach(block=>{
     const isCurrent=state.activeBlock&&state.activeBlock.id===block.id;
-    const weeks=block.weeks?.length||0;
-    h+=`<div class="program-item" style="flex-wrap:wrap;">
-      <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')">
+    const weeks=block.weeks||[];
+    const totalDays=weeks.reduce((sum,w)=>(w.days||[]).length+sum,0);
+    let completedDays=0;
+    weeks.forEach(w=>(w.days||[]).forEach(d=>{ if(isDayComplete(block,w,d)) completedDays++; }));
+    const pct=totalDays>0?Math.round(completedDays/totalDays*100):0;
+    const progressLabel=totalDays>0?`${completedDays}/${totalDays} sessions`:'No sessions';
+    h+=`<div class="program-item" style="flex-wrap:wrap;${isCurrent?'border-left:3px solid var(--gold);padding-left:12px;margin-left:-3px;':''}">
+      <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')" style="flex:1;min-width:0">
         <div class="program-item-name${isCurrent?' active-cycle':''}">${escH(displayBlockName(block.name))}</div>
-        <div class="program-item-meta">${weeks} weeks${block.dateRange?' · '+block.dateRange:''}</div>
+        <div class="program-item-meta">${weeks.length} weeks${block.dateRange?' · '+block.dateRange:''} · ${progressLabel}</div>
+        <div class="pm-progress"><div class="pm-progress-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="program-item-actions">
         <button class="program-select-btn${isCurrent?' current':''}" onclick="selectBlock('${esc(block.id)}')">${isCurrent?'ACTIVE':'SELECT'}</button>
@@ -8841,9 +8829,9 @@ function openExportModal(blockId) {
       </div>
       <div class="export-action-row">
         <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')" style="flex:1" id="log-download-btn">Download</button>
-        <button class="export-action-btn export-drive-btn" onclick="exportLogOrCSVToDrive('${blockId}')" style="flex:1">Save to Drive</button>
+        <button class="export-action-btn export-drive-btn" onclick="exportLogOrCSVToDrive('${blockId}')" style="flex:1"><svg viewBox="0 0 87.3 78" width="14" height="12" style="vertical-align:-1px;margin-right:4px"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/><path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/><path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/><path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/></svg> Save to Drive</button>
       </div>
-      <div id="log-format-hint" class="export-card-desc" style="text-align:center;margin-top:6px;font-size:11px;opacity:0.6">Excel file (.xlsx)</div>
+      <div id="log-format-hint" class="export-card-desc" style="text-align:center;margin-top:6px;font-size:12px;opacity:0.85;font-weight:600">Excel file (.xlsx)</div>
     </div>
 
     <!-- Training Report Card -->
@@ -8859,13 +8847,18 @@ function openExportModal(blockId) {
         </svg>
         <div class="export-card-info">
           <div class="export-card-name">Training Report</div>
-          <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts — full block</div>
+          <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts</div>
         </div>
       </div>
+      <div style="margin:8px 0 4px">
+        <select id="report-block-select" class="export-block-select">
+          ${state.blocks.map((b, i) => `<option value="${b.id}"${b.id === blockId ? ' selected' : ''}>${displayBlockName(b.name) || 'Block ' + (i + 1)}</option>`).join('')}
+        </select>
+      </div>
       <div class="export-action-row">
-        <button class="export-action-btn" onclick="exportHTMLReport('${blockId}');closeExportModal()" style="flex:1">View</button>
-        <button class="export-action-btn" onclick="downloadReportPdf('${blockId}')" style="flex:1">Save PDF</button>
-        <button class="export-action-btn export-drive-btn" onclick="exportReportToDrive('${blockId}')" style="flex:1">Drive</button>
+        <button class="export-action-btn" onclick="viewReportScoped()" style="flex:1">View</button>
+        <button class="export-action-btn" onclick="downloadReportScoped()" style="flex:1">Save PDF</button>
+        <button class="export-action-btn export-drive-btn" onclick="driveReportScoped()" style="flex:1"><svg viewBox="0 0 87.3 78" width="14" height="12" style="vertical-align:-1px;margin-right:4px"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/><path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/><path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/><path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/></svg> Save to Drive</button>
       </div>
     </div>
   </div>`;
@@ -8878,6 +8871,118 @@ function openExportModal(blockId) {
 function closeExportModal() {
   const overlay = document.getElementById('export-modal-overlay');
   if (overlay) overlay.remove();
+}
+
+function _getReportBlockId() {
+  const sel = document.getElementById('report-block-select');
+  return sel ? sel.value : null;
+}
+function viewReportScoped() {
+  const bid = _getReportBlockId();
+  if (bid) { exportHTMLReport(bid); closeExportModal(); }
+}
+function downloadReportScoped() {
+  const bid = _getReportBlockId();
+  if (bid) downloadReportPdf(bid);
+}
+function driveReportScoped() {
+  const bid = _getReportBlockId();
+  if (bid) exportReportToDrive(bid);
+}
+
+// ── BACKUP & SYNC MODAL ──────────────────────────────────────────────────────
+function openBackupModal() {
+  const existing = document.getElementById('backup-modal-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'export-modal-overlay';
+  overlay.id = 'backup-modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeBackupModal(); };
+
+  const autoOn = isAutoBackupEnabled();
+
+  overlay.innerHTML = `<div class="export-modal">
+    <div class="export-modal-header">
+      <div class="export-modal-title">Backup &amp; Sync</div>
+      <button class="export-modal-close" onclick="closeBackupModal()">✕</button>
+    </div>
+
+    <!-- Local Backup Card -->
+    <div class="export-card">
+      <div class="export-card-header">
+        <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="var(--surface-3, #1a1a1a)"/>
+          <rect x="11" y="7" width="14" height="22" rx="2.5" stroke="var(--text-faint, #888)" stroke-width="1.5" fill="none"/>
+          <line x1="16" y1="25" x2="20" y2="25" stroke="var(--text-faint, #888)" stroke-width="1.5" stroke-linecap="round"/>
+          <polyline points="15 16 18 19 21 16" stroke="var(--text-faint, #888)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="18" y1="12" x2="18" y2="19" stroke="var(--text-faint, #888)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="export-card-info">
+          <div class="export-card-name">Local Backup</div>
+          <div class="export-card-desc">Save or restore a JSON backup file to your device</div>
+        </div>
+      </div>
+      <div class="export-action-row">
+        <button class="export-action-btn" onclick="closeBackupModal();downloadBackup()" style="flex:1">Download</button>
+        <button class="export-action-btn export-drive-btn" onclick="closeBackupModal();triggerRestore()" style="flex:1">Restore</button>
+      </div>
+      <div id="backup-modal-last-time" class="export-card-desc" style="text-align:center;margin-top:8px;font-size:11px;opacity:0.5"></div>
+    </div>
+
+    <!-- Google Drive Card -->
+    <div class="export-card">
+      <div class="export-card-header">
+        <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="var(--surface-3, #1a1a1a)"/>
+          <g transform="translate(5.5, 6) scale(0.29)">
+            <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
+            <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
+            <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/>
+            <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/>
+            <path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/>
+            <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
+          </g>
+        </svg>
+        <div class="export-card-info">
+          <div class="export-card-name">Google Drive</div>
+          <div class="export-card-desc">Back up and restore from your Drive account</div>
+        </div>
+      </div>
+      <div class="export-action-row" style="margin-bottom:10px">
+        <button class="export-action-btn" onclick="closeBackupModal();backupToDrive()" style="flex:1">Back Up</button>
+        <button class="export-action-btn export-drive-btn" onclick="closeBackupModal();restoreFromDrive()" style="flex:1">Restore</button>
+      </div>
+      <button class="backup-auto-row" onclick="toggleAutoBackupFromModal()">
+        <span class="backup-auto-label">Auto-backup after workouts</span>
+        <div class="settings-toggle ${autoOn ? 'on' : ''}" id="auto-backup-modal-toggle" role="switch" aria-checked="${autoOn}"></div>
+      </button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Show last backup time if available
+  const lastTime = document.getElementById('backup-modal-last-time');
+  const stored = localStorage.getItem('lastBackupTime');
+  if (lastTime && stored) {
+    lastTime.textContent = 'Last backup: ' + new Date(stored).toLocaleString();
+  }
+}
+
+function closeBackupModal() {
+  const overlay = document.getElementById('backup-modal-overlay');
+  if (overlay) overlay.remove();
+}
+
+function toggleAutoBackupFromModal() {
+  toggleAutoBackup();
+  const toggle = document.getElementById('auto-backup-modal-toggle');
+  if (toggle) {
+    const nowOn = isAutoBackupEnabled();
+    toggle.classList.toggle('on', nowOn);
+    toggle.setAttribute('aria-checked', String(nowOn));
+  }
 }
 
 function setLogScope(scope) {
