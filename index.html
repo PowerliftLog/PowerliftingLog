@@ -755,6 +755,40 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .session-stat-label { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 .unit-label { font-size: 0.55em; font-weight: 600; color: var(--text-mid); margin-left: 2px; }
 
+/* Block Complete combined card */
+.bc-card { position: relative; background: var(--glass-bg); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; overflow: hidden; margin-bottom: 10px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.bc-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, transparent 55%); pointer-events: none; }
+.bc-inner { position: relative; z-index: 1; padding: 16px 20px 20px; }
+.bc-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; position: relative; }
+.bc-undo { position: absolute; right: 0; top: -2px; color: var(--text-dim); opacity: 0.5; cursor: pointer; padding: 4px; border-radius: 6px; transition: opacity 0.15s, color 0.15s; }
+.bc-undo:hover, .bc-undo:active { opacity: 1; color: var(--gold); }
+.bc-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.bc-block-name { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; }
+.bc-meta { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-faint); margin-top: 3px; }
+.bc-compliance { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; color: var(--green); margin-top: 4px; margin-bottom: 16px; letter-spacing: 0.02em; }
+.bc-lifts { display: flex; flex-direction: column; gap: 0; margin-bottom: 16px; }
+.bc-lift-row { display: flex; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.bc-lift-row:last-child { border-bottom: none; }
+.bc-lift-name { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); width: 80px; flex-shrink: 0; }
+.bc-lift-set { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-bright); letter-spacing: 0.02em; flex: 1; }
+.bc-lift-rpe { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+.bc-lift-e1rm { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; min-width: 44px; }
+.bc-e1rm-val { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 800; color: var(--gold); line-height: 1; }
+.bc-e1rm-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; line-height: 1; margin-top: 1px; }
+.bc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border); }
+.bc-stat { text-align: center; }
+.bc-stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: var(--text-bright); line-height: 1.1; }
+.bc-stat-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-top: 2px; }
+.bc-actions { display: flex; gap: 8px; margin-top: 16px; }
+.bc-btn { flex: 1; text-align: center; padding: 12px; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.bc-btn-primary { background: var(--gold); color: #0a0a0a; }
+.bc-btn-secondary { background: none; border: 1px solid var(--border); color: var(--text-dim); }
+
+/* Finish Block prompt */
+.finish-block-prompt { background: var(--glass-bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; margin-bottom: 10px; }
+.finish-block-text { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center; }
+.finish-block-actions { display: flex; gap: 8px; }
+
 /* PR Prompt Modal */
 .pr-prompt-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px); }
 .pr-prompt-card { background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
@@ -1313,7 +1347,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .pm-add-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
 .pm-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; background: var(--surface-2); border: 1px solid var(--border-2, rgba(255,255,255,0.06)); border-radius: 12px; cursor: pointer; transition: border-color 0.15s; }
 .pm-add-card:active { border-color: var(--gold); }
-.pm-add-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+.pm-add-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
 .pm-add-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); text-align: center; line-height: 1.2; }
 .pm-progress { height: 3px; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 2px; margin-top: 6px; overflow: hidden; }
 .pm-progress-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width 0.3s; }
@@ -1353,6 +1387,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .export-action-row { display: flex; gap: 8px; }
 .export-drive-btn { background: var(--surface-4, rgba(255,255,255,0.06)); color: var(--text-mid); border: 1px solid var(--border, rgba(255,255,255,0.1)); }
 .export-block-select { width: 100%; padding: 9px 12px; background: var(--surface-2, #1a1a1a); border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 8px; color: var(--text-bright, #fff); font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .02em; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; cursor: pointer; }
+.export-block-select:focus-visible { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,0.2); }
 .backup-auto-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0 0; border: none; background: none; cursor: pointer; border-top: 1px solid var(--border-2, rgba(255,255,255,0.06)); margin-top: 2px; }
 .backup-auto-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-faint); letter-spacing: .03em; }
 .metrics-screen { padding: 16px 16px 100px; }
@@ -1723,7 +1758,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/07/26m</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.5</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/08/26b</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -1884,8 +1919,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     <!-- Add New — two cards side by side -->
     <div class="pm-add-grid">
       <button class="pm-add-card" onclick="closeProgramModal();openDrivePicker()">
-        <div class="pm-add-icon">
-          <svg viewBox="0 0 87.3 78" width="22" height="20">
+        <div class="pm-add-icon" style="background:rgba(66,133,244,0.1);border-color:rgba(66,133,244,0.15)">
+          <svg viewBox="0 0 87.3 78" width="18" height="16">
             <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/>
             <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/>
             <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/>
@@ -1897,14 +1932,14 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <div class="pm-add-label">Import from Drive</div>
       </button>
       <button class="pm-add-card" onclick="closeProgramModal();document.getElementById('file-input').click()">
-        <div class="pm-add-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="pm-add-icon" style="background:rgba(var(--gold-rgb),0.08);border-color:rgba(var(--gold-rgb),0.12)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </div>
         <div class="pm-add-label">Upload File</div>
       </button>
       <button class="pm-add-card" onclick="closeProgramModal();startBuildProgram()">
-        <div class="pm-add-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div class="pm-add-icon" style="background:rgba(var(--gold-rgb),0.08);border-color:rgba(var(--gold-rgb),0.12)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </div>
         <div class="pm-add-label">Build Program</div>
       </button>
@@ -2060,7 +2095,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.3 · Build 3/07/26m</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.5 · Build 3/08/26b</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -4283,6 +4318,67 @@ function getWeeklySummary() {
   return null;
 }
 
+// ── Block Summary (for block-complete home card) ──────────────────────────────
+function getBlockSummary(block) {
+  if (!block || !block.weeks) return null;
+  const bid = block.id;
+
+  let totalVolume = 0, totalSets = 0, totalRpe = 0, rpeCount = 0;
+  let totalDays = 0, completedDays = 0;
+  const bestByFamily = { squat: null, bench: null, deadlift: null };
+
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      totalDays++;
+      if (isDayComplete(block, week, day)) completedDays++;
+    }
+    // Aggregate from weekly summaries for consistency
+    const ws = _computeWeekSummary(block, week);
+    if (ws) {
+      totalVolume += ws.totalVolume;
+      totalSets += ws.totalSets;
+      if (ws.avgRpe) {
+        const rpeVal = parseFloat(ws.avgRpe);
+        // Weight by sets in that week for accurate overall avg
+        totalRpe += rpeVal * ws.totalSets;
+        rpeCount += ws.totalSets;
+      }
+      for (const [group, data] of Object.entries(ws.bestLifts)) {
+        if (!data) continue;
+        const cur = bestByFamily[group];
+        const isUpgrade = !cur
+          || (data.isComp && cur.isVariation)
+          || (data.isComp === cur.isComp && data.e1rm > cur.e1rm);
+        if (isUpgrade) bestByFamily[group] = { ...data };
+      }
+    }
+  }
+
+  if (totalSets === 0) return null;
+
+  // Date range from completion logs
+  let firstDate = null, lastDate = null;
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (!key.startsWith(bid + '||') || !key.endsWith('||__complete__')) continue;
+    const d = val.completedDate;
+    if (!d) continue;
+    if (!firstDate || d < firstDate) firstDate = d;
+    if (!lastDate || d > lastDate) lastDate = d;
+  }
+
+  return {
+    blockName: displayBlockName(block.name) || 'Training Block',
+    totalWeeks: block.weeks.length,
+    totalDays, completedDays,
+    compliancePct: totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0,
+    totalVolume: Math.round(totalVolume),
+    totalSets,
+    avgRpe: rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null,
+    bestLifts: bestByFamily,
+    firstDate, lastDate
+  };
+}
+
 // ── Session Summary (for completed-today hero card) ───────────────────────────
 function getSessionSummary(block, week, day) {
   if (!block || !week || !day) return null;
@@ -4698,6 +4794,9 @@ function renderHome() {
   const nwInfo    = getNextWorkoutInfo();
   const lastDone  = getLastCompletedWorkout();
   let heroHtml    = '';
+  let isBlockComplete = false;
+  let allLoadedWeeksDone = false;
+  let showFinishPrompt = false;
 
   // Determine hero state:
   // 1. Next workout exists and is NOT complete → "Up Next" gold hero
@@ -4794,25 +4893,97 @@ function renderHome() {
     const sets = summary?.totalSets || '—';
     const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
 
-    // Only show "Block Complete" if every week in the block is truly finished,
-    // not just the current gated week
-    const allBlockDone = nwInfo && nwInfo.allDone && (nwInfo.weekIdx === block.weeks.length - 1);
-    const heroLabel = allBlockDone ? '✓ Block Complete' : '✓ Last Session';
+    // Block complete: auto-trigger for multi-week first imports,
+    // explicit "Finish Block" for single-week-at-a-time users (once 3+ weeks loaded)
+    const allLoadedDone = nwInfo && nwInfo.allDone && (nwInfo.weekIdx === block.weeks.length - 1);
+    allLoadedWeeksDone = allLoadedDone;
+    const isExplicitlyComplete = !!block.completedAt;
+    // Stamp initial week count on first render so we know if user loaded 1 week or many
+    if (block._initialWeeks == null) { block._initialWeeks = block.weeks.length; saveBlocks(); }
+    const wasFullProgramImport = block._initialWeeks >= 3;
+    // Full program import (3+ weeks at once): auto-complete when all done
+    // Short imports (1-2 weeks): always require explicit "Finish Block"
+    const isAutoComplete = allLoadedDone && wasFullProgramImport;
+    if (isExplicitlyComplete || isAutoComplete) isBlockComplete = true;
 
-    heroHtml = `<div class="session-hero" onclick="goToWorkout(${weekIdx},${dayIdx})">
-      <div class="session-hero-bg"></div>
-      <div class="session-hero-inner">
-        <h2 class="session-hero-label"><div class="session-hero-label-dot"></div>${heroLabel}</h2>
-        <div class="session-hero-day">${escH(dayName)}</div>
-        <div class="session-hero-meta">${escH(meta)}</div>
-        ${liftRowsHtml}
-        <div class="session-stats">
-          <div class="session-stat"><div class="session-stat-val">${vol}<span class="unit">${volUnit}</span></div><div class="session-stat-label">Volume</div></div>
-          <div class="session-stat"><div class="session-stat-val">${sets}</div><div class="session-stat-label">Sets</div></div>
-          <div class="session-stat"><div class="session-stat-val">${avgRpe}</div><div class="session-stat-label">Avg RPE</div></div>
+    // Finish-block prompt state: all loaded weeks done, not yet complete, 3+ weeks loaded
+    showFinishPrompt = allLoadedDone && !isBlockComplete && block.weeks.length >= 3;
+
+    if (showFinishPrompt) {
+      // ── Finish Block prompt as hero card ──
+      heroHtml = `<div class="session-hero finish-prompt-hero">
+        <div class="session-hero-bg"></div>
+        <div class="session-hero-inner">
+          <h2 class="session-hero-label"><div class="session-hero-label-dot" style="background:var(--gold)"></div>All Sessions Complete</h2>
+          <div class="session-hero-day">${escH(displayBlockName(block.name))}</div>
+          <div class="session-hero-meta">Done with this training cycle?</div>
+          <div class="finish-block-actions" style="margin-top:16px">
+            <div class="bc-btn bc-btn-primary" onclick="finishBlock()">Finish Block</div>
+            <div class="bc-btn bc-btn-secondary" onclick="openProgramModal()">Add More Weeks</div>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
+    } else if (isBlockComplete) {
+      // ── Block Complete combined card (user explicitly finished the block) ──
+      const bs = getBlockSummary(block);
+      if (bs) {
+        const _bvt = getDisplayUnit() === 'kg' ? 4500 : 10000;
+        const bVol = bs.totalVolume >= _bvt ? (bs.totalVolume / 1000).toFixed(1) + 'k' : bs.totalVolume.toLocaleString();
+        let dateRange = '';
+        if (bs.firstDate && bs.lastDate) {
+          const fmt = d => { const [y,m,dd] = d.split('-'); return m + '/' + dd; };
+          dateRange = ' · ' + fmt(bs.firstDate) + ' – ' + fmt(bs.lastDate);
+        }
+        let bLiftRows = '';
+        for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+          const d = bs.bestLifts[group];
+          if (!d) continue;
+          const dispW = Math.round(d.weight);
+          const e1rm = d.e1rm ? Math.round(d.e1rm) : null;
+          const rpeStr = d.rpe ? `<span class="bc-lift-rpe">@${d.rpe}</span>` : '';
+          bLiftRows += `<div class="bc-lift-row">
+            <div class="bc-lift-name">${label}</div>
+            <div class="bc-lift-set">${dispW}×${d.reps}${rpeStr}</div>
+            ${e1rm ? `<div class="bc-lift-e1rm"><div class="bc-e1rm-val">${e1rm}</div><div class="bc-e1rm-label">E1RM</div></div>` : ''}
+          </div>`;
+        }
+        heroHtml = `<div class="bc-card">
+          <div class="bc-bg"></div>
+          <div class="bc-inner">
+            <div class="bc-label"><div class="bc-dot"></div>✓ Block Complete<div class="bc-undo" onclick="event.stopPropagation();undoFinishBlock()" title="Undo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div></div>
+            <div class="bc-block-name">${escH(bs.blockName)}</div>
+            <div class="bc-meta">${bs.totalWeeks} weeks · ${bs.completedDays}/${bs.totalDays} sessions${dateRange}</div>
+            <div class="bc-compliance">${bs.compliancePct}% Compliance</div>
+            ${bLiftRows ? `<div class="bc-lifts">${bLiftRows}</div>` : ''}
+            <div class="bc-stats">
+              <div class="bc-stat"><div class="bc-stat-val">${bVol}</div><div class="bc-stat-label">Volume</div></div>
+              <div class="bc-stat"><div class="bc-stat-val">${bs.totalSets}</div><div class="bc-stat-label">Sets</div></div>
+              <div class="bc-stat"><div class="bc-stat-val">${bs.avgRpe || '—'}</div><div class="bc-stat-label">Avg RPE</div></div>
+            </div>
+            <div class="bc-actions">
+              <div class="bc-btn bc-btn-primary" onclick="exportHTMLReport('${block.id}')">View Report</div>
+              <div class="bc-btn bc-btn-secondary" onclick="setScreen('metrics')">Metrics</div>
+            </div>
+          </div>
+        </div>`;
+      }
+    } else {
+      // ── Last Session hero (normal or all-loaded-done) ──
+      heroHtml = `<div class="session-hero" onclick="goToWorkout(${weekIdx},${dayIdx})">
+        <div class="session-hero-bg"></div>
+        <div class="session-hero-inner">
+          <h2 class="session-hero-label"><div class="session-hero-label-dot"></div>✓ Last Session</h2>
+          <div class="session-hero-day">${escH(dayName)}</div>
+          <div class="session-hero-meta">${escH(meta)}</div>
+          ${liftRowsHtml}
+          <div class="session-stats">
+            <div class="session-stat"><div class="session-stat-val">${vol}<span class="unit">${volUnit}</span></div><div class="session-stat-label">Volume</div></div>
+            <div class="session-stat"><div class="session-stat-val">${sets}</div><div class="session-stat-label">Sets</div></div>
+            <div class="session-stat"><div class="session-stat-val">${avgRpe}</div><div class="session-stat-label">Avg RPE</div></div>
+          </div>
+        </div>
+      </div>`;
+    }
   } else {
     // ── Fresh block, no workouts completed yet ──
     const nw = nwInfo || { day: block.weeks[0]?.days[0], weekIdx: 0, dayIdx: 0 };
@@ -4833,17 +5004,22 @@ function renderHome() {
   }
 
   // ── Middle row: Last Workout + Week Ring (only when workouts exist) ──
-  const lastWorkoutHtml = (nwInfo && !nwInfo.allDone) ? renderLastWorkoutCard() : '';
+  // Suppress when block is complete — the combined card covers everything
+  // Show middle row in normal state AND finish-prompt state (not block-complete)
+  const lastWorkoutHtml = (!isBlockComplete && nwInfo && (!nwInfo.allDone || showFinishPrompt)) ? renderLastWorkoutCard() : '';
   const hasCompletedWorkouts = !!getLastCompletedWorkout();
-  const weekCardHtml = hasCompletedWorkouts ? renderWeekCard() : '';
+  const weekCardHtml = (!isBlockComplete && hasCompletedWorkouts) ? renderWeekCard() : '';
   const middleRowHtml = (lastWorkoutHtml || weekCardHtml)
     ? `<div class="home-row">${lastWorkoutHtml}${weekCardHtml}</div>` : '';
 
   // ── Program Overview card (replaces "This Week" when no workouts done) ──
   const programOverviewHtml = !hasCompletedWorkouts ? renderProgramOverview() : '';
 
+  // Finish Block prompt is now in the hero card (showFinishPrompt state)
+  const finishBlockHtml = '';
+
   // ── Weekly Summary card ──
-  const weekSummary = getWeeklySummary();
+  const weekSummary = isBlockComplete ? null : getWeeklySummary();
   let weeklySummaryHtml = '';
   if (weekSummary) {
     const ringWeekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
@@ -4906,6 +5082,7 @@ function renderHome() {
     ${heroHtml}
     ${middleRowHtml}
     ${programOverviewHtml}
+    ${finishBlockHtml}
     ${weeklySummaryHtml}
   </div>`;
 
@@ -4923,6 +5100,23 @@ function getGreeting() {
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function finishBlock() {
+  const block = state.activeBlock;
+  if (!block) return;
+  block.completedAt = Date.now();
+  saveBlocks();
+  render();
+}
+
+function undoFinishBlock() {
+  const block = state.activeBlock;
+  if (!block || !block.completedAt) return;
+  if (!confirm('Undo block completion? This will reopen the training cycle.')) return;
+  delete block.completedAt;
+  saveBlocks();
+  render();
 }
 
 function goToWorkout(weekIdx, dayIdx, activate) {
@@ -6759,7 +6953,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.3';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.5';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -8850,7 +9044,7 @@ function openExportModal(blockId) {
           <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts</div>
         </div>
       </div>
-      <div style="margin:8px 0 4px">
+      <div style="margin:8px 0 12px">
         <select id="report-block-select" class="export-block-select">
           ${state.blocks.map((b, i) => `<option value="${b.id}"${b.id === blockId ? ' selected' : ''}>${displayBlockName(b.name) || 'Block ' + (i + 1)}</option>`).join('')}
         </select>
@@ -9160,7 +9354,7 @@ function _buildHTMLReport(blockId) {
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const exName = parts[3];
+    const exName = canonicalizeLift(parts[3]);
     const group = classifyLift(exName);
     if (!group || !families[group]) continue;
 
@@ -10203,7 +10397,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.3';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.5';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
