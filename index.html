@@ -7104,6 +7104,35 @@ async function exportReportToDrive(blockId) {
   }
 }
 
+async function downloadReportPdf(blockId) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  try {
+    _showWarningToast('Generating PDF...', 'success');
+    const pdfData = await _renderReportToPdf(blockId);
+    if (!pdfData) { _showWarningToast('Failed to generate report.'); return; }
+    await _ensurePdfLibs();
+    const { jsPDF } = window.jspdf;
+    // Reconstruct PDF from the raw data to get a blob for download
+    const blob = new Blob([pdfData], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const safeName = displayBlockName(block.name).replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'training';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeName}-training-report-${dateStr}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    closeExportModal();
+    _showWarningToast('PDF saved ✓', 'success');
+  } catch (err) {
+    console.error('[PDF Download]', err);
+    _showWarningToast('Failed to generate PDF.');
+  }
+}
+
 async function exportLogToDrive(blockId) {
   const overlay = document.getElementById('export-modal-overlay');
   const scope = overlay ? overlay._logScope : 'full';
@@ -8834,8 +8863,9 @@ function openExportModal(blockId) {
         </div>
       </div>
       <div class="export-action-row">
-        <button class="export-action-btn" onclick="exportHTMLReport('${blockId}');closeExportModal()" style="flex:1">View Report</button>
-        <button class="export-action-btn export-drive-btn" onclick="exportReportToDrive('${blockId}')" style="flex:1">Save to Drive</button>
+        <button class="export-action-btn" onclick="exportHTMLReport('${blockId}');closeExportModal()" style="flex:1">View</button>
+        <button class="export-action-btn" onclick="downloadReportPdf('${blockId}')" style="flex:1">Save PDF</button>
+        <button class="export-action-btn export-drive-btn" onclick="exportReportToDrive('${blockId}')" style="flex:1">Drive</button>
       </div>
     </div>
   </div>`;
