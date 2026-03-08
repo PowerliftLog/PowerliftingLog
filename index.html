@@ -2063,13 +2063,6 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <button class="settings-row-btn" onclick="closeSettings();exportCSV()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        Training History (CSV)
-      </div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
 
     <h3 class="settings-section-label settings-section-label--theme">Theme</h3>
     <div class="settings-theme-pills" id="settings-theme-pills">
@@ -6985,21 +6978,126 @@ async function _uploadBinaryToDrive(fileName, uint8Array, mimeType, folderId) {
 }
 
 // ── EXPORT TO DRIVE ──────────────────────────────────────────────────────────
+// ── Lazy-load html2canvas + jsPDF ────────────────────────────────────────────
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function _ensurePdfLibs() {
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+}
+
+async function _renderReportToPdf(blockId) {
+  const html = _buildHTMLReport(blockId);
+  if (!html) return null;
+
+  // Create hidden iframe to render the report
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:480px;height:800px;border:none;visibility:hidden;';
+  document.body.appendChild(iframe);
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  return new Promise((resolve, reject) => {
+    iframe.onload = async () => {
+      try {
+        // Wait for Chart.js to render
+        await new Promise(r => setTimeout(r, 1500));
+
+        const reportEl = iframe.contentDocument.querySelector('.report');
+        if (!reportEl) { reject(new Error('Report element not found')); return; }
+
+        // Hide the save button in the iframe
+        const saveBtn = iframe.contentDocument.querySelector('.save-btn');
+        if (saveBtn) saveBtn.style.display = 'none';
+
+        await _ensurePdfLibs();
+
+        const canvas = await html2canvas(reportEl, {
+          backgroundColor: '#0a0a0a',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          windowWidth: 480
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+
+        // Calculate PDF dimensions (A4-ish, portrait)
+        const pdfWidth = 210; // mm (A4 width)
+        const pdfMargin = 10;
+        const contentWidth = pdfWidth - (pdfMargin * 2);
+        const imgAspect = canvas.height / canvas.width;
+        const contentHeight = contentWidth * imgAspect;
+
+        // Split into pages if needed
+        const pageHeight = 297 - (pdfMargin * 2); // A4 height minus margins
+        const totalPages = Math.ceil(contentHeight / pageHeight);
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) pdf.addPage();
+
+          // Calculate source crop for this page
+          const srcY = (page * pageHeight / contentHeight) * canvas.height;
+          const srcH = Math.min((pageHeight / contentHeight) * canvas.height, canvas.height - srcY);
+
+          // Create a cropped canvas for this page
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = srcH;
+          const ctx = pageCanvas.getContext('2d');
+
+          // Fill background
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+          ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+
+          const pageImg = pageCanvas.toDataURL('image/png');
+          const drawHeight = (srcH / canvas.height) * contentHeight;
+          pdf.addImage(pageImg, 'PNG', pdfMargin, pdfMargin, contentWidth, drawHeight);
+        }
+
+        const pdfBlob = pdf.output('arraybuffer');
+        resolve(new Uint8Array(pdfBlob));
+      } catch (err) {
+        reject(err);
+      } finally {
+        URL.revokeObjectURL(blobUrl);
+        iframe.remove();
+      }
+    };
+    iframe.src = blobUrl;
+  });
+}
+
 async function exportReportToDrive(blockId) {
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return;
   try {
-    _showWarningToast('Saving report to Drive...', 'success');
+    _showWarningToast('Generating PDF...', 'success');
     await _ensureDriveToken();
     await _ensureDriveFolders();
-    // Build the HTML content by calling the same generation logic
-    const html = _buildHTMLReport(blockId);
-    if (!html) { _showWarningToast('Failed to generate report.'); return; }
+    const pdfData = await _renderReportToPdf(blockId);
+    if (!pdfData) { _showWarningToast('Failed to generate report.'); return; }
     const safeName = (block.name || 'Training').replace(/[^a-zA-Z0-9_-]/g, '_');
     const dateStr = new Date().toISOString().slice(0, 10);
-    const fileName = `Training_Report_${safeName}_${dateStr}.html`;
-    await _uploadToDrive(fileName, html, 'text/html', _driveFolderIds.reports);
-    _showWarningToast('Report saved to Drive \u2713', 'success');
+    const fileName = `Training_Report_${safeName}_${dateStr}.pdf`;
+    _showWarningToast('Uploading to Drive...', 'success');
+    await _uploadBinaryToDrive(fileName, pdfData, 'application/pdf', _driveFolderIds.reports);
+    _showWarningToast('Report saved to Drive ✓', 'success');
   } catch (err) {
     console.error('[Drive Export Report]', err);
     if (err.message !== 'popup_closed_by_user') _showWarningToast('Failed to save report to Drive.');
@@ -7028,6 +7126,13 @@ async function exportLogToDrive(blockId) {
     console.error('[Drive Export Log]', err);
     if (err.message !== 'popup_closed_by_user') _showWarningToast('Failed to save log to Drive.');
   }
+}
+
+async function exportLogOrCSVToDrive(blockId) {
+  const overlay = document.getElementById('export-modal-overlay');
+  const scope = overlay ? overlay._logScope : 'full';
+  if (scope === 'all') { await exportCSVToDrive(); return; }
+  await exportLogToDrive(blockId);
 }
 
 async function exportCSVToDrive() {
@@ -8697,17 +8802,19 @@ function openExportModal(blockId) {
         </svg>
         <div class="export-card-info">
           <div class="export-card-name">Training Log</div>
-          <div class="export-card-desc">Full workout log with prescribed vs. actual sets — Excel file</div>
+          <div class="export-card-desc">Full workout log with prescribed vs. actual sets</div>
         </div>
       </div>
       <div class="export-scope-toggle">
         <button class="export-scope-pill active" id="log-scope-week" onclick="setLogScope('week')">This Week</button>
         <button class="export-scope-pill" id="log-scope-full" onclick="setLogScope('full')">Full Block</button>
+        <button class="export-scope-pill" id="log-scope-all" onclick="setLogScope('all')">All Programs</button>
       </div>
       <div class="export-action-row">
-        <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')" style="flex:1">Download</button>
-        <button class="export-action-btn export-drive-btn" onclick="exportLogToDrive('${blockId}')" style="flex:1">Save to Drive</button>
+        <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')" style="flex:1" id="log-download-btn">Download</button>
+        <button class="export-action-btn export-drive-btn" onclick="exportLogOrCSVToDrive('${blockId}')" style="flex:1">Save to Drive</button>
       </div>
+      <div id="log-format-hint" class="export-card-desc" style="text-align:center;margin-top:6px;font-size:11px;opacity:0.6">Excel file (.xlsx)</div>
     </div>
 
     <!-- Training Report Card -->
@@ -8731,30 +8838,6 @@ function openExportModal(blockId) {
         <button class="export-action-btn export-drive-btn" onclick="exportReportToDrive('${blockId}')" style="flex:1">Save to Drive</button>
       </div>
     </div>
-
-    <!-- Training History CSV Card -->
-    <div class="export-card">
-      <div class="export-card-header">
-        <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="36" height="36" rx="8" fill="#4A90D9"/>
-          <path d="M10 10h16v3H10z" fill="white" opacity="0.9"/>
-          <path d="M10 15h8v2H10z" fill="white" opacity="0.4"/>
-          <path d="M20 15h6v2h-6z" fill="white" opacity="0.4"/>
-          <path d="M10 19h8v2H10z" fill="white" opacity="0.4"/>
-          <path d="M20 19h6v2h-6z" fill="white" opacity="0.4"/>
-          <path d="M10 23h8v2H10z" fill="white" opacity="0.4"/>
-          <path d="M20 23h6v2h-6z" fill="white" opacity="0.4"/>
-        </svg>
-        <div class="export-card-info">
-          <div class="export-card-name">Training History</div>
-          <div class="export-card-desc">All logged sets across all programs — CSV file</div>
-        </div>
-      </div>
-      <div class="export-action-row">
-        <button class="export-action-btn" onclick="closeSettings();exportCSV()" style="flex:1">Download</button>
-        <button class="export-action-btn export-drive-btn" onclick="exportCSVToDrive()" style="flex:1">Save to Drive</button>
-      </div>
-    </div>
   </div>`;
 
   document.body.appendChild(overlay);
@@ -8773,6 +8856,9 @@ function setLogScope(scope) {
   overlay._logScope = scope;
   document.getElementById('log-scope-week').classList.toggle('active', scope === 'week');
   document.getElementById('log-scope-full').classList.toggle('active', scope === 'full');
+  document.getElementById('log-scope-all').classList.toggle('active', scope === 'all');
+  const hint = document.getElementById('log-format-hint');
+  if (hint) hint.textContent = scope === 'all' ? 'CSV file (.csv)' : 'Excel file (.xlsx)';
 }
 
 function _buildTrainingLogWorkbook(blockId, scope) {
@@ -8908,6 +8994,7 @@ function _buildTrainingLogWorkbook(blockId, scope) {
 function exportTrainingLog(blockId) {
   const overlay = document.getElementById('export-modal-overlay');
   const scope = overlay ? overlay._logScope : 'full';
+  if (scope === 'all') { closeExportModal(); exportCSV(); return; }
   const wb = _buildTrainingLogWorkbook(blockId, scope);
   if (!wb) { _showWarningToast('No data for current week.'); return; }
   const block = state.blocks.find(b => b.id === blockId);
@@ -9706,6 +9793,59 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
 /* Save button */
 .save-btn{position:fixed;bottom:20px;right:20px;background:var(--gold);color:#000;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+
+/* Desktop responsive */
+@media (min-width:600px){
+  .report{max-width:860px;padding:40px 32px 80px}
+  .rpt-athlete{font-size:42px}
+  .rpt-block{font-size:18px}
+  .stats-strip{gap:10px}
+  .strip-stat{padding:12px;border-radius:10px}
+  .strip-stat-val{font-size:26px}
+  .strip-stat-label{font-size:9px}
+  .est-total-card{padding:18px 22px;border-radius:14px}
+  .est-total-val{font-size:44px}
+  .comp-cards{gap:12px}
+  .comp-card{padding:14px 14px 10px;border-radius:12px}
+  .comp-card-val{font-size:30px}
+  .comp-card-delta{font-size:13px}
+  .comp-card-sparkline{height:36px}
+  .comp-card-best{font-size:13px}
+  .comp-card-trend-text{font-size:10px}
+  .flags-section{padding:18px;border-radius:14px}
+  .flag-text{font-size:12px}
+  .section-card{padding:18px;border-radius:14px}
+  .vol-chart-wrap{height:220px}
+  .progression-grid{gap:12px}
+  .prog-mini{padding:14px;border-radius:12px}
+  .prog-mini-chart{height:130px}
+  .prog-mini-var-name{font-size:10px}
+  .weekly-table td{padding:7px 8px;font-size:13px}
+  .weekly-table th{font-size:10px;padding:5px 8px}
+}
+
+/* Large desktop */
+@media (min-width:900px){
+  .report{max-width:1000px}
+  .stats-strip{grid-template-columns:repeat(4,1fr);gap:12px}
+  .vol-chart-wrap{height:260px}
+  .prog-mini-chart{height:150px}
+}
+
+/* Small mobile — stack comp cards and progression */
+@media (max-width:420px){
+  .comp-cards{grid-template-columns:1fr;gap:8px}
+  .comp-card{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto;gap:0 10px}
+  .comp-card-accent{grid-column:1/-1}
+  .comp-card-sparkline{grid-column:2;grid-row:2/5;width:80px;height:40px;margin:0;align-self:center}
+  .comp-card-divider{display:none}
+  .comp-card-best-label{display:inline;font-size:8px}
+  .comp-card-best{display:inline;margin-left:4px;margin-bottom:0}
+  .comp-card-trend{grid-column:1/-1}
+  .progression-grid{grid-template-columns:1fr}
+  .prog-mini-chart{height:120px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+}
 
 /* Print */
 @media print{
