@@ -1343,6 +1343,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .export-scope-pill.active { border-color: var(--gold); color: var(--gold); }
 .export-action-btn { width: 100%; padding: 11px; background: var(--gold); border: none; border-radius: 8px; color: #000; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s; }
 .export-action-btn:active { opacity: 0.8; }
+.export-action-row { display: flex; gap: 8px; }
+.export-drive-btn { background: var(--surface-4, rgba(255,255,255,0.06)); color: var(--text-mid); border: 1px solid var(--border, rgba(255,255,255,0.1)); }
 .metrics-screen { padding: 16px 16px 100px; }
 .cycle-tabs { display: flex; gap: 8px; padding: 0 0 14px; overflow-x: auto; scrollbar-width: none; }
 .cycle-tabs::-webkit-scrollbar { display: none; }
@@ -2014,6 +2016,29 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
         <button class="settings-athlete-gender-btn settings-unit-pill--sm" id="calc-disp-lbs" onclick="setCalcDisplayUnit('lbs')">LBS</button>
       </div>
     </div>
+
+    <h3 class="settings-section-label">Google Drive</h3>
+    <button id="drive-backup-btn" class="settings-row-btn" onclick="backupToDrive()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 0 1 0 9z"/><polyline points="12 13 12 17"/><polyline points="10 15 12 13 14 15"/></svg>
+        Back Up to Drive
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="settings-row-btn" onclick="restoreFromDrive()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 0 1 0 9z"/><polyline points="12 17 12 13"/><polyline points="10 15 12 17 14 15"/></svg>
+        Restore from Drive
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="settings-row-btn" onclick="toggleAutoBackup()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Auto-backup after workouts
+      </div>
+      <div class="settings-toggle" id="auto-backup-toggle" role="switch" aria-checked="false" aria-label="Auto-backup toggle"></div>
+    </button>
 
     <h3 class="settings-section-label">Training Data</h3>
     <button class="settings-row-btn" onclick="downloadBackup()">
@@ -3870,7 +3895,12 @@ function _isBarbellExercise(name) {
   return COMPOUND_KEYWORDS.some(k => n.includes(k));
 }
 
-let _restTimer = { intervalId: null, remaining: 0, total: 0, exName: '' };
+let _restTimer = { intervalId: null, startedAt: 0, endsAt: 0, total: 0, exName: '' };
+
+function _restTimerRemaining() {
+  if (!_restTimer.startedAt) return 0;
+  return Math.max(0, Math.ceil((_restTimer.endsAt - Date.now()) / 1000));
+}
 
 function getRestTimerMode() { const s = loadAppSettings(); return s.restTimerMode || 'auto'; }
 function setRestTimerMode(mode) { const s = loadAppSettings(); s.restTimerMode = mode; saveAppSettings(s); updateRestTimerModalUI(); }
@@ -3884,7 +3914,6 @@ function getRestDuration(exerciseName) {
   const mode = getExerciseInputMode(exerciseName, '');
   if (mode === 'cardio') return 0;
   if (mode === 'bw' || mode === 'bw-timed') return defaults.bodyweight;
-  // All barbell exercises get compound rest time
   if (_isBarbellExercise(exerciseName)) return defaults.compound;
   return defaults.accessory;
 }
@@ -3893,8 +3922,10 @@ function startRestTimer(exerciseName) {
   if (getRestTimerMode() === 'off') return;
   const dur = getRestDuration(exerciseName);
   if (dur <= 0) return;
-  stopRestTimer(true); // clear any existing timer silently
-  _restTimer.remaining = dur;
+  stopRestTimer(true);
+  const now = Date.now();
+  _restTimer.startedAt = now;
+  _restTimer.endsAt = now + dur * 1000;
   _restTimer.total = dur;
   _restTimer.exName = exerciseName;
   const banner = document.getElementById('rest-timer-banner');
@@ -3906,11 +3937,9 @@ function startRestTimer(exerciseName) {
   updateTimerDisplay(display, ring, dur, dur);
   banner.classList.remove('hidden');
   _restTimer.intervalId = setInterval(() => {
-    _restTimer.remaining--;
-    updateTimerDisplay(display, ring, _restTimer.remaining, _restTimer.total);
-    if (_restTimer.remaining <= 0) {
-      timerComplete();
-    }
+    const rem = _restTimerRemaining();
+    updateTimerDisplay(display, ring, rem, _restTimer.total);
+    if (rem <= 0) timerComplete();
   }, 1000);
 }
 
@@ -3925,9 +3954,7 @@ function updateTimerDisplay(display, ring, remaining, total) {
 
 function timerComplete() {
   stopRestTimer(true);
-  // Vibrate
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
-  // Flash the banner briefly before hiding
   const banner = document.getElementById('rest-timer-banner');
   if (banner) {
     const label = banner.querySelector('.rest-timer-label');
@@ -3946,7 +3973,8 @@ function stopRestTimer(silent) {
     clearInterval(_restTimer.intervalId);
     _restTimer.intervalId = null;
   }
-  _restTimer.remaining = 0;
+  _restTimer.startedAt = 0;
+  _restTimer.endsAt = 0;
   if (!silent) {
     const banner = document.getElementById('rest-timer-banner');
     if (banner) banner.classList.add('hidden');
@@ -3956,9 +3984,22 @@ function stopRestTimer(silent) {
 function skipRestTimer() { stopRestTimer(); }
 
 function addRestTime(sec) {
-  _restTimer.remaining += sec;
+  _restTimer.endsAt += sec * 1000;
   _restTimer.total += sec;
 }
+
+// Background persistence: recalculate timer when returning from lock screen / background
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !_restTimer.startedAt) return;
+  const rem = _restTimerRemaining();
+  if (rem <= 0) {
+    timerComplete();
+  } else {
+    const display = document.getElementById('rest-timer-display');
+    const ring = document.getElementById('rest-timer-ring-fg');
+    if (display && ring) updateTimerDisplay(display, ring, rem, _restTimer.total);
+  }
+});
 
 function openRestTimerModal() {
   const modal = document.getElementById('rest-timer-modal');
@@ -5932,6 +5973,8 @@ function completeWorkout(){
   const _dateStr = `${_today.getFullYear()}-${_today.getMonth()+1}-${_today.getDate()}`;
   state.logs[forceKey]={done:true, completedDate: _dateStr};
   saveLogs();
+  // Fire-and-forget auto-backup to Drive (non-blocking)
+  _silentAutoBackup();
   // Capture celebration data before render() (render may mutate references)
   const _dayName = day.name;
   const _weekNum = block.weeks.findIndex(w => w.label === week.label);
@@ -6668,6 +6711,339 @@ async function onDrivePickerCallback(data) {
     }
     console.error('[Drive Import]', err);
     showParseError('error', err.message || 'Failed to import file from Google Drive.');
+  }
+}
+
+// ── GOOGLE DRIVE BACKUP ──────────────────────────────────────────────────────
+let _driveFolderIds = { root: null, backups: null, reports: null, exports: null };
+
+async function _ensureDriveToken() {
+  if (_driveAccessToken) return;
+  await requestDriveToken();
+}
+
+async function _driveApiFetch(url, opts = {}) {
+  const resp = await fetch(url, {
+    ...opts,
+    headers: { Authorization: `Bearer ${_driveAccessToken}`, ...(opts.headers || {}) }
+  });
+  if (resp.status === 401 || resp.status === 403) {
+    _driveAccessToken = null;
+    throw new Error(`Drive auth failed (${resp.status})`);
+  }
+  if (!resp.ok) throw new Error(`Drive API error (${resp.status})`);
+  return resp;
+}
+
+async function _findOrCreateFolder(name, parentId) {
+  // Search for existing folder
+  const q = parentId
+    ? `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`
+    : `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const searchResp = await _driveApiFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=1`
+  );
+  const searchData = await searchResp.json();
+  if (searchData.files && searchData.files.length > 0) return searchData.files[0].id;
+
+  // Create folder
+  const body = { name, mimeType: 'application/vnd.google-apps.folder' };
+  if (parentId) body.parents = [parentId];
+  const createResp = await _driveApiFetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const created = await createResp.json();
+  return created.id;
+}
+
+async function _ensureDriveFolders() {
+  if (_driveFolderIds.backups) return; // already resolved this session
+  _driveFolderIds.root = await _findOrCreateFolder('Unrack');
+  _driveFolderIds.backups = await _findOrCreateFolder('Backups', _driveFolderIds.root);
+  _driveFolderIds.reports = await _findOrCreateFolder('Reports', _driveFolderIds.root);
+  _driveFolderIds.exports = await _findOrCreateFolder('Exports', _driveFolderIds.root);
+}
+
+async function _uploadToDrive(fileName, content, mimeType, folderId) {
+  const metadata = { name: fileName, parents: [folderId] };
+  const boundary = '-----unrack' + Date.now();
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n${content}\r\n--${boundary}--`;
+  const resp = await _driveApiFetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', {
+      method: 'POST',
+      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+      body
+    }
+  );
+  return resp.json();
+}
+
+function _buildBackupPayload() {
+  const verEl = document.querySelector('.header-logo span');
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.3';
+  const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
+  for (const key of BACKUP_KEYS) {
+    if (_idbReady && _idbCache[key] !== undefined) {
+      data.data[key] = _idbCache[key];
+    } else {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) {
+        try { data.data[key] = JSON.parse(raw); } catch { data.data[key] = raw; }
+      }
+    }
+  }
+  return data;
+}
+
+async function backupToDrive() {
+  const btn = document.getElementById('drive-backup-btn');
+  const btnLabel = btn ? btn.querySelector('.settings-row-left') : null;
+  const origText = btnLabel ? btnLabel.lastChild.textContent : '';
+  try {
+    if (btnLabel) btnLabel.lastChild.textContent = 'Backing up...';
+    if (btn) btn.style.pointerEvents = 'none';
+    await _ensureDriveToken();
+    await _ensureDriveFolders();
+
+    const payload = _buildBackupPayload();
+    const json = JSON.stringify(payload, null, 2);
+    const ts = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const fileName = `unrack-backup-${ts}.json`;
+
+    await _uploadToDrive(fileName, json, 'application/json', _driveFolderIds.backups);
+
+    // Update last backup timestamp
+    const _bkTs = new Date().toISOString();
+    _idbPut('liftlog_last_backup', _bkTs);
+    localStorage.setItem('liftlog_last_backup', _bkTs);
+    updateBackupTimestamp();
+    _showWarningToast('Backed up to Google Drive \u2713', 'success');
+  } catch (err) {
+    console.error('[Drive Backup]', err);
+    if (err.message === 'popup_closed_by_user') return;
+    _showWarningToast('Backup failed \u2014 check connection and try again');
+  } finally {
+    if (btnLabel) btnLabel.lastChild.textContent = origText;
+    if (btn) btn.style.pointerEvents = '';
+  }
+}
+
+async function restoreFromDrive() {
+  try {
+    await _ensureDriveToken();
+    await _ensureDriveFolders();
+    await loadPickerApi();
+
+    const folderView = new google.picker.DocsView()
+      .setParent(_driveFolderIds.backups)
+      .setMimeTypes('application/json')
+      .setSelectFolderEnabled(false);
+
+    const picker = new google.picker.PickerBuilder()
+      .setDeveloperKey(DRIVE_API_KEY)
+      .setOAuthToken(_driveAccessToken)
+      .setAppId('868418344070')
+      .addView(folderView)
+      .setTitle('Select an Unrack backup to restore')
+      .setCallback(_onRestorePickerCallback)
+      .build();
+    picker.setVisible(true);
+  } catch (err) {
+    console.error('[Drive Restore]', err);
+    _driveAccessToken = null;
+    if (err.message !== 'popup_closed_by_user') {
+      _showWarningToast('Google Drive sign-in failed. Please try again.');
+    }
+  }
+}
+
+async function _onRestorePickerCallback(data) {
+  if (data.action !== google.picker.Action.PICKED) return;
+  const doc = data.docs[0];
+  if (!doc) return;
+  try {
+    const resp = await _driveApiFetch(
+      `https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`
+    );
+    const text = await resp.text();
+    const backup = JSON.parse(text);
+    validateAndRestore(backup, doc.name || 'Drive backup');
+  } catch (err) {
+    console.error('[Drive Restore]', err);
+    _showWarningToast('Failed to read backup file from Drive.');
+  }
+}
+
+// ── AUTO-BACKUP ──────────────────────────────────────────────────────────────
+function isAutoBackupEnabled() {
+  const s = loadAppSettings();
+  return s.driveAutoBackup === true;
+}
+
+function setAutoBackup(enabled) {
+  const s = loadAppSettings();
+  s.driveAutoBackup = enabled;
+  saveAppSettings(s);
+}
+
+async function toggleAutoBackup() {
+  const toggle = document.getElementById('auto-backup-toggle');
+  if (isAutoBackupEnabled()) {
+    // Disable
+    setAutoBackup(false);
+    if (toggle) { toggle.classList.remove('on'); toggle.setAttribute('aria-checked', 'false'); }
+    return;
+  }
+  // Enable — ensure Drive auth first
+  try {
+    await _ensureDriveToken();
+    setAutoBackup(true);
+    if (toggle) { toggle.classList.add('on'); toggle.setAttribute('aria-checked', 'true'); }
+  } catch (err) {
+    if (err.message !== 'popup_closed_by_user') {
+      _showWarningToast('Google Drive sign-in failed. Please try again.');
+    }
+  }
+}
+
+function updateAutoBackupToggleUI() {
+  const toggle = document.getElementById('auto-backup-toggle');
+  if (!toggle) return;
+  const on = isAutoBackupEnabled();
+  toggle.classList.toggle('on', on);
+  toggle.setAttribute('aria-checked', String(on));
+}
+
+async function _silentAutoBackup() {
+  if (!isAutoBackupEnabled()) return;
+  if (!_driveAccessToken) return; // don't prompt OAuth — skip silently
+  try {
+    await _ensureDriveFolders();
+    const payload = _buildBackupPayload();
+    const json = JSON.stringify(payload, null, 2);
+    const ts = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const fileName = `unrack-auto-backup-${ts}.json`;
+    await _uploadToDrive(fileName, json, 'application/json', _driveFolderIds.backups);
+    // Update timestamp
+    const _bkTs = new Date().toISOString();
+    _idbPut('liftlog_last_backup', _bkTs);
+    localStorage.setItem('liftlog_last_backup', _bkTs);
+    // Retention cleanup — keep last 10 auto-backups
+    await _cleanupAutoBackups();
+    console.log('[Drive] Auto-backup complete:', fileName);
+  } catch (err) {
+    console.warn('[Drive] Auto-backup failed (silent):', err.message);
+  }
+}
+
+async function _cleanupAutoBackups() {
+  try {
+    const q = `'${_driveFolderIds.backups}' in parents and name contains 'auto-backup' and trashed=false`;
+    const resp = await _driveApiFetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&orderBy=name&fields=files(id,name)&pageSize=50`
+    );
+    const data = await resp.json();
+    const files = data.files || [];
+    if (files.length <= 10) return;
+    // Files are sorted by name (which sorts chronologically due to ISO timestamp)
+    const toDelete = files.slice(0, files.length - 10);
+    for (const f of toDelete) {
+      await _driveApiFetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, { method: 'DELETE' });
+    }
+    console.log(`[Drive] Cleaned up ${toDelete.length} old auto-backups`);
+  } catch (err) {
+    console.warn('[Drive] Retention cleanup failed:', err.message);
+  }
+}
+
+// Binary multipart upload (for xlsx)
+async function _uploadBinaryToDrive(fileName, uint8Array, mimeType, folderId) {
+  const metadata = JSON.stringify({ name: fileName, parents: [folderId] });
+  const boundary = '-----unrack' + Date.now();
+  const headerPart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\nContent-Transfer-Encoding: base64\r\n\r\n`;
+  const footerPart = `\r\n--${boundary}--`;
+  // Base64-encode the binary data
+  let b64 = '';
+  const chunk = 8192;
+  for (let i = 0; i < uint8Array.length; i += chunk) {
+    b64 += String.fromCharCode.apply(null, uint8Array.subarray(i, i + chunk));
+  }
+  b64 = btoa(b64);
+  const body = headerPart + b64 + footerPart;
+  const resp = await _driveApiFetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', {
+      method: 'POST',
+      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+      body
+    }
+  );
+  return resp.json();
+}
+
+// ── EXPORT TO DRIVE ──────────────────────────────────────────────────────────
+async function exportReportToDrive(blockId) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  try {
+    _showWarningToast('Saving report to Drive...', 'success');
+    await _ensureDriveToken();
+    await _ensureDriveFolders();
+    // Build the HTML content by calling the same generation logic
+    const html = _buildHTMLReport(blockId);
+    if (!html) { _showWarningToast('Failed to generate report.'); return; }
+    const safeName = (block.name || 'Training').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `Training_Report_${safeName}_${dateStr}.html`;
+    await _uploadToDrive(fileName, html, 'text/html', _driveFolderIds.reports);
+    _showWarningToast('Report saved to Drive \u2713', 'success');
+  } catch (err) {
+    console.error('[Drive Export Report]', err);
+    if (err.message !== 'popup_closed_by_user') _showWarningToast('Failed to save report to Drive.');
+  }
+}
+
+async function exportLogToDrive(blockId) {
+  const overlay = document.getElementById('export-modal-overlay');
+  const scope = overlay ? overlay._logScope : 'full';
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  try {
+    _showWarningToast('Saving log to Drive...', 'success');
+    await _ensureDriveToken();
+    await _ensureDriveFolders();
+    const wb = _buildTrainingLogWorkbook(blockId, scope);
+    if (!wb) { _showWarningToast('No data to export.'); return; }
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const safeName = (block.name || 'Training').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const scopeStr = scope === 'week' ? '-week' : '';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `${safeName}-training-log${scopeStr}-${dateStr}.xlsx`;
+    await _uploadBinaryToDrive(fileName, new Uint8Array(wbout), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', _driveFolderIds.exports);
+    _showWarningToast('Training log saved to Drive \u2713', 'success');
+  } catch (err) {
+    console.error('[Drive Export Log]', err);
+    if (err.message !== 'popup_closed_by_user') _showWarningToast('Failed to save log to Drive.');
+  }
+}
+
+async function exportCSVToDrive() {
+  try {
+    _showWarningToast('Saving CSV to Drive...', 'success');
+    await _ensureDriveToken();
+    await _ensureDriveFolders();
+    const csv = _buildCSVContent();
+    if (!csv) { _showWarningToast('No logged workout data to export.'); return; }
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `unrack-training-history-${dateStr}.csv`;
+    await _uploadToDrive(fileName, csv, 'text/csv', _driveFolderIds.exports);
+    _showWarningToast('CSV saved to Drive \u2713', 'success');
+  } catch (err) {
+    console.error('[Drive Export CSV]', err);
+    if (err.message !== 'popup_closed_by_user') _showWarningToast('Failed to save CSV to Drive.');
   }
 }
 
@@ -8257,6 +8633,7 @@ function openSettings(scrollTo) {
   updateBackupTimestamp();
   updateCalcDisplayUnitUI();
   updateRestTimerToggleUI();
+  updateAutoBackupToggleUI();
   modal.style.display = 'flex';
   requestAnimationFrame(() => {
     modal.classList.add('open');
@@ -8327,7 +8704,10 @@ function openExportModal(blockId) {
         <button class="export-scope-pill active" id="log-scope-week" onclick="setLogScope('week')">This Week</button>
         <button class="export-scope-pill" id="log-scope-full" onclick="setLogScope('full')">Full Block</button>
       </div>
-      <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')">Download Excel</button>
+      <div class="export-action-row">
+        <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')" style="flex:1">Download</button>
+        <button class="export-action-btn export-drive-btn" onclick="exportLogToDrive('${blockId}')" style="flex:1">Save to Drive</button>
+      </div>
     </div>
 
     <!-- Training Report Card -->
@@ -8346,8 +8726,34 @@ function openExportModal(blockId) {
           <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts — full block</div>
         </div>
       </div>
-      <button class="export-action-btn" onclick="exportHTMLReport('${blockId}');closeExportModal()">Training Report</button>
-      <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:8px;letter-spacing:0.03em">Save as PDF via share sheet ↑</div>
+      <div class="export-action-row">
+        <button class="export-action-btn" onclick="exportHTMLReport('${blockId}');closeExportModal()" style="flex:1">View Report</button>
+        <button class="export-action-btn export-drive-btn" onclick="exportReportToDrive('${blockId}')" style="flex:1">Save to Drive</button>
+      </div>
+    </div>
+
+    <!-- Training History CSV Card -->
+    <div class="export-card">
+      <div class="export-card-header">
+        <svg class="export-card-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#4A90D9"/>
+          <path d="M10 10h16v3H10z" fill="white" opacity="0.9"/>
+          <path d="M10 15h8v2H10z" fill="white" opacity="0.4"/>
+          <path d="M20 15h6v2h-6z" fill="white" opacity="0.4"/>
+          <path d="M10 19h8v2H10z" fill="white" opacity="0.4"/>
+          <path d="M20 19h6v2h-6z" fill="white" opacity="0.4"/>
+          <path d="M10 23h8v2H10z" fill="white" opacity="0.4"/>
+          <path d="M20 23h6v2h-6z" fill="white" opacity="0.4"/>
+        </svg>
+        <div class="export-card-info">
+          <div class="export-card-name">Training History</div>
+          <div class="export-card-desc">All logged sets across all programs — CSV file</div>
+        </div>
+      </div>
+      <div class="export-action-row">
+        <button class="export-action-btn" onclick="closeSettings();exportCSV()" style="flex:1">Download</button>
+        <button class="export-action-btn export-drive-btn" onclick="exportCSVToDrive()" style="flex:1">Save to Drive</button>
+      </div>
     </div>
   </div>`;
 
@@ -8369,18 +8775,15 @@ function setLogScope(scope) {
   document.getElementById('log-scope-full').classList.toggle('active', scope === 'full');
 }
 
-function exportTrainingLog(blockId) {
-  const overlay = document.getElementById('export-modal-overlay');
-  const scope = overlay ? overlay._logScope : 'full';
-
+function _buildTrainingLogWorkbook(blockId, scope) {
   const block = state.blocks.find(b => b.id === blockId);
-  if (!block) return;
+  if (!block) return null;
 
   let weeks = block.weeks || [];
   if (scope === 'week') {
     const activeWeekLabel = block.weeks[state.activeWeek]?.label;
     weeks = block.weeks.filter(w => w.label === activeWeekLabel);
-    if (!weeks.length) { _showWarningToast('No data for current week.'); return; }
+    if (!weeks.length) return null;
   }
 
   const blockLogs = {};
@@ -8499,17 +8902,25 @@ function exportTrainingLog(blockId) {
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
   }
 
+  return wb;
+}
+
+function exportTrainingLog(blockId) {
+  const overlay = document.getElementById('export-modal-overlay');
+  const scope = overlay ? overlay._logScope : 'full';
+  const wb = _buildTrainingLogWorkbook(blockId, scope);
+  if (!wb) { _showWarningToast('No data for current week.'); return; }
+  const block = state.blocks.find(b => b.id === blockId);
   const dateStr = new Date().toISOString().slice(0, 10);
   const safeName = displayBlockName(block.name).replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'training';
   const scopeStr = scope === 'week' ? '-' + (block.weeks[state.activeWeek]?.label || 'week').toLowerCase().replace(/\s+/g, '') : '';
   XLSX.writeFile(wb, `${safeName}-training-log${scopeStr}-${dateStr}.xlsx`, { cellStyles: true });
-
   closeExportModal();
 }
 
-function exportHTMLReport(blockId) {
+function _buildHTMLReport(blockId) {
   const block = state.blocks.find(b => b.id === blockId);
-  if (!block) return;
+  if (!block) return null;
   const weeks = block.weeks || [];
 
   const blockLogs = {};
@@ -9388,6 +9799,12 @@ ${miniProgScripts}
 </body>
 </html>`;
 
+  return html;
+}
+
+function exportHTMLReport(blockId) {
+  const html = _buildHTMLReport(blockId);
+  if (!html) return;
   // In-app overlay instead of window.open (WKWebView compatible)
   const overlay = document.createElement('div');
   overlay.id = 'report-overlay';
@@ -9407,7 +9824,7 @@ ${miniProgScripts}
 
 
 // ── CSV EXPORT ────────────────────────────────────────────────────────────────
-function exportCSV() {
+function _buildCSVContent() {
   const rows = [['Date','Exercise','Set','Weight','Reps','RPE','e1RM','Block','Week','Day']];
 
   for (const block of state.blocks) {
@@ -9477,13 +9894,17 @@ function exportCSV() {
     }
   }
 
-  if (rows.length <= 1) { _showWarningToast('No logged workout data to export.'); return; }
+  if (rows.length <= 1) return null;
 
-  // Build CSV string with proper escaping
-  const csv = rows.map(r => r.map(v => {
+  return rows.map(r => r.map(v => {
     const s = String(v);
     return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }).join(',')).join('\n');
+}
+
+function exportCSV() {
+  const csv = _buildCSVContent();
+  if (!csv) { _showWarningToast('No logged workout data to export.'); return; }
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -9495,7 +9916,7 @@ function exportCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  _showWarningToast('CSV exported ✓','success');
+  _showWarningToast('CSV exported \u2713','success');
 }
 
 // ── DATA BACKUP & RESTORE ─────────────────────────────────────────────────────
