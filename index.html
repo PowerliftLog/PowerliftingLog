@@ -1326,7 +1326,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.55); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+.bottom-nav { position: fixed; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.65); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.5); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
 .nav-btn.active .nav-icon { color: #ffffff; }
@@ -1574,8 +1574,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
 [data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
-[data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.55); border-color: rgba(255,255,255,0.10); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-[data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.55); border-color: rgba(255,255,255,0.7); box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+[data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.65); border-color: rgba(255,255,255,0.10); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+[data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.65); border-color: rgba(255,255,255,0.7); box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
 [data-theme="light"] .nav-btn.active .nav-icon { color: var(--text-primary); }
 [data-theme="light"] .add-lift-btn { color: var(--text-dim); border-color: var(--border); }
 [data-theme="light"] .group-pill.active { color: var(--gold); border-color: var(--gold); }
@@ -1758,7 +1758,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.5</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/08/26b</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.6</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/08/26c</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2095,7 +2095,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.5 · Build 3/08/26b</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.6 · Build 3/08/26c</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2654,6 +2654,7 @@ function buildMetrics(drillBlockId){
     const group=classifyLift(exName);
     if(!group) continue;
     if(!isTracked(exName)) continue;
+    if(!isCompLift(parts[3])) continue; // Only comp lifts for 1RM metrics
 
     const block=state.blocks.find(b=>b.id===blockId);
     if(!block) continue;
@@ -3261,7 +3262,7 @@ function _renderTrackedList(){
     items.forEach(ex => {
       const isRemoved = _trackStagedRemoves.has(ex.key);
       h += `<div class="tracked-item${isRemoved?' staged-remove':''}" data-key="${esc(ex.key)}">
-        <span class="tracked-item-name">${escH(ex.name)}</span>
+        <span class="tracked-item-name">${escH(_displayExName(ex.name))}</span>
         <button class="tracked-item-remove" onclick="_toggleTrackRemove('${esc(ex.key)}')" title="${isRemoved?'Undo remove':'Remove'}">${isRemoved?'↩':'×'}</button>
       </div>`;
     });
@@ -3289,7 +3290,7 @@ function _renderAvailableList(){
     const isAdded = _trackStagedAdds.has(ex.key);
     h += `<div class="available-item${isAdded?' staged-add':''}" onclick="_toggleTrackAdd('${esc(ex.key)}')">
       <div>
-        <span class="available-item-name">${escH(ex.name)}</span>
+        <span class="available-item-name">${escH(_displayExName(ex.name))}</span>
         <span class="available-item-group">${ex.group}</span>
       </div>
       <span class="available-item-add">${isAdded?'✓':'+'}</span>
@@ -4816,7 +4817,7 @@ function renderHome() {
       const pres = (ex.prescription || '').slice(0, 20) + (ex.prescription?.length > 20 ? '…' : '');
       return `<div class="home-hero-ex">
         <div class="home-hero-ex-dot"></div>
-        <div class="home-hero-ex-name">${escH(ex.name)}</div>
+        <div class="home-hero-ex-name">${escH(_displayExName(ex.name))}</div>
         <div class="home-hero-ex-pres">${escH(pres)}</div>
       </div>`;
     }).join('');
@@ -5003,74 +5004,11 @@ function renderHome() {
     </div>`;
   }
 
-  // ── Middle row: Last Workout + Week Ring (only when workouts exist) ──
-  // Suppress when block is complete — the combined card covers everything
-  // Show middle row in normal state AND finish-prompt state (not block-complete)
-  const lastWorkoutHtml = (!isBlockComplete && nwInfo && (!nwInfo.allDone || showFinishPrompt)) ? renderLastWorkoutCard() : '';
-  const hasCompletedWorkouts = !!getLastCompletedWorkout();
-  const weekCardHtml = (!isBlockComplete && hasCompletedWorkouts) ? renderWeekCard() : '';
-  const middleRowHtml = (lastWorkoutHtml || weekCardHtml)
-    ? `<div class="home-row">${lastWorkoutHtml}${weekCardHtml}</div>` : '';
-
-  // ── Program Overview card (replaces "This Week" when no workouts done) ──
-  const programOverviewHtml = !hasCompletedWorkouts ? renderProgramOverview() : '';
+  // ── Program Overview card (always shown) ──
+  const programOverviewHtml = renderProgramOverview();
 
   // Finish Block prompt is now in the hero card (showFinishPrompt state)
   const finishBlockHtml = '';
-
-  // ── Weekly Summary card ──
-  const weekSummary = isBlockComplete ? null : getWeeklySummary();
-  let weeklySummaryHtml = '';
-  if (weekSummary) {
-    const ringWeekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
-    const isFallback = weekSummary.weekIdx !== ringWeekIdx;
-    const summaryWeek = block.weeks[weekSummary.weekIdx];
-    const completedCount = (summaryWeek?.days || []).filter(d => isDayComplete(block, summaryWeek, d)).length;
-    const totalDayCount = (summaryWeek?.days || []).length;
-
-    let liftRows = '';
-    for (const [group, fullName] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-      const data = weekSummary.bestLifts[group];
-      if (!data) continue;
-      const dispW = Math.round(data.weight);
-      const e1rm = calc1rm(data.weight, data.reps, data.rpe);
-      const e1rmDisp = e1rm ? Math.round(e1rm.value) : null;
-      const varLabel = data.isVariation ? ` <span class="var-label">(${escH(data.name)})</span>` : '';
-      liftRows += `<div class="week-summary-lift-row">
-        <div class="week-summary-lift-name">${fullName}</div>
-        <div class="week-summary-lift-set">${dispW}×${data.reps}${data.rpe ? `<span class="rpe-val">@${data.rpe}</span>` : ''}${varLabel}</div>
-        ${e1rmDisp ? `<div class="week-summary-lift-e1rm"><div class="week-summary-e1rm-val">${e1rmDisp}</div><div class="week-summary-e1rm-label">E1RM</div></div>` : ''}
-      </div>`;
-    }
-
-    const volThreshold = getDisplayUnit() === 'kg' ? 4500 : 10000;
-    const vol = weekSummary.totalVolume >= volThreshold
-      ? (weekSummary.totalVolume / 1000).toFixed(1) + 'k'
-      : weekSummary.totalVolume.toLocaleString();
-    const volUnit = weekSummary.totalVolume >= volThreshold ? '' : ' '+getDisplayUnit();
-
-    weeklySummaryHtml = `<div class="home-week-summary">
-      <div class="home-week-summary-header">
-        <h2 class="home-week-summary-label">${isFallback ? 'Last Week' : 'This Week'} · ${escH(weekSummary.weekLabel)}</h2>
-        <div class="home-week-summary-meta">${completedCount}/${totalDayCount} days</div>
-      </div>
-      ${liftRows ? `<div class="week-summary-lifts">${liftRows}</div>` : ''}
-      <div class="week-summary-stats">
-        <div class="week-summary-stat">
-          <div class="week-summary-stat-val">${vol}<span class="unit">${volUnit}</span></div>
-          <div class="week-summary-stat-label">Volume</div>
-        </div>
-        <div class="week-summary-stat">
-          <div class="week-summary-stat-val">${weekSummary.totalSets}</div>
-          <div class="week-summary-stat-label">Sets</div>
-        </div>
-        <div class="week-summary-stat">
-          <div class="week-summary-stat-val">${weekSummary.avgRpe || '—'}</div>
-          <div class="week-summary-stat-label">Avg RPE</div>
-        </div>
-      </div>
-    </div>`;
-  }
 
   // Build update banner placeholder
   const updateBannerHtml = document.getElementById('update-banner') ? '<div id="update-banner-slot"></div>' : '';
@@ -5080,10 +5018,8 @@ function renderHome() {
     ${demoBannerHtml}
     ${updateBannerHtml}
     ${heroHtml}
-    ${middleRowHtml}
     ${programOverviewHtml}
     ${finishBlockHtml}
-    ${weeklySummaryHtml}
   </div>`;
 
   // Move update banner into the slot if it exists
@@ -5329,6 +5265,12 @@ function renderNextWorkoutBanner(block) {
   </div>`;
 }
 
+// Strip "Circuit-", "Circuit:", "Circuit " prefix from exercise display names
+function _displayExName(name) {
+  if (!name) return '';
+  return name.replace(/^circuit[\s\-:]+/i, '').trim();
+}
+
 function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   let h = '';
   const key=lk(block.id,week.label,day.name,ex.name);
@@ -5445,7 +5387,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
   h+=`<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
-      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${escH(ex.displayName||ex.name)}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
+      <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${escH(_displayExName(ex.displayName||ex.name))}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
     </div>
     <div class="ex-summary-right">
@@ -5701,7 +5643,7 @@ function renderExerciseList(block, week, day) {
       const groupExpandKeys = item.exercises.map((ex, i) => lk(block.id, week.label, day.name, ex.name) + '||' + (startIdx + i));
       h += `<div class="superset-group">`;
       const _displayLabel = item.label.replace(/_\d+$/, '');
-      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${_displayLabel}</span><span class="superset-label">${item.exercises.map(e=>escH(e.name)).join(" · ")}</span></div>`;
+      h += `<div class="superset-header" onclick="toggleExpand('${esc(groupExpandKeys[0])}','${esc(groupExpandKeys.join(':::'))}')" style="cursor:pointer"><span class="superset-badge">${_displayLabel}</span><span class="superset-label">${item.exercises.map(e=>escH(_displayExName(e.name))).join(" · ")}</span></div>`;
       item.exercises.forEach(ex => { h += renderExCard(ex, groupExpandKeys, block, week, day, globalExIdx++); });
       h += `</div>`;
     }
@@ -6412,7 +6354,7 @@ function toggleSet(key){
   updateProgressBar();
   updateDayTabCheckmarks();
   // Auto-start rest timer when checking a set
-  if (nowDone && getRestTimerMode() === 'auto') {
+  if (nowDone && getRestTimerMode() === 'auto' && _shouldFireRestTimer(key)) {
     const exName = _resolveExNameFromKey(key);
     if (exName) startRestTimer(exName);
   }
@@ -6421,6 +6363,36 @@ function _resolveExNameFromKey(setKey) {
   // setKey format: blockId||weekLabel||dayName||exName||s0
   const parts = setKey.split('||');
   return parts.length >= 4 ? parts[3] : null;
+}
+
+// Circuit-aware rest timer gate: returns true if timer should fire for this set key.
+// For non-circuit exercises, always true. For circuit exercises, only true when
+// all exercises in the same circuit have the same set number marked done.
+function _shouldFireRestTimer(setKey) {
+  const parts = setKey.split('||');
+  if (parts.length < 5) return true;
+  const [blockId, weekLabel, dayName, exName] = parts;
+  const setIdx = parts[4]; // e.g. "s0", "s1"
+
+  // Find the exercise object to check supersetGroup
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return true;
+  const week = block.weeks.find(w => w.label === weekLabel);
+  if (!week) return true;
+  const day = week.days.find(d => d.name === dayName);
+  if (!day) return true;
+  const ex = day.exercises.find(e => e.name === exName);
+  if (!ex || !ex.supersetGroup) return true; // Not in a circuit — fire normally
+
+  const groupLabel = ex.supersetGroup.label;
+  // Find all sibling exercises in the same circuit
+  const siblings = day.exercises.filter(e => e.supersetGroup && e.supersetGroup.label === groupLabel);
+  // Check if all siblings have this set number done
+  for (const sib of siblings) {
+    const sibKey = [blockId, weekLabel, dayName, sib.name, setIdx].join('||');
+    if (!state.logs[sibKey]?.done) return false;
+  }
+  return true;
 }
 
 // ── SET TYPE TAGGING (removed — kept stub for log compat) ─────────────────────
@@ -6545,7 +6517,7 @@ function setActual(key,v){
   if (shouldCheck) _maybeAdvanceWeek();
 
   // Start rest timer BEFORE DOM calls (which could throw and prevent timer)
-  if (shouldCheck && !existing.done && getRestTimerMode() === 'auto') {
+  if (shouldCheck && !existing.done && getRestTimerMode() === 'auto' && _shouldFireRestTimer(key)) {
     try {
       const exName = _resolveExNameFromKey(key);
       if (exName) startRestTimer(exName);
@@ -6718,7 +6690,7 @@ function showCelebration(dayName, meta, onDismiss) {
         : '';
       const nameClass = isSkipped ? 'cel-ex-name cel-ex-done' : 'cel-ex-name';
       return `<div class="cel-ex-row">
-        <div class="${nameClass}">${escH(ex.name)}</div>
+        <div class="${nameClass}">${escH(_displayExName(ex.name))}</div>
         <div class="cel-ex-sets">${statusStr}</div>
       </div>`;
     }).join('');
@@ -6953,7 +6925,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.5';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.6';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -9355,6 +9327,7 @@ function _buildHTMLReport(blockId) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
     const exName = canonicalizeLift(parts[3]);
+    if (!isCompLift(parts[3])) continue; // Only comp lifts for 1RM/DOTS
     const group = classifyLift(exName);
     if (!group || !families[group]) continue;
 
@@ -10397,7 +10370,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.5';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.6';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage

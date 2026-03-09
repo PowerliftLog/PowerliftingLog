@@ -880,9 +880,9 @@ function parseBSheet(sn,rows){
 
       const normName=aStr.replace(/\s+/g,' ').trim();
 
-      const isCircuitRow = /^circuit\s/i.test(normName) || (normName.match(/,/g)||[]).length >= 2;
+      const isCircuitRow = /^circuit[\s\-:]/i.test(normName) || (normName.match(/,/g)||[]).length >= 2;
       if(isCircuitRow){
-        const stripped = normName.replace(/^circuit\s+/i,'').trim();
+        const stripped = normName.replace(/^circuit[\s\-:]+/i,'').trim();
         const parts = stripped.split(/,\s*/);
         if(parts.length >= 2){
           const _circuitIdx = curDay.exercises.length;
