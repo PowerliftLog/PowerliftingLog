@@ -297,7 +297,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .rest-dur-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3, rgba(255,255,255,0.06)); color: var(--text-primary); font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Barlow', sans-serif; }
 .rest-dur-btn:active { background: rgba(201,168,76,0.15); }
 .rest-dur-value { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); min-width: 44px; text-align: center; }
-.rest-trigger-btn { margin-left: auto; display: flex; align-items: center; gap: 5px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.rest-trigger-btn { display: flex; align-items: center; gap: 5px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
 .rest-trigger-btn:active { background: rgba(201,168,76,0.2); }
 .ex-unit-toggle { display: inline-flex; gap: 2px; margin-left: auto; flex-shrink: 0; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 6px; padding: 2px; }
 .ex-unit-toggle-btn { padding: 3px 8px; border-radius: 4px; border: none; background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: all 0.15s; line-height: 1; }
@@ -453,6 +453,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .exercise-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: var(--green); }
 .exercise-check.inferred { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2); color: rgba(74,222,128,0.5); }
 .prescription { padding: 0 16px 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; color: var(--gold-data); letter-spacing: 0.03em; }
+.pres-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
+.pres-row .prescription { padding: 0; flex: 1; min-width: 0; }
+.pres-row-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .prescription.purple { color: var(--gold-data); }
 .sets-grid { padding: 4px 16px 14px; display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--surface-3); }
@@ -1326,9 +1329,10 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.70); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
-.nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
-.nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.5); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
+.bottom-nav-fade { position: fixed; bottom: 0; left: 0; right: 0; height: 85px; background: linear-gradient(to bottom, rgba(10,10,10,0) 0%, rgba(10,10,10,0.6) 35%, rgba(10,10,10,0.95) 100%); pointer-events: none; z-index: 199; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(18,18,18,0.92); border-top: 1px solid rgba(255,255,255,0.08); display: flex; z-index: 200; padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
+.nav-btn { flex: 1; padding: 8px 0 7px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 1.5px solid transparent; border-radius: 12px; cursor: pointer; color: #777; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.35); }
 .nav-btn.active .nav-icon { color: #ffffff; }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 22px; height: 22px; fill: currentColor; }
@@ -1574,8 +1578,11 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
 [data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
-[data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.70); border-color: rgba(255,255,255,0.10); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-[data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.70); border-color: rgba(255,255,255,0.7); box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+[data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.92); border-color: rgba(255,255,255,0.08); }
+[data-theme="navy"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0.6) 35%, rgba(10,14,26,0.95) 100%); }
+[data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.92); border-color: rgba(0,0,0,0.08); }
+[data-theme="light"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(242,237,228,0) 0%, rgba(242,237,228,0.6) 35%, rgba(242,237,228,0.95) 100%); }
+[data-theme="light"] .nav-btn { color: #999; }
 [data-theme="light"] .nav-btn.active .nav-icon { color: var(--text-primary); }
 [data-theme="light"] .add-lift-btn { color: var(--text-dim); border-color: var(--border); }
 [data-theme="light"] .group-pill.active { color: var(--gold); border-color: var(--gold); }
@@ -1816,6 +1823,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
     </div>
   </div>
 
+  <div class="bottom-nav-fade"></div>
   <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
     <button class="nav-btn" id="nav-home" onclick="setScreen('home')" aria-label="Home">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
@@ -5425,18 +5433,12 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       </div>`;
     } else {
       const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
-      const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
+      const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
+      const _unitToggleHtml = exUnitToggleHtml(ex.name);
       if(isCustomEx && state.editingDay){
         h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px 4px">
           <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Exercise</button>
           <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
-          ${_restBtnHtml}
-          ${exUnitToggleHtml(ex.name)}
-        </div>`;
-      } else if(_showRestBtn || exUnitToggleHtml(ex.name)){
-        h+=`<div style="display:flex;align-items:center;gap:6px;padding:10px 16px 4px">
-          ${_restBtnHtml}
-          ${exUnitToggleHtml(ex.name)}
         </div>`;
       }
     }
@@ -5450,7 +5452,14 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       return `<div class="set-prev-hint">Last: ${hint}</div>`;
     }
 
+    // Build inline controls (Rest + LBS/KG) for prescription row
+    const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
+    const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
+    const _unitToggleHtml = exUnitToggleHtml(ex.name);
+    const _inlineControls = (_restBtnHtml || _unitToggleHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}</div>` : '';
+
     if(hasSets){
+      h+=_inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
       h+=`<div class="sets-grid">`;
       const _isBarbell = _isBarbellExercise(ex.name);
       sets.forEach((s,si)=>{
@@ -5488,7 +5497,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       }
       h+=`</div>`;
     } else if(pres&&simple){
-      h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
+      h+=`<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
       for(let si=0;si<simple.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
@@ -5512,6 +5521,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       }
       h+=`</div>`;
     } else if(pres&&ranged){
+      h+=_inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
       h+=`<div class="sets-grid">`;
       for(let si=0;si<ranged.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
@@ -5538,6 +5548,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       }
       h+=`</div>`;
     } else if(bareWithRounds){
+      h+=_inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
       h+=`<div class="sets-grid">`;
       for(let si=0;si<bareWithRounds.sets;si++){
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
@@ -5563,7 +5574,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
       h+=`</div>`;
     } else if(pres){
       const sk=key+`||s0`; const sl=state.logs[sk]||{};
-      h+=`<div class="prescription purple">${pres}</div><div class="sets-grid">`;
+      h+=`<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
       h+=`<div class="set-row">
         <div class="set-presc-col">${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div></div>
         ${setInputsHtml(sk,sl,getDisplayUnit(),0)}
