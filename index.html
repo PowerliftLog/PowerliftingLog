@@ -9322,6 +9322,7 @@ function _buildHTMLReport(blockId) {
 
   // ── Gather e1RM data by family → exercise → week ─────────────────────────
   const families = { squat: {}, bench: {}, deadlift: {} };
+  const compFlags = {}; // exName → true if raw name passes isCompLift (mirrors metrics hero cards)
 
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
@@ -9329,6 +9330,9 @@ function _buildHTMLReport(blockId) {
     const exName = canonicalizeLift(parts[3]);
     const group = classifyLift(exName) || classifyLift(parts[3]);
     if (!group || !families[group]) continue;
+
+    // Tag comp lifts using RAW name — same approach as metrics hero cards
+    if (isCompLift(parts[3])) compFlags[exName] = true;
 
     const si = parseInt(parts[4].slice(1));
     let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
@@ -9405,11 +9409,19 @@ function _buildHTMLReport(blockId) {
     const exercises = families[groupKey];
     const exNames = Object.keys(exercises);
     if (!exNames.length) return null;
-    const compNames = exNames.filter(n => isCompLift(n));
+    // Prefer comp lifts (tagged via raw name isCompLift), fall back to highest e1RM variation
+    const compNames = exNames.filter(n => compFlags[n]);
     const isVariation = compNames.length === 0;
     let primary;
     if (compNames.length) {
+      // If multiple comp-like names, pick the one with the highest best e1RM
+      let bestVal = 0;
       primary = compNames[0];
+      for (const n of compNames) {
+        for (const d of Object.values(exercises[n])) {
+          if (d.e1rm > bestVal) { bestVal = d.e1rm; primary = n; }
+        }
+      }
     } else {
       let bestVal = 0;
       primary = exNames[0];
@@ -9638,7 +9650,7 @@ function _buildHTMLReport(blockId) {
     for (const [exName, weekData] of Object.entries(exercises)) {
       const d = weekData[weekLabel];
       if (!d) continue;
-      const isComp = isCompLift(exName);
+      const isComp = !!compFlags[exName];
       if (isComp && (!bestComp || d.e1rm > bestComp.e1rm)) {
         bestComp = { ...d, exName, isVariation: false };
       } else if (!isComp && (!bestVar || d.e1rm > bestVar.e1rm)) {
