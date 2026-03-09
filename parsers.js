@@ -14,9 +14,9 @@ const LIFT_GROUPS = {
 };
 
 const COMP_KEYWORDS = {
-  squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat'],
+  squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat','barbell back squat','barbell low bar squat','barbell comp squat','barbell competition squat'],
   bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift'],
+  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift'],
 };
 
 const VARIATION_MODIFIERS = [
