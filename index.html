@@ -1326,7 +1326,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: 2px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.70); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+.bottom-nav { position: fixed; bottom: 4px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.70); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.5); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
 .nav-btn.active .nav-icon { color: #ffffff; }
@@ -1758,7 +1758,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.6</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/08/26c</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.7</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/08/26d</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2095,7 +2095,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.6 · Build 3/08/26c</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.7 · Build 3/08/26d</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -6925,7 +6925,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.6';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.7';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -9320,9 +9320,19 @@ function _buildHTMLReport(blockId) {
   const cs = getComputedStyle(document.documentElement);
   const tv = (v) => cs.getPropertyValue(v).trim();
 
+  // ── Pre-scan: identify comp lift names per group (mirrors metrics hero cards line 2878) ──
+  const compLiftName = { squat: null, bench: null, deadlift: null };
+  for (const [key] of Object.entries(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const rawName = parts[3];
+    if (!isCompLift(rawName)) continue;
+    const g = classifyLift(rawName);
+    if (g && !compLiftName[g]) compLiftName[g] = canonicalizeLift(rawName);
+  }
+
   // ── Gather e1RM data by family → exercise → week ─────────────────────────
   const families = { squat: {}, bench: {}, deadlift: {} };
-  const compFlags = {}; // exName → true if raw name passes isCompLift (mirrors metrics hero cards)
 
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
@@ -9330,9 +9340,6 @@ function _buildHTMLReport(blockId) {
     const exName = canonicalizeLift(parts[3]);
     const group = classifyLift(exName) || classifyLift(parts[3]);
     if (!group || !families[group]) continue;
-
-    // Tag comp lifts using RAW name — same approach as metrics hero cards
-    if (isCompLift(parts[3])) compFlags[exName] = true;
 
     const si = parseInt(parts[4].slice(1));
     let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
@@ -9409,9 +9416,9 @@ function _buildHTMLReport(blockId) {
     const exercises = families[groupKey];
     const exNames = Object.keys(exercises);
     if (!exNames.length) return null;
-    // Prefer comp lifts (tagged via raw name isCompLift), fall back to highest e1RM variation
-    const compNames = exNames.filter(n => compFlags[n]);
-    console.log('[REPORT DEBUG]', groupKey, '| exNames:', exNames, '| compFlags:', JSON.stringify(compFlags), '| compNames:', compNames);
+    // Prefer the comp lift identified in pre-scan, fall back to highest e1RM variation
+    const comp = compLiftName[groupKey];
+    const compNames = comp ? exNames.filter(n => n === comp) : [];
     const isVariation = compNames.length === 0;
     let primary;
     if (compNames.length) {
@@ -9651,7 +9658,7 @@ function _buildHTMLReport(blockId) {
     for (const [exName, weekData] of Object.entries(exercises)) {
       const d = weekData[weekLabel];
       if (!d) continue;
-      const isComp = !!compFlags[exName];
+      const isComp = exName === compLiftName[groupKey];
       if (isComp && (!bestComp || d.e1rm > bestComp.e1rm)) {
         bestComp = { ...d, exName, isVariation: false };
       } else if (!isComp && (!bestVar || d.e1rm > bestVar.e1rm)) {
@@ -10382,7 +10389,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.6';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.7';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
