@@ -9479,6 +9479,9 @@ function _buildHTMLReport(blockId) {
     deadlift: getBestCompVariation('deadlift')
   };
 
+  // ── TEMP DEBUG — remove after fixing ──
+  const _dbg = `PRE-SCAN: S=${compLiftName.squat||'NULL'} B=${compLiftName.bench||'NULL'} D=${compLiftName.deadlift||'NULL'} | FAMILIES: S=[${Object.keys(families.squat)}] B=[${Object.keys(families.bench)}] D=[${Object.keys(families.deadlift)}] | PICKED: S=${compLifts.squat?.name||'NULL'}(var:${compLifts.squat?.isVariation}) B=${compLifts.bench?.name||'NULL'}(var:${compLifts.bench?.isVariation}) D=${compLifts.deadlift?.name||'NULL'}(var:${compLifts.deadlift?.isVariation})`;
+
   // ── Per-lift trend classification ────────────────────────────────────────
   // Analyzes e1RM direction + RPE direction → plain language + color
   function classifyTrend(cl) {
@@ -10194,6 +10197,9 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
       <span>${completedDays} sessions</span>
     </div>
   </div>
+
+  <!-- TEMP DEBUG -->
+  <div style="background:#220;border:1px solid #640;border-radius:8px;padding:8px 10px;margin:0 16px 12px;font-size:10px;color:#fa0;word-break:break-all;font-family:monospace;line-height:1.5">${_dbg}</div>
 
   <!-- Stats Strip -->
   <div class="stats-strip">
@@ -11010,6 +11016,7 @@ function showOnboardingStep(step) {
         </div>
       </div>
       <button class="onboard-primary-btn" onclick="showOnboardingStep(2)">Get Started</button>
+      <button class="onboard-skip-btn" onclick="triggerRestore()" style="margin-top:12px;color:var(--gold)">Restore from backup</button>
     `;
     body.style.animation = 'none';
     body.offsetHeight;
@@ -11023,6 +11030,7 @@ function showOnboardingStep(step) {
       <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training spreadsheet or CSV.</div>
       ${renderUploadOptions('ob-')}
       <button class="onboard-skip-btn" onclick="showOnboardingStep('2b')" style="margin-top:12px">I don't have a file</button>
+      <button class="onboard-skip-btn" onclick="triggerRestore()" style="margin-top:4px;color:var(--gold)">Restore from backup</button>
     `;
     body.style.animation = 'none';
     body.offsetHeight;
