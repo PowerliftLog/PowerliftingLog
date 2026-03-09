@@ -1326,7 +1326,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-toggle.on::after { transform: translateX(18px); }
 
 /* Bottom nav */
-.bottom-nav { position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.70); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+.bottom-nav { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; background: rgba(20,20,20,0.70); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; display: flex; z-index: 200; padding: 5px; gap: 3px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
 .nav-btn { flex: 1; padding: 10px 0 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
 .nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.5); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
 .nav-btn.active .nav-icon { color: #ffffff; }
@@ -9480,9 +9480,6 @@ function _buildHTMLReport(blockId) {
     deadlift: getBestCompVariation('deadlift')
   };
 
-  // ── TEMP DEBUG — remove after fixing ──
-  const _dbg = `PRE-SCAN: S=${compLiftName.squat||'NULL'} B=${compLiftName.bench||'NULL'} D=${compLiftName.deadlift||'NULL'} | FAMILIES: S=[${Object.keys(families.squat)}] B=[${Object.keys(families.bench)}] D=[${Object.keys(families.deadlift)}] | PICKED: S=${compLifts.squat?.name||'NULL'}(var:${compLifts.squat?.isVariation}) B=${compLifts.bench?.name||'NULL'}(var:${compLifts.bench?.isVariation}) D=${compLifts.deadlift?.name||'NULL'}(var:${compLifts.deadlift?.isVariation})`;
-
   // ── Per-lift trend classification ────────────────────────────────────────
   // Analyzes e1RM direction + RPE direction → plain language + color
   function classifyTrend(cl) {
@@ -10198,9 +10195,6 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
       <span>${completedDays} sessions</span>
     </div>
   </div>
-
-  <!-- TEMP DEBUG -->
-  <div style="background:#220;border:1px solid #640;border-radius:8px;padding:8px 10px;margin:0 16px 12px;font-size:10px;color:#fa0;word-break:break-all;font-family:monospace;line-height:1.5">${_dbg}</div>
 
   <!-- Stats Strip -->
   <div class="stats-strip">
