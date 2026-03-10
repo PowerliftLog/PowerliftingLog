@@ -1765,7 +1765,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.7</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/08/26d</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.10</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26c</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2103,7 +2103,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.7 · Build 3/08/26d</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.10 · Build 3/10/26c</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -6936,7 +6936,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.7';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.10';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -9317,6 +9317,17 @@ function exportTrainingLog(blockId) {
   closeExportModal();
 }
 
+// ── AMRAP prescription detection ───────────────────────────────────────────
+function _isAmrapPrescription(pres) {
+  if (!pres) return false;
+  const p = String(pres);
+  if (/amrap/i.test(p)) return true;
+  if (/as\s+many\s+reps\s+as\s+possible/i.test(p)) return true;
+  if (/(?:^|x|×|\s)MR(?:\s|\(|$)/i.test(p)) return true;
+  if (/\d\+(?!\d)/.test(p)) return true; // "3+", "5+", "1+" but not "10"
+  return false;
+}
+
 function _buildHTMLReport(blockId) {
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return null;
@@ -9345,6 +9356,21 @@ function _buildHTMLReport(blockId) {
   // ── Gather e1RM data by family → exercise → week ─────────────────────────
   const families = { squat: {}, bench: {}, deadlift: {} };
 
+  // ── AMRAP tracking: best AMRAP set per lift family per week ──────────────
+  const amrapData = { squat: {}, bench: {}, deadlift: {} };
+  // amrapData[group][weekLabel] = { weight, reps, e1rm, exName, prescribedReps }
+
+  // Build prescription lookup cache (exercise key → prescription string)
+  const _presCache = {};
+  for (const week of weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        const ek = week.label + '||' + day.name + '||' + ex.name;
+        _presCache[ek] = ex.prescription || '';
+      }
+    }
+  }
+
   for (const [key, val] of Object.entries(blockLogs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
@@ -9370,6 +9396,24 @@ function _buildHTMLReport(blockId) {
       families[group][exName][weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, method: 'epley' };
     const w = families[group][exName][weekLabel];
     if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
+
+    // ── Track AMRAP sets ──────────────────────────────────────────────────
+    const presKey = parts[1] + '||' + parts[2] + '||' + parts[3];
+    const pres = _presCache[presKey];
+    if (pres && _isAmrapPrescription(pres) && val.actualReps) {
+      const actualReps = parseInt(val.actualReps);
+      if (actualReps > 0 && val.done) {
+        // Get prescribed reps for this set to compare
+        const prescReps = getSetReps(parts[0], parts[1], parts[2], parts[3], si);
+        const prescMin = prescReps ? parseInt(String(prescReps).replace(/\+.*/, '')) : 0;
+        if (!amrapData[group][weekLabel] || result.value > amrapData[group][weekLabel].e1rm) {
+          amrapData[group][weekLabel] = {
+            weight, reps: actualReps, e1rm: result.value, exName,
+            prescribedReps: prescMin, exceeded: actualReps > prescMin
+          };
+        }
+      }
+    }
   }
 
   // ── Compliance + volume + RPE tracking ───────────────────────────────────
@@ -9379,10 +9423,18 @@ function _buildHTMLReport(blockId) {
   const volumeByWeekFamily = {}; // weekLabel -> {squat,bench,deadlift,other}
   const rpeByWeek = {}; // weekLabel -> {total, count}
 
+  // Count days with ANY logged set as "attended" (not isDayComplete which requires ALL exercises)
+  const daysWithSets = new Set();
+  for (const key of Object.keys(blockLogs)) {
+    const parts = key.split('||');
+    if (parts.length >= 5 && parts[4].startsWith('s') && blockLogs[key].done) {
+      daysWithSets.add(parts[1] + '||' + parts[2]); // weekLabel||dayLabel
+    }
+  }
   for (const week of weeks) {
     for (const day of (week.days || [])) {
       totalDays++;
-      if (isDayComplete(block, week, day)) completedDays++;
+      if (daysWithSets.has(week.label + '||' + day.name)) completedDays++;
     }
   }
 
@@ -9529,25 +9581,30 @@ function _buildHTMLReport(blockId) {
       else if (rpeDelta < -0.4) rpeTrend = 'falling';
     }
 
-    // Classification matrix
+    // Build specific delta strings for per-lift differentiation
+    const e1rmDeltaStr = (e1rmDelta >= 0 ? '+' : '') + Math.round(e1rmDelta);
+    const rpeDeltaStr = hasRpe ? ((rpeVals[rpeVals.length-1] - rpeVals[0]) >= 0 ? '+' : '') + (rpeVals[rpeVals.length-1] - rpeVals[0]).toFixed(1) : '';
+    const rpeNote = hasRpe && rpeTrend === 'rising' ? ` \u00b7 RPE ${rpeDeltaStr}` : hasRpe && rpeTrend === 'falling' ? ` \u00b7 RPE easing` : '';
+
+    // Classification matrix — each branch includes specific numbers to differentiate lifts
     if (e1rmPct > 2 && rpeTrend !== 'rising' && regressionWeeks === 0) {
-      return { text: 'Steady uptrend \u2014 no regression weeks', color: 'green' };
+      return { text: `Steady climb (${e1rmDeltaStr}) \u2014 no dips${rpeNote}`, color: 'green' };
     } else if (e1rmPct > 2 && rpeTrend !== 'rising') {
-      return { text: 'Strong uptrend \u2014 consistent progress', color: 'green' };
+      return { text: `Strong uptrend (${e1rmDeltaStr})${rpeNote}`, color: 'green' };
     } else if (e1rmPct > 1 && rpeTrend === 'stable') {
-      return { text: 'Gradual climb \u2014 consistent RPE', color: 'green' };
+      return { text: `Gradual climb (${e1rmDeltaStr}) \u2014 consistent RPE`, color: 'green' };
     } else if (e1rmPct > 1 && rpeTrend === 'rising') {
-      return { text: 'Grinding higher \u2014 RPE rising with e1RM', color: 'gold' };
+      return { text: `Grinding higher (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
     } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'stable') {
-      return { text: 'Maintained \u2014 stable performance', color: 'gold' };
+      return { text: `Maintained (${e1rmDeltaStr}) \u2014 stable effort`, color: 'gold' };
     } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'rising') {
-      return { text: 'Stalling \u2014 flat e1RM with rising RPE', color: 'amber' };
+      return { text: `Stalling (${e1rmDeltaStr})${rpeNote}`, color: 'amber' };
     } else if (e1rmPct < -1 && rpeTrend === 'rising') {
-      return { text: 'Regression \u2014 declining e1RM with rising effort', color: 'red' };
+      return { text: `Regression (${e1rmDeltaStr})${rpeNote}`, color: 'red' };
     } else if (e1rmPct < -1) {
-      return { text: 'Declining \u2014 e1RM trending down', color: 'red' };
+      return { text: `Declining (${e1rmDeltaStr})${rpeNote}`, color: 'red' };
     }
-    return { text: 'Mixed signals \u2014 inconsistent trend', color: 'gold' };
+    return { text: `Mixed signals (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
   }
 
   // ── Per-lift flags generation ────────────────────────────────────────────
@@ -9556,6 +9613,43 @@ function _buildHTMLReport(blockId) {
     if (!cl) return flags;
     const vals = cl.e1rmByWeek.filter(v => v !== null);
     const rpeVals = cl.rpeArr ? cl.rpeArr.filter(v => v !== null) : [];
+
+    // ── AMRAP flags ──────────────────────────────────────────────────────
+    const amrapWeeks = weekLabels.filter(wl => amrapData[groupKey]?.[wl]);
+    if (amrapWeeks.length > 0) {
+      const amrapSets = amrapWeeks.map(wl => amrapData[groupKey][wl]);
+
+      // Best AMRAP performance
+      const best = amrapSets.reduce((a, b) => b.e1rm > a.e1rm ? b : a);
+      const bestWeekIdx = amrapWeeks.findIndex(wl => amrapData[groupKey][wl] === best);
+      const bestWeekLabel = amrapWeeks[bestWeekIdx];
+
+      // AMRAP progression (week-over-week at same or similar weight)
+      if (amrapWeeks.length >= 2) {
+        const first = amrapSets[0];
+        const last = amrapSets[amrapSets.length - 1];
+        const repsDelta = last.reps - first.reps;
+        const sameWeight = Math.abs(last.weight - first.weight) < 5;
+        if (sameWeight && repsDelta > 0) {
+          flags.push({ color: 'green', text: `AMRAP progression: ${Math.round(first.weight)}${unitLabel(true)}\u00d7${first.reps} \u2192 \u00d7${last.reps} across block (+${repsDelta} reps)` });
+        } else if (sameWeight && repsDelta < 0) {
+          flags.push({ color: 'amber', text: `AMRAP reps declining: ${Math.round(first.weight)}${unitLabel(true)}\u00d7${first.reps} \u2192 \u00d7${last.reps} across block (${repsDelta} reps)` });
+        } else if (!sameWeight) {
+          // Different weights — compare e1RM instead
+          const e1rmDelta = Math.round(last.e1rm - first.e1rm);
+          if (e1rmDelta > 0) {
+            flags.push({ color: 'green', text: `AMRAP e1RM up +${e1rmDelta} ${unitLabel(true)} across block (${Math.round(first.weight)}\u00d7${first.reps} \u2192 ${Math.round(last.weight)}\u00d7${last.reps})` });
+          } else if (e1rmDelta < -5) {
+            flags.push({ color: 'amber', text: `AMRAP e1RM down ${e1rmDelta} ${unitLabel(true)} across block` });
+          }
+        }
+      } else {
+        // Single AMRAP week — just note the performance
+        if (best.exceeded) {
+          flags.push({ color: 'green', text: `AMRAP set: ${Math.round(best.weight)}${unitLabel(true)}\u00d7${best.reps} (prescribed ${best.prescribedReps}+) \u2014 e1RM ${Math.round(best.e1rm)} \u2014 ${bestWeekLabel}` });
+        }
+      }
+    }
 
     // e1RM trend flag
     if (cl.delta > 0) {
@@ -9677,7 +9771,13 @@ function _buildHTMLReport(blockId) {
         bestVar = { ...d, exName, isVariation: true };
       }
     }
-    return bestComp || bestVar;
+    const result = bestComp || bestVar;
+    // Tag if this week had an AMRAP set for this lift family
+    if (result && amrapData[groupKey]?.[weekLabel]) {
+      result.isAmrap = true;
+      result.amrapReps = amrapData[groupKey][weekLabel].reps;
+    }
+    return result;
   }
 
   const weekLabels = weeks.map(w => w.label);
@@ -9718,12 +9818,13 @@ function _buildHTMLReport(blockId) {
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-accent" style="background:${color}"></div>
       <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:9px;color:#777;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
+      <div class="comp-card-e1rm-label">Peak e1RM</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
       <div class="comp-card-sparkline"><canvas id="${sparkId}" aria-label="${label} sparkline trend"></canvas></div>
       <div class="comp-card-divider"></div>
       <div class="comp-card-best-label">Best Set</div>
-      <div class="comp-card-best">${cl.bestWeight}\u00d7${cl.bestReps}${cl.bestRpe ? ' @' + cl.bestRpe : ''}</div>
+      <div class="comp-card-best"><span class="comp-card-best-main">${cl.bestWeight}\u00d7${cl.bestReps}</span>${cl.bestRpe ? `<span class="comp-card-best-rpe"> @${cl.bestRpe}</span>` : ''}</div>
       <div class="comp-card-trend">
         <div class="comp-card-trend-dot ${trend.color}"></div>
         <div class="comp-card-trend-text">${trend.text}</div>
@@ -9775,18 +9876,34 @@ function _buildHTMLReport(blockId) {
   for (const wl of weekLabels) {
     const isPeak = wl === peakWeekLabel;
     const rowClass = isPeak ? ' class="peak-week"' : '';
-    let cells = `<td class="week-col">${wl}</td>`;
+    const peakBadge = isPeak ? `<span class="peak-badge">PEAK</span>` : '';
+    let cells = `<td class="week-col">${wl}${peakBadge}</td>`;
     for (const gk of ['squat', 'bench', 'deadlift']) {
       const ts = getWeeklyTopSet(gk, wl);
       if (ts) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
+        const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size:9px;font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
         const varLabel = ts.isVariation ? `<div style="font-size:8px;color:#666;margin-top:1px">${escH(ts.exName)}</div>` : '';
-        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${varLabel}</td>`;
+        const e1rmTag = `<div class="weekly-e1rm">e1RM ${Math.round(ts.e1rm)}</div>`;
+        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmTag}${varLabel}</td>`;
       } else {
         cells += '<td class="no-data">\u2014</td>';
       }
     }
     weeklyTableHtml += `<tr${rowClass}>${cells}</tr>`;
+  }
+  // Add best actual set row at bottom (weight×reps, not e1RM which is already on comp cards)
+  if (compLifts.squat || compLifts.bench || compLifts.deadlift) {
+    const fmtBest = (cl) => {
+      if (!cl || !cl.bestWeight) return '\u2014';
+      let s = `${cl.bestWeight}\u00d7${cl.bestReps}`;
+      if (cl.bestRpe) s += ` <span class="rpe-dim">@${cl.bestRpe}</span>`;
+      return s;
+    };
+    weeklyTableHtml += `<tr class="weekly-total-row"><td class="week-col" style="font-weight:700;color:var(--gold)">Best</td>`;
+    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.squat)}</td>`;
+    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.bench)}</td>`;
+    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.deadlift)}</td></tr>`;
   }
 
   // ── Volume + RPE chart data ──────────────────────────────────────────────
@@ -9811,10 +9928,15 @@ function _buildHTMLReport(blockId) {
         <div class="est-total-score-row"><span class="est-total-score-label">Wilks</span><span class="est-total-score-val">${wilksScore.toFixed(1)}</span></div>
         ${athlete?.bodyweight ? `<div class="est-total-bw">${athlete.bodyweight} ${athlete.bwUnit || 'lbs'} BW</div>` : ''}
       </div>` : '';
+    const sVal = compLifts.squat?.bestE1rm || 0;
+    const bVal = compLifts.bench?.bestE1rm || 0;
+    const dVal = compLifts.deadlift?.bestE1rm || 0;
+    const breakdownHtml = `<div class="est-total-breakdown">${sVal ? `<span>S:${sVal}` : ''}${bVal ? ` B:${bVal}` : ''}${dVal ? ` D:${dVal}` : ''}</span></div>`;
     estTotalHtml = `<div class="est-total-card">
       <div>
         <div class="est-total-label">Estimated Total</div>
         <div class="est-total-val">${estTotal.toLocaleString()}<span class="est-total-unit"> ${unitLabel(true)}</span></div>
+        ${breakdownHtml}
       </div>
       ${rightSide}
     </div>`;
@@ -10034,7 +10156,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 
 /* Header */
 .rpt-hdr{margin-bottom:18px}
-.rpt-brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+.rpt-brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,.2)}
 .rpt-athlete{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;line-height:1;letter-spacing:.02em;text-transform:uppercase;margin-bottom:2px}
 .rpt-block{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
 .rpt-meta{font-size:12px;color:${tv('--text-faint')||'#666'};display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
@@ -10057,19 +10179,23 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .est-total-score-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'}}
 .est-total-score-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--gold)}
 .est-total-bw{font-size:10px;color:${tv('--text-dim')||'#555'};margin-top:2px}
+.est-total-breakdown{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:500;color:${tv('--text-dim')||'#555'};margin-top:2px;letter-spacing:.02em}
 
 /* Comp lift cards */
 .comp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .comp-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px 10px 8px;position:relative;overflow:hidden}
 .comp-card-accent{height:3px;border-radius:2px;margin-bottom:6px}
 .comp-card-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
+.comp-card-e1rm-label{font-size:7px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${tv('--text-dim')||'#444'};margin-bottom:1px}
 .comp-card-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;line-height:1;margin-bottom:1px}
 .comp-card-unit{font-size:11px;font-weight:600;color:${tv('--text-faint')||'#666'}}
 .comp-card-delta{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;margin-bottom:4px}
-.comp-card-sparkline{height:28px;margin:0 -4px 4px}
-.comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:5px}
-.comp-card-best-label{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${tv('--text-dim')||'#444'};margin-bottom:1px}
-.comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:${tv('--text-faint')||'#888'};margin-bottom:6px}
+.comp-card-sparkline{height:36px;margin:0 -4px 6px}
+.comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:6px}
+.comp-card-best-label{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${tv('--text-dim')||'#444'};margin-bottom:2px}
+.comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:${tv('--text-faint')||'#aaa'};margin-bottom:6px}
+.comp-card-best-main{font-weight:700;color:${tv('--text-sub')||'#ccc'}}
+.comp-card-best-rpe{font-size:11px;color:${tv('--text-dim')||'#666'}}
 .comp-card-trend{display:flex;align-items:center;gap:5px;padding:5px 0 0;border-top:1px solid ${tv('--surface-3')||'#1a1a1a'}}
 .comp-card-trend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .comp-card-trend-dot.green{background:var(--green)}
@@ -10118,8 +10244,12 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .weekly-table .week-col{color:${tv('--text-sub')||'#999'};font-weight:700;width:50px}
 .weekly-table .no-data{color:${tv('--text-dim')||'#444'}}
 .weekly-table .rpe-dim{font-size:10px;color:${tv('--text-dim')||'#555'}}
+.weekly-e1rm{font-size:9px;font-weight:600;color:${tv('--text-dim')||'#555'};margin-top:1px}
 .weekly-table tr.peak-week td{color:var(--gold)}
 .weekly-table tr.peak-week .rpe-dim{color:rgba(201,168,76,.6)}
+.weekly-table tr.peak-week .weekly-e1rm{color:rgba(201,168,76,.7)}
+.peak-badge{display:inline-block;font-size:7px;font-weight:700;letter-spacing:.06em;background:var(--gold);color:#000;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
+.weekly-total-row td{border-top:2px solid ${tv('--border')||'#222'};border-bottom:none;padding-top:8px}
 
 /* Footer */
 .rpt-footer{margin-top:16px;font-size:10px;color:${tv('--text-dim')||'#444'};display:flex;justify-content:space-between}
@@ -10142,7 +10272,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .comp-card{padding:14px 14px 10px;border-radius:12px}
   .comp-card-val{font-size:30px}
   .comp-card-delta{font-size:13px}
-  .comp-card-sparkline{height:36px}
+  .comp-card-sparkline{height:44px}
   .comp-card-best{font-size:13px}
   .comp-card-trend-text{font-size:10px}
   .flags-section{padding:18px;border-radius:14px}
@@ -10210,7 +10340,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <!-- Stats Strip -->
   <div class="stats-strip">
     <div class="strip-stat">
-      <div class="strip-stat-val">${compliancePct}<span class="strip-stat-sub">%</span></div>
+      <div class="strip-stat-val" style="color:${compliancePct >= 85 ? _tc('--green','#4ade80') : compliancePct >= 70 ? _tc('--amber','#F5A623') : _tc('--red','#E22C2C')}">${compliancePct}<span class="strip-stat-sub">%</span></div>
       <div class="strip-stat-label">Compliance</div>
     </div>
     <div class="strip-stat">
@@ -10231,6 +10361,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   ${estTotalHtml}
 
   <!-- Comp Lift Cards -->
+  <div class="section-title" style="margin-bottom:8px">Competition Lifts</div>
   <div class="comp-cards">${compCardsHtml}</div>
 
   <!-- Flags & Insights -->
@@ -10250,7 +10381,8 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <div class="section-card">
     <div class="section-title">Weekly Top Sets</div>
     <table class="weekly-table">
-      <thead><tr><th>Week</th><th>Squat</th><th>Bench</th><th>Deadlift</th></tr></thead>
+      <thead><tr><th>Week</th><th style="color:${_tc('--gold','#C9A84C')}">Squat</th><th style="color:#7B9FD4">Bench</th><th style="color:${_tc('--green','#7EC89A')}">Deadlift</th></tr></thead>
+      <thead><tr style="border:none"><th></th><th colspan="3" style="font-size:7px;font-weight:500;letter-spacing:.06em;color:${tv('--text-dim')||'#444'};padding:0 6px 4px;border:none">WEIGHT × REPS @ RPE</th></tr></thead>
       <tbody>${weeklyTableHtml}</tbody>
     </table>
   </div>
@@ -10401,7 +10533,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.7';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.10';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
@@ -10898,7 +11030,7 @@ function showPercentPrompt(blocks, onDone) {
   const fieldsHtml = ['squat', 'bench', 'deadlift'].filter(g => neededGroups.has(g)).map(g => `
     <div class="pct-prompt-field">
       <div class="pct-prompt-label">${liftLabels[g]}</div>
-      <input class="pct-prompt-input" id="pct-input-${g}" type="number" inputmode="numeric" placeholder="—" value="${preFills[g]}" aria-label="${liftLabels[g]} 1RM">
+      <input class="pct-prompt-input" id="pct-input-${g}" type="number" inputmode="numeric" placeholder="—" value="${preFills[g]}" aria-label="${liftLabels[g]} Training Max">
     </div>`).join('');
 
   const overlay = document.createElement('div');
@@ -10911,7 +11043,7 @@ function showPercentPrompt(blocks, onDone) {
     <div class="pct-prompt-header">
       <div class="pct-prompt-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="pct-prompt-title">Percentage Program</div>
-      <div class="pct-prompt-sub">We noticed your program uses percentage-based weights. Add your current 1RM to calculate training loads.</div>
+      <div class="pct-prompt-sub">Your program uses percentage-based weights. Enter your Training Max to calculate working weights.<br><span style="color:var(--text-dimmer);font-size:11px">Training Max is usually 85\u201390% of your true 1RM. If unsure, enter your 1RM.</span></div>
     </div>
     <div class="pct-prompt-fields">${fieldsHtml}</div>
     <div style="text-align:center;margin-top:6px;font-size:11px;color:var(--text-dim)">Weight in ${unit}</div>
