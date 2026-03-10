@@ -819,6 +819,7 @@ function parseBSheet(sn,rows){
   let colPres=1, colLogged=2;
   const seenDayNames={};
   let weekOffset=0;
+  let curSupersetGroup=null;
 
   for(let i=0;i<rows.length;i++){
     const row=rows[i]; if(!row) continue;
@@ -848,6 +849,7 @@ function parseBSheet(sn,rows){
 
       const uniqueDayName = weekOffset > 0 ? `${aStr} (W${weekOffset+1})` : aStr;
       curDay={name:uniqueDayName,exercises:[],_colCoachNote:coachNoteIdx>0?coachNoteIdx:null,_colLifterNote:lifterNoteIdx>0?lifterNoteIdx:null};
+      curSupersetGroup=null;
       days.push(curDay);
     } else if(curDay){
       const pres=row[colPres]!=null?String(row[colPres]).trim():null;
@@ -880,13 +882,27 @@ function parseBSheet(sn,rows){
 
       const normName=aStr.replace(/\s+/g,' ').trim();
 
+      const supersetMatch=
+        normName.match(/^(\d+)\s*rounds?[\s:]*/i) ||
+        (normName.match(/^superset[\s:]*/i) && ['1']) ||
+        (normName.match(/^super\s*set[\s:]*/i) && ['1']) ||
+        (normName.match(/^ss[\s:]*/i) && ['1']) ||
+        (normName.match(/^giant\s*set[\s:]*/i) && ['1']) ||
+        (normName.match(/^circuit[\s:]*/i) && ['1']);
+
+      if(supersetMatch){
+        const rounds=parseInt(supersetMatch[1])||1;
+        const label=rounds>1?rounds+' rounds':'superset';
+        curSupersetGroup={label,rounds,startIdx:curDay.exercises.length};
+      }
+
       const isCircuitRow = /^circuit[\s\-:]/i.test(normName) || (normName.match(/,/g)||[]).length >= 2;
       if(isCircuitRow){
         const stripped = normName.replace(/^circuit[\s\-:]+/i,'').trim();
         const parts = stripped.split(/,\s*/);
         if(parts.length >= 2){
           const _circuitIdx = curDay.exercises.length;
-          const supersetGroup = { label:`circuit_${_circuitIdx}`, rounds:1, startIdx:_circuitIdx };
+          const supersetGroup = curSupersetGroup || { label:`circuit_${_circuitIdx}`, rounds:1, startIdx:_circuitIdx };
           const presStr = pres || '';
           const presParts = presStr.split(/,\s*/);
           if (presParts.length >= parts.length) {
@@ -921,7 +937,7 @@ function parseBSheet(sn,rows){
         }
       }
 
-      curDay.exercises.push({name:normName,prescription:pres,note,lifterNote,loggedWeight:cleanLogged});
+      curDay.exercises.push({name:normName,prescription:pres,note,lifterNote,loggedWeight:cleanLogged,supersetGroup:curSupersetGroup||null});
     }
   }
   // Fallback: Candito-style — dates as day separators, "Set N" column headers, weight/"xN" pairs
@@ -2449,7 +2465,9 @@ function parseCAutoSheet(sn, rows) {
 
   const days = [];
   let curDay = null;
+  let curSupersetGroup = null;
   const SUB_SECTIONS = ['warm up','main exercise','accessories','finisher','abs','recovery','cool down','cardio'];
+  const _isSupersetLabel = (s) => /^(superset|super\s*set|ss|giant\s*set|circuit)$/i.test(s) || /^\d+\s*rounds?$/i.test(s);
 
   for (let i = dataStartRow; i < rows.length; i++) {
     const row = rows[i]; if (!row) continue;
@@ -2466,6 +2484,7 @@ function parseCAutoSheet(sn, rows) {
         }
       }
       curDay = { name: dayName, exercises: [] };
+      curSupersetGroup = null;
       days.push(curDay);
       continue;
     }
@@ -2473,8 +2492,24 @@ function parseCAutoSheet(sn, rows) {
     if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(colA)) continue;
     if (strs.includes('sets') && strs.includes('reps')) continue;
     if (!curDay) continue;
-    if (!exVal) continue;
-    if (SUB_SECTIONS.some(s => exVal.toLowerCase() === s)) continue;
+
+    // Detect superset/circuit grouping labels in column A or exercise column
+    if (_isSupersetLabel(colA) || _isSupersetLabel(exVal)) {
+      const matchText = _isSupersetLabel(colA) ? colA : exVal;
+      const roundsMatch = matchText.match(/^(\d+)\s*rounds?$/i);
+      const rounds = roundsMatch ? parseInt(roundsMatch[1]) : 1;
+      const label = rounds > 1 ? rounds + ' rounds' : 'superset';
+      curSupersetGroup = { label: label + '_' + curDay.exercises.length, rounds, startIdx: curDay.exercises.length };
+      continue;
+    }
+
+    // Non-superset sub-section headers clear superset grouping
+    if (SUB_SECTIONS.some(s => colA.toLowerCase() === s || exVal.toLowerCase() === s)) {
+      curSupersetGroup = null;
+      continue;
+    }
+
+    if (!exVal) { curSupersetGroup = null; continue; }
 
     const setsRaw = row[setsIdx] != null ? String(row[setsIdx]).trim() : '';
     const repsRaw = row[repsIdx] != null ? String(row[repsIdx]).trim() : '';
@@ -2526,7 +2561,8 @@ function parseCAutoSheet(sn, rows) {
       prescription: pres.trim() || null,
       note,
       lifterNote,
-      loggedWeight: logStr
+      loggedWeight: logStr,
+      supersetGroup: curSupersetGroup || null
     });
   }
 
@@ -2789,7 +2825,7 @@ function parseF_stride3(wb) {
               }
             }
             if (presParts.length === 0) continue;
-            exercises.push({name: useName, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: ''});
+            exercises.push({name: useName, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
           }
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
@@ -2883,7 +2919,7 @@ function parseF_stride15(wb) {
         }
 
         if (sets.length > 0) {
-          dayExercises.push({name: exName, prescription: sets.join(', '), note: '', lifterNote: '', loggedWeight: ''});
+          dayExercises.push({name: exName, prescription: sets.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
       }
 
@@ -2976,7 +3012,7 @@ function parseF_stride6(wb) {
           const wk = pos.week, dy = pos.day;
           if (!weekMap[wk]) weekMap[wk] = {};
           if (!weekMap[wk][dy]) weekMap[wk][dy] = [];
-          weekMap[wk][dy].push({name: exName, prescription: pres, note: '', lifterNote: '', loggedWeight: ''});
+          weekMap[wk][dy].push({name: exName, prescription: pres, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
       }
     }
@@ -3082,7 +3118,7 @@ function parseF_pctLoad(wb) {
         const dayExercises = [];
         for (const ex of dd.exercises) {
           if (w >= ex.weekData.length || !ex.weekData[w]) continue;
-          dayExercises.push({name: ex.name, prescription: ex.weekData[w], note: '', lifterNote: '', loggedWeight: ''});
+          dayExercises.push({name: ex.name, prescription: ex.weekData[w], note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
         if (dayExercises.length > 0) weekDays.push({name: dd.name, exercises: dayExercises});
       }
@@ -3210,7 +3246,7 @@ function parseF_stride1(wb) {
           if (w >= ex.weekSets.length) continue;
           const sets = ex.weekSets[w];
           if (sets.length === 0) continue;
-          exercises.push({name: ex.name, prescription: sets.join(', '), note: '', lifterNote: '', loggedWeight: ''});
+          exercises.push({name: ex.name, prescription: sets.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
       }
@@ -3402,7 +3438,7 @@ function parseF_coach(wb) {
           if (w >= ex.weekData.length) continue;
           const wd = ex.weekData[w];
           if (!wd.pres) continue;
-          exercises.push({name: wd.weekExName, prescription: wd.pres, note: '', lifterNote: '', loggedWeight: ''});
+          exercises.push({name: wd.weekExName, prescription: wd.pres, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
       }
@@ -3561,7 +3597,7 @@ function _gBuildExercise(ex) {
       parts.push(wt ? sc + 'x' + reps + '(' + wt + ')' : sc + 'x' + reps);
     }
   }
-  return {name: ex.name, prescription: parts.join(', '), note: '', lifterNote: '', loggedWeight: ''};
+  return {name: ex.name, prescription: parts.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null};
 }
 
 // ── FORMAT D PARSER (horizontal week layout — Calgary Barbell style) ──────────
@@ -3615,7 +3651,8 @@ function parseD(wb) {
             prescription: wd.prescription,
             note: wd.note || '',
             lifterNote: '',
-            loggedWeight: ''
+            loggedWeight: '',
+            supersetGroup: null
           });
         }
         if (dayExercises.length > 0) {
@@ -4340,7 +4377,10 @@ function parseTexasMethod(wb) {
           weekDays[w][d].exercises.push({
             name: spellCorrectExerciseName(curExercise),
             prescription,
-            note: ''
+            note: '',
+            lifterNote: '',
+            loggedWeight: '',
+            supersetGroup: null
           });
         }
       }
@@ -4964,7 +5004,8 @@ function parseH_coanSheet(sn, ws) {
                 prescription: buildPrescription(bSets, bReps, backoffWt),
                 note: buildNote(bp, br),
                 lifterNote: '',
-                loggedWeight: ''
+                loggedWeight: '',
+                supersetGroup: null
               });
             }
           }
@@ -5010,7 +5051,8 @@ function parseH_coanSheet(sn, ws) {
                 prescription: buildPrescription(bSets, bReps, backoffWt),
                 note: buildNote(bp, br),
                 lifterNote: '',
-                loggedWeight: ''
+                loggedWeight: '',
+                supersetGroup: null
               });
             }
           }
@@ -5850,7 +5892,7 @@ function _parseL_standard(wb) {
 
       currentDay.exercises.push({
         name: exName, prescription: prescription,
-        note: row[1] === 'Warm Up' ? 'Warm Up' : '', lifterNote: '', loggedWeight: ''
+        note: row[1] === 'Warm Up' ? 'Warm Up' : '', lifterNote: '', loggedWeight: '', supersetGroup: null
       });
     }
     if (currentDay) week.days.push(currentDay);
@@ -5927,7 +5969,7 @@ function _parseL_benchHybrid(wb) {
       const rPart = reps || '?';
       const prescription = sets ? `${sets}x${rPart}${wPart}` : `1x${rPart}${wPart}`;
       const note = (rpe && rpe !== '-' && rpe !== '') ? rpe : '';
-      currentDay.exercises.push({ name: exName, prescription: prescription, note: note, lifterNote: '', loggedWeight: '' });
+      currentDay.exercises.push({ name: exName, prescription: prescription, note: note, lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     if (currentDay) week.days.push(currentDay);
     if (week.days.length > 0) weeks.push(week);
@@ -5971,7 +6013,7 @@ function _parseL_advancedBench(wb) {
     const r16reps = (weekNum === 2 || weekNum === 3) ? 1 : 3;
     const w16 = typeof r16weight === 'number' ? `(${r16weight})` : '';
     const n16 = typeof r16weight === 'string' ? r16weight : '';
-    day1.exercises.push({ name: r16name, prescription: `${r16sets}x${r16reps}${w16}`, note: n16, lifterNote: '', loggedWeight: '' });
+    day1.exercises.push({ name: r16name, prescription: `${r16sets}x${r16reps}${w16}`, note: n16, lifterNote: '', loggedWeight: '', supersetGroup: null });
 
     // Day 1 secondary
     let r17name, r17weight = null, r17sets = null, r17reps;
@@ -5984,13 +6026,13 @@ function _parseL_advancedBench(wb) {
       const w17 = typeof r17weight === 'number' ? `(${r17weight})` : '';
       const sPart = r17sets ? `${r17sets}x` : '';
       day1.exercises.push({ name: r17name, prescription: `${sPart}${r17reps}${w17}`,
-        note: weekNum === 4 ? 'PR Peak Set' : '', lifterNote: '', loggedWeight: '' });
+        note: weekNum === 4 ? 'PR Peak Set' : '', lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     // Day 1 isolation
     if (weekNum !== 4) {
       const isoSets = weekNum < 4 ? 3 : 1;
-      day1.exercises.push({ name: 'Isolation Accessory', prescription: `${isoSets}x20`, note: '', lifterNote: '', loggedWeight: '' });
-      day1.exercises.push({ name: 'Isolation Accessory', prescription: `${isoSets}x20`, note: '', lifterNote: '', loggedWeight: '' });
+      day1.exercises.push({ name: 'Isolation Accessory', prescription: `${isoSets}x20`, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day1.exercises.push({ name: 'Isolation Accessory', prescription: `${isoSets}x20`, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     if (day1.exercises.length > 0) week.days.push(day1);
 
@@ -6017,7 +6059,7 @@ function _parseL_advancedBench(wb) {
       const sPart = r22sets ? `${r22sets}x` : '';
       const rPart = r22reps || '';
       day2.exercises.push({ name: r22name, prescription: `${sPart}${rPart}${w22}`.trim() || 'Max Attempt',
-        note: n22 || (weekNum === 6 ? `Better be at least ${desiredRM}!` : ''), lifterNote: '', loggedWeight: '' });
+        note: n22 || (weekNum === 6 ? `Better be at least ${desiredRM}!` : ''), lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     // Day 2 secondary
     let r23name, r23reps;
@@ -6028,21 +6070,21 @@ function _parseL_advancedBench(wb) {
     else if (weekNum === 5) {
       r23name = 'Barbell Flat Bench';
       const w23 = mround(desiredRM * 0.85, roundTo);
-      day2.exercises.push({ name: r23name, prescription: `5x3(${w23})`, note: '', lifterNote: '', loggedWeight: '' });
+      day2.exercises.push({ name: r23name, prescription: `5x3(${w23})`, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
       r23name = null;
     } else { r23name = null; }
     if (r23name) {
       const sPart23 = weekNum === 4 ? '' : '3x';
       day2.exercises.push({ name: r23name, prescription: `${sPart23}${r23reps}`,
-        note: weekNum === 4 ? 'PR Peak Set' : '', lifterNote: '', loggedWeight: '' });
+        note: weekNum === 4 ? 'PR Peak Set' : '', lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     // Day 2 isolation
     if (weekNum < 4) {
-      day2.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
-      day2.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
+      day2.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day2.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
     } else if (weekNum === 5) {
-      day2.exercises.push({ name: 'Isolation Accessory', prescription: '1x20', note: '', lifterNote: '', loggedWeight: '' });
-      day2.exercises.push({ name: 'Isolation Accessory', prescription: '1x20', note: '', lifterNote: '', loggedWeight: '' });
+      day2.exercises.push({ name: 'Isolation Accessory', prescription: '1x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day2.exercises.push({ name: 'Isolation Accessory', prescription: '1x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     if (day2.exercises.length > 0) week.days.push(day2);
 
@@ -6058,36 +6100,36 @@ function _parseL_advancedBench(wb) {
       const bn = typeof baseWeight === 'string' ? baseWeight : '';
 
       const day3 = { name: 'Day 3', exercises: [] };
-      day3.exercises.push({ name: 'Barbell Flat Bench', prescription: `3x3${bw}`, note: bn, lifterNote: '', loggedWeight: '' });
+      day3.exercises.push({ name: 'Barbell Flat Bench', prescription: `3x3${bw}`, note: bn, lifterNote: '', loggedWeight: '', supersetGroup: null });
       let r29name, r29reps;
       if (weekNum === 1) { r29name = acc1; r29reps = 6; }
       else if (weekNum === 2) { r29name = 'High Pin Press'; r29reps = 6; }
       else { r29name = acc2; r29reps = 12; }
-      day3.exercises.push({ name: r29name, prescription: `3x${r29reps}`, note: '', lifterNote: '', loggedWeight: '' });
-      day3.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
-      day3.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
+      day3.exercises.push({ name: r29name, prescription: `3x${r29reps}`, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day3.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day3.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
       week.days.push(day3);
 
       const day4 = { name: 'Day 4', exercises: [] };
-      day4.exercises.push({ name: 'Barbell Flat Bench', prescription: `3x3${bw}`, note: bn, lifterNote: '', loggedWeight: '' });
+      day4.exercises.push({ name: 'Barbell Flat Bench', prescription: `3x3${bw}`, note: bn, lifterNote: '', loggedWeight: '', supersetGroup: null });
       let r35name, r35reps;
       if (weekNum === 1) { r35name = acc2; r35reps = 3; }
       else if (weekNum === 2) { r35name = 'Low Pin Press'; r35reps = 3; }
       else { r35name = acc1; r35reps = 10; }
-      day4.exercises.push({ name: r35name, prescription: `3x${r35reps}`, note: '', lifterNote: '', loggedWeight: '' });
-      day4.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
-      day4.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
+      day4.exercises.push({ name: r35name, prescription: `3x${r35reps}`, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day4.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day4.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
       week.days.push(day4);
 
       const day5 = { name: 'Day 5', exercises: [] };
-      day5.exercises.push({ name: 'Barbell Flat Bench', prescription: `3x3${bw}`, note: bn, lifterNote: '', loggedWeight: '' });
+      day5.exercises.push({ name: 'Barbell Flat Bench', prescription: `3x3${bw}`, note: bn, lifterNote: '', loggedWeight: '', supersetGroup: null });
       let r41name, r41reps;
       if (weekNum === 1) { r41name = acc1; r41reps = 3; }
       else if (weekNum === 2) { r41name = 'High Pin Press'; r41reps = 3; }
       else { r41name = acc2; r41reps = 10; }
-      day5.exercises.push({ name: r41name, prescription: `3x${r41reps}`, note: '', lifterNote: '', loggedWeight: '' });
-      day5.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
-      day5.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '' });
+      day5.exercises.push({ name: r41name, prescription: `3x${r41reps}`, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day5.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+      day5.exercises.push({ name: 'Isolation Accessory', prescription: '3x20', note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
       week.days.push(day5);
     }
     if (week.days.length > 0) weeks.push(week);
@@ -6174,7 +6216,7 @@ function _parseL_advancedDeadlift(wb) {
         else prescription = e || c;
       } else { prescription = e || 'See instructions'; }
       if (!prescription) prescription = 'See program notes';
-      currentDay.exercises.push({ name: exName, prescription: prescription, note: note, lifterNote: '', loggedWeight: '' });
+      currentDay.exercises.push({ name: exName, prescription: prescription, note: note, lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     if (currentDay) phaseDays.push(currentDay);
     let weekGroup = null;
@@ -6260,7 +6302,7 @@ function _parseL_advancedSquat(wb) {
       if (diff === 'H') note = (note ? note + ' | ' : '') + 'High Difficulty';
       else if (diff === 'M') note = (note ? note + ' | ' : '') + 'Moderate';
       else if (diff === 'L') note = (note ? note + ' | ' : '') + 'Light';
-      currentDay.exercises.push({ name: exName, prescription: prescription, note: note, lifterNote: '', loggedWeight: '' });
+      currentDay.exercises.push({ name: exName, prescription: prescription, note: note, lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     if (currentDay) week.days.push(currentDay);
     if (week.days.length > 0) weeks.push(week);
@@ -6307,7 +6349,7 @@ function _parseL_linear(wb) {
       if (allSame) prescription = `${repsFound.length}x${repsFound[0]}`;
       else prescription = repsFound.map(r => `1x${r}`).join(', ');
       currentDay.exercises.push({ name: exName, prescription: prescription,
-        note: row[1] === 'Warm Up' ? 'Warm Up' : '', lifterNote: '', loggedWeight: '' });
+        note: row[1] === 'Warm Up' ? 'Warm Up' : '', lifterNote: '', loggedWeight: '', supersetGroup: null });
     }
     if (currentDay) week.days.push(currentDay);
     if (week.days.length > 0) {
@@ -6484,7 +6526,7 @@ function _mBuildExercise(name, setLines) {
   } else prescription = parts.join(', ');
   return {
     name: name, prescription: prescription || 'See program notes',
-    note: notes.filter(n => n).join(' | '), lifterNote: '', loggedWeight: ''
+    note: notes.filter(n => n).join(' | '), lifterNote: '', loggedWeight: '', supersetGroup: null
   };
 }
 
@@ -6706,7 +6748,7 @@ function _parseN_greyskull(wb) {
         }
 
         const prescription = prescParts.join(', ') || null;
-        exercises.push({ name: exName, prescription, note: null, lifterNote: null, loggedWeight: null });
+        exercises.push({ name: exName, prescription, note: null, lifterNote: null, loggedWeight: null, supersetGroup: null });
       }
 
       if (exercises.length > 0) {
@@ -6834,7 +6876,7 @@ function _parseN_ivysaur(wb) {
           prescription = `(${_nRound(weight)})`;
         }
 
-        exercises.push({ name: exName, prescription, note: null, lifterNote: null, loggedWeight: null });
+        exercises.push({ name: exName, prescription, note: null, lifterNote: null, loggedWeight: null, supersetGroup: null });
       }
       if (exercises.length > 0) {
         days.push({ name: `Day ${di + 1}`, exercises });
@@ -6963,7 +7005,7 @@ function _parseN_startingStrength(wb) {
           if (ex.working) {
             const weight = rows[ex.working.row]?.[sc.col];
             const prescription = _nFmtReps(ex.working.setsReps, weight);
-            exercises.push({ name: ex.name, prescription, note: null, lifterNote: null, loggedWeight: null });
+            exercises.push({ name: ex.name, prescription, note: null, lifterNote: null, loggedWeight: null, supersetGroup: null });
           } else if (ex.name) {
             // Some exercises like "Back Extensions" have fixed prescription, no weight columns
             let fixedPrescription = null;
@@ -6977,7 +7019,7 @@ function _parseN_startingStrength(wb) {
               }
             }
             if (fixedPrescription) {
-              exercises.push({ name: ex.name, prescription: fixedPrescription, note: null, lifterNote: null, loggedWeight: null });
+              exercises.push({ name: ex.name, prescription: fixedPrescription, note: null, lifterNote: null, loggedWeight: null, supersetGroup: null });
             }
           }
         }
@@ -7100,7 +7142,7 @@ function _parseN_stronglifts(wb) {
           const weight = rows[eb.weightRow]?.[col];
 
           const prescription = _nFmtReps(repScheme, weight);
-          exercises.push({ name: exName, prescription, note: null, lifterNote: null, loggedWeight: null });
+          exercises.push({ name: exName, prescription, note: null, lifterNote: null, loggedWeight: null, supersetGroup: null });
         }
 
         if (exercises.length > 0) {
@@ -7329,7 +7371,8 @@ function _oFinalize(ex) {
     prescription,
     note,
     lifterNote: null,
-    loggedWeight: null
+    loggedWeight: null,
+    supersetGroup: null
   };
 }
 
@@ -7676,7 +7719,8 @@ function parseP(workbook) {
       prescription,
       note,
       lifterNote: null,
-      loggedWeight: null
+      loggedWeight: null,
+      supersetGroup: null
     });
   }
 
@@ -7907,7 +7951,8 @@ function _parseQ_v1(wb) {
           prescription: prescriptionStr,
           note: null,
           lifterNote: null,
-          loggedWeight: null
+          loggedWeight: null,
+          supersetGroup: null
         });
       }
     }
@@ -8082,7 +8127,8 @@ function _qFlushExerciseV2(day, exerciseName, reps, rpe) {
     prescription: prescription,
     note: null,
     lifterNote: null,
-    loggedWeight: null
+    loggedWeight: null,
+    supersetGroup: null
   });
 }
 
@@ -8266,7 +8312,8 @@ function _qFlushExerciseV3(day, exerciseName, sets) {
     prescription: prescription,
     note: null,
     lifterNote: null,
-    loggedWeight: null
+    loggedWeight: null,
+    supersetGroup: null
   });
 }
 
@@ -8503,7 +8550,8 @@ function _rParseDay(sheet, weekIndex) {
             prescription: exerciseData.prescription,
             note: exerciseData.note,
             lifterNote: null,
-            loggedWeight: null
+            loggedWeight: null,
+            supersetGroup: null
           });
         }
         rowIndex += exerciseData.rows;
@@ -8921,7 +8969,8 @@ function _sParseWeekSheet(ws, weekNumber) {
       prescription: _sFormatPrescription(ex.setScheme, ex.weight),
       note: _sFormatNote(ex.purpose, ex.percentage),
       lifterNote: null,
-      loggedWeight: null
+      loggedWeight: null,
+      supersetGroup: null
     }));
 
     days.push({
@@ -10123,6 +10172,8 @@ function parseV(wb) {
     // Parse days within the sheet
     const days = [];
     let currentDay = null;
+    let curSupersetGroup = null;
+    const _isSupersetLabel = (s) => /^(superset|super\s*set|ss|giant\s*set|circuit)$/i.test(s) || /^\d+\s*rounds?$/i.test(s);
 
     const startRow = headerRow >= 0 ? headerRow + 1 : 0;
     for (let i = startRow; i < rows.length; i++) {
@@ -10136,6 +10187,7 @@ function parseV(wb) {
           days.push(currentDay);
         }
         currentDay = { name: col0, exercises: [] };
+        curSupersetGroup = null;
         continue;
       }
 
@@ -10145,12 +10197,25 @@ function parseV(wb) {
       // Skip header-like or summary rows
       if (/^(exercise|movement|lift|sets|reps|load|rir|rpe|total|daily|weekly|phase|notes?)$/i.test(exName)) continue;
 
+      // Detect superset/circuit grouping labels in column 0 or exercise column
+      if (_isSupersetLabel(col0) || _isSupersetLabel(exName)) {
+        const matchText = _isSupersetLabel(col0) ? col0 : exName;
+        const roundsMatch = matchText.match(/^(\d+)\s*rounds?$/i);
+        const rounds = roundsMatch ? parseInt(roundsMatch[1]) : 1;
+        const label = rounds > 1 ? rounds + ' rounds' : 'superset';
+        curSupersetGroup = { label: label + '_' + (currentDay ? currentDay.exercises.length : 0), rounds, startIdx: currentDay ? currentDay.exercises.length : 0 };
+        continue;
+      }
+
       const sets = setsCol >= 0 && row[setsCol] != null ? row[setsCol] : null;
       const reps = repsCol >= 0 && row[repsCol] != null ? row[repsCol] : null;
       const load = loadCol >= 0 && row[loadCol] != null ? row[loadCol] : null;
       const rir = rirCol >= 0 && row[rirCol] != null ? row[rirCol] : null;
 
-      if (sets == null && reps == null && load == null) continue;
+      if (sets == null && reps == null && load == null) {
+        curSupersetGroup = null;
+        continue;
+      }
 
       // Build prescription
       const prescription = _vBuildPrescription(sets, reps, load, rir);
@@ -10174,7 +10239,7 @@ function parseV(wb) {
         note: note,
         lifterNote: '',
         loggedWeight: '',
-        supersetGroup: null
+        supersetGroup: curSupersetGroup || null
       });
     }
 

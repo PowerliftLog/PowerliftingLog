@@ -495,6 +495,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; color: var(--text-mid); white-space: nowrap; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: 6px; flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.set-input-group.reps-range-group { flex: 0 0 54px; }
 .set-input-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
 .set-input { background: var(--surface-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; padding: 8px 6px; min-height: 40px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
@@ -1765,7 +1766,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.10</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26c</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.11</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26d</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2103,7 +2104,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.10 · Build 3/10/26c</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.11 · Build 3/10/26d</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2432,7 +2433,7 @@ function saveTrackedLifts(){ _idbPut('liftlog_tracked', state.trackedLifts); try
 function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) return _idbCache['liftlog_nav']; return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch{ return {}; } }
 function saveNav(){ const navObj={blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay}; _idbPut('liftlog_nav', navObj); try{ localStorage.setItem('liftlog_nav', JSON.stringify(navObj)); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
-function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML; }
 function cssEsc(s){ return CSS.escape ? CSS.escape(s) : s.replace(/([[\](){}|\\^$*.+?])/g,'\\$1'); }
 
@@ -4403,11 +4404,21 @@ function getSessionSummary(block, week, day) {
 
   // Comp lift best sets: { squat, bench, deadlift } → { weight, reps, rpe, e1rm, isPR }
   const compBest = { squat: null, bench: null, deadlift: null };
-  // All-time peaks for PR comparison
+  // All-time peaks for PR comparison — scan ALL blocks + tested 1RM
   const allTimePeaks = { squat: null, bench: null, deadlift: null };
+
+  // Seed with tested 1RM / training max from athlete profile
+  const _ath = loadAthlete() || {};
+  for (const g of ['squat','bench','deadlift']) {
+    const tm = Number(_ath['tested1rm_' + g]) || 0;
+    if (tm > 0) allTimePeaks[g] = { e1rm: tm };
+  }
+
+  // Scan ALL logs across ALL blocks (not just current)
   for (const [key, val] of Object.entries(state.logs)) {
+    if (!val.done || !val.actual) continue;
     const parts = key.split('||');
-    if (parts.length < 5 || parts[0] !== bid) continue;
+    if (parts.length < 5) continue;
     if (!parts[4].startsWith('s')) continue;
     const exName = parts[3];
     const group  = classifyLift(exName);
@@ -4422,8 +4433,9 @@ function getSessionSummary(block, week, day) {
     const rpe    = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
     if (!result) continue;
-    // Track all-time peaks
-    if (!allTimePeaks[group] || result.value > allTimePeaks[group].e1rm) {
+    // Track all-time peaks (excluding today's session to avoid self-PR)
+    const isToday = parts[0] === bid && parts[1] === wl && parts[2] === dn;
+    if (!isToday && (!allTimePeaks[group] || result.value > allTimePeaks[group].e1rm)) {
       allTimePeaks[group] = { e1rm: result.value };
     }
   }
@@ -4483,13 +4495,12 @@ function getSessionSummary(block, week, day) {
     }
   }
 
-  // Flag PRs: is today's e1rm the all-time best?
+  // Flag PRs: today's e1rm must EXCEED previous best (all blocks + tested 1RM)
   for (const g of ['squat','bench','deadlift']) {
     if (!compBest[g]) continue;
     const peak = allTimePeaks[g];
-    // It's a PR if today's e1rm equals or exceeds the all-time peak
-    // (all-time includes today, so within ~1lb they're equal means it's a PR)
-    compBest[g].isPR = peak && (compBest[g].e1rm >= peak.e1rm - 0.5);
+    // PR only if today's e1rm strictly exceeds the all-time peak from prior sessions + tested 1RM
+    compBest[g].isPR = peak ? (compBest[g].e1rm > peak.e1rm) : false;
   }
 
   return {
@@ -5349,7 +5360,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     return `<button class="set-calc-btn" onclick="event.stopPropagation();_showPlatePopover(${weight},'${unit}')" aria-label="Plate calculator">${_calcIconSvg}</button>`;
   }
 
-  function setInputsHtml(sk,sl,placeholder,si){
+  function setInputsHtml(sk,sl,placeholder,si,prescReps){
     if(placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
                 <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
@@ -5368,10 +5379,15 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
             </div>`;
     const ghost = (si !== undefined) ? _ghostWeight(si) : '';
     const ghostStyle = ghost ? 'color:var(--text-muted)' : '';
+    const _isRepRange = prescReps && /^\d+[\-–]\d+$/.test(String(prescReps));
+    const _repsHtml = _isRepRange ? `
+              <div class="set-input-group reps-range-group"><div class="set-input-label">Reps</div>
+                <input class="set-input" inputmode="numeric" placeholder="${prescReps}" value="${sl.actualReps||''}" oninput="setActualReps('${esc(sk)}',this.value)" aria-label="Actual reps">
+              </div>` : '';
     return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(ex.name)})</div>
                 <input class="set-input" inputmode="decimal" placeholder="${ghost}" style="${!sl.actual && ghost ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghost}" aria-label="Weight lifted">
-              </div>
+              </div>${_repsHtml}
               <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
                 <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
               </div>
@@ -5502,7 +5518,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
           <div class="set-presc-col">${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}</div>
-          ${setInputsHtml(sk,sl,getDisplayUnit(),si)}
+          ${setInputsHtml(sk,sl,getDisplayUnit(),si,simple.reps)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -5514,7 +5530,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-presc-col">${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}</div>
-            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si)}
+            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si,simple.reps)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -5528,7 +5544,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const isOpen=ranged.reps==='open';
         h+=`<div class="set-row">
           <div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}</div>
-          ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit(),si)}
+          ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit(),si,ranged.reps)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -5541,7 +5557,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}</div>
-            ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit(),_si)}
+            ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit(),_si,ranged.reps)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
@@ -5949,7 +5965,7 @@ function saveBlockName(){
 function startEditEx(key){ state.editingExKey=key; render(); setTimeout(()=>{ const el=document.getElementById('ex-edit-'+key); if(el){el.focus();el.select();} },50); }
 
 function saveExName(key, oldName){
-  const el=document.getElementById('ex-edit-'+esc(key));
+  const el=document.getElementById('ex-edit-'+key);
   const newName=el?el.value.trim():oldName;
   state.editingExKey=null;
   if(!newName||newName===oldName.trim()){ render(); return; }
@@ -6409,24 +6425,35 @@ function _shouldFireRestTimer(setKey) {
 // ── SET TYPE TAGGING (removed — kept stub for log compat) ─────────────────────
 
 // ── PR DETECTION (inline) ─────────────────────────────────────────────────────
-// Denormalized PR lookup: exerciseName → repCount → bestWeight
+// e1RM-based PR lookup: liftGroup (squat/bench/deadlift) → best e1RM across ALL blocks + tested 1RM
 let _prCache = null;
 
 function _buildPRCache() {
-  _prCache = {};
+  _prCache = { squat: 0, bench: 0, deadlift: 0 };
+
+  // Seed with tested 1RM / training max from athlete profile
+  const ath = loadAthlete() || {};
+  if (ath.tested1rm_squat)   _prCache.squat   = Number(ath.tested1rm_squat);
+  if (ath.tested1rm_bench)   _prCache.bench   = Number(ath.tested1rm_bench);
+  if (ath.tested1rm_deadlift) _prCache.deadlift = Number(ath.tested1rm_deadlift);
+
+  // Scan ALL logs across ALL blocks for best e1RM per comp lift group
   for (const [key, val] of Object.entries(state.logs)) {
     if (!val.done || !val.actual) continue;
     const parts = key.split('||');
     if (parts.length < 5) continue;
-    const exName = (typeof canonicalizeLift === 'function') ? canonicalizeLift(parts[3]) : parts[3];
+    const exName = parts[3];
+    if (!isCompLift(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group || group === 'other') continue;
     const weight = parseFloat(val.actual);
     if (!weight || weight <= 0) continue;
-    // Determine rep count: actual reps if logged, or prescribed reps from set index
     const reps = val.actualReps ? parseInt(val.actualReps) : _getPrescribedRepsForKey(parts[0], parts[1], parts[2], parts[3], parts[4]);
     if (!reps || reps <= 0) continue;
-    if (!_prCache[exName]) _prCache[exName] = {};
-    if (!_prCache[exName][reps] || weight > _prCache[exName][reps]) {
-      _prCache[exName][reps] = weight;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (result && result.value > _prCache[group]) {
+      _prCache[group] = result.value;
     }
   }
 }
@@ -6445,15 +6472,18 @@ function _getPrescribedRepsForKey(blockId, weekLabel, dayName, exName, setLabel)
   return null;
 }
 
-function _checkInlinePR(setKey, exName, weight, reps) {
+function _checkInlinePR(setKey, exName, weight, reps, rpe) {
   if (!_prCache) _buildPRCache();
   if (!weight || !reps || weight <= 0 || reps <= 0) return false;
-  const canon = (typeof canonicalizeLift === 'function') ? canonicalizeLift(exName) : exName;
-  const prevBest = _prCache[canon]?.[reps] || 0;
-  if (weight > prevBest) {
-    // Update cache
-    if (!_prCache[canon]) _prCache[canon] = {};
-    _prCache[canon][reps] = weight;
+  // Only detect PRs for comp lifts
+  if (!isCompLift(exName)) return false;
+  const group = classifyLift(exName);
+  if (!group || group === 'other') return false;
+  const result = calc1rm(weight, reps, rpe || null);
+  if (!result) return false;
+  const prevBest = _prCache[group] || 0;
+  if (result.value > prevBest) {
+    _prCache[group] = result.value;
     return true;
   }
   return false;
@@ -6538,12 +6568,13 @@ function setActual(key,v){
   // Update set checkmark directly without full render
   updateSetCheckmark(key,shouldCheck);
 
-  // PR detection: check if this set is a new PR
+  // PR detection: check if this set is a new e1RM PR (comp lifts only, vs training max + all blocks)
   if (shouldCheck && exName && v) {
     const sl = state.logs[key] || {};
     const reps = sl.actualReps ? parseInt(sl.actualReps) : _getPrescribedRepsFromContext(exName, key);
     const weight = parseFloat(v);
-    if (reps && weight && _checkInlinePR(key, exName, weight, reps)) {
+    const rpe = sl.rpe ? parseFloat(sl.rpe) : null;
+    if (reps && weight && _checkInlinePR(key, exName, weight, reps, rpe)) {
       setTimeout(() => _showInlinePR(key), 100);
     }
   }
@@ -6562,6 +6593,24 @@ function _getPrescribedRepsFromContext(exName, setKey) {
   if (!ex || !ex.prescription) return null;
   if (typeof getSetReps === 'function') return getSetReps(ctx.block.id, ctx.week.label, ctx.day.name, exName, si);
   return null;
+}
+function setActualReps(key,v){
+  const sl = state.logs[key] || {};
+  state.logs[key] = {...sl, actualReps: v || undefined};
+  if (!v) delete state.logs[key].actualReps;
+  saveLogs();
+  _prCache = null;
+  // Re-check PR with updated reps
+  const exName = _resolveExNameFromKey(key);
+  const weight = parseFloat(sl.actual);
+  const rpe = sl.rpe ? parseFloat(sl.rpe) : null;
+  if (exName && weight && v) {
+    const reps = parseInt(v);
+    if (reps && _checkInlinePR(key, exName, weight, reps, rpe)) {
+      setTimeout(() => _showInlinePR(key), 100);
+    }
+  }
+  autoCompleteExercise(key);
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
@@ -6936,7 +6985,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.10';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.11';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -10533,7 +10582,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.10';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.11';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
