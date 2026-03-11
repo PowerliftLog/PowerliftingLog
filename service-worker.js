@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v71';
+const CACHE_NAME = 'liftlog-v72';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -27,7 +27,6 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
 });
 
 // Activate — clean up old caches

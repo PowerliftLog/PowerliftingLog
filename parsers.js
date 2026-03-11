@@ -759,7 +759,7 @@ function parseASheet(sn,rows){
             embeddedPres=leadingRepsMatch[1];
             normalizedCs=leadingRepsMatch[2];
           }
-          const correctedName=spellCorrectExerciseName(normalizedCs);
+          const correctedName=_hCapitalizeName(normalizedCs);
           cur={name:correctedName,weeks:[],staticPrescription:embeddedPres||null,staticTrackingRaw:null,note:note?String(note).trim():null,coachNotes:[],supersetGroup:curSupersetGroup||null};
           exs.push(cur);
         } else if(cur&&(isCoachNoteLine||ln)){
@@ -2355,7 +2355,7 @@ function parseE_texasMethod(wb) {
           }
 
           weekDays[w][d].exercises.push({
-            name: spellCorrectExerciseName(curExercise),
+            name: _hCapitalizeName(curExercise),
             prescription,
             note: '', lifterNote: '', loggedWeight: ''
           });
@@ -4375,7 +4375,7 @@ function parseTexasMethod(wb) {
           }
 
           weekDays[w][d].exercises.push({
-            name: spellCorrectExerciseName(curExercise),
+            name: _hCapitalizeName(curExercise),
             prescription,
             note: '',
             lifterNote: '',
@@ -4506,7 +4506,7 @@ function parseHepburn(wb) {
         const weight = typeof row[5] === 'number' ? row[5] : null;
 
         if (sets && reps) {
-          const corrected = spellCorrectExerciseName(exName);
+          const corrected = _hCapitalizeName(exName);
           // Check if last exercise in current day has the same name — merge sets
           const last = curDayExercises.length > 0 ? curDayExercises[curDayExercises.length - 1] : null;
           if (last && last.name === corrected) {
@@ -4699,7 +4699,7 @@ function parseBulgarianMethod(wb) {
           });
 
           dayExercises[dc.dayNum].push({
-            name: spellCorrectExerciseName(curExName),
+            name: _hCapitalizeName(curExName),
             prescription: parts.join(', '),
             note: ''
           });
@@ -4890,7 +4890,7 @@ function buildNote(percentage, additionalText) {
   return parts.length > 0 ? parts.join(' · ') : '';
 }
 
-function spellCorrectExerciseName(name) {
+function _hCapitalizeName(name) {
   return name
     .split(/\s+/)
     .map(word => {
@@ -4979,7 +4979,7 @@ function parseH_coanSheet(sn, ws) {
               days: [{
                 name: 'Day 1',
                 exercises: [{
-                  name: spellCorrectExerciseName(leftEx),
+                  name: _hCapitalizeName(leftEx),
                   prescription: buildPrescription(sets || 1, reps, leftWt),
                   note: buildNote(percentage, restTime),
                   lifterNote: '',
@@ -5026,7 +5026,7 @@ function parseH_coanSheet(sn, ws) {
               days: [{
                 name: 'Day 1',
                 exercises: [{
-                  name: spellCorrectExerciseName(rightEx),
+                  name: _hCapitalizeName(rightEx),
                   prescription: buildPrescription(sets || 1, reps, rightWt),
                   note: buildNote(percentage, restTime),
                   lifterNote: '',
@@ -5466,7 +5466,7 @@ function parseH_hatfieldSheet(sn, ws) {
     }
 
     currentDay.exercises.push({
-      name: spellCorrectExerciseName(e.exName),
+      name: _hCapitalizeName(e.exName),
       prescription: `${e.sets}x${e.reps}(${e.avgWeight})`,
       note: '',
       lifterNote: '',
@@ -5550,7 +5550,7 @@ function _parseDeathbenchSide(rows, ws, cfg) {
           // Accessory exercise
           const fwdWt = getCellValue(ws, `${cfg.weightCol}${j + 1}`);
           day.exercises.push({
-            name: spellCorrectExerciseName(fwdName),
+            name: _hCapitalizeName(fwdName),
             prescription: fwdWt !== null ? buildPrescription(fwdSets, fwdReps || 0, fwdWt) : `${fwdSets}x${fwdReps || 0}`,
             note: '', lifterNote: '', loggedWeight: ''
           });
@@ -5559,7 +5559,7 @@ function _parseDeathbenchSide(rows, ws, cfg) {
 
       if (benchParts.length > 0) {
         day.exercises.unshift({
-          name: spellCorrectExerciseName(benchName),
+          name: _hCapitalizeName(benchName),
           prescription: benchParts.join(', '),
           note: '', lifterNote: '', loggedWeight: ''
         });
@@ -9790,7 +9790,7 @@ function _parseU_multiSheet(wb) {
       }
 
       currentDay.exercises.push({
-        name: spellCorrectExerciseName(exName),
+        name: _hCapitalizeName(exName),
         prescription: prescription,
         note: note,
         lifterNote: '',
@@ -9927,7 +9927,7 @@ function _parseU_singleSheet(wb) {
 
         if (!dayExercises[w]) dayExercises[w] = [];
         dayExercises[w].push({
-          name: spellCorrectExerciseName(exName),
+          name: _hCapitalizeName(exName),
           prescription: prescription,
           note: tier,
           lifterNote: '',
@@ -10234,7 +10234,7 @@ function parseV(wb) {
       }
 
       currentDay.exercises.push({
-        name: spellCorrectExerciseName(cleanName),
+        name: _hCapitalizeName(cleanName),
         prescription: prescription,
         note: note,
         lifterNote: '',
