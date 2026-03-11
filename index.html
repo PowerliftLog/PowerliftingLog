@@ -515,14 +515,14 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--text-mid); white-space: nowrap; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: var(--sp-3); flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-width: 0; }
-.set-input-group.reps-range-group { flex: 0 0 54px; }
+.set-input-group.reps-range-group { flex: 1; }
 .set-input-label { font-size: var(--fs-sm); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; }
 .set-input { background: var(--surface-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); padding: var(--sp-4) var(--sp-3); min-height: 40px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input::placeholder { color: var(--text-muted); font-size: var(--fs-sm); font-weight: 400; font-style: italic; opacity: 0.6; }
 .prescribed-label { width: 80px; text-align: center; font-size: var(--fs-base); color: var(--text-dimmer); }
-.set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+.set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; margin-bottom: var(--sp-2); }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
 .set-check svg { width: 14px; height: 14px; }
 .pr-badge { display: inline-flex; align-items: center; gap: var(--sp-1); background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; padding: var(--sp-1) var(--sp-3); border-radius: 4px; margin-left: var(--sp-3); animation: prFlash 0.6s ease-out; }
