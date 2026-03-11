@@ -5487,7 +5487,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
         h+=`<div class="set-row">
           ${_isBarbell && _numWeight > 0 ? calcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button></div>
-          ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si)}
+          ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si,s.reps)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       });
@@ -5506,7 +5506,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
           h+=`<div class="set-row">
             ${_isBarbell && _extraNw > 0 ? calcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
-            ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si)}
+            ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si,_lastS.reps)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
