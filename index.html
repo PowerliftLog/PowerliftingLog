@@ -1766,7 +1766,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.12</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26e</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.12</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26f</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2104,7 +2104,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.12 · Build 3/10/26e</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.12 · Build 3/10/26f</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -5570,7 +5570,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
         const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
         h+=`<div class="set-row">
           <div class="set-presc-col">${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
-          ${setInputsHtml(sk,sl,getDisplayUnit(),si)}
+          ${setInputsHtml(sk,sl,getDisplayUnit(),si,bareWithRounds.reps)}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${prevHintHtml(si)}`;
       }
@@ -5582,7 +5582,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
           const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
           h+=`<div class="set-row">
             <div class="set-presc-col">${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
-            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si)}
+            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si,bareWithRounds.reps)}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
         }
