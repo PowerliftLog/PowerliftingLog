@@ -1766,7 +1766,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.11</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26d</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.12</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/10/26e</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2104,7 +2104,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.11 · Build 3/10/26d</div>
+    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.12 · Build 3/10/26e</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -6985,7 +6985,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.11';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.12';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -9740,6 +9740,20 @@ function _buildHTMLReport(blockId) {
       } else if (avgFatigue > 0) {
         flags.push({ color: 'green', text: `Session fatigue averaging ${avgFatigue.toFixed(1)}% \u2014 well within recovery capacity` });
       }
+    } else if (vals.length >= 2) {
+      // No multi-set fatigue data — count total sets for context (common for deadlift)
+      let totalSets = 0, sessionCount = 0;
+      const sessKeys = new Set();
+      for (const [key, val] of Object.entries(blockLogs)) {
+        const parts = key.split('||');
+        if (parts.length < 5 || !parts[4].startsWith('s') || !val.done) continue;
+        if (classifyLift(parts[3]) !== groupKey) continue;
+        totalSets++;
+        sessKeys.add(parts[1] + '||' + parts[2]);
+      }
+      sessionCount = sessKeys.size;
+      const avg = sessionCount > 0 ? (totalSets / sessionCount).toFixed(1) : '0';
+      flags.push({ color: 'green', text: `Session fatigue: N/A \u2014 ${totalSets} sets across ${sessionCount} sessions (avg ${avg}/session, single-set exercises)` });
     }
 
     // Flat e1RM with rising RPE = overreach signal
@@ -9866,7 +9880,7 @@ function _buildHTMLReport(blockId) {
     const trend = classifyTrend(cl);
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-accent" style="background:${color}"></div>
-      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:9px;color:#777;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
+      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:10px;color:#999;font-weight:400;margin-left:4px">(${cl.name})</span>` : ''}</div>
       <div class="comp-card-e1rm-label">Peak e1RM</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
@@ -9921,20 +9935,58 @@ function _buildHTMLReport(blockId) {
   }
 
   // ── Weekly top sets table HTML ───────────────────────────────────────────
+  // Build week date labels from block.startDate or dateRange fallback
+  const weekDateLabels = {};
+  let _blockStart = block.startDate;
+  if (!_blockStart && block.dateRange) {
+    // Parse start date from dateRange like "2/9/2026-3/6/26" or "2/9/26 – 3/6/26"
+    const drMatch = block.dateRange.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (drMatch) {
+      let yr = parseInt(drMatch[3]);
+      if (yr < 100) yr += 2000;
+      _blockStart = yr + '-' + drMatch[1].padStart(2, '0') + '-' + drMatch[2].padStart(2, '0');
+    }
+  }
+  if (_blockStart) {
+    const sd = new Date(_blockStart + 'T00:00:00');
+    if (!isNaN(sd.getTime())) {
+      weeks.forEach((w, i) => {
+        const wd = new Date(sd.getTime() + i * 7 * 86400000);
+        weekDateLabels[w.label] = (wd.getMonth() + 1) + '/' + wd.getDate();
+      });
+    }
+  }
+
+  // Cache previous week e1RM for delta arrows
+  const prevWeekE1rm = {};
   let weeklyTableHtml = '';
-  for (const wl of weekLabels) {
+  for (let wi = 0; wi < weekLabels.length; wi++) {
+    const wl = weekLabels[wi];
     const isPeak = wl === peakWeekLabel;
     const rowClass = isPeak ? ' class="peak-week"' : '';
     const peakBadge = isPeak ? `<span class="peak-badge">PEAK</span>` : '';
-    let cells = `<td class="week-col">${wl}${peakBadge}</td>`;
+    const dateTag = weekDateLabels[wl] ? `<span class="week-date">${weekDateLabels[wl]}</span>` : '';
+    let cells = `<td class="week-col">${wl}${dateTag}${peakBadge}</td>`;
     for (const gk of ['squat', 'bench', 'deadlift']) {
       const ts = getWeeklyTopSet(gk, wl);
       if (ts) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
         const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size:9px;font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
-        const varLabel = ts.isVariation ? `<div style="font-size:8px;color:#666;margin-top:1px">${escH(ts.exName)}</div>` : '';
+        const varLabel = ts.isVariation ? `<div style="font-size:9px;color:#999;margin-top:1px">${escH(ts.exName)}</div>` : '';
         const e1rmTag = `<div class="weekly-e1rm">e1RM ${Math.round(ts.e1rm)}</div>`;
-        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmTag}${varLabel}</td>`;
+        // Week-over-week delta arrow
+        let deltaTag = '';
+        const prev = prevWeekE1rm[gk];
+        if (prev && ts.e1rm) {
+          const diff = Math.round(ts.e1rm - prev);
+          if (diff !== 0) {
+            const arrow = diff > 0 ? '\u2191' : '\u2193';
+            const color = diff > 0 ? _tc('--green','#4ade80') : _tc('--red','#E22C2C');
+            deltaTag = `<div class="weekly-delta" style="color:${color}">${arrow}${Math.abs(diff)}</div>`;
+          }
+        }
+        prevWeekE1rm[gk] = ts.e1rm;
+        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmTag}${deltaTag}${varLabel}</td>`;
       } else {
         cells += '<td class="no-data">\u2014</td>';
       }
@@ -10003,7 +10055,7 @@ function _buildHTMLReport(blockId) {
     const exercises = families[groupKey];
     const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
     if (!exNames.length) {
-      progressionHtml += `<div class="prog-mini"><div class="prog-mini-label">${groupLabel}</div><div style="padding:20px 0;text-align:center;color:#444;font-size:10px">No data</div></div>`;
+      progressionHtml += `<div class="prog-mini"><div class="prog-mini-label">${groupLabel}</div><div style="padding:20px 0;text-align:center;color:#777;font-size:11px">No data</div></div>`;
       continue;
     }
 
@@ -10208,56 +10260,56 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .rpt-brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,.2)}
 .rpt-athlete{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;line-height:1;letter-spacing:.02em;text-transform:uppercase;margin-bottom:2px}
 .rpt-block{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-.rpt-meta{font-size:12px;color:${tv('--text-faint')||'#666'};display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.rpt-meta{font-size:12px;color:${tv('--text-sub')||'#999'};display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .rpt-meta span+span::before{content:'·';margin-right:6px}
 
 /* Stats Strip */
 .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
 .strip-stat{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:8px;padding:8px;text-align:center}
 .strip-stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;line-height:1;margin-bottom:1px}
-.strip-stat-sub{font-size:10px;font-weight:500;color:${tv('--text-faint')||'#666'}}
-.strip-stat-label{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'}}
+.strip-stat-sub{font-size:11px;font-weight:500;color:${tv('--text-mid')||'#999'}}
+.strip-stat-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#888'}}
 
 /* Estimated Total */
 .est-total-card{display:flex;justify-content:space-between;align-items:center;background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px 16px;margin-bottom:12px}
-.est-total-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
+.est-total-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-sub')||'#888'};margin-bottom:2px}
 .est-total-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:1;color:${tv('--text-primary')||'#f0f0f0'}}
-.est-total-unit{font-size:16px;font-weight:600;color:${tv('--text-faint')||'#666'}}
+.est-total-unit{font-size:16px;font-weight:600;color:${tv('--text-sub')||'#999'}}
 .est-total-scores{text-align:right}
 .est-total-score-row{display:flex;justify-content:flex-end;align-items:baseline;gap:6px;margin-bottom:2px}
-.est-total-score-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'}}
+.est-total-score-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#888'}}
 .est-total-score-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--gold)}
-.est-total-bw{font-size:10px;color:${tv('--text-dim')||'#555'};margin-top:2px}
-.est-total-breakdown{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:500;color:${tv('--text-dim')||'#555'};margin-top:2px;letter-spacing:.02em}
+.est-total-bw{font-size:11px;color:${tv('--text-sub')||'#888'};margin-top:2px}
+.est-total-breakdown{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:500;color:${tv('--text-mid')||'#999'};margin-top:2px;letter-spacing:.02em}
 
 /* Comp lift cards */
 .comp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .comp-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px 10px 8px;position:relative;overflow:hidden}
 .comp-card-accent{height:3px;border-radius:2px;margin-bottom:6px}
-.comp-card-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:2px}
-.comp-card-e1rm-label{font-size:7px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${tv('--text-dim')||'#444'};margin-bottom:1px}
+.comp-card-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:2px}
+.comp-card-e1rm-label{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${tv('--text-sub')||'#888'};margin-bottom:1px}
 .comp-card-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;line-height:1;margin-bottom:1px}
-.comp-card-unit{font-size:11px;font-weight:600;color:${tv('--text-faint')||'#666'}}
+.comp-card-unit{font-size:12px;font-weight:600;color:${tv('--text-sub')||'#999'}}
 .comp-card-delta{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;margin-bottom:4px}
 .comp-card-sparkline{height:36px;margin:0 -4px 6px}
 .comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:6px}
-.comp-card-best-label{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${tv('--text-dim')||'#444'};margin-bottom:2px}
+.comp-card-best-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${tv('--text-sub')||'#888'};margin-bottom:2px}
 .comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:${tv('--text-faint')||'#aaa'};margin-bottom:6px}
 .comp-card-best-main{font-weight:700;color:${tv('--text-sub')||'#ccc'}}
-.comp-card-best-rpe{font-size:11px;color:${tv('--text-dim')||'#666'}}
+.comp-card-best-rpe{font-size:12px;color:${tv('--text-sub')||'#999'}}
 .comp-card-trend{display:flex;align-items:center;gap:5px;padding:5px 0 0;border-top:1px solid ${tv('--surface-3')||'#1a1a1a'}}
 .comp-card-trend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .comp-card-trend-dot.green{background:var(--green)}
 .comp-card-trend-dot.gold{background:var(--gold)}
 .comp-card-trend-dot.amber{background:var(--amber)}
 .comp-card-trend-dot.red{background:var(--red)}
-.comp-card-trend-text{font-size:9px;color:${tv('--text-faint')||'#888'};line-height:1.2}
+.comp-card-trend-text{font-size:10px;color:${tv('--text-mid')||'#aaa'};line-height:1.2}
 
 /* Flags */
 .flags-section{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:12px}
 .flags-group{margin-bottom:10px}
 .flags-group:last-child{margin-bottom:0}
-.flags-group-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.flags-group-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .flags-group-accent{width:12px;height:3px;border-radius:2px}
 .flag-row{display:flex;align-items:flex-start;gap:6px;padding:3px 0;margin-left:18px}
 .flag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
@@ -10265,43 +10317,47 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .flag-dot.red{background:var(--red)}
 .flag-dot.green{background:var(--green)}
 .flag-dot.gold{background:var(--gold)}
-.flag-text{font-size:11px;color:${tv('--text-faint')||'#888'};line-height:1.3}
+.flag-text{font-size:12px;color:${tv('--text-mid')||'#bbb'};line-height:1.3}
 
 /* Section cards */
 .section-card{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:12px}
-.section-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:10px}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:10px}
 .vol-legend{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap}
-.vol-legend-item{display:flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:10px;color:${tv('--text-faint')||'#666'};letter-spacing:.04em}
+.vol-legend-item{display:flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${tv('--text-sub')||'#999'};letter-spacing:.04em}
 .vol-legend-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
 .vol-chart-wrap{height:170px}
 
 /* Block Progression (compact 3-up) */
 .progression-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .prog-mini{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;overflow:hidden}
-.prog-mini-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};margin-bottom:6px}
+.prog-mini-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:6px}
 .prog-mini-chart{height:100px;margin:0 -4px}
 .prog-mini-vars{margin-top:6px;border-top:1px solid ${tv('--surface-3')||'#1a1a1a'};padding-top:6px}
 .prog-mini-var{display:flex;align-items:center;gap:4px;padding:1px 0}
 .prog-mini-var-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.prog-mini-var-name{font-size:9px;color:${tv('--text-faint')||'#666'};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog-mini-var-val{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;color:${tv('--text-faint')||'#888'}}
+.prog-mini-var-name{font-size:10px;color:${tv('--text-sub')||'#999'};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog-mini-var-val{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:${tv('--text-mid')||'#bbb'}}
 
 /* Weekly top sets */
 .weekly-table{width:100%;border-collapse:collapse;font-size:11px}
-.weekly-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-dim')||'#555'};padding:4px 6px;text-align:left;border-bottom:1px solid ${tv('--border')||'#222'}}
-.weekly-table td{padding:5px 6px;color:${tv('--text-faint')||'#888'};font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:500;border-bottom:1px solid ${tv('--surface-1')||'#111'}}
-.weekly-table .week-col{color:${tv('--text-sub')||'#999'};font-weight:700;width:50px}
+.weekly-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};padding:4px 6px;text-align:left;border-bottom:1px solid ${tv('--border')||'#222'}}
+.weekly-table td{padding:5px 6px;color:${tv('--text-bright')||'#ddd'};font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;border-bottom:1px solid ${tv('--surface-1')||'#111'}}
+.weekly-table .week-col{color:${tv('--text-mid')||'#aaa'};font-weight:700;width:56px}
 .weekly-table .no-data{color:${tv('--text-dim')||'#444'}}
-.weekly-table .rpe-dim{font-size:10px;color:${tv('--text-dim')||'#555'}}
-.weekly-e1rm{font-size:9px;font-weight:600;color:${tv('--text-dim')||'#555'};margin-top:1px}
+.weekly-table .rpe-dim{font-size:11px;color:${tv('--text-sub')||'#888'}}
+.weekly-e1rm{font-size:10px;font-weight:600;color:${tv('--text-sub')||'#888'};margin-top:2px}
+.weekly-delta{font-size:9px;font-weight:700;margin-top:1px;letter-spacing:-.02em}
+.week-date{display:block;font-size:9px;font-weight:500;color:${tv('--text-sub')||'#888'};letter-spacing:.02em;margin-top:1px}
 .weekly-table tr.peak-week td{color:var(--gold)}
 .weekly-table tr.peak-week .rpe-dim{color:rgba(201,168,76,.6)}
 .weekly-table tr.peak-week .weekly-e1rm{color:rgba(201,168,76,.7)}
+.weekly-table tr.peak-week .weekly-delta{opacity:.85}
+.weekly-table tr.peak-week .week-date{color:rgba(201,168,76,.6)}
 .peak-badge{display:inline-block;font-size:7px;font-weight:700;letter-spacing:.06em;background:var(--gold);color:#000;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
 .weekly-total-row td{border-top:2px solid ${tv('--border')||'#222'};border-bottom:none;padding-top:8px}
 
 /* Footer */
-.rpt-footer{margin-top:16px;font-size:10px;color:${tv('--text-dim')||'#444'};display:flex;justify-content:space-between}
+.rpt-footer{margin-top:16px;font-size:11px;color:${tv('--text-sub')||'#888'};display:flex;justify-content:space-between}
 
 /* Save button */
 .save-btn{position:fixed;bottom:20px;right:20px;background:var(--gold);color:#000;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.4)}
@@ -10325,7 +10381,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .comp-card-best{font-size:13px}
   .comp-card-trend-text{font-size:10px}
   .flags-section{padding:18px;border-radius:14px}
-  .flag-text{font-size:12px}
+  .flag-text{font-size:13px}
   .section-card{padding:18px;border-radius:14px}
   .vol-chart-wrap{height:220px}
   .progression-grid{gap:12px}
@@ -10582,7 +10638,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.11';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.12';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
