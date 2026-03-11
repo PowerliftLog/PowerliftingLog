@@ -66,6 +66,40 @@
     };
     document.body.appendChild(b);
   }
+  // Tap build number to force-refresh
+  document.addEventListener('DOMContentLoaded', () => {
+    const vEl = document.getElementById('settings-version-tap');
+    if (!vEl) return;
+    vEl.addEventListener('click', () => {
+      vEl.textContent = 'Checking for updates…';
+      vEl.style.opacity = '1';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && reg.waiting) {
+            vEl.textContent = 'Updating…';
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          } else if (reg) {
+            reg.update().then(() => {
+              setTimeout(() => {
+                if (reg.waiting) {
+                  vEl.textContent = 'Updating…';
+                  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                } else {
+                  vEl.textContent = 'Already up to date ✓';
+                  setTimeout(() => { vEl.style.opacity = '0.6'; vEl.textContent = vEl.dataset.original; }, 1500);
+                }
+              }, 1000);
+            }).catch(() => { location.reload(); });
+          } else {
+            location.reload();
+          }
+        });
+      } else {
+        location.reload();
+      }
+    });
+    vEl.dataset.original = vEl.textContent;
+  });
 </script>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlElEQVR4nO2X0QmAMBBDU/GrW+koDuYoOpp+FUTwwyQQlGaA3nvX3kFLrfVAMEOyeAf4F8C+zlkANhYA1t4GAADTsmUAFHsLgBoJQLWXAVrY+5cAHPYAMDoOucK87QbVgSd75iq+NwVOe4B4A/dC0UXUikfG0BUZQLGXAFyLSOqAai8DOEJvQoc9DeBM6V+zDpAGOAEoFSO7lhfbZgAAAABJRU5ErkJggg==">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" defer></script>
@@ -2124,7 +2158,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6">v0.18.13 · Build 3/11/26a</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.14 · Build 3/11/26b</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
