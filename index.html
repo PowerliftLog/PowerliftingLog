@@ -1211,6 +1211,61 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .e5-chip-val .unit { font-size: var(--fs-sm); font-weight: 500; color: var(--text-dim); }
 .e5-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
 
+/* ── E6 Program Card (homepage) ── */
+.e6-prog-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: var(--sp-5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: var(--sp-6) 20px; }
+.e6-prog-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sp-5); }
+.e6-prog-name { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--text-bright); letter-spacing: 0.02em; }
+.e6-prog-dates { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-dim); }
+
+/* Two-chip row inside card */
+.e6-chips { display: flex; gap: var(--sp-5); margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: var(--sp-5); }
+.e6-chip { flex: 1; display: flex; align-items: center; gap: 10px; padding: var(--sp-4) 10px; border-radius: 10px; background: rgba(255,255,255,0.02); }
+.e6-chip-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.e6-chip-val { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--text-bright); line-height: 1; }
+.e6-chip-val .unit { font-size: var(--fs-sm); font-weight: 500; color: var(--text-dim); }
+.e6-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); margin-top: 1px; }
+
+/* Week pills (≤4 weeks) */
+.e6-weeks { display: flex; gap: 6px; margin-bottom: var(--sp-6); }
+.e6-week { flex: 1; text-align: center; padding: var(--sp-4) 0 6px; border-radius: 8px; border: 1px solid var(--border); }
+.e6-week.active { border-color: var(--gold); background: rgba(var(--gold-rgb), 0.06); }
+.e6-week.done { border-color: rgba(var(--green-rgb), 0.3); }
+.e6-week-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; color: var(--text-mid); }
+.e6-week.active .e6-week-label { color: var(--gold); }
+.e6-week.done .e6-week-label { color: var(--green); }
+.e6-week-sub { font-family: 'Barlow', sans-serif; font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+.e6-week-bar { height: 3px; border-radius: 2px; background: var(--border); margin: 4px var(--sp-4) 0; overflow: hidden; }
+.e6-week-bar-fill { height: 100%; border-radius: 2px; }
+.e6-week.active .e6-week-bar-fill { background: var(--gold); }
+.e6-week.done .e6-week-bar-fill { background: var(--green); }
+
+/* Progress bar (>4 weeks) */
+.e6-bar-wrap { margin-bottom: var(--sp-6); }
+.e6-bar-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.e6-bar-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--gold); }
+.e6-bar-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-dim); }
+.e6-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.e6-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--green), var(--gold)); }
+
+/* Split rows */
+.e6-split-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: var(--sp-4); }
+.e6-split { display: flex; flex-direction: column; }
+.e6-split-row { display: flex; align-items: center; padding: var(--sp-4) 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.e6-split-row:last-child { border-bottom: none; }
+.e6-split-row.highlight { background: rgba(var(--gold-rgb), 0.04); margin: 0 -20px; padding: var(--sp-4) 20px; border-left: 2px solid var(--gold); border-bottom-color: rgba(var(--gold-rgb), 0.08); }
+.e6-split-day { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--text-faint); width: 70px; flex-shrink: 0; }
+.e6-split-day.done { color: var(--green); }
+.e6-split-day.next { color: var(--gold); }
+.e6-split-primary { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 600; color: var(--text-mid); flex: 1; }
+.e6-split-row.highlight .e6-split-primary { color: var(--text-bright); }
+.e6-split-check { color: var(--green); font-size: var(--fs-sm); width: 30px; text-align: right; flex-shrink: 0; }
+
+/* PR banner inside card */
+.e6-pr-banner { display: flex; align-items: center; gap: 10px; padding: 10px 0 0; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.04); }
+.e6-pr-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(var(--green-rgb), 0.12); }
+.e6-pr-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 600; color: var(--green); }
+.e6-pr-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-xs); color: var(--text-dim); }
+
 /* No-program state */
 .home-empty { text-align: center; padding: 60px var(--sp-8); }
 .home-empty-icon { margin: 0 auto var(--sp-7); opacity: 0.15; }
@@ -2204,7 +2259,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.19.1 · Build 3/12/26c</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.20.0 · Build 3/12/26d</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -4386,9 +4441,14 @@ function getNextWorkoutInfo() {
   const day = week?.days[nw.dayIdx];
   if (!day) return null;
   const allDone = isDayComplete(block, week, day);
+  // Meta: exercise count + estimated time (exercises × ~10 min avg)
+  const exCount = (day.exercises || []).length;
   const metaParts = [];
-  if (block.weeks.length > 1) metaParts.push(`W${nw.weekIdx + 1}`);
-  if (block.name) metaParts.push(displayBlockName(block.name));
+  metaParts.push(`${exCount} exercise${exCount !== 1 ? 's' : ''}`);
+  if (exCount > 0) {
+    const estMin = Math.round(exCount * 11); // ~11 min per exercise avg
+    metaParts.push(`~${estMin} min`);
+  }
   return { day, week, weekIdx: nw.weekIdx, dayIdx: nw.dayIdx, allDone, meta: metaParts.join(' · ') };
 }
 
@@ -4746,7 +4806,9 @@ function getHomeBanners(block) {
   const banners = [];
   const bid = block.id;
   const now = Date.now();
-  const PR_EXPIRY_MS = 4 * 24 * 60 * 60 * 1000; // 4 days
+  // PR expiry: persists until the next training week starts (weekActivatedAt changes)
+  // Fallback: 7 days if no week tracking data
+  const PR_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
   // ── PR detection: scan current block for per-group best, compare to all-time ──
   if (!_prCache) _buildPRCache();
@@ -4788,8 +4850,11 @@ function getHomeBanners(block) {
   // Check each group for all-time PR in this block
   for (const [group, data] of Object.entries(blockBests)) {
     if (!data || !data.ts) continue;
+    // Expire PRs when a new training week starts (weekActivatedAt after PR timestamp)
+    const weekActivatedAt = block._weekActivatedAt ? new Date(block._weekActivatedAt + 'T00:00:00').getTime() : 0;
+    if (weekActivatedAt > data.ts) continue; // new week started after PR — expired
     const age = now - data.ts;
-    if (age > PR_EXPIRY_MS) continue; // expired
+    if (age > PR_EXPIRY_MS) continue; // fallback expiry
     // Compare to all-time: _prCache has the best including this block
     // We need to check if this block's best IS the all-time best
     const allTimeBest = _prCache[group] || 0;
@@ -5529,90 +5594,157 @@ function renderHome() {
 }
 
 /**
- * renderE5Components(block, isBlockComplete) — builds E5 homepage: e1RM row + banner + chips
+ * renderE5Components(block, isBlockComplete) — builds E6 homepage program card
+ * Structure: Program name/dates → Chips (execution + total) → Week pills or progress bar → Split → PR banner
  * Handles: active cycle, cold start (no data), completed cycle
  */
 function renderE5Components(block, isBlockComplete) {
   if (!block) return '';
+  if (isBlockComplete) return ''; // block complete hero handles everything
   const unit = getDisplayUnit();
   const trends = getE1RMTrends(block);
   const exec = getExecutionScore(block);
   const banners = getHomeBanners(block);
+  const nwInfo = getNextWorkoutInfo();
+  const currentWeekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
 
-  // ── e1RM Row with sparklines + status ──
-  let e1rmHtml = '<div class="e5-e1rm-row">';
-  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-    const t = trends ? trends[group] : null;
-    const hasCurrent = t && t.current != null;
-    const statusClass = t && t.status ? `status-${t.status === 'adapting' ? 'green' : t.status === 'fatigue' ? 'amber' : ''}` : '';
-
-    e1rmHtml += `<div class="e5-e1rm-card ${statusClass}">`;
-    e1rmHtml += `<div class="e5-e1rm-lift">${label}</div>`;
-
-    if (hasCurrent) {
-      e1rmHtml += `<div class="e5-e1rm-val">${t.current}</div>`;
-      // Delta
-      if (t.delta !== 0 && t.previous != null) {
-        const dir = t.delta > 0 ? 'up' : 'down';
-        const arrow = t.delta > 0 ? '↑' : '↓';
-        e1rmHtml += `<div class="e5-e1rm-delta ${dir}">${arrow} ${Math.abs(t.delta)}${unit}</div>`;
-      } else if (t.previous != null) {
-        e1rmHtml += `<div class="e5-e1rm-delta flat">— flat</div>`;
-      }
-      // Sparkline (need 2+ points)
-      if (t.dataPoints.length >= 2) {
-        e1rmHtml += renderE5Sparkline(t.dataPoints, t.status);
-      }
-      // Status label (need 2+ data points)
-      if (t.status) {
-        e1rmHtml += `<div class="e5-e1rm-status ${t.status}">${t.status === 'adapting' ? 'Adapting' : t.status === 'fatigue' ? 'Fatigue Signal' : 'Maintaining'}</div>`;
-      }
-    } else {
-      e1rmHtml += `<div class="e5-e1rm-empty">—</div>`;
+  // ── Header: program name + date range ──
+  const blockName = displayBlockName(block.name) || 'Training Block';
+  let dateRange = '';
+  // Try to compute date range from completed dates
+  const allDates = [];
+  for (const w of block.weeks) {
+    for (const d of (w.days || [])) {
+      const cd = getDayCompletedDate(block, w, d);
+      if (cd) allDates.push(cd);
     }
-    e1rmHtml += '</div>';
   }
-  e1rmHtml += '</div>';
+  if (allDates.length > 0) {
+    const sorted = allDates.sort();
+    const fmt = s => { const [y,m,d] = s.split('-'); return m + '/' + d; };
+    dateRange = fmt(sorted[0]) + ' – present';
+  }
+  let headerHtml = `<div class="e6-prog-header">
+    <div class="e6-prog-name">${escH(blockName)}</div>
+    ${dateRange ? `<div class="e6-prog-dates">${dateRange}</div>` : ''}
+  </div>`;
 
-  // ── Conditional Banner (first/highest priority only) ──
-  let bannerHtml = '';
-  if (banners.length > 0) {
-    const b = banners[0];
-    const iconSvg = b.type === 'pr'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
-      : b.type === 'rpe-drift'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" width="14" height="14"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
-    bannerHtml = `<div class="e5-banner ${b.type}">
-      <div class="e5-banner-icon">${iconSvg}</div>
-      <div><div class="e5-banner-title">${escH(b.title)}</div><div class="e5-banner-sub">${escH(b.subtitle)}</div></div>
+  // ── Chips: Execution + Est. Total (hidden on cold start) ──
+  let chipsHtml = '';
+  const hasAnyData = exec.completedSessions > 0;
+  if (hasAnyData) {
+    const totalE1rm = trends
+      ? (trends.squat?.current || 0) + (trends.bench?.current || 0) + (trends.deadlift?.current || 0)
+      : 0;
+    const hasTotal = totalE1rm > 0;
+    const totalDelta = trends
+      ? (trends.squat?.delta || 0) + (trends.bench?.delta || 0) + (trends.deadlift?.delta || 0)
+      : 0;
+    const deltaHtml = totalDelta > 0 ? ` <span style="color:var(--green);font-size:var(--fs-xs);font-weight:600">↑${totalDelta}</span>` : totalDelta < 0 ? ` <span style="color:var(--amber);font-size:var(--fs-xs);font-weight:600">↓${Math.abs(totalDelta)}</span>` : '';
+
+    chipsHtml = `<div class="e6-chips">
+      <div class="e6-chip">
+        <div class="e6-chip-icon" style="background:rgba(var(--green-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div><div class="e6-chip-val">${exec.pct}<span class="unit">%</span></div><div class="e6-chip-label">Execution</div></div>
+      </div>
+      <div class="e6-chip">
+        <div class="e6-chip-icon" style="background:rgba(var(--gold-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
+        <div><div class="e6-chip-val">${hasTotal ? totalE1rm.toLocaleString() : '—'}<span class="unit">${hasTotal ? unit : ''}</span></div><div class="e6-chip-label">Est. Total${deltaHtml}</div></div>
+      </div>
     </div>`;
   }
 
-  // ── Execution + Total Chips ──
-  const totalE1rm = trends
-    ? (trends.squat?.current || 0) + (trends.bench?.current || 0) + (trends.deadlift?.current || 0)
-    : 0;
-  const hasTotal = totalE1rm > 0;
-  // Delta for total: sum of individual deltas
-  const totalDelta = trends
-    ? (trends.squat?.delta || 0) + (trends.bench?.delta || 0) + (trends.deadlift?.delta || 0)
-    : 0;
+  // ── Weeks: pills (≤4 weeks) or progress bar (>4 weeks) ──
+  const totalWeeks = block.weeks.length;
+  let weeksHtml = '';
+  if (totalWeeks > 4) {
+    // Progress bar
+    const pct = totalWeeks > 0 ? Math.round(((currentWeekIdx) / totalWeeks) * 100) : 0;
+    const remaining = totalWeeks - currentWeekIdx - 1;
+    weeksHtml = `<div class="e6-bar-wrap">
+      <div class="e6-bar-header">
+        <div class="e6-bar-label">W${currentWeekIdx + 1} of ${totalWeeks}</div>
+        <div class="e6-bar-sub">${remaining} week${remaining !== 1 ? 's' : ''} left</div>
+      </div>
+      <div class="e6-bar"><div class="e6-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  } else {
+    // Week pills
+    weeksHtml = '<div class="e6-weeks">';
+    for (let wi = 0; wi < totalWeeks; wi++) {
+      const week = block.weeks[wi];
+      const days = week.days || [];
+      const totalDays = days.filter(d => d.exercises && d.exercises.length > 0).length;
+      const doneDays = days.filter(d => isDayComplete(block, week, d)).length;
+      const isActive = wi === currentWeekIdx;
+      const isDone = wi < currentWeekIdx || (doneDays === totalDays && totalDays > 0);
+      const cls = isActive ? 'active' : isDone ? 'done' : '';
+      const pct = totalDays > 0 ? Math.round((doneDays / totalDays) * 100) : 0;
+      const sub = doneDays > 0 || isActive ? `${doneDays}/${totalDays}` : `0/${totalDays}`;
+      weeksHtml += `<div class="e6-week ${cls}">
+        <div class="e6-week-label">W${wi + 1}</div>
+        <div class="e6-week-sub">${sub}</div>
+        <div class="e6-week-bar"><div class="e6-week-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }
+    weeksHtml += '</div>';
+  }
 
-  let chipsHtml = '<div class="e5-chip-row">';
-  // Execution chip
-  chipsHtml += `<div class="e5-chip">
-    <div class="e5-chip-icon" style="background:rgba(var(--green-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <div><div class="e5-chip-val">${exec.pct}<span class="unit">%</span></div><div class="e5-chip-label">Execution</div></div>
-  </div>`;
-  // Total chip
-  chipsHtml += `<div class="e5-chip">
-    <div class="e5-chip-icon" style="background:rgba(var(--gold-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
-    <div><div class="e5-chip-val">${hasTotal ? totalE1rm.toLocaleString() : '—'}<span class="unit">${hasTotal ? unit : ''}</span></div><div class="e5-chip-label">Est. Total${totalDelta > 0 ? ' · ↑' + totalDelta : totalDelta < 0 ? ' · ↓' + Math.abs(totalDelta) : ''}</div></div>
-  </div>`;
-  chipsHtml += '</div>';
+  // ── Split: this week's training days with primary lift ──
+  const currentWeek = block.weeks[currentWeekIdx];
+  let splitHtml = '';
+  if (currentWeek && currentWeek.days && currentWeek.days.length > 0) {
+    splitHtml = `<div class="e6-split-label">This Week</div><div class="e6-split">`;
+    for (let di = 0; di < currentWeek.days.length; di++) {
+      const day = currentWeek.days[di];
+      if (!day.exercises || day.exercises.length === 0) continue;
+      const done = isDayComplete(block, currentWeek, day);
+      const isNext = !done && nwInfo && !nwInfo.allDone && currentWeekIdx === nwInfo.weekIdx && di === nwInfo.dayIdx;
+      const dayName = day.name || `Day ${di + 1}`;
+      // Primary lift = first exercise
+      const primaryLift = day.exercises[0] ? _displayExName(day.exercises[0].name) : '';
+      const dayCls = done ? 'done' : isNext ? 'next' : '';
+      const rowCls = isNext ? ' highlight' : '';
+      const rightEl = done
+        ? '<div class="e6-split-check">✓</div>'
+        : '';
+      const primaryStyle = done ? ' style="color:var(--text-faint)"' : '';
+      splitHtml += `<div class="e6-split-row${rowCls}">
+        <div class="e6-split-day ${dayCls}">${escH(dayName)}</div>
+        <div class="e6-split-primary"${primaryStyle}>${escH(primaryLift)}</div>
+        ${rightEl}
+      </div>`;
+    }
+    splitHtml += '</div>';
+  }
 
-  return e1rmHtml + bannerHtml + chipsHtml;
+  // ── PR Banner: most recent PR, expires at next training week start ──
+  let bannerHtml = '';
+  const prBanners = banners.filter(b => b.type === 'pr');
+  if (prBanners.length > 0) {
+    const pr = prBanners[0]; // most recent
+    // Sub-text: note additional PRs if any
+    let subText = pr.subtitle;
+    if (prBanners.length > 1) {
+      const others = prBanners.slice(1).map(p => {
+        const g = p.group ? p.group.charAt(0).toUpperCase() + p.group.slice(1) : '';
+        return g + ' PR';
+      }).join(', ');
+      subText = others + ' also hit this block';
+    }
+    bannerHtml = `<div class="e6-pr-banner">
+      <div class="e6-pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="12" height="12"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg></div>
+      <div><div class="e6-pr-title">${escH(pr.title)}</div><div class="e6-pr-sub">${escH(subText)}</div></div>
+    </div>`;
+  }
+
+  return `<div class="e6-prog-card">
+    ${headerHtml}
+    ${chipsHtml}
+    ${weeksHtml}
+    ${splitHtml}
+    ${bannerHtml}
+  </div>`;
 }
 
 /**
