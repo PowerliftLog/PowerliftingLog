@@ -1820,7 +1820,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.14</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/11/26b</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.16</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/11/26c</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2158,7 +2158,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.14 · Build 3/11/26b</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.16 · Build 3/11/26c</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2382,7 +2382,7 @@ async function _bootApp() {
   // 2. Initialize state — wrapped in try/catch so UI always boots
   try {
     const _savedBlocks = loadBlocks() || [];
-    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
 
     // 3. Restore nav position from last session
     const nav = loadNav();
@@ -2414,7 +2414,7 @@ async function _bootApp() {
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
-    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   }
 
   // 5. Boot the UI (onboarding check → render) — always runs
@@ -2581,7 +2581,7 @@ function classifyLift(name){
   // Check custom lifts
   const custom=state.customLifts.find(c=>c.name.toLowerCase()===n);
   if(custom) return custom.group;
-  return null;
+  return 'other';
 }
 
 // ── EXERCISE INPUT MODE ───────────────────────────────────────────────────────
@@ -2717,7 +2717,7 @@ function buildMetrics(drillBlockId){
     const group=classifyLift(exName);
     if(!group) continue;
     if(!isTracked(exName)) continue;
-    if(!isCompLift(exName) && !isCompLift(parts[3])) continue; // Only comp lifts for 1RM metrics
+    if(group!=='other' && !isCompLift(exName) && !isCompLift(parts[3])) continue; // Comp lifts + tracked 'other' exercises
 
     const block=state.blocks.find(b=>b.id===blockId);
     if(!block) continue;
@@ -3014,6 +3014,7 @@ function renderMetrics(){
 
   let hasAnyData=false;
   for(const [groupKey,group] of Object.entries(metrics)){
+    if(groupKey==='other') continue; // rendered separately as collapsed section below
     // Sort variations: comp lifts first, then alphabetical
     const allVars=Object.entries(group.variations).sort((a,b)=>{
       const aComp=isCompLift(a[0])?0:1, bComp=isCompLift(b[0])?0:1;
@@ -3099,6 +3100,66 @@ function renderMetrics(){
     h+=`</div>`;
   }
 
+  // ── Tracked Lifts (non-comp) — collapsed section ────────────────────────
+  const otherGroup = metrics.other;
+  const otherVars = Object.entries(otherGroup.variations).sort((a,b)=>a[0].localeCompare(b[0]));
+  if(otherVars.length > 0){
+    const otherWithData = otherVars.filter(([,pts])=>pts.length>0);
+    if(otherWithData.length > 0) hasAnyData = true;
+    h+=`<div class="metrics-tracked-section">`;
+    h+=`<div class="metrics-tracked-header" style="display:flex;align-items:center;gap:8px;padding:12px 0 8px;cursor:default">
+      <h3 style="margin:0;font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Tracked Lifts</h3>
+      <span style="font-size:var(--fs-xs);color:var(--text-dimmer)">${otherVars.length}</span>
+    </div>`;
+    for(const [vname, pts] of otherVars){
+      const best = pts.length > 0 ? Math.max(...pts.map(p=>p.e1rm)) : null;
+      const trend = pts.length >= 2 ? pts[pts.length-1].e1rm - pts[pts.length-2].e1rm : null;
+      const trendStr = trend !== null ? `<span style="font-size:11px;color:${trend>=0?'var(--accent,#c8a951)':'var(--text-dim)'}">${trend>=0?'+':''}${trend}</span>` : '';
+      const isExpanded = state.metricsOtherExpanded && state.metricsOtherExpanded[vname];
+      h+=`<div class="metrics-tracked-row" style="border-top:1px solid var(--border);padding:10px 0;${isExpanded?'':'cursor:pointer'}" ${isExpanded?'':`onclick="toggleOtherLift('${esc(vname)}')"`}>
+        <div style="display:flex;justify-content:space-between;align-items:center;${isExpanded?'cursor:pointer':''}" ${isExpanded?`onclick="toggleOtherLift('${esc(vname)}')"`:''}>
+          <div style="font-size:var(--fs-base);color:var(--text-primary);font-weight:500">${escH(vname)}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${trendStr}
+            <span style="font-size:var(--fs-base);color:var(--text-primary);font-weight:600">${best?best+'<span style="font-size:11px;color:var(--text-dim);font-weight:400">'+unitLabel(true)+'</span>':'—'}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${isExpanded?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>`;
+      if(isExpanded){
+        h+=`<div class="chart-wrap" style="margin-top:8px"><canvas class="rm-chart" id="chart-other-${esc(vname)}" width="400" height="140" aria-label="Estimated 1RM progression for ${escH(vname)}"></canvas></div>`;
+        if(pts.length > 0){
+          h+=`<div class="rm-datapoints"><div class="var-section">`;
+          pts.forEach((pt,i)=>{
+            const prev=pts[i-1];
+            const delta=prev?pt.e1rm-prev.e1rm:null;
+            const deltaStr=delta!==null?`<span class="rm-delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}${unitLabel(true)}</span>`:'';
+            const methodBadge=pt.method==='rpe'?`<span class="method-badge rpe-badge">RPE</span>`:`<span class="method-badge est-badge">EST</span>`;
+            const sublabel=(()=>{
+              const parts=[];
+              if(pt.topWeight&&pt.topReps) parts.push(`${pt.topReps}×${pt.topWeight}${unitLabel(true)}`);
+              if(pt.completedDate){ const [y,m,d]=pt.completedDate.split('-'); parts.push(`${m}/${d}`); }
+              return parts.join(' · ');
+            })();
+            h+=`<div class="rm-row">
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <div class="rm-session">${pt.session}</div>
+                ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
+              </div>
+              <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}<span class="unit-label">${unitLabel(true)}</span></div></div>
+            </div>`;
+          });
+          h+=`</div></div>`;
+        } else {
+          h+=`<div class="metrics-empty-state" style="padding:12px 0">
+            <div style="font-size:12px;color:var(--text-dim)">Log training data to see trends</div>
+          </div>`;
+        }
+      }
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  }
+
   if(!hasAnyData && Object.values(metrics).every(g=>Object.keys(g.variations).length===0)){
     h+=`<div class="no-data-msg">No performance data yet.<br><br>Log actual weights during your workouts and your estimated 1RMs will appear here.</div>`;
   }
@@ -3109,11 +3170,11 @@ function renderMetrics(){
 
   setTimeout(()=>{
     for(const [groupKey,group] of Object.entries(metrics)){
+      if(groupKey==='other') continue; // drawn below for expanded items
       const allVars=Object.entries(group.variations);
       if(allVars.length===0) continue;
       const varsWithData=allVars.filter(([,pts])=>pts.length>0);
       if(varsWithData.length===0){
-        // Draw empty state on canvas
         drawEmptyChart(`chart-${groupKey}`);
         continue;
       }
@@ -3121,7 +3182,22 @@ function renderMetrics(){
       const activePts=varsWithData.find(([vn])=>vn===activeVar)?.[1]||[];
       drawSingleVarChart(`chart-${groupKey}`, activePts, true);
     }
+    // Draw charts for expanded 'other' tracked lifts
+    if(state.metricsOtherExpanded){
+      for(const [vname, expanded] of Object.entries(state.metricsOtherExpanded)){
+        if(!expanded) continue;
+        const pts = otherGroup.variations[vname];
+        if(!pts || pts.length===0){ drawEmptyChart(`chart-other-${vname}`); continue; }
+        drawSingleVarChart(`chart-other-${vname}`, pts, true);
+      }
+    }
   },0);
+}
+
+function toggleOtherLift(name){
+  if(!state.metricsOtherExpanded) state.metricsOtherExpanded={};
+  state.metricsOtherExpanded[name]=!state.metricsOtherExpanded[name];
+  renderMetrics();
 }
 
 function toggleMaxCard(el) {
@@ -3271,8 +3347,7 @@ function _getAllProgramExercises(){
         if(seen.has(key)) continue;
         seen.add(key);
         const mode=getExerciseInputMode(baseName,'');
-        if(mode==='bw'||mode==='cardio') continue;
-        if(!isBarbellMovement(baseName)) continue; // only barbell movements trackable
+        if(mode!=='weighted') continue;
         const group=classifyLift(baseName)||'other';
         result.push({name:baseName, key, group});
       }
@@ -3408,13 +3483,6 @@ function saveTrackChanges(){
   // Apply staged adds
   for(const key of _trackStagedAdds){
     state.trackedLifts[key] = true;
-    // Add to customLifts if not already classified by LIFT_GROUPS
-    const all = _getAllProgramExercises();
-    const ex = all.find(e => e.key === key);
-    if(ex && !state.customLifts.find(c => c.name.toLowerCase() === key)){
-      const group = classifyLift(ex.name);
-      if(!group) state.customLifts.push({name: ex.name, group: ex.group});
-    }
   }
   saveTrackedLifts();
   saveCustomLifts();
@@ -5380,7 +5448,7 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
   const isComp=isCompLift(ex.name);
   const group=classifyLift(ex.name);
   const tracked=isTracked(ex.name);
-  const showTrackBtn=group!==null && isBarbellMovement(ex.name);
+  const showTrackBtn=inputMode==='weighted';
 
   const trackBtn=showTrackBtn
     ?`<button class="track-btn ${tracked?'tracked':''} ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="${tracked?'Remove from metrics':'Track in metrics'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>`
@@ -7051,7 +7119,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.14';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.16';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -10704,7 +10772,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.14';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.16';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
@@ -12608,7 +12676,7 @@ function _builderSave() {
 _bootApp().catch(e => {
   console.error('[Boot] Unhandled boot error:', e);
   // Last resort — if _bootApp somehow fails entirely, init empty state and render
-  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   checkOnboarding();
 });
 
