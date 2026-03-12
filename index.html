@@ -1504,6 +1504,17 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .metrics-toggle-pill:active { opacity: 0.75; }
 .metrics-drill-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.04em; color: var(--gold); }
 .metrics-cycle-hint { font-size: var(--fs-sm); color: var(--text-dimmer); text-align: center; padding: 0 0 var(--sp-5); font-style: italic; letter-spacing: 0.04em; }
+/* Cycle dropdown */
+.metrics-cycle-select { flex:1;padding:var(--sp-4) var(--sp-5);border-radius:100px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:var(--fs-lg);letter-spacing:0.04em;border:1px solid rgba(255,255,255,0.1);background:var(--bg);color:var(--text-sub);cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236b6560' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:32px;max-width:200px;overflow:hidden;text-overflow:ellipsis; }
+.metrics-cycle-select:focus { outline:none;border-color:var(--gold);color:var(--gold); }
+/* Trend footer */
+.trend-footer { display:flex;align-items:center;justify-content:space-between;padding:8px 8px 4px;margin-top:2px; }
+.trend-footer-left { display:flex;align-items:center;gap:10px; }
+.trend-footer-spark { width:64px;height:20px; }
+.trend-footer-label { font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.06em; }
+.trend-footer-sub { font-size:var(--fs-micro);color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em; }
+.trend-footer-val { font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright); }
+.trend-footer-delta { font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-sm);font-weight:700; }
 .pm-add-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); margin-bottom: var(--sp-7); }
 .pm-add-card { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); padding: var(--sp-6) var(--sp-4); background: var(--surface-2); border: 1px solid var(--border-2, rgba(255,255,255,0.06)); border-radius: 12px; cursor: pointer; transition: border-color 0.15s; }
 .pm-add-card:active { border-color: var(--gold); }
@@ -1921,7 +1932,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.19.1</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/12/26c</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.20.2</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/12/26f</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2251,15 +2262,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
     </div>
 
-    <!-- TODO: Remove before public release -->
-    <button class="settings-row-btn settings-reset-btn" onclick="resetOnboarding()">
-      <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Reset Onboarding (Testing)
-      </div>
-    </button>
-
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.20.0 · Build 3/12/26d</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.20.2 · Build 3/12/26f</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2951,6 +2954,10 @@ function renderMetrics(){
   const drillBlockId = drill === 'all' ? null : (drill || activeBlockId);
   const metrics=buildMetrics(drillBlockId);
 
+  // ── Trend data for comp lift trend footers (always from active block) ──
+  const trendBlock = state.activeBlock || state.blocks[state.blocks.length - 1] || null;
+  const trendData = trendBlock ? getE1RMTrends(trendBlock) : null;
+
   // ── Inject empty cards for tracked lifts with no logged data ──
   // Enumerate all exercises from loaded program blocks
   const trackedInMetrics = new Set();
@@ -3029,12 +3036,17 @@ function renderMetrics(){
 
   // Inline cycle toggle pills
   if(multiCycle){
-    const activeBlock=state.blocks.find(b=>b.id===activeBlockId);
-    const cycleName=activeBlock?activeBlock.name:'Current Cycle';
     const isAll=drill==='all';
+    const selectedId = isAll ? 'all' : (drill || activeBlockId);
     h+=`<div class="metrics-cycle-toggle">
-      <button class="metrics-toggle-pill${isAll?' active':''}" onclick="setMetricsDrill('all')">All Cycles</button>
-      <button class="metrics-toggle-pill${!isAll?' active':''}" onclick="setMetricsDrill(null)">${cycleName}</button>
+      <select class="metrics-cycle-select" onchange="setMetricsDrill(this.value==='all'?'all':this.value)">
+        <option value="all"${isAll?' selected':''}>All Cycles</option>`;
+    state.blocks.forEach((b,i)=>{
+      const bName = displayBlockName ? displayBlockName(b.name) : b.name;
+      const sel = selectedId===b.id ? ' selected' : '';
+      h+=`<option value="${esc(b.id)}"${sel}>${escH(bName)}</option>`;
+    });
+    h+=`</select>
       <button class="metrics-export-btn" onclick="openExportModal('${esc(activeBlockId)}')" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>`;
   }
@@ -3165,6 +3177,42 @@ function renderMetrics(){
     }
 
     h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160" aria-label="Estimated 1RM progression for ${escH(groupKey)}"></canvas></div>`;
+
+    // ── Trend footer for comp lifts ──
+    if(hasData && ['squat','bench','deadlift'].includes(groupKey) && trendData && trendData[groupKey] && trendData[groupKey].status){
+      const t = trendData[groupKey];
+      const tColor = t.status === 'adapting' ? 'var(--green)' : t.status === 'fatigue' ? 'var(--amber)' : 'var(--text-dim)';
+      const tLabel = t.status === 'adapting' ? 'Adapting' : t.status === 'fatigue' ? 'Fatiguing' : 'Maintaining';
+      const tDelta = t.delta !== 0 ? `<span class="trend-footer-delta" style="color:${tColor}">${t.delta > 0 ? '+' : ''}${t.delta}${unitLabel(true)}</span>` : '';
+      // Sparkline SVG
+      const sparkPts = t.dataPoints.map(d => d.value);
+      let sparkSvg = '';
+      if(sparkPts.length >= 2){
+        const sW = 64, sH = 20, sPad = 2;
+        const sMin = Math.min(...sparkPts), sMax = Math.max(...sparkPts), sRange = sMax - sMin || 1;
+        const polyPts = sparkPts.map((v, i) => {
+          const x = (i / (sparkPts.length - 1)) * sW;
+          const y = sPad + ((sMax - v) / sRange) * (sH - sPad * 2);
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const endX = sW, endY = sPad + ((sMax - sparkPts[sparkPts.length-1]) / sRange) * (sH - sPad * 2);
+        sparkSvg = `<svg class="trend-footer-spark" viewBox="0 0 ${sW} ${sH}" preserveAspectRatio="none"><polyline points="${polyPts}" fill="none" stroke="${tColor}" stroke-width="1.5" stroke-linecap="round"/><circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="2" fill="${tColor}"/></svg>`;
+      }
+      const cycleName = trendBlock ? (displayBlockName ? displayBlockName(trendBlock.name) : trendBlock.name) : '';
+      h+=`<div class="trend-footer">
+        <div class="trend-footer-left">
+          ${sparkSvg}
+          <div>
+            <div class="trend-footer-label" style="color:${tColor}">${tLabel}</div>
+            <div class="trend-footer-sub">${escH(cycleName)}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="trend-footer-val">${t.current}<span class="unit-label">${unitLabel(true)}</span></div>
+          ${tDelta}
+        </div>
+      </div>`;
+    }
 
     if(hasData){
       const rowsExpanded = state.metricsRowsExpanded && state.metricsRowsExpanded[groupKey];
@@ -3454,12 +3502,56 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   const pad={top:16,right:16,bottom:28,left:44};
   const chartW=W-pad.left-pad.right;
   const chartH=H-pad.top-pad.bottom;
+  const bgCol=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a0a';
+  const col=_tc('--gold','#C9A84C');
 
   ctx.clearRect(0,0,W,H);
 
+  // ── Detect cycle boundaries from blockId changes ──
+  const boundaries=[]; // indices where a new cycle starts
+  const uniqueBlocks=[];
+  let lastBid=null;
+  pts.forEach((pt,i)=>{
+    if(pt.blockId && pt.blockId!==lastBid){
+      if(lastBid!==null) boundaries.push(i);
+      uniqueBlocks.push(pt.blockId);
+      lastBid=pt.blockId;
+    }
+  });
+  const numCycles=uniqueBlocks.length;
+  const lastBlockId=uniqueBlocks[uniqueBlocks.length-1];
+  const hasCycleBoundaries=boundaries.length>0;
+
+  // ── Weighted X positioning ──
+  // When many cycles: compress old data, give current cycle more room
+  function getX(idx){
+    if(pts.length===1) return pad.left+chartW/2;
+    if(!hasCycleBoundaries || numCycles<=2){
+      // Standard equal spacing
+      return pad.left+(idx/(pts.length-1))*chartW;
+    }
+    // Weighted: current cycle gets 30%, recent cycle 15%, rest 55%
+    const lastBoundary=boundaries[boundaries.length-1];
+    const prevBoundary=boundaries.length>=2?boundaries[boundaries.length-2]:0;
+    const oldEnd=prevBoundary;
+    const recentEnd=lastBoundary;
+    const oldW=chartW*0.55, recentW=chartW*0.15, currentW=chartW*0.30;
+    if(idx<oldEnd){
+      const t=oldEnd>0?idx/oldEnd:0;
+      return pad.left+t*oldW;
+    } else if(idx<recentEnd){
+      const t=(recentEnd-oldEnd)>0?(idx-oldEnd)/(recentEnd-oldEnd):0;
+      return pad.left+oldW+t*recentW;
+    } else {
+      const total=pts.length-1-recentEnd;
+      const t=total>0?(idx-recentEnd)/total:0;
+      return pad.left+oldW+recentW+t*currentW;
+    }
+  }
+
   // Grid lines + y labels
   ctx.save();
-  ctx.globalAlpha = 0.6;
+  ctx.globalAlpha=0.6;
   ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--surface-5').trim()||'#1e1e1e'; ctx.lineWidth=1;
   [0,0.5,1].forEach(t=>{
     const y=pad.top+chartH*(1-t);
@@ -3472,52 +3564,108 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     ctx.fillText(Math.round(yMin+yRange*t)+unitLabel(true),pad.left-4,y+3);
   });
 
+  // ── Cycle boundary dashed lines (last 2 only) ──
+  if(hasCycleBoundaries){
+    const showBounds=boundaries.slice(-2);
+    showBounds.forEach((bi,si)=>{
+      const bx=getX(bi);
+      const alpha=si===showBounds.length-1?0.1:0.07;
+      ctx.save();
+      ctx.strokeStyle=`rgba(255,255,255,${alpha})`; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(bx,pad.top-4); ctx.lineTo(bx,pad.top+chartH); ctx.stroke();
+      ctx.restore();
+    });
+  }
+
   // X labels
   function shortLabel(s){ const m=s.match(/W(\d+)$/i); return m?`W${m[1]}`:s.replace(/cycle\s*/i,'C'); }
   const step=pts.length>6?Math.ceil(pts.length/4):1;
-  ctx.fillStyle='#444'; ctx.font='9px Barlow,sans-serif'; ctx.textAlign='center';
+  ctx.font='9px Barlow,sans-serif'; ctx.textAlign='center';
   pts.forEach((pt,i)=>{
     if(i%step!==0&&i!==pts.length-1) return;
-    const x=pts.length===1?pad.left+chartW/2:pad.left+(i/(pts.length-1))*chartW;
+    const x=getX(i);
+    const isCurrent=pt.blockId===lastBlockId;
+    ctx.fillStyle=isCurrent?'#777':'#444';
     ctx.fillText(shortLabel(pt.session),x,H-6);
   });
 
   const coords=pts.map((pt,i)=>({
-    x:pts.length===1?pad.left+chartW/2:pad.left+(i/(pts.length-1))*chartW,
+    x:getX(i),
     y:pad.top+chartH*(1-(pt.e1rm-yMin)/yRange),
     pt
   }));
 
-  const col=_tc('--gold','#C9A84C');
-
   if(coords.length===1){
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,5,0,Math.PI*2); ctx.fill();
   } else {
-    // Subtle fill under line
-    ctx.save();
-    ctx.beginPath();
-    coords.forEach((c,i)=>i===0?ctx.moveTo(c.x,c.y):ctx.lineTo(c.x,c.y));
-    ctx.lineTo(coords[coords.length-1].x, pad.top+chartH);
-    ctx.lineTo(coords[0].x, pad.top+chartH);
-    ctx.closePath();
-    const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+chartH);
-    grad.addColorStop(0,'rgba(201,168,76,0.18)');
-    grad.addColorStop(1,'rgba(201,168,76,0)');
-    ctx.fillStyle=grad;
-    ctx.fill();
-    ctx.restore();
+    // ── Draw segments per cycle with different opacities ──
+    // Identify segments: groups of consecutive points with same blockId
+    const segments=[];
+    let segStart=0;
+    for(let i=1;i<=coords.length;i++){
+      if(i===coords.length||pts[i].blockId!==pts[segStart].blockId){
+        segments.push({start:segStart,end:i-1,blockId:pts[segStart].blockId});
+        segStart=i;
+      }
+    }
 
-    // Line
-    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.setLineDash([]);
-    ctx.beginPath();
-    coords.forEach((c,i)=>i===0?ctx.moveTo(c.x,c.y):ctx.lineTo(c.x,c.y));
-    ctx.stroke();
+    // Determine opacity per segment: current=1, recent=0.35, old fades further
+    segments.forEach((seg,si)=>{
+      const isCurrent=seg.blockId===lastBlockId;
+      const age=segments.length-1-si; // 0=current, 1=recent, 2+=old
+      let lineAlpha, fillAlpha, dotR;
+      if(isCurrent){ lineAlpha=1; fillAlpha=0.18; dotR=0; } // no intermediate dots for current
+      else if(age===1){ lineAlpha=0.35; fillAlpha=0.08; dotR=0; }
+      else if(age<=3){ lineAlpha=0.22; fillAlpha=0.04; dotR=0; }
+      else { lineAlpha=0.12; fillAlpha=0.02; dotR=0; }
 
-    // Dots
-    coords.forEach(c=>{
-      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(c.x,c.y,4,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a0a'; ctx.beginPath(); ctx.arc(c.x,c.y,2,0,Math.PI*2); ctx.fill();
+      const segCoords=[];
+      // Include the previous point for continuity (connect from prior segment)
+      const drawStart=seg.start>0?seg.start-1:seg.start;
+      for(let j=drawStart;j<=seg.end;j++) segCoords.push(coords[j]);
+      if(segCoords.length<2) return;
+
+      // Area fill
+      ctx.save();
+      ctx.beginPath();
+      segCoords.forEach((c,i)=>i===0?ctx.moveTo(c.x,c.y):ctx.lineTo(c.x,c.y));
+      ctx.lineTo(segCoords[segCoords.length-1].x,pad.top+chartH);
+      ctx.lineTo(segCoords[0].x,pad.top+chartH);
+      ctx.closePath();
+      const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+chartH);
+      grad.addColorStop(0,`rgba(201,168,76,${fillAlpha})`);
+      grad.addColorStop(1,'rgba(201,168,76,0)');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.restore();
+
+      // Line
+      ctx.save();
+      ctx.strokeStyle=`rgba(201,168,76,${lineAlpha})`; ctx.lineWidth=isCurrent?2.5:1.5;
+      ctx.lineJoin='round'; ctx.lineCap='round'; ctx.setLineDash([]);
+      ctx.beginPath();
+      segCoords.forEach((c,i)=>i===0?ctx.moveTo(c.x,c.y):ctx.lineTo(c.x,c.y));
+      ctx.stroke();
+      ctx.restore();
     });
+
+    // "Now" endpoint dot on the last point only
+    const last=coords[coords.length-1];
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(last.x,last.y,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(last.x,last.y,2.5,0,Math.PI*2); ctx.fill();
+
+    // For few-cycle views (<=2 boundaries), also draw intermediate dots on current cycle
+    if(numCycles<=2){
+      const lastBound=boundaries.length>0?boundaries[boundaries.length-1]:0;
+      for(let i=lastBound;i<coords.length-1;i++){
+        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,4,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2,0,Math.PI*2); ctx.fill();
+      }
+      // Faded dots for previous cycle
+      for(let i=0;i<lastBound;i++){
+        ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2.5,0,Math.PI*2); ctx.fill();
+      }
+    }
   }
   // Store coords for tap-to-inspect (skip during tooltip redraw)
   if(!_chartDrawing){
@@ -4403,14 +4551,6 @@ function manualRestTimer() {
   // Use first exercise name as fallback
   const exName = day.exercises[0]?.name || 'Rest';
   startRestTimer(exName);
-}
-
-function resetOnboarding() {
-  _idbDelete(ONBOARDED_KEY);
-  localStorage.removeItem(ONBOARDED_KEY);
-  saveAthlete(null);
-  closeSettings();
-  location.reload();
 }
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
@@ -5629,29 +5769,25 @@ function renderE5Components(block, isBlockComplete) {
     ${dateRange ? `<div class="e6-prog-dates">${dateRange}</div>` : ''}
   </div>`;
 
-  // ── Chips: Execution + Est. Total (hidden on cold start) ──
+  // ── Chip: Est. Total (hidden until all 3 comp lifts have data) ──
   let chipsHtml = '';
-  const hasAnyData = exec.completedSessions > 0;
-  if (hasAnyData) {
-    const totalE1rm = trends
-      ? (trends.squat?.current || 0) + (trends.bench?.current || 0) + (trends.deadlift?.current || 0)
-      : 0;
-    const hasTotal = totalE1rm > 0;
-    const totalDelta = trends
-      ? (trends.squat?.delta || 0) + (trends.bench?.delta || 0) + (trends.deadlift?.delta || 0)
-      : 0;
-    const deltaHtml = totalDelta > 0 ? ` <span style="color:var(--green);font-size:var(--fs-xs);font-weight:600">↑${totalDelta}</span>` : totalDelta < 0 ? ` <span style="color:var(--amber);font-size:var(--fs-xs);font-weight:600">↓${Math.abs(totalDelta)}</span>` : '';
+  if (exec.completedSessions > 0 && trends) {
+    const sQ = trends.squat?.current || 0;
+    const sB = trends.bench?.current || 0;
+    const sD = trends.deadlift?.current || 0;
+    const allThreeLogged = sQ > 0 && sB > 0 && sD > 0;
+    if (allThreeLogged) {
+      const totalE1rm = sQ + sB + sD;
+      const totalDelta = (trends.squat?.delta || 0) + (trends.bench?.delta || 0) + (trends.deadlift?.delta || 0);
+      const deltaHtml = totalDelta > 0 ? ` <span style="color:var(--green);font-size:var(--fs-xs);font-weight:600">↑${totalDelta}</span>` : totalDelta < 0 ? ` <span style="color:var(--amber);font-size:var(--fs-xs);font-weight:600">↓${Math.abs(totalDelta)}</span>` : '';
 
-    chipsHtml = `<div class="e6-chips">
-      <div class="e6-chip">
-        <div class="e6-chip-icon" style="background:rgba(var(--green-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div><div class="e6-chip-val">${exec.pct}<span class="unit">%</span></div><div class="e6-chip-label">Execution</div></div>
-      </div>
-      <div class="e6-chip">
-        <div class="e6-chip-icon" style="background:rgba(var(--gold-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
-        <div><div class="e6-chip-val">${hasTotal ? totalE1rm.toLocaleString() : '—'}<span class="unit">${hasTotal ? unit : ''}</span></div><div class="e6-chip-label">Est. Total${deltaHtml}</div></div>
-      </div>
-    </div>`;
+      chipsHtml = `<div class="e6-chips">
+        <div class="e6-chip">
+          <div class="e6-chip-icon" style="background:rgba(var(--gold-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
+          <div><div class="e6-chip-val">${totalE1rm.toLocaleString()}<span class="unit">${unit}</span></div><div class="e6-chip-label">Est. Total${deltaHtml}</div></div>
+        </div>
+      </div>`;
+    }
   }
 
   // ── Weeks: pills (≤4 weeks) or progress bar (>4 weeks) ──
@@ -7708,7 +7844,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.19.1';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.20.2';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -11362,7 +11498,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.19.1';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.20.2';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
