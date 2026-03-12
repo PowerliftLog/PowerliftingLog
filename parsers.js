@@ -5,12 +5,12 @@
 
 // ── LIFT GROUPS & CLASSIFICATION ──────────────────────────────────────────────
 const LIFT_GROUPS = {
-  squat: ['squat','hack squat','goblet squat','front squat','zercher','belt squat','box squat','high bar squat','low bar squat','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat',
-    'hatfield','cyclist squat','overhead squat','ohs','jefferson squat','zombie squat','walkout'],
-  bench: ['bench','close grip bench','close grip press','larson','larsen','slingshot','incline press','incline bench','decline press','decline bench','floor press','feet up bench','pause bench','touch and go bench','touch and go press','tng bench','tng press','comp bench','board press',
-    'spoto','spoto press','jm press','california press','guillotine press','dead bench','pin press','cgbp','wgbp','rgbp'],
+  squat: ['squat','front squat','zercher','belt squat','box squat','high bar squat','high bar','low bar squat','low bar','pin squat','pause squat','safety bar','ssb','1/4 squat','quarter squat','partial squat',
+    'hatfield','walkout'],
+  bench: ['bench','close grip bench','close grip press','close grip','larson','larsen','slingshot','incline press','incline bench','decline press','decline bench','floor press','feet up bench','pause bench','touch and go bench','touch and go press','tng bench','tng press','comp bench','board press',
+    'spoto','spoto press','dead bench','pin press','cgbp','wgbp','rgbp'],
   deadlift: ['deadlift','sumo deadlift','sumo pull','sumo dead','conventional deadlift','conventional pull','romanian','rdl','rack pull','block pull','deficit deadlift','deficit pull','stiff leg','trap bar','hex bar','snatch grip','pause dead','semi sumo',
-    'clean pull','snatch pull','hack lift','dimel','halting','mat pull','pin pull','sldl','sgdl','reeves','suitcase deadlift','zercher deadlift','jefferson deadlift'],
+    'halting','mat pull','pin pull','sldl','sgdl'],
 };
 
 const COMP_KEYWORDS = {
@@ -109,10 +109,28 @@ function _getBaseName(exName) {
   return m ? m[1] : exName;
 }
 
+// Keywords that disqualify a LIFT_GROUPS match — exercise is an accessory, not a variation
+const LIFT_GROUP_DISQUALIFIERS = [
+  // Accessory movement patterns (prevent false positives from base keywords like 'bench', 'squat')
+  'pulldown','pull-down','pull down','lat pull','cable row','dip','kickback',
+  'curl','fly','flye','raise','extension','pushdown','push-down','push down',
+  'pullover','pull-over','shrug','row',
+  // Squat-pattern accessories (contain 'squat' but aren't barbell squat variations)
+  'goblet','hack squat','cyclist','overhead squat','ohs','jefferson squat','zombie',
+  // Bench-pattern accessories (contain 'bench' or 'press' but aren't bench variations)
+  'jm press','california press','guillotine',
+  // Deadlift-pattern accessories (contain 'deadlift' but aren't comp deadlift variations)
+  'clean pull','snatch pull','hack lift','dimel','reeves deadlift','suitcase deadlift',
+  'zercher deadlift','jefferson deadlift',
+];
 function classifyLift(name){
   const n=name.toLowerCase();
-  for(const [group,keywords] of Object.entries(LIFT_GROUPS)){
-    if(keywords.some(k=>n.includes(k))) return group;
+  // If name contains a disqualifying word, it's an accessory regardless of keyword match
+  const disqualified = LIFT_GROUP_DISQUALIFIERS.some(d=>n.includes(d));
+  if(!disqualified){
+    for(const [group,keywords] of Object.entries(LIFT_GROUPS)){
+      if(keywords.some(k=>n.includes(k))) return group;
+    }
   }
   return null;
 }
@@ -161,8 +179,12 @@ const SYNONYM_MAP = {
   'deadlifts':            'Deadlift',
 
   // ── High Bar Squat (variation, not comp) ──
+  'high bar':             'High Bar Squat',
   'high bar squats':      'High Bar Squat',
   'hb squat':             'High Bar Squat',
+
+  // ── Low Bar Squat (comp variant) ──
+  'low bar':              'Squat',
 
   // ── Pause Squat synonyms ──
   'paused squat':         'Pause Squat',
@@ -182,6 +204,7 @@ const SYNONYM_MAP = {
   't-shirt bench press':  'Touch and Go Bench',
 
   // ── Close Grip Bench synonyms ──
+  'close grip':              'Close Grip Bench',
   'close grip bench press':  'Close Grip Bench',
   'close-grip bench':        'Close Grip Bench',
   'close-grip bench press':  'Close Grip Bench',

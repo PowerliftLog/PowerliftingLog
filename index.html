@@ -1820,7 +1820,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.16</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/11/26c</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.18</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/11/26e</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2158,7 +2158,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.16 · Build 3/11/26c</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.18 · Build 3/11/26e</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2382,7 +2382,7 @@ async function _bootApp() {
   // 2. Initialize state — wrapped in try/catch so UI always boots
   try {
     const _savedBlocks = loadBlocks() || [];
-    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
 
     // 3. Restore nav position from last session
     const nav = loadNav();
@@ -2414,7 +2414,7 @@ async function _bootApp() {
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
-    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   }
 
   // 5. Boot the UI (onboarding check → render) — always runs
@@ -2510,7 +2510,7 @@ function setScreen(s){
 }
 
 // ── LIFT CLASSIFICATION ───────────────────────────────────────────────────────
-// LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP, isCompLift, canonicalizeLift → from parsers.js
+// LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP, LIFT_GROUP_DISQUALIFIERS, isCompLift, canonicalizeLift → from parsers.js
 
 function isTracked(name){
   // Returns true if this exercise should appear in metrics
@@ -2575,8 +2575,12 @@ function autoRegisterCompLifts(blocks){
 
 function classifyLift(name){
   const n=name.toLowerCase();
-  for(const [group,keywords] of Object.entries(LIFT_GROUPS)){
-    if(keywords.some(k=>n.includes(k))) return group;
+  // If name contains a disqualifying word, it's an accessory regardless of keyword match
+  const disqualified = LIFT_GROUP_DISQUALIFIERS.some(d=>n.includes(d));
+  if(!disqualified){
+    for(const [group,keywords] of Object.entries(LIFT_GROUPS)){
+      if(keywords.some(k=>n.includes(k))) return group;
+    }
   }
   // Check custom lifts
   const custom=state.customLifts.find(c=>c.name.toLowerCase()===n);
@@ -3062,6 +3066,12 @@ function renderMetrics(){
     h+=`<div class="chart-wrap"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160" aria-label="Estimated 1RM progression for ${escH(groupKey)}"></canvas></div>`;
 
     if(hasData){
+      const rowsExpanded = state.metricsRowsExpanded && state.metricsRowsExpanded[groupKey];
+      h+=`<div class="rm-datapoints-toggle" onclick="toggleMetricsRows('${esc(groupKey)}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0 2px;cursor:pointer">
+        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Sessions</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${rowsExpanded?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>`;
+      if(rowsExpanded){
       h+=`<div class="rm-datapoints"><div class="var-section">`;
       activePts.forEach((pt,i)=>{
         const prev=activePts[i-1];
@@ -3088,6 +3098,7 @@ function renderMetrics(){
         </div>`;
       });
       h+=`</div></div>`;
+      }
     } else {
       // Empty state for tracked lifts with no data
       const emptyNames = allVars.map(([vn])=>vn);
@@ -3194,6 +3205,12 @@ function renderMetrics(){
   },0);
 }
 
+function toggleMetricsRows(groupKey){
+  if(!state.metricsRowsExpanded) state.metricsRowsExpanded={};
+  state.metricsRowsExpanded[groupKey]=!state.metricsRowsExpanded[groupKey];
+  renderMetrics();
+}
+
 function toggleOtherLift(name){
   if(!state.metricsOtherExpanded) state.metricsOtherExpanded={};
   state.metricsOtherExpanded[name]=!state.metricsOtherExpanded[name];
@@ -3238,6 +3255,84 @@ function drawEmptyChart(canvasId){
   ctx.font='13px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign='center';
   ctx.fillText('No data yet', W/2, H/2 - 10);
+}
+
+const _chartCoords={};
+const _chartSelectedPt={};
+function _handleChartTap(canvasId, event){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas||!_chartCoords[canvasId]) return;
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width;
+  const scaleY=canvas.height/rect.height;
+  const tapX=(event.clientX-rect.left)*scaleX;
+  const tapY=(event.clientY-rect.top)*scaleY;
+  const coords=_chartCoords[canvasId];
+  // Find closest point within 30px
+  let closest=null, minDist=Infinity;
+  for(const c of coords){
+    const d=Math.sqrt((tapX-c.x)**2+(tapY-c.y)**2);
+    if(d<minDist){ minDist=d; closest=c; }
+  }
+  if(minDist>30){ _chartSelectedPt[canvasId]=null; }
+  else if(_chartSelectedPt[canvasId]===closest.pt){ _chartSelectedPt[canvasId]=null; }
+  else { _chartSelectedPt[canvasId]=closest.pt; }
+  _drawChartTooltip(canvasId);
+}
+let _chartDrawing=false;
+function _drawChartTooltip(canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas||!_chartCoords[canvasId]) return;
+  const ctx=canvas.getContext('2d');
+  const coords=_chartCoords[canvasId];
+  const pts=coords.map(c=>c.pt);
+  _chartDrawing=true;
+  drawSingleVarChart(canvasId, pts, true);
+  _chartDrawing=false;
+  const W=canvas.width, H=canvas.height;
+  const sel=_chartSelectedPt[canvasId];
+  if(!sel) return;
+  const c=coords.find(cc=>cc.pt===sel);
+  if(!c) return;
+  // Draw tooltip
+  const label=`${sel.e1rm}${unitLabel(true)}`;
+  const sub=sel.topWeight&&sel.topReps?`${sel.topReps}×${sel.topWeight}${unitLabel(true)}`:'';
+  ctx.save();
+  ctx.font='bold 13px Barlow,sans-serif';
+  const labelW=ctx.measureText(label).width;
+  ctx.font='10px Barlow,sans-serif';
+  const subW=sub?ctx.measureText(sub).width:0;
+  const boxW=Math.max(labelW,subW)+16;
+  const boxH=sub?38:24;
+  let bx=c.x-boxW/2;
+  let by=c.y-boxH-12;
+  if(bx<2) bx=2;
+  if(bx+boxW>W-2) bx=W-boxW-2;
+  if(by<2) by=c.y+12;
+  // Background
+  ctx.fillStyle='rgba(20,20,20,0.92)';
+  ctx.beginPath();
+  const r=6;
+  ctx.moveTo(bx+r,by); ctx.lineTo(bx+boxW-r,by); ctx.quadraticCurveTo(bx+boxW,by,bx+boxW,by+r);
+  ctx.lineTo(bx+boxW,by+boxH-r); ctx.quadraticCurveTo(bx+boxW,by+boxH,bx+boxW-r,by+boxH);
+  ctx.lineTo(bx+r,by+boxH); ctx.quadraticCurveTo(bx,by+boxH,bx,by+boxH-r);
+  ctx.lineTo(bx,by+r); ctx.quadraticCurveTo(bx,by,bx+r,by);
+  ctx.fill();
+  // Border
+  ctx.strokeStyle='rgba(201,168,76,0.5)'; ctx.lineWidth=1; ctx.stroke();
+  // e1RM value
+  ctx.fillStyle='#C9A84C'; ctx.font='bold 13px Barlow,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(label,bx+boxW/2,by+(sub?17:16));
+  // Sublabel
+  if(sub){
+    ctx.fillStyle='#888'; ctx.font='10px Barlow,sans-serif';
+    ctx.fillText(sub,bx+boxW/2,by+31);
+  }
+  // Highlight dot
+  ctx.fillStyle='#C9A84C'; ctx.beginPath(); ctx.arc(c.x,c.y,6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a0a';
+  ctx.beginPath(); ctx.arc(c.x,c.y,3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
 }
 
 function drawSingleVarChart(canvasId, pts, drillMode){
@@ -3322,6 +3417,14 @@ function drawSingleVarChart(canvasId, pts, drillMode){
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(c.x,c.y,4,0,Math.PI*2); ctx.fill();
       ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a0a'; ctx.beginPath(); ctx.arc(c.x,c.y,2,0,Math.PI*2); ctx.fill();
     });
+  }
+  // Store coords for tap-to-inspect (skip during tooltip redraw)
+  if(!_chartDrawing){
+    _chartCoords[canvasId]=coords;
+    if(!canvas._chartTapBound){
+      canvas.addEventListener('click',(e)=>_handleChartTap(canvasId,e));
+      canvas._chartTapBound=true;
+    }
   }
 }
 
@@ -7119,7 +7222,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.16';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.18';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -10772,7 +10875,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.16';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.18';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
@@ -12676,7 +12779,7 @@ function _builderSave() {
 _bootApp().catch(e => {
   console.error('[Boot] Unhandled boot error:', e);
   // Last resort — if _bootApp somehow fails entirely, init empty state and render
-  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
   checkOnboarding();
 });
 
