@@ -293,6 +293,82 @@ const SYNONYM_MAP = {
   'spoto press':           'Spoto Press',
   'jm press':              'JM Press',
   'comp dl':               'Deadlift',
+
+  // ── Equipment prefix abbreviations ──
+  'bb squat':              'Squat',
+  'bb bench':              'Bench Press',
+  'bb bench press':        'Bench Press',
+  'bb deadlift':           'Deadlift',
+  'bb row':                'Barbell Row',
+  'bb ohp':                'Overhead Press',
+  'db bench':              'Dumbbell Bench Press',
+  'db bench press':        'Dumbbell Bench Press',
+  'db row':                'Dumbbell Row',
+  'db curl':               'Dumbbell Curl',
+  'db ohp':                'Dumbbell Overhead Press',
+  'db press':              'Dumbbell Press',
+  'db fly':                'Dumbbell Fly',
+  'db flye':               'Dumbbell Fly',
+  'db lateral raise':      'Dumbbell Lateral Raise',
+  'db rdl':                'Dumbbell RDL',
+  'kb swing':              'Kettlebell Swing',
+  'kb goblet squat':       'Goblet Squat',
+
+  // ── Common abbreviations ──
+  'ohp':                   'Overhead Press',
+  'overhead press':        'Overhead Press',
+  'bb overhead press':     'Overhead Press',
+  'military press':        'Overhead Press',
+  'strict press':          'Overhead Press',
+  'seated ohp':            'Seated Overhead Press',
+  'btn press':             'Behind the Neck Press',
+  'fs':                    'Front Squat',
+  'front squat':           'Front Squat',
+  'bss':                   'Bulgarian Split Squat',
+  'bulgarian split squat': 'Bulgarian Split Squat',
+  'hip thrust':            'Hip Thrust',
+  'ht':                    'Hip Thrust',
+  'bb hip thrust':         'Barbell Hip Thrust',
+  'ghd':                   'GHD',
+  'ghr':                   'Glute Ham Raise',
+  'rev hyper':             'Reverse Hyper',
+  'reverse hyper':         'Reverse Hyper',
+  'good morning':          'Good Morning',
+  'gm':                    'Good Morning',
+  'bb good morning':       'Barbell Good Morning',
+  'face pull':             'Face Pull',
+  'lat pulldown':          'Lat Pulldown',
+  'seated row':            'Seated Cable Row',
+  'cable row':             'Seated Cable Row',
+  't-bar row':             'T-Bar Row',
+  'pendlay row':           'Pendlay Row',
+  'barbell row':           'Barbell Row',
+  'bent over row':         'Barbell Row',
+  'bent row':              'Barbell Row',
+  'leg press':             'Leg Press',
+  'lp':                    'Leg Press',
+  'leg curl':              'Leg Curl',
+  'leg ext':               'Leg Extension',
+  'leg extension':         'Leg Extension',
+  'ham curl':              'Leg Curl',
+  'hamstring curl':        'Leg Curl',
+  'calf raise':            'Calf Raise',
+  'tricep pushdown':       'Tricep Pushdown',
+  'tri pushdown':          'Tricep Pushdown',
+  'skull crusher':         'Skull Crusher',
+  'skullcrusher':          'Skull Crusher',
+  'bb curl':               'Barbell Curl',
+  'ez curl':               'EZ Bar Curl',
+  'ez bar curl':           'EZ Bar Curl',
+  'preacher curl':         'Preacher Curl',
+  'hammer curl':           'Hammer Curl',
+  'lat raise':             'Lateral Raise',
+  'lateral raise':         'Lateral Raise',
+  'rear delt fly':         'Rear Delt Fly',
+  'rear delt flye':        'Rear Delt Fly',
+  'chest fly':             'Chest Fly',
+  'pec fly':               'Chest Fly',
+  'pec dec':               'Pec Dec',
 };
 
 /**
@@ -445,133 +521,1004 @@ function fixDateSerials(ws, rows) {
   return rows;
 }
 
-// ── FORMAT DETECTION ──────────────────────────────────────────────────────────
-function detectFormat(wb){
-  try{
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rawRows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
-    const rows = rawRows.map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
+// ── CONFIDENCE SCORE FUNCTIONS ────────────────────────────────────────────────
+// Each returns { id, score (0.0–1.0), signals: { matched[], missing[], negative[] } }
+// Pure functions — no side effects. Read wb directly.
 
-    // Check Format A: multiple day columns in header rows
-    for(let i=0;i<Math.min(10,rows.length);i++){
-      const row=rows[i]; if(!row) continue;
-      const hits=row.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)));
-      if(hits.length>=2) return 'A';
+function _sheetRows(wb, si) {
+  const ws = wb.Sheets[wb.SheetNames[si]];
+  if (!ws) return [];
+  return XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+}
+
+function scoreA(wb) {
+  const id = 'A';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) return { id, score: 0, signals: { matched, missing, negative } };
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+  let dayColFound = false;
+  for (let i = 0; i < Math.min(10, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const hits = row.filter(c => c && DAYS.some(d => String(c).toLowerCase().trim().startsWith(d)));
+    if (hits.length >= 2) { dayColFound = true; score += 0.7; matched.push('2+ day columns in header'); break; }
+  }
+  if (!dayColFound) missing.push('2+ day columns in first 10 rows');
+
+  // Positive: first sheet only, not multi-sheet program
+  if (wb.SheetNames.length >= 2 && wb.SheetNames.length <= 15) { score += 0.1; matched.push('reasonable sheet count'); }
+
+  // Negative: GZCL T1/T2/T3 markers
+  for (let si = 0; si < Math.min(3, wb.SheetNames.length); si++) {
+    const r = _sheetRows(wb, si);
+    for (let i = 0; i < Math.min(20, r.length); i++) {
+      if (!r[i]) continue;
+      if (r[i].some(c => c != null && /^T[123]$/i.test(String(c).trim()))) {
+        score -= 0.3; negative.push('T1/T2/T3 tier markers (→U)'); break;
+      }
     }
+  }
+  // Negative: Hepburn Power Phase / Pump Phase sheet
+  const sheetNames = wb.SheetNames.map(s => s.toLowerCase());
+  if (sheetNames.some(n => /power\s*phase|pump\s*phase/i.test(n))) {
+    score -= 0.3; negative.push('Power/Pump Phase sheets (→J)');
+  }
 
-    // Check Format D: horizontal week layout — "WEEK N, Day N" section headers + repeating Sets/Reps column groups
-    // Must check BEFORE Format C since both have split Sets/Reps headers
-    // Check multiple sheets since first sheets may be metadata/maxes/instructions
-    for (let si = 0; si < Math.min(6, wb.SheetNames.length); si++) {
-      const wsD = wb.Sheets[wb.SheetNames[si]];
-      const rowsD = XLSX.utils.sheet_to_json(wsD, {header:1, defval:null}).map(r=>r?r.map(c=>(typeof c==='string'&&c.startsWith("'"))?c.slice(1):c):r);
-      let dSetsCount = 0, dHasDaySection = false, dSetsHeaderRow = -1;
-      for(let i=0;i<Math.min(15,rowsD.length);i++){
-        const row=rowsD[i]; if(!row) continue;
-        const strs = row.map(c=>String(c||'').toLowerCase().trim());
-        const sc = strs.filter(s => s === 'sets').length;
-        if(sc >= 2 && dSetsHeaderRow === -1) {
-        // Exclude F-style per-week groups where "Exercise" repeats (Rip & Tear)
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreB(wb) {
+  // B is the fallback — never wins via scoring; wins only when everything else scores < 0.2
+  return { id: 'B', score: 0.0, signals: { matched: ['fallback'], missing: [], negative: [] } };
+}
+
+function scoreC(wb) {
+  const id = 'C';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) return { id, score: 0, signals: { matched, missing, negative } };
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+  let hasSplitHeaders = false, hasDayLabel = false;
+  for (let i = 0; i < Math.min(40, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const strs = row.map(c => String(c||'').toLowerCase().trim());
+    if (strs.includes('sets') && strs.includes('reps') && (strs.includes('load') || strs.includes('weight'))) {
+      hasSplitHeaders = true;
+    }
+    if (row[0] && /^day\s*\d/i.test(String(row[0]).trim())) hasDayLabel = true;
+  }
+
+  if (hasSplitHeaders) { score += 0.4; matched.push('Sets/Reps/Load column headers'); }
+  else missing.push('Sets/Reps/Load headers');
+  if (hasDayLabel) { score += 0.4; matched.push('Day N label in col A'); }
+  else missing.push('Day N label in col A');
+
+  // Negative: multiple day columns → A
+  for (let i = 0; i < Math.min(10, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const hits = row.filter(c => c && DAYS.some(d => String(c).toLowerCase().trim().startsWith(d)));
+    if (hits.length >= 2) { score -= 0.3; negative.push('2+ day columns (→A)'); break; }
+  }
+
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreD(wb) {
+  const id = 'D';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  for (let si = 0; si < Math.min(6, wb.SheetNames.length); si++) {
+    const rows = _sheetRows(wb, si);
+    let dSetsCount = 0, dHasDaySection = false, dSetsHeaderRow = -1;
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const strs = row.map(c => String(c||'').toLowerCase().trim());
+      const sc = strs.filter(s => s === 'sets').length;
+      if (sc >= 2 && dSetsHeaderRow === -1) {
         const exRepeat = strs.filter(s => s === 'exercise').length;
-        if (exRepeat >= 2) continue;
+        if (exRepeat >= 2) { negative.push('Exercise repeating header (→F)'); continue; }
         dSetsCount = sc; dSetsHeaderRow = i;
       }
-        if(row.some(c => c != null && /^WEEK\s*\d/i.test(String(c).trim()))) dHasDaySection = true;
+      if (row.some(c => c != null && /^WEEK\s*\d/i.test(String(c).trim()))) dHasDaySection = true;
+    }
+    if (dSetsCount >= 2) { score += 0.3; matched.push('2+ Sets columns'); }
+    else missing.push('2+ Sets columns');
+    if (dHasDaySection) { score += 0.3; matched.push('WEEK N section header'); }
+    else missing.push('WEEK N header');
+
+    if (dSetsCount >= 2 && dHasDaySection && dSetsHeaderRow >= 0) {
+      let hasTextExercise = false;
+      for (let i = dSetsHeaderRow + 1; i < Math.min(dSetsHeaderRow + 6, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        const colA = row[0]; if (colA == null) continue;
+        const colAStr = String(colA).trim();
+        if (!colAStr || /^\d+\.?\d*$/.test(colAStr) || /^WEEK\s*\d/i.test(colAStr)) continue;
+        if (/[a-zA-Z]{2,}/.test(colAStr)) { hasTextExercise = true; break; }
       }
-      if(dSetsCount >= 2 && dHasDaySection && dSetsHeaderRow >= 0) {
-        // Verify data rows below the header have TEXT exercise names in col A, not numbers/decimals/percentages
-        // This prevents false positives on Sheiko (numbered indices) and 531 (percentage rows)
-        let hasTextExercise = false;
-        for(let i = dSetsHeaderRow + 1; i < Math.min(dSetsHeaderRow + 6, rowsD.length); i++){
-          const row = rowsD[i]; if(!row) continue;
-          const colA = row[0];
-          if(colA == null) continue;
-          const colAStr = String(colA).trim();
-          if(!colAStr) continue;
-          // Skip if col A is a number, decimal, or percentage (0.4, 1, 2, 0.65, etc.)
-          if(/^\d+\.?\d*$/.test(colAStr)) continue;
-          // Skip if it looks like another WEEK header
-          if(/^WEEK\s*\d/i.test(colAStr)) continue;
-          // Found a text string — this is a real exercise name
-          if(/[a-zA-Z]{2,}/.test(colAStr)){ hasTextExercise = true; break; }
+      if (hasTextExercise) { score += 0.3; matched.push('text exercise names in col A'); }
+      else { score -= 0.2; negative.push('no text exercise names in col A (→G)'); }
+    }
+    if (score > 0) break; // found signals in this sheet
+  }
+
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreE(wb) {
+  const id = 'E';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+  const SKIP_SHEET = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|output)$/i;
+
+  for (let si = 0; si < Math.min(6, wb.SheetNames.length); si++) {
+    const sn = wb.SheetNames[si];
+    if (SKIP_SHEET.test(sn.trim())) continue;
+    const rows = _sheetRows(wb, si);
+    if (!rows || rows.length < 5) continue;
+
+    // E-nSuns: day label + numeric data
+    for (let i = 0; i < Math.min(50, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      for (let col = 0; col <= 2; col++) {
+        const val = row[col]; if (!val) continue;
+        const str = String(val).trim().toLowerCase();
+        const isDayName = DAYS.some(d => str === d || str.startsWith(d + ' '));
+        const isDayLabel = /^day\s*\d/i.test(String(val).trim());
+        if (isDayName || isDayLabel) {
+          const otherDays = row.filter((c2, ci) => ci !== col && c2 && DAYS.some(d => String(c2).trim().toLowerCase().startsWith(d)));
+          if (otherDays.length > 0) continue; // multi-day header → A
+          let hasColHeaders = false;
+          for (let j = i; j < Math.min(i + 3, rows.length); j++) {
+            const hr = rows[j]; if (!hr) continue;
+            const hstrs = hr.map(c2 => String(c2 || '').toLowerCase().trim());
+            if ((hstrs.includes('sets') || hstrs.includes('set')) && (hstrs.includes('reps') || hstrs.includes('rep goal'))) hasColHeaders = true;
+            if (hstrs.includes('movement') || hstrs.includes('exercise movement')) hasColHeaders = true;
+          }
+          if (hasColHeaders) continue;
+          for (let j = i + 1; j < Math.min(i + 6, rows.length); j++) {
+            const dr = rows[j]; if (!dr) continue;
+            let numCount = 0;
+            for (let c2 = col + 1; c2 < dr.length; c2++) { if (typeof dr[c2] === 'number') numCount++; }
+            if (numCount >= 6) { score += 0.6; matched.push('day label + 6+ numerics below'); break; }
+          }
         }
-        if(hasTextExercise) return 'D';
+      }
+      if (score >= 0.6) break;
+    }
+
+    // E-weekText: Week N + SxR without Sets header
+    if (score < 0.6) {
+      let hasWeekLabel = false, hasSxR = false, hasSetsColHeader = false, sxrCount = 0, hasBFormatMarker = false;
+      for (let i = 0; i < Math.min(30, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        for (let c = 0; c < Math.min(row.length, 25); c++) {
+          const val = row[c]; if (val == null) continue;
+          const str = String(val).trim();
+          if (/^Week\s*\d/i.test(str)) hasWeekLabel = true;
+          if (/^\d+\s*x\s*\d/i.test(str) || /^\d+x\d/i.test(str)) { hasSxR = true; sxrCount++; }
+          if (/^sets$/i.test(str) || /^sets\s*x/i.test(str)) hasSetsColHeader = true;
+          const lo = str.toLowerCase();
+          if (lo.includes('record') || lo.includes('coach') || (lo.includes('sets') && lo.includes('rpe'))) hasBFormatMarker = true;
+        }
+      }
+      if ((hasWeekLabel && hasSxR && !hasSetsColHeader && !hasBFormatMarker) || (sxrCount >= 3 && !hasSetsColHeader && !hasBFormatMarker)) {
+        score += 0.6;
+        matched.push(hasWeekLabel ? 'Week N + SxR patterns' : 'many SxR patterns');
       }
     }
 
-    // Check Format I: Texas Method — "Texas Method" text + Mon/Wed/Fri day columns
-    // Must check before F since some sheets might trigger F's horizontal week detection
-    if (detectTexasMethodFmt(wb)) return 'I';
-
-    // Check Format J: Hepburn — "1RM Input" sheet + "Power Phase" / "Pump Phase" sheets
-    if (detectHepburnFmt(wb)) return 'J';
-
-    // Check Format K: Bulgarian Method — "Start Here" sheet + "(A)" group markers
-    if (detectBulgarianFmt(wb)) return 'K';
-
-    // Check Format H: Simple percentage single-sheet programs (Coan-Phillipi, Hatch, Ed Coan, Hatfield, DeathBench)
-    // Must check BEFORE F since DeathBench triggers F detection but can't be parsed by F
-    if (detectH(wb)) return 'H';
-
-    // Check Format F: horizontal week columns (531 Wendler, Madcow, Rip & Tear)
-    if (detectF(wb)) return 'F';
-
-    // Check Format G: Sheiko numbered exercises
-    if (detectG(wb)) return 'G';
-
-    // Check Format M: Nuckols 28 Free Programs (Maxes sheet + Bench/Squat/DL training sheets)
-    // Must check BEFORE E since Nuckols "Day 1/2/3" headers trigger E's day-label detection
-    if (detectM(wb)) return 'M';
-    // Check Format N: Beginner LP programs (Greyskull LP, Ivysaur, Starting Strength, StrongLifts)
-    if (detectN(wb)) return 'N';
-    if (detectO(wb)) return 'O';
-    // Check Format P: RTS (Reactive Training Systems) programs
-    if (detectP(wb)) return 'P';
-    // Check Format Q: Barbell Medicine Bridge programs (v1/v2/v3)
-    if (detectQ(wb)) return 'Q';
-
-    // Check Format R: PHUL (vertical block, day-of-week sheets, weeks as columns)
-    if (detectR(wb)) return 'R';
-
-    // Check Format S: PHAT (section headers with Set Scheme text)
-    if (detectS(wb)) return 'S';
-
-    // Check Format T: Mike Israetel (columnar Day/Muscle/Exercise/Sets/Reps per-week sheets)
-    if (detectT(wb)) return 'T';
-
-    // Check Format U: GZCL family (T1/T2/T3 tier-based)
-    // Must check after Format T (which requires very specific headers) and before Format E
-    // T1/T2/T3 markers are highly specific to GZCL and won't false-positive on other formats
-    if (detectU(wb)) return 'U';
-
-    // Check Format V: Layne Norton PH3 (calculator sheet + week sheets + RIR column)
-    // Must check after Format H (single-sheet percentage) and before Format F/E
-    // The combination of calculator/1RM sheet + multi-week sheets + RIR column is specific to PH3
-    if (detectV(wb)) return 'V';
-
-    // Check Format E: flat grid / nSuns-like / week-day text structures
-    if (detectE(wb)) return 'E';
-
-    // Check Format L: Candito family (6week, bench hybrid, advanced bench/dl/squat, linear)
-    if (detectL(wb)) return 'L';
-
-    // Check Format C: split columns with "Sets"/"Reps"/"Load" headers + "Day N" labels in col A
-    let hasSplitHeaders = false;
-    let hasDayLabel = false;
-    for(let i=0;i<Math.min(40,rows.length);i++){
-      const row=rows[i]; if(!row) continue;
-      const strs = row.map(c=>String(c||'').toLowerCase().trim());
-      if (strs.includes('sets') && strs.includes('reps') && (strs.includes('load') || strs.includes('weight'))) {
-        hasSplitHeaders = true;
+    // E-tabular: Week + exercise + Sets/Reps headers
+    if (score < 0.6) {
+      for (let i = 0; i < Math.min(10, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        const strs = row.map(c => String(c || '').toLowerCase().trim());
+        if (strs.includes('week') && strs.some(s => s.includes('primary lift') || s === 'exercise') && (strs.includes('sets') || strs.includes('reps'))) {
+          score += 0.65; matched.push('Week+Exercise+Sets/Reps tabular headers'); break;
+        }
       }
-      if (row[0] && /^day\s*\d/i.test(String(row[0]).trim())) {
-        hasDayLabel = true;
-      }
-      if (hasSplitHeaders && hasDayLabel) return 'C';
     }
 
-  }catch(e){ console.error('[liftlog] detectFormat error:',e); }
-  return 'B';
+    // E-cycleWeek: Cycle/Phase markers + exercise names
+    if (score < 0.6) {
+      let hasCycle = false, hasExNames = false, hasWeightRepsGroups = false;
+      for (let i = 0; i < Math.min(20, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        for (let c = 0; c < Math.min(row.length, 15); c++) {
+          const val = row[c]; if (val == null) continue;
+          const str = String(val).trim();
+          if (/^Cycle\s*\d/i.test(str) || /^Week\s*\d.*\d+x\d/i.test(str) || /Phase\s*[-–]\s*Week\s*\d/i.test(str) || /^\d+\s*Rep\s*Wave/i.test(str)) hasCycle = true;
+          if (/^(Bench|Squat|Deadlift|Press|Military|Overhead|OHP|Core\s*Lift|OH\s*Press)/i.test(str)) hasExNames = true;
+        }
+        const strs = row.map(c => String(c || '').toLowerCase().trim());
+        if (strs.filter(s => s === 'weight').length >= 2 && strs.filter(s => s === 'reps').length >= 2) hasWeightRepsGroups = true;
+      }
+      if ((hasCycle && hasExNames) || (hasWeightRepsGroups && hasExNames)) {
+        score += 0.6; matched.push('Cycle/Phase markers + exercise names');
+      }
+    }
+
+    if (score >= 0.5) break;
+  }
+
+  if (score === 0) missing.push('day labels or Week+SxR or tabular Week/Exercise/Sets headers');
+
+  // Negative signals
+  const sheetNamesLo = wb.SheetNames.map(s => s.toLowerCase());
+  if (sheetNamesLo.some(n => /1rm\s*input/i.test(n))) { score -= 0.3; negative.push('1RM Input sheet (→J)'); }
+  if (sheetNamesLo.some(n => n.includes('maxes')) && wb.SheetNames.some(s => /^(bench|squat|dl)\s+\dx/i.test(s))) {
+    score -= 0.3; negative.push('Maxes+training sheets (→M)');
+  }
+
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreF(wb) {
+  const id = 'F';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+  const SKIP = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|output|pr\s*sheet|notes?|start\s*here|1\.\s*start|predicted)$/i;
+
+  for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
+    const sn = wb.SheetNames[si];
+    if (SKIP.test(sn.trim())) continue;
+    const rows = _sheetRows(wb, si);
+    if (!rows || rows.length < 5) continue;
+
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const weekCols = [];
+      for (let c = 0; c < row.length; c++) {
+        const val = row[c]; if (val == null) continue;
+        if (/^Week\s*\d/i.test(String(val).trim())) weekCols.push(c);
+      }
+      if (weekCols.length >= 2) {
+        score += 0.4; matched.push('2+ Week N columns horizontal');
+        for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
+          const sr = rows[j]; if (!sr) continue;
+          const strs = sr.map(c => String(c || '').toLowerCase().trim());
+          const setsRepeat = strs.filter(s => s === 'sets').length;
+          const hasIntensity = strs.some(s => s === 'intensity');
+          if (setsRepeat >= 2 && hasIntensity) { score -= 0.2; negative.push('Sets+Intensity repeating (→D)'); continue; }
+          const subMatch = (strs.filter(s => s === 'weight').length >= 2 && strs.filter(s => s === 'reps').length >= 2)
+            || strs.filter(s => s === '%' || s === 'percentage').length >= 2
+            || strs.filter(s => s === 'exercise').length >= 2;
+          if (subMatch) { score += 0.3; matched.push('F sub-headers (Weight/Reps or % or Exercise)'); }
+          // Sheiko exclusion
+          let sheikoPat = false;
+          for (let k = j + 1; k < Math.min(j + 5, rows.length); k++) {
+            const dr = rows[k]; if (!dr) continue;
+            const a = dr[0], b = dr[1], cc = dr[2];
+            if (typeof a === 'number' && a >= 1 && a <= 20 && b != null && /[a-zA-Z]{2,}/.test(String(b)) && typeof cc === 'number' && cc > 0 && cc < 1) {
+              sheikoPat = true; break;
+            }
+          }
+          if (sheikoPat) { score -= 0.3; negative.push('Sheiko numbered exercise pattern (→G)'); }
+        }
+        break;
+      }
+      // Madcow: Day + Exercise + W1/W2 columns
+      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      if (strs.some(s => s === 'day') && strs.some(s => s === 'exercise')) {
+        let wLabels = strs.filter(s => /^w\d+/i.test(s)).length;
+        let seqCount = row.filter(v => typeof v === 'number' && v === Math.floor(v) && v >= 1 && v <= 52).length;
+        if (wLabels >= 3 || seqCount >= 4) { score += 0.65; matched.push('Madcow Day+Exercise+week cols'); break; }
+      }
+    }
+    if (score > 0.5) break;
+  }
+
+  if (score === 0) missing.push('2+ horizontal Week N columns with F sub-headers');
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreG(wb) {
+  const id = 'G';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+  const SKIP = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|max|output|pr\s*sheet|notes?|start\s*here|1\.\s*start|predicted|volume)/i;
+
+  for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
+    const sn = wb.SheetNames[si];
+    if (SKIP.test(sn.trim())) continue;
+    const rows = _sheetRows(wb, si);
+    if (!rows || rows.length < 10) continue;
+
+    let hasWeekLabel = false, hasNumberedExercise = false;
+    for (let i = 0; i < Math.min(40, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const colA = row[0], colB_val = row[1];
+      if (colA != null && /^week\s*\d/i.test(String(colA).trim())) hasWeekLabel = true;
+      if (colB_val != null && /^week\s*\d/i.test(String(colB_val).trim()) && colA == null) hasWeekLabel = true;
+      if (typeof colA === 'number' && colA >= 1 && colA <= 20 && colA === Math.floor(colA)) {
+        const colB = row[1], colC = row[2];
+        if (colB != null && /[a-zA-Z]{2,}/.test(String(colB)) && typeof colC === 'number' && colC > 0 && colC < 1) {
+          hasNumberedExercise = true;
+        }
+      }
+      if (hasWeekLabel && hasNumberedExercise) break;
+    }
+    if (hasWeekLabel) { score += 0.35; matched.push('Week N label'); }
+    else missing.push('Week N label');
+    if (hasNumberedExercise) { score += 0.55; matched.push('numbered exercise + percentage (col A int, col C decimal)'); }
+    else missing.push('numbered exercise (col A int 1-20, col B text, col C decimal 0-1)');
+    break;
+  }
+
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreH(wb) {
+  const id = 'H';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  for (const sn of wb.SheetNames) {
+    if (/disbrow/i.test(sn) || /\b10x3\b/i.test(sn)) {
+      score = 0.9; matched.push('DeathBench sheet name (Disbrows/10x3)'); break;
+    }
+  }
+  if (score === 0) {
+    for (const sn of wb.SheetNames) {
+      if (/hatfield/i.test(sn)) {
+        const ws = wb.Sheets[sn];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        for (let i = 0; i < Math.min(6, rows.length); i++) {
+          if ((rows[i]||[]).some(c => c && /one\s*rep\s*max/i.test(String(c)))) {
+            score = 0.9; matched.push('Hatfield sheet + One Rep Max'); break;
+          }
+        }
+        if (score > 0) break;
+      }
+    }
+  }
+  if (score === 0) {
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      for (let i = 0; i < Math.min(15, rows.length); i++) {
+        const joined = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+        if (joined.includes('ed coan') && joined.includes('peaking')) { score = 0.9; matched.push('Ed Coan Peaking program'); break; }
+        if (joined.includes('projected new 1rm')) { score = 0.9; matched.push('Projected new 1RM label'); break; }
+      }
+      if (score > 0) break;
+    }
+  }
+  if (score === 0) {
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      for (let i = 0; i < Math.min(10, rows.length); i++) {
+        const vals = (rows[i]||[]).map(c => String(c||'').toLowerCase());
+        if (vals.some(v => v.includes('back') && v.includes('sqt')) && vals.some(v => v.includes('front') && v.includes('sqt'))) {
+          score = 0.9; matched.push('back sqt + front sqt in same header row (Hatch)'); break;
+        }
+      }
+      if (score > 0) break;
+    }
+  }
+  if (score === 0) {
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      let hasDesired = false, hasCurrent = false;
+      for (let i = 0; i < Math.min(10, rows.length); i++) {
+        const joined = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+        if (joined.includes('desired max')) hasDesired = true;
+        if (joined.includes('current max')) hasCurrent = true;
+        if (hasDesired && hasCurrent) { score = 0.9; matched.push('Desired max + Current Max (Coan-Phillipi)'); break; }
+      }
+      if (score > 0) break;
+    }
+  }
+
+  if (score === 0) missing.push('none of H sub-format patterns (DeathBench/Hatfield/EdCoan/Hatch/Coan-Phillipi)');
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreI(wb) {
+  const id = 'I';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  if (wb.SheetNames.length > 2) { missing.push('≤2 sheets required'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) return { id, score: 0, signals: { matched, missing, negative } };
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const hasTM = row.some(c => c && /^texas\s*method$/i.test(String(c).trim()));
+    if (!hasTM) continue;
+    matched.push('Texas Method standalone cell');
+    const dayHits = row.filter(c => c && /^(mon|wed|fri)/i.test(String(c).trim()));
+    if (dayHits.length >= 3) { score = 0.95; matched.push('Mon/Wed/Fri day columns'); break; }
+    else { score = 0.5; missing.push('Mon/Wed/Fri columns in same row'); }
+  }
+  if (score === 0) missing.push('Texas Method standalone cell');
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
+function scoreJ(wb) {
+  const id = 'J';
+  const matched = [], missing = [], negative = [];
+  const names = wb.SheetNames.map(s => s.toLowerCase());
+
+  const has1RM = names.some(n => /1rm\s*input/i.test(n));
+  const hasPhase = names.some(n => /power\s*phase/i.test(n) || /pump\s*phase/i.test(n));
+
+  if (has1RM) matched.push('1RM Input sheet'); else missing.push('1RM Input sheet');
+  if (hasPhase) matched.push('Power Phase / Pump Phase sheet'); else missing.push('Power/Pump Phase sheet');
+
+  const score = (has1RM && hasPhase) ? 0.95 : (has1RM || hasPhase) ? 0.35 : 0;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreK(wb) {
+  const id = 'K';
+  const matched = [], missing = [], negative = [];
+  const names = wb.SheetNames.map(s => s.toLowerCase());
+
+  if (!names.some(n => n.includes('start here'))) {
+    missing.push('Start Here sheet');
+    return { id, score: 0, signals: { matched, missing, negative } };
+  }
+  matched.push('Start Here sheet');
+
+  let hasGroupMarker = false;
+  for (const sn of wb.SheetNames) {
+    if (/start\s*here|bare\s*minimum/i.test(sn)) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(20, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      if (row[0] && /^\(\s*[A-E]\s*\)$/i.test(String(row[0]).trim())) { hasGroupMarker = true; break; }
+    }
+    if (hasGroupMarker) break;
+  }
+
+  if (hasGroupMarker) { matched.push('(A)/(B)/(C) group markers in col A'); }
+  else missing.push('(A)-(E) group markers in col A of training sheets');
+
+  const score = (hasGroupMarker) ? 0.9 : 0.3;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreL(wb) {
+  const id = 'L';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const joined = (rows[i]||[]).map(c => String(c||'')).join(' ');
+      if (/candito/i.test(joined)) { score = 0.85; matched.push('Candito name in first 5 rows'); break; }
+    }
+    if (score > 0) break;
+  }
+
+  if (score === 0) {
+    const snLower = wb.SheetNames.map(s => s.toLowerCase());
+    if (snLower.some(s => s.includes('strength hypertrophy') || s.includes('strength control') || s.includes('strength power'))) {
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      for (let i = 0; i < Math.min(10, rows.length); i++) {
+        const a = String((rows[i]||[])[0]||'').toLowerCase();
+        if (/^(monday|tuesday|thursday|friday)$/.test(a)) { score = 0.8; matched.push('Strength Hypertrophy/Control/Power sheets + day names'); break; }
+      }
+    }
+  }
+
+  if (score === 0) missing.push('Candito name or Strength Hypertrophy/Control/Power sheet names');
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreM(wb) {
+  const id = 'M';
+  const matched = [], missing = [], negative = [];
+
+  const hasMaxes = wb.SheetNames.some(s => /^maxes$/i.test(s.trim()));
+  const hasTraining = wb.SheetNames.some(s => /^(bench|squat|dl)\s+\dx/i.test(s.trim()));
+
+  if (hasMaxes) matched.push('Maxes sheet'); else missing.push('Maxes sheet');
+  if (hasTraining) matched.push('bench/squat/dl training sheet (NxX)'); else missing.push('training sheet (bench/squat/dl NxX)');
+
+  if (!hasMaxes || !hasTraining) return { id, score: 0, signals: { matched, missing, negative } };
+
+  let hasWeek1 = false;
+  for (const sn of wb.SheetNames) {
+    if (/^maxes$/i.test(sn.trim())) continue;
+    if (!/^(bench|squat|dl)\s+\dx/i.test(sn.trim())) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      if (/^week\s*1$/i.test(String((rows[i]||[])[0]||'').trim())) { hasWeek1 = true; break; }
+    }
+    break;
+  }
+
+  if (hasWeek1) matched.push('Week 1 label in training sheet col A');
+  else missing.push('Week 1 in training sheet col A');
+
+  const score = (hasMaxes && hasTraining && hasWeek1) ? 0.95 : 0.4;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreN(wb) {
+  const id = 'N';
+  const matched = [], missing = [], negative = [];
+  const names = wb.SheetNames.map(s => s.trim().toLowerCase());
+
+  // Greyskull LP
+  if (names.some(s => s === 'lift') && names.some(s => s === 'setup')) {
+    const ws = wb.Sheets[wb.SheetNames[names.indexOf('lift')]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    if (rows[0] && String(rows[0][4]||'').match(/week\s*1/i)) {
+      return { id, score: 0.95, signals: { matched: ['Greyskull: Lift+Setup sheets + Week 1 in col E'], missing, negative } };
+    }
+    return { id, score: 0.5, signals: { matched: ['Lift+Setup sheets'], missing: ['Week 1 in col E'], negative } };
+  }
+
+  // Ivysaur
+  if (names.some(s => s === 'template')) {
+    const ws = wb.Sheets[wb.SheetNames[names.indexOf('template')]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const txt = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+      if (txt.includes('4-4-8') || txt.includes('ivysaur') || txt.includes('4.4.8')) {
+        return { id, score: 0.95, signals: { matched: ['Ivysaur: Template sheet + 4-4-8/ivysaur text'], missing, negative } };
+      }
+    }
+  }
+
+  // Starting Strength
+  if (names.some(s => s.includes('novice program') || s.includes('onus wunsler') || s.includes('wichita falls'))) {
+    return { id, score: 0.95, signals: { matched: ['Starting Strength: novice program/onus wunsler/wichita falls sheet'], missing, negative } };
+  }
+
+  // StrongLifts
+  if (names.some(s => s.includes('stronglifts')) && names.some(s => s.includes('beginner') || s.includes('experienced'))) {
+    return { id, score: 0.95, signals: { matched: ['StrongLifts: stronglifts + beginner/experienced sheets'], missing, negative } };
+  }
+
+  missing.push('none of N sub-format patterns (Greyskull/Ivysaur/SS/StrongLifts)');
+  return { id, score: 0, signals: { matched, missing, negative } };
+}
+
+function scoreO(wb) {
+  const id = 'O';
+  const matched = [], missing = [], negative = [];
+  const names = wb.SheetNames.map(s => s.trim().toLowerCase());
+
+  if (!names.includes('training')) {
+    missing.push('Training sheet');
+    return { id, score: 0, signals: { matched, missing, negative } };
+  }
+  matched.push('Training sheet');
+
+  const ws = wb.Sheets[wb.SheetNames[names.indexOf('training')]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+  if (!rows || rows.length < 20) {
+    missing.push('Training sheet has < 20 rows');
+    return { id, score: 0.2, signals: { matched, missing, negative } };
+  }
+
+  const r8 = rows[8] || [];
+  const h4 = String(r8[4]||'').trim().toLowerCase();
+  const h5 = String(r8[5]||'').trim().toLowerCase();
+  const h6 = String(r8[6]||'').trim().toLowerCase();
+  const h7 = String(r8[7]||'').trim().toLowerCase();
+  const d1 = String(r8[3]||'').trim().toLowerCase();
+
+  const hasExactHeaders = (h4 === 'sets' && h5 === 'reps' && h6 === 'intensity' && h7 === 'load');
+  const hasDayCol = d1.startsWith('day');
+
+  if (hasExactHeaders) matched.push('row 8 cols 4-7: sets/reps/intensity/load'); else missing.push('row 8 exact headers');
+  if (hasDayCol) matched.push('row 8 col 3: Day label'); else missing.push('row 8 col 3 Day label');
+
+  let hasSQ = false, hasBN = false;
+  for (let r = 9; r < Math.min(40, rows.length); r++) {
+    const c0 = String((rows[r]||[])[0]||'').trim().toLowerCase();
+    if (c0.startsWith('sq ')) hasSQ = true;
+    if (c0.startsWith('bn ')) hasBN = true;
+  }
+  if (hasSQ && hasBN) matched.push('SQ/BN exercise prefix labels'); else missing.push('SQ/BN prefix labels');
+
+  const score = (hasExactHeaders && hasDayCol && hasSQ && hasBN) ? 0.95 : (hasExactHeaders || hasDayCol) ? 0.35 : 0.1;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreP(wb) {
+  const id = 'P';
+  const matched = [], missing = [], negative = [];
+
+  const mainSheet = _pGetSheet(wb, 'Main');
+  const inputsSheet = _pGetSheet(wb, 'Inputs');
+
+  if (!mainSheet) { missing.push('Main sheet'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  if (!inputsSheet) { missing.push('Inputs sheet'); return { id, score: 0.1, signals: { matched, missing, negative } }; }
+  matched.push('Main + Inputs sheets');
+
+  const mainData = _pSheetToArray(mainSheet, 20);
+  let headerRow = -1;
+  for (let r = 0; r < Math.min(5, mainData.length); r++) {
+    const row = mainData[r]; if (!row) continue;
+    if (row[0] === 'Date' && row[1] === 'Exercise') { headerRow = r; break; }
+  }
+
+  if (headerRow === -1) { missing.push('Date+Exercise headers in col 0-1'); return { id, score: 0.2, signals: { matched, missing, negative } }; }
+  matched.push('Date + Exercise headers');
+
+  const hRow = mainData[headerRow];
+  const h5 = hRow[5] ? hRow[5].toString() : '';
+  const h6 = hRow[6] ? hRow[6].toString() : '';
+  const hasFatigue = h5.includes('Fatigue') || h6.includes('Fatigue');
+  if (hasFatigue) matched.push('Fatigue column'); else missing.push('Fatigue column in col 5-6');
+
+  let foundWeek1 = false;
+  for (let r = 0; r < Math.min(15, mainData.length); r++) {
+    if (mainData[r] && mainData[r][1] && /^Week\s+1$/i.test(mainData[r][1].toString())) { foundWeek1 = true; break; }
+  }
+  if (foundWeek1) matched.push('Week 1 marker'); else missing.push('Week 1 in col 1');
+
+  const score = (hasFatigue && foundWeek1) ? 0.9 : (hasFatigue || foundWeek1) ? 0.4 : 0.2;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreQ(wb) {
+  const id = 'Q';
+  const matched = [], missing = [], negative = [];
+
+  // V1
+  for (const sheetName of wb.SheetNames) {
+    if (!sheetName.toLowerCase().includes('bridge')) continue;
+    const ws = wb.Sheets[sheetName];
+    if (!ws) continue;
+    const cell1 = _qGetCell(ws, 1, 1), cell2 = _qGetCell(ws, 1, 2);
+    if (cell1 === 'Exercise' && cell2 === 'Prescription') {
+      return { id, score: 0.95, signals: { matched: ['Q-v1: Bridge sheet + Exercise/Prescription headers'], missing, negative } };
+    }
+  }
+
+  // V2
+  if (wb.Sheets['The Bridge 1.0']) {
+    const ws = wb.Sheets['The Bridge 1.0'];
+    let foundWeek = false, foundPattern = false;
+    for (let r = 5; r <= 10; r++) { const cell = _qGetCell(ws, r, 0); if (cell && cell.toString().includes('Week')) { foundWeek = true; break; } }
+    for (let r = 7; r <= 20; r++) { const cell = _qGetCell(ws, r, 2); if (cell && (cell.toString().includes('Weight') || cell.toString().includes('Reps'))) { foundPattern = true; break; } }
+    if (foundWeek && foundPattern) return { id, score: 0.95, signals: { matched: ['Q-v2: The Bridge 1.0 sheet + Week marker + Weight/Reps pattern'], missing, negative } };
+    if (foundWeek || foundPattern) return { id, score: 0.5, signals: { matched: ['Q-v2: The Bridge 1.0 partial'], missing, negative } };
+  }
+
+  // V3
+  const weekPattern = /^Week\s+\d+\s*-\s*\w+\s*Stress/i;
+  const weekCount = wb.SheetNames.filter(sn => weekPattern.test(sn)).length;
+  if (weekCount >= 3) return { id, score: 0.95, signals: { matched: ['Q-v3: 3+ Week N - *Stress sheets'], missing, negative } };
+  if (weekCount > 0) return { id, score: 0.3, signals: { matched: [`Q-v3: ${weekCount} stress sheet(s)`], missing: ['need 3+'], negative } };
+
+  missing.push('none of Q sub-format patterns (v1 Bridge/v2 Bridge 1.0/v3 Stress sheets)');
+  return { id, score: 0, signals: { matched, missing, negative } };
+}
+
+function scoreR(wb) {
+  const id = 'R';
+  const matched = [], missing = [], negative = [];
+  const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const daySheets = wb.SheetNames.filter(name => dayNames.includes(name));
+
+  if (daySheets.length < 3) { missing.push('3+ day-of-week sheet names'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  matched.push(`${daySheets.length} day-of-week sheets`);
+
+  const sheet = wb.Sheets[daySheets[0]];
+  if (!sheet) return { id, score: 0.2, signals: { matched, missing, negative } };
+
+  const A0 = _rGetCell(sheet, 0, 0);
+  if (A0 !== 'Week') { missing.push('col A row 0 = "Week"'); return { id, score: 0.3, signals: { matched, missing, negative } }; }
+  matched.push('col A row 0 = Week');
+
+  let hasTarget = false, hasSetLabel = false, hasRepLabel = false;
+  for (let r = 0; r < 10; r++) {
+    const cellA = _rGetCell(sheet, r, 0);
+    if (cellA === 'Target') hasTarget = true;
+    if (cellA === 'Set(s)') hasSetLabel = true;
+    if (cellA === 'Rep(s)') hasRepLabel = true;
+  }
+  if (hasTarget) matched.push('Target label'); else missing.push('Target label');
+  if (hasSetLabel) matched.push('Set(s) label'); else missing.push('Set(s) label');
+  if (hasRepLabel) matched.push('Rep(s) label'); else missing.push('Rep(s) label');
+
+  let hasExerciseInTop4 = false;
+  for (let r = 0; r < 4; r++) { if (_rGetCell(sheet, r, 0) === 'Exercise') { hasExerciseInTop4 = true; break; } }
+  if (hasExerciseInTop4) { score -= 0.2; negative.push('Exercise in rows 0-3 col A (not PHUL)'); }
+
+  const score = (hasTarget && hasSetLabel && hasRepLabel && !hasExerciseInTop4) ? 0.9 : 0.3;
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
+}
+
+function scoreS(wb) {
+  const id = 'S';
+  const matched = [], missing = [], negative = [];
+
+  if (!wb.SheetNames.includes('Inputs')) { missing.push('Inputs sheet'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  matched.push('Inputs sheet');
+
+  const weekSheets = wb.SheetNames.filter(name => /^Week\s+\d+/.test(name));
+  if (weekSheets.length === 0) { missing.push('Week N sheets'); return { id, score: 0.1, signals: { matched, missing, negative } }; }
+  matched.push(`${weekSheets.length} Week N sheet(s)`);
+
+  const ws = wb.Sheets[weekSheets[0]];
+  if (!ws) return { id, score: 0.2, signals: { matched, missing, negative } };
+
+  let hasSetScheme = false;
+  for (let row = 1; row <= 3; row++) {
+    const cell = ws[`C${row}`];
+    if (cell && cell.v && typeof cell.v === 'string' && cell.v.includes('Set Scheme')) { hasSetScheme = true; break; }
+  }
+  if (hasSetScheme) matched.push('Set Scheme in col C row 1-3'); else missing.push('Set Scheme in col C');
+
+  let hasSectionHeader = false;
+  const sectionPattern = /^\d+:\s+.*(Power|HT|Hypertrophy)/;
+  for (const cellRef in ws) {
+    if (cellRef.startsWith('A') && ws[cellRef] && ws[cellRef].v && sectionPattern.test(ws[cellRef].v)) { hasSectionHeader = true; break; }
+  }
+  if (hasSectionHeader) matched.push('section headers (digit: ...Power/HT)'); else missing.push('section headers in col A');
+
+  const score = (hasSetScheme && hasSectionHeader) ? 0.9 : (hasSetScheme || hasSectionHeader) ? 0.4 : 0.15;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreT(wb) {
+  const id = 'T';
+  const matched = [], missing = [], negative = [];
+  const sheets = wb.SheetNames;
+
+  const weekSheetCount = sheets.filter(s => /^Week \d+$/.test(s)).length;
+  const hasMetaSheet = sheets.includes('General Overview') || sheets.includes('Exercise Table');
+
+  if (weekSheetCount < 3) { missing.push('3+ Week N sheets (exact "Week N" format)'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  matched.push(`${weekSheetCount} Week N sheets`);
+  if (!hasMetaSheet) { missing.push('General Overview or Exercise Table sheet'); return { id, score: 0.2, signals: { matched, missing, negative } }; }
+  matched.push('General Overview / Exercise Table sheet');
+
+  const firstWeekSheet = sheets.find(s => /^Week \d+$/.test(s));
+  const ws = wb.Sheets[firstWeekSheet];
+  if (!ws) return { id, score: 0.3, signals: { matched, missing, negative } };
+
+  let headerRow = null;
+  const r4A = ws['A4'], r1A = ws['A1'];
+  if (r4A && r4A.v === 'Day') headerRow = 4;
+  if (r1A && r1A.v === 'Day') headerRow = 1;
+
+  if (headerRow === null) { missing.push('Day header at row 4 or row 1'); return { id, score: 0.3, signals: { matched, missing, negative } }; }
+
+  const cols = {};
+  for (const col of ['A','B','C','D','E']) {
+    const cell = ws[`${col}${headerRow}`];
+    if (cell) cols[col] = (cell.v instanceof Date) ? (cell.w || String(cell.v)) : cell.v;
+  }
+  const headersMatch = cols['A'] === 'Day' && cols['B'] === 'Muscle Group' && cols['C'] === 'Exercise' && cols['D'] === 'Sets' && cols['E'] === 'Reps';
+  if (headersMatch) { matched.push('Day/Muscle Group/Exercise/Sets/Reps headers'); }
+  else { missing.push('exact headers: Day, Muscle Group, Exercise, Sets, Reps'); }
+
+  const score = headersMatch ? 0.95 : 0.3;
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreU(wb) {
+  const id = 'U';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+  const SKIP = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|maxes?|inputs?|output|calculator|1rm)$/i;
+
+  for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
+    const sn = wb.SheetNames[si];
+    if (SKIP.test(sn.trim())) continue;
+    const rows = _sheetRows(wb, si);
+    if (!rows || rows.length < 3) continue;
+
+    let hasTier = false, hasSetsRepsWeight = false, hasTierHeader = false;
+    for (let i = 0; i < Math.min(25, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      for (let c = 0; c <= Math.min(1, row.length - 1); c++) {
+        const val = row[c]; if (val == null) continue;
+        if (/^T[123]$/i.test(String(val).trim())) hasTier = true;
+      }
+      for (let c = 0; c < Math.min(6, row.length); c++) {
+        if (String(row[c]||'').trim().toLowerCase() === 'tier') hasTierHeader = true;
+      }
+      const strs = row.map(c2 => String(c2||'').toLowerCase().trim());
+      const hasSets = strs.some(s => s === 'sets' || s === 'set');
+      const hasReps = strs.some(s => s === 'reps' || s === 'rep');
+      const hasWeight = strs.some(s => s === 'weight' || s === 'load' || s === 'lbs' || s === 'kg');
+      if (hasSets && hasReps && hasWeight) hasSetsRepsWeight = true;
+    }
+    if ((hasTier || hasTierHeader) && hasSetsRepsWeight) {
+      score = 0.85;
+      matched.push((hasTier ? 'T1/T2/T3 tier markers' : 'Tier column header') + ' + Sets/Reps/Weight columns');
+      break;
+    }
+  }
+
+  // Variant B: T1:/T2:/T3: prefixes + Week N columns
+  if (score === 0) {
+    for (let si = 0; si < Math.min(4, wb.SheetNames.length); si++) {
+      const sn = wb.SheetNames[si];
+      if (SKIP.test(sn.trim())) continue;
+      const rows = _sheetRows(wb, si);
+      if (!rows || rows.length < 5) continue;
+      let tierPrefixCount = 0, hasWeekCols = false;
+      for (let i = 0; i < Math.min(40, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        if (row[0] != null && /^T[123]\s*[:\-]/i.test(String(row[0]).trim())) tierPrefixCount++;
+        for (let c = 1; c < Math.min(row.length, 30); c++) {
+          if (row[c] != null && /^Week\s*\d/i.test(String(row[c]).trim())) hasWeekCols = true;
+        }
+      }
+      if (tierPrefixCount >= 3 && hasWeekCols) {
+        score = 0.85; matched.push('T1:/T2:/T3: prefixes + Week N column headers'); break;
+      }
+    }
+  }
+
+  if (score === 0) missing.push('T1/T2/T3 tier markers + Sets/Reps/Weight columns (or T1:/T2:/T3: prefixes + Week cols)');
+  return { id, score, signals: { matched, missing, negative } };
+}
+
+function scoreV(wb) {
+  const id = 'V';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  let hasCalcSheet = false;
+  for (const sn of wb.SheetNames) {
+    const lo = sn.toLowerCase().trim();
+    if (lo.includes('calculator') || lo.includes('1rm') || lo === 'calc' || lo.includes('max weight') || lo.includes('maxes')) {
+      const ws = wb.Sheets[sn];
+      if (!ws) continue;
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      for (let i = 0; i < Math.min(15, rows.length); i++) {
+        const joined = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+        if (joined.includes('1rm') || joined.includes('max') || joined.includes('squat') || joined.includes('bench') || joined.includes('deadlift')) {
+          hasCalcSheet = true; break;
+        }
+      }
+      if (hasCalcSheet) break;
+    }
+  }
+  if (hasCalcSheet) { matched.push('calculator/1RM sheet with relevant content'); score += 0.25; }
+  else { missing.push('calculator or 1RM sheet'); return { id, score: 0, signals: { matched, missing, negative } }; }
+
+  const weekCount = wb.SheetNames.filter(sn => /^Week\s*\d/i.test(sn.trim())).length;
+  if (weekCount >= 3) { matched.push(`${weekCount} Week N sheets`); score += 0.3; }
+  else { missing.push('3+ Week N sheets'); return { id, score: score * 0.3, signals: { matched, missing, negative } }; }
+
+  for (const sn of wb.SheetNames) {
+    if (!/^Week\s*\d/i.test(sn.trim())) continue;
+    const rows = _sheetRows(wb, wb.SheetNames.indexOf(sn));
+    let hasRIR = false, hasPercentLoad = false, hasDayLabel = false, hasExerciseHeader = false;
+    for (let i = 0; i < Math.min(20, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const strs = row.map(c => String(c||'').toLowerCase().trim());
+      if (strs.some(s => s === 'rir' || s === 'rpe' || s === 'rir/rpe')) hasRIR = true;
+      if (strs.some(s => s.includes('%') && /\d/.test(s))) hasPercentLoad = true;
+      if (row[0] && /^Day\s*\d/i.test(String(row[0]).trim())) hasDayLabel = true;
+      if (strs.some(s => s === 'exercise' || s === 'movement' || s === 'lift')) hasExerciseHeader = true;
+    }
+    if ((hasRIR || hasPercentLoad) && hasDayLabel && hasExerciseHeader) {
+      score += 0.4; matched.push('RIR/RPE or % load + Day N + Exercise header in week sheet'); break;
+    }
+  }
+
+  if (score < 0.8) missing.push('RIR/RPE or % load + Day N + Exercise header in week sheets');
+  return { id, score: Math.min(1.0, score), signals: { matched, missing, negative } };
+}
+
+// ── TIE-BREAKING HELPERS ──────────────────────────────────────────────────────
+
+function _tryParse(wb, formatId) {
+  try {
+    switch(formatId) {
+      case 'A': return parseA(wb);
+      case 'B': return parseB(wb);
+      case 'C': return parseCAutoFormat(wb);
+      case 'D': return parseD(wb);
+      case 'E': return parseE(wb);
+      case 'F': return parseF(wb);
+      case 'G': return parseG(wb);
+      case 'H': return parseH(wb);
+      case 'I': return parseTexasMethod(wb);
+      case 'J': return parseHepburn(wb);
+      case 'K': return parseBulgarianMethod(wb);
+      case 'L': return parseL(wb);
+      case 'M': return parseM(wb);
+      case 'N': return parseN(wb);
+      case 'O': return parseO(wb);
+      case 'P': return parseP(wb);
+      case 'Q': return parseQ(wb);
+      case 'R': return parseR(wb);
+      case 'S': return parseS(wb);
+      case 'T': return parseT(wb);
+      case 'U': return parseU(wb);
+      case 'V': return parseV(wb);
+      default: return null;
+    }
+  } catch(e) { return null; }
+}
+
+function _scoreOutputQuality(blocks) {
+  if (!blocks || !Array.isArray(blocks) || blocks.length === 0) return 0;
+  let score = 0;
+  for (const block of blocks) {
+    const weeks = block.weeks || [];
+    score += Math.min(weeks.length, 20) * 0.05;
+    for (const week of weeks) {
+      for (const day of (week.days || [])) {
+        const exes = day.exercises || [];
+        score += exes.length * 0.02;
+        for (const ex of exes) {
+          if (ex.name && /[a-zA-Z]{3,}/.test(ex.name)) score += 0.01;
+          if (ex.prescription) score += 0.01;
+        }
+      }
+    }
+  }
+  return score;
+}
+
+// ── FORMAT DETECTION ──────────────────────────────────────────────────────────
+function detectFormat(wb){
+  try {
+    const scores = [
+      scoreA(wb), scoreC(wb), scoreD(wb), scoreE(wb), scoreF(wb),
+      scoreG(wb), scoreH(wb), scoreI(wb), scoreJ(wb), scoreK(wb),
+      scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
+      scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
+      scoreV(wb)
+    ].sort((a, b) => b.score - a.score);
+
+    const top = scores[0];
+    const runner = scores[1];
+
+    // Clear winner: high confidence with clear margin
+    if (top.score >= 0.6 && (top.score - runner.score) >= 0.15) {
+      return top.id;
+    }
+
+    // Ambiguous: top two are close — try both parsers, pick better output
+    if (top.score >= 0.4 && runner.score >= 0.4 && (top.score - runner.score) < 0.15) {
+      try {
+        const resultTop = _tryParse(wb, top.id);
+        const resultRunner = _tryParse(wb, runner.id);
+        const qTop = _scoreOutputQuality(resultTop);
+        const qRunner = _scoreOutputQuality(resultRunner);
+        return qTop >= qRunner ? top.id : runner.id;
+      } catch(e) {
+        return top.id;
+      }
+    }
+
+    // Low confidence but something matched
+    if (top.score > 0.2) {
+      return top.id;
+    }
+
+    // Nothing matched — Column Mapper fallback
+    return 'B';
+  } catch(e) {
+    console.error('[liftlog] detectFormat error:', e);
+    return 'B';
+  }
 }
 
 // ── FORMAT E DETECTION ──────────────────────────────────────────────────────
@@ -1113,6 +2060,83 @@ function _normalizeExerciseName(name) {
   return s;
 }
 
+// ── POST-PARSE VALIDATION ─────────────────────────────────────────────────────
+/**
+ * Post-parse structural validation. Returns { valid, reason, score }.
+ * Called after every successful parse BEFORE returning to the app.
+ * Rejects output that would produce a broken/confusing user experience.
+ * Format B (Column Mapper) is exempt — user explicitly chose that path.
+ */
+function _validateParseOutput(blocks, formatId) {
+  // Format B is a user-driven manual import — skip structural validation
+  if (formatId === 'B') return { valid: true, reason: null, score: 1 };
+
+  if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
+    return { valid: false, reason: 'No training blocks found in file.', score: 0 };
+  }
+
+  let totalWeeks = 0, totalDays = 0, totalExercises = 0;
+  let exercisesWithPrescription = 0;
+  let exercisesWithTextName = 0;
+  let emptyDays = 0;
+
+  for (const block of blocks) {
+    const weeks = block.weeks || [];
+    totalWeeks += weeks.length;
+
+    // Sanity: no program has 100+ weeks
+    if (weeks.length > 100) {
+      return { valid: false, reason: 'Parsed ' + weeks.length + ' weeks — likely a misparse.', score: 0 };
+    }
+
+    for (const week of weeks) {
+      const days = week.days || [];
+      totalDays += days.length;
+
+      // Sanity: no training week has 14+ days
+      if (days.length > 14) {
+        return { valid: false, reason: 'Week "' + (week.label || '?') + '" has ' + days.length + ' days — likely a misparse.', score: 0 };
+      }
+
+      for (const day of days) {
+        const exes = day.exercises || [];
+        if (exes.length === 0) { emptyDays++; continue; }
+        for (const ex of exes) {
+          totalExercises++;
+          if (ex.prescription && String(ex.prescription).trim()) exercisesWithPrescription++;
+          if (ex.name && /[a-zA-Z]{2,}/.test(ex.name)) exercisesWithTextName++;
+        }
+      }
+    }
+  }
+
+  // Must have at least 1 week, 1 day, 1 exercise
+  if (totalWeeks === 0) return { valid: false, reason: 'No weeks found.', score: 0 };
+  if (totalDays === 0) return { valid: false, reason: 'No training days found.', score: 0 };
+  if (totalExercises === 0) return { valid: false, reason: 'No exercises found.', score: 0 };
+
+  // Exercise names should contain at least one letter (not all pure numbers/percentages)
+  const textNameRatio = exercisesWithTextName / totalExercises;
+  if (textNameRatio < 0.5) {
+    return { valid: false, reason: 'Most exercise names appear to be numbers or symbols, not real exercises. The file may not match the detected format.', score: textNameRatio };
+  }
+
+  // At least 30% of exercises should have prescriptions (sets/reps)
+  const prescriptionRatio = exercisesWithPrescription / totalExercises;
+  if (prescriptionRatio < 0.3) {
+    return { valid: false, reason: 'Less than 30% of exercises have set/rep prescriptions. The parser may have misread the file layout.', score: prescriptionRatio };
+  }
+
+  // If more than 60% of days are empty, something went wrong
+  const emptyDayRatio = totalDays > 0 ? emptyDays / totalDays : 0;
+  if (emptyDayRatio > 0.6 && totalDays > 2) {
+    return { valid: false, reason: 'Most training days are empty. The parser may not be reading the correct cells.', score: 1 - emptyDayRatio };
+  }
+
+  const score = (textNameRatio * 0.4) + (prescriptionRatio * 0.3) + ((1 - emptyDayRatio) * 0.3);
+  return { valid: true, reason: null, score };
+}
+
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
 function parseWorkbook(wb){
   const fmt = detectFormat(wb);
@@ -1267,6 +2291,13 @@ function parseWorkbook(wb){
         }
       }
     }
+  }
+
+  // ── Post-parse validation gate ────────────────────────────────────────────
+  const validation = _validateParseOutput(blocks, fmt);
+  if (!validation.valid) {
+    console.warn('[liftlog] Parse validation failed for format ' + fmt + ': ' + validation.reason);
+    return { error: true, reason: validation.reason, format: fmt };
   }
 
   return blocks;
@@ -1784,9 +2815,29 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
   }
 
   if (dayColumns.length >= 2) {
-    // Horizontal day layout (Russian Squat style): exercise, SxR, weight in 3-col groups
+    // Horizontal day layout: Day N headers span the top, exercises listed per row.
+    // Two sub-layouts:
+    //   RSR-style: col A = exercise name, dc.col = prescription (no weight column)
+    //   3-col-style: dc.col = exercise name, dc.col+1 = SxR, dc.col+2 = weight
     const dataStart = dayColumns[0].headerRow + 1;
     const days = [];
+
+    // Detect RSR-style: first Day column is not col 0, and col 0 has text exercise names
+    const firstDayCol = dayColumns[0].col;
+    let exNamesInColA = false;
+    if (firstDayCol > 0) {
+      for (let r = dataStart; r < Math.min(dataStart + 6, endRow); r++) {
+        const row = rows[r]; if (!row) continue;
+        const v = row[0];
+        if (v != null) {
+          const s = String(v).trim();
+          if (s && /[a-zA-Z]{3,}/.test(s) && !/^(Week|Day|Warm|REST|TEST|MAX)/i.test(s)) {
+            exNamesInColA = true; break;
+          }
+        }
+      }
+    }
+
     for (const dc of dayColumns) {
       const exercises = [];
       for (let r = dataStart; r < endRow; r++) {
@@ -1795,20 +2846,31 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
         for (let cc = 0; cc < Math.min(row.length, 3); cc++) {
           if (row[cc] != null && /^Week\s*\d/i.test(String(row[cc]).trim())) return days.length > 0 ? days : [];
         }
-        const exName = row[dc.col];
-        const sxr = row[dc.col + 1];
-        const weight = row[dc.col + 2];
-        if (exName == null && sxr == null) continue;
-        let name = exName ? String(exName).trim() : '';
+        let name, pres;
+        if (exNamesInColA) {
+          // RSR-style: exercise name in col A, prescription in dc.col
+          const colAVal = row[0];
+          const presVal = row[dc.col];
+          if (colAVal == null && presVal == null) continue;
+          name = colAVal ? String(colAVal).trim() : '';
+          pres = presVal ? String(presVal).trim() : '';
+        } else {
+          // 3-col-style: name at dc.col, SxR at dc.col+1, weight at dc.col+2
+          const exName = row[dc.col];
+          const sxr = row[dc.col + 1];
+          const weight = row[dc.col + 2];
+          if (exName == null && sxr == null) continue;
+          name = exName ? String(exName).trim() : '';
+          pres = sxr ? String(sxr).trim() : '';
+          if (weight != null && typeof weight === 'number' && weight > 0) {
+            pres = pres ? `${pres}(${Math.round(weight * 100) / 100})` : `(${Math.round(weight * 100) / 100})`;
+          } else if (weight != null) {
+            const ws = String(weight).trim();
+            if (ws && !/^\d+\.?\d*$/.test(ws)) pres = pres ? `${pres} ${ws}` : ws;
+          }
+        }
         if (!name || /^\d+\.?\d*$/.test(name)) continue;
         if (/^(Week|Day|Warm|REST|TEST|MAX|LB|KG|1\s*RM)/i.test(name)) continue;
-        let pres = sxr ? String(sxr).trim() : '';
-        if (weight != null && typeof weight === 'number' && weight > 0) {
-          pres = pres ? `${pres}(${Math.round(weight * 100) / 100})` : `(${Math.round(weight * 100) / 100})`;
-        } else if (weight != null) {
-          const ws = String(weight).trim();
-          if (ws && !/^\d+\.?\d*$/.test(ws)) pres = pres ? `${pres} ${ws}` : ws;
-        }
         exercises.push({ name: name.replace(/\s+/g, ' '), prescription: pres || null, note: '', lifterNote: '', loggedWeight: '' });
       }
       if (exercises.length > 0) days.push({ name: dc.name, exercises });
