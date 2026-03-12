@@ -2497,7 +2497,7 @@ function setScreen(s){
   // Save workout scroll position when leaving workout tab
   if(state.screen==='workout') _workoutScrollY = window.scrollY;
   state.screen=s;
-  if(s==='metrics') state.metricsDrillBlock=null;
+  if(s==='metrics') state.metricsDrillBlock='all';
   document.getElementById('nav-home').classList.toggle('active',s==='home');
   document.getElementById('nav-workout').classList.toggle('active',s==='workout');
   document.getElementById('nav-metrics').classList.toggle('active',s==='metrics');
@@ -2730,7 +2730,7 @@ function buildMetrics(drillBlockId){
       const existing=rawPoints[existingIdx];
       const newIsRpe=result.method==='rpe', oldIsRpe=existing.method==='rpe';
       if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&result.value>existing.e1rm)){
-        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=dispWeight; existing.topReps=reps;
+        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=dispWeight; existing.topReps=reps; existing.dayName=parts[2];
       }
     }
     else{ rawPointsMap.set(rpKey,rawPoints.length); rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:parts[2],exName,group,e1rm:result.value,method:result.method,topWeight:dispWeight,topReps:reps}); }
@@ -2752,23 +2752,26 @@ function buildMetrics(drillBlockId){
       for(const v of Object.values(g.variations))
         v.sort((a,b)=>sessionOrder(a.weekLabel)-sessionOrder(b.weekLabel));
   } else {
-    // ── CYCLE VIEW: one point per cycle (best e1rm that cycle) ─────────────
+    // ── ALL CYCLES — weekly granularity across all blocks ─────────────────
     for(const pt of rawPoints){
       const g=groups[pt.group]||groups.other;
       if(!g.variations[pt.exName]) g.variations[pt.exName]=[];
-      const existing=g.variations[pt.exName].find(p=>p.blockId===pt.blockId);
-      if(existing){
-        const newIsRpe=pt.method==='rpe', oldIsRpe=existing.method==='rpe';
-        if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&pt.e1rm>existing.e1rm)){
-          existing.e1rm=pt.e1rm; existing.method=pt.method; existing.topWeight=pt.topWeight; existing.topReps=pt.topReps; existing.bestWeek=pt.weekLabel;
-        }
-      }
-      else g.variations[pt.exName].push({session:pt.blockName,blockId:pt.blockId,weekLabel:pt.weekLabel,e1rm:pt.e1rm,method:pt.method,topWeight:pt.topWeight,topReps:pt.topReps,bestWeek:pt.weekLabel,isCyclePoint:true});
+      // Resolve completion date from __complete__ log entry
+      const cKey = pt.blockId+'||'+pt.weekLabel+'||'+pt.dayName+'||__complete__';
+      const cDate = state.logs[cKey]?.completedDate || null;
+      // Short block label for chart x-axis (e.g. "C1 W2")
+      const bi = (blockIndex[pt.blockId] ?? 0) + 1;
+      const sessionLabel = state.blocks.length > 1 ? `C${bi} ${pt.weekLabel}` : pt.weekLabel;
+      g.variations[pt.exName].push({session:sessionLabel,blockId:pt.blockId,weekLabel:pt.weekLabel,completedDate:cDate,e1rm:pt.e1rm,method:pt.method,topWeight:pt.topWeight,topReps:pt.topReps});
     }
-    // Sort by block index
+    // Sort by block index, then week within block
     for(const g of Object.values(groups))
       for(const v of Object.values(g.variations))
-        v.sort((a,b)=>(blockIndex[a.blockId]||0)-(blockIndex[b.blockId]||0));
+        v.sort((a,b)=>{
+          const bi=(blockIndex[a.blockId]||0)-(blockIndex[b.blockId]||0);
+          if(bi!==0) return bi;
+          return sessionOrder(a.weekLabel)-sessionOrder(b.weekLabel);
+        });
   }
 
   return groups;
@@ -2835,12 +2838,12 @@ function renderMetrics(){
   const multiCycle=state.blocks.length>1;
   const activeBlockId=state.activeBlock?.id||state.blocks[state.blocks.length-1]?.id;
 
-  // drill state: null = current cycle, 'all' = all cycles view
-  const drill=state.metricsDrillBlock; // null | 'all' | specific blockId (legacy)
+  // drill state: 'all' = all cycles (default), null or blockId = specific cycle
+  const drill=state.metricsDrillBlock; // 'all' | null | specific blockId
 
   // Determine which block to show data for
-  // null drill = current cycle; 'all' = all blocks
-  const drillBlockId = (drill && drill !== 'all') ? drill : (drill === 'all' ? null : activeBlockId);
+  // 'all' = all blocks (weekly granularity); null = active block; string = specific block
+  const drillBlockId = drill === 'all' ? null : (drill || activeBlockId);
   const metrics=buildMetrics(drillBlockId);
 
   // ── Inject empty cards for tracked lifts with no logged data ──
@@ -2923,10 +2926,10 @@ function renderMetrics(){
   if(multiCycle){
     const activeBlock=state.blocks.find(b=>b.id===activeBlockId);
     const cycleName=activeBlock?activeBlock.name:'Current Cycle';
-    const isCurrent=drill!=='all';
+    const isAll=drill==='all';
     h+=`<div class="metrics-cycle-toggle">
-      <button class="metrics-toggle-pill${isCurrent?' active':''}" onclick="setMetricsDrill(null)">${cycleName}</button>
-      <button class="metrics-toggle-pill${!isCurrent?' active':''}" onclick="setMetricsDrill('all')">All Cycles</button>
+      <button class="metrics-toggle-pill${isAll?' active':''}" onclick="setMetricsDrill('all')">All Cycles</button>
+      <button class="metrics-toggle-pill${!isAll?' active':''}" onclick="setMetricsDrill(null)">${cycleName}</button>
       <button class="metrics-export-btn" onclick="openExportModal('${esc(activeBlockId)}')" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </div>`;
   }
@@ -2940,11 +2943,9 @@ function renderMetrics(){
 
   // ── Est. 1RM from logged comp lifts ──────────────────────────────────────
   const e1rmByGroup = { squat: null, bench: null, deadlift: null };
-  const filterBlockId = drillBlockId; // null = all cycles, string = specific block
   for (const [key, val] of Object.entries(state.logs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    if (filterBlockId && parts[0] !== filterBlockId) continue;
     const exName = parts[3];
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
@@ -2989,27 +2990,23 @@ function renderMetrics(){
       </div>`;
     } else {
       const scores = getScores();
-      if (scores) {
-        const missing = [
-          scores.missing.squat    ? 'Squat'    : null,
-          scores.missing.bench    ? 'Bench'    : null,
-          scores.missing.deadlift ? 'Deadlift' : null,
-        ].filter(Boolean);
-        const missingNote = missing.length
-          ? '<div class="metrics-score-note" style="font-style:italic">Est. from available lifts — missing: ' + missing.join(', ') + '</div>'
-          : '';
+      if (scores && !scores.missing.squat && !scores.missing.bench && !scores.missing.deadlift) {
         h += `<div class="metrics-scores-section">
           <div class="metrics-scores-label">DOTS / Wilks <span class="metrics-score-total">· ${scores.total} ${unitLabel(true)} total</span></div>
           <div class="metrics-scores-row">
             <div class="metrics-score-pill"><div class="metrics-score-pill-label">DOTS</div><div class="metrics-score-pill-val">${scores.dots?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.dots)||''}</div></div>
             <div class="metrics-score-pill"><div class="metrics-score-pill-label">Wilks</div><div class="metrics-score-pill-val">${scores.wilks?.toFixed(1)||'—'} <span class="metrics-score-est">est</span></div><div class="metrics-score-pill-level">${dotsLevel(scores.wilks)||''}</div></div>
           </div>
-          ${missingNote}
         </div>`;
       } else {
+        const missing = scores ? [
+          scores.missing.squat    ? 'Squat'    : null,
+          scores.missing.bench    ? 'Bench'    : null,
+          scores.missing.deadlift ? 'Deadlift' : null,
+        ].filter(Boolean) : ['Squat', 'Bench', 'Deadlift'];
         h += `<div class="metrics-scores-section">
           <div class="metrics-scores-label">DOTS / Wilks</div>
-          <div class="metrics-score-note">Log comp lifts to calculate scores</div>
+          <div class="metrics-score-note">Log ${missing.join(', ')} to see scores</div>
         </div>`;
       }
     }
@@ -3072,8 +3069,7 @@ function renderMetrics(){
         const methodBadge=pt.method==='rpe'
           ?`<span class="method-badge rpe-badge">RPE</span>`
           :`<span class="method-badge est-badge">EST</span>`;
-        const sublabel=drill
-          ?(()=>{
+        const sublabel=(()=>{
             const parts=[];
             if(pt.topWeight&&pt.topReps) parts.push(`${pt.topReps}×${pt.topWeight}${unitLabel(true)}`);
             if(pt.completedDate){
@@ -3081,8 +3077,7 @@ function renderMetrics(){
               parts.push(`${m}/${d}`);
             }
             return parts.join(' · ');
-          })()
-          :(pt.bestWeek?`Best: ${pt.bestWeek}`:'');
+          })();
         h+=`<div class="rm-row">
           <div style="display:flex;flex-direction:column;gap:1px">
             <div class="rm-session">${pt.session}</div>
@@ -3124,7 +3119,7 @@ function renderMetrics(){
       }
       const activeVar=state.metricsActiveVar[groupKey]||varsWithData[0][0];
       const activePts=varsWithData.find(([vn])=>vn===activeVar)?.[1]||[];
-      drawSingleVarChart(`chart-${groupKey}`, activePts, drillBlockId!==null);
+      drawSingleVarChart(`chart-${groupKey}`, activePts, true);
     }
   },0);
 }
@@ -4224,11 +4219,28 @@ function getScores() {
     ? athlete.bodyweight
     : athlete.bodyweight / 2.20462;
 
-  // Use e1RM peaks for squat/bench/deadlift, convert lbs→kg
-  const prs = getHomePRs();
-  const squat    = prs.find(p => p.lift === 'Squat')?.val    || 0;
-  const bench    = prs.find(p => p.lift === 'Bench')?.val    || 0;
-  const deadlift = prs.find(p => p.lift === 'Deadlift')?.val || 0;
+  // Use ALL-TIME e1RM peaks for squat/bench/deadlift (not scoped to current block)
+  const _e1rm = { squat: 0, bench: 0, deadlift: 0 };
+  for (const [key, val] of Object.entries(state.logs)) {
+    const parts = key.split('||');
+    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const exName = parts[3];
+    if (!isCompLift(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group || group === 'other') continue;
+    const si = parseInt(parts[4].slice(1));
+    let weight = val.actual ? parseFloat(val.actual) : null;
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    weight = convertWeight(weight, getEntryUnit(val), getDisplayUnit());
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (result && result.value > _e1rm[group]) _e1rm[group] = Math.round(result.value);
+  }
+  const squat = _e1rm.squat;
+  const bench = _e1rm.bench;
+  const deadlift = _e1rm.deadlift;
 
   if (squat + bench + deadlift === 0) return null;
 
