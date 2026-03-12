@@ -158,11 +158,13 @@
   --gold-rgb:      201,168,76;
   /* semantic colors */
   --green:         #4ade80;
+  --green-rgb:     74,222,128;
   --green-bg:      rgba(74,222,128,0.1);
   --green-border:  rgba(74,222,128,0.3);
   --red:           #E22C2C;
   --red-bg:        rgba(226,44,44,0.12);
   --amber:         #F59E0B;
+  --amber-rgb:     245,158,11;
   --amber-soft:    #FFB74D;
   --red-soft:      #E57373;
   --hint-color:    #b8902a;
@@ -283,11 +285,13 @@
   --gold-rgb:      184,146,42;
   /* semantic colors — light theme overrides for contrast */
   --green:         #16a34a;
+  --green-rgb:     22,163,74;
   --green-bg:      rgba(22,163,74,0.1);
   --green-border:  rgba(22,163,74,0.3);
   --red:           #dc2626;
   --red-bg:        rgba(220,38,38,0.1);
   --amber:         #d97706;
+  --amber-rgb:     217,119,6;
   --amber-soft:    #e6a030;
   --red-soft:      #dc4444;
   --hint-color:    #7A6520;
@@ -1165,6 +1169,48 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .program-overview-split-exercises { font-family: 'Barlow', sans-serif; font-size: var(--fs-base); color: var(--text-dim); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .program-overview-split-count { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-faint); flex-shrink: 0; }
 
+/* ── E5 Homepage Components ── */
+.e5-e1rm-row { display: flex; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.e5-e1rm-card { flex: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: var(--sp-4) var(--sp-4) var(--sp-3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.e5-e1rm-card.status-green { border-color: rgba(var(--green-rgb), 0.25); }
+.e5-e1rm-card.status-amber { border-color: rgba(var(--amber-rgb), 0.25); }
+.e5-e1rm-lift { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 600; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+.e5-e1rm-val { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-bright); line-height: 1.1; }
+.e5-e1rm-delta { font-family: 'Barlow', sans-serif; font-size: var(--fs-xs); font-weight: 600; margin-top: 1px; }
+.e5-e1rm-delta.up { color: var(--green); }
+.e5-e1rm-delta.down { color: var(--amber); }
+.e5-e1rm-delta.flat { color: var(--text-dim); }
+.e5-e1rm-spark { margin-top: var(--sp-3); height: 22px; }
+.e5-e1rm-spark svg { width: 100%; height: 22px; }
+.e5-e1rm-status { font-family: 'Barlow', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-top: var(--sp-2); }
+.e5-e1rm-status.adapting { color: var(--green); opacity: 0.8; }
+.e5-e1rm-status.fatigue { color: var(--amber); opacity: 0.8; }
+.e5-e1rm-status.maintaining { color: var(--text-dim); }
+.e5-e1rm-empty { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-faint); line-height: 1.1; }
+
+/* E5 Banners */
+.e5-banner { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-5); }
+.e5-banner-icon { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.e5-banner.pr { background: rgba(var(--green-rgb), 0.06); border: 1px solid rgba(var(--green-rgb), 0.15); }
+.e5-banner.pr .e5-banner-icon { background: rgba(var(--green-rgb), 0.12); }
+.e5-banner.pr .e5-banner-title { color: var(--green); }
+.e5-banner.rpe-drift { background: rgba(var(--amber-rgb), 0.06); border: 1px solid rgba(var(--amber-rgb), 0.15); }
+.e5-banner.rpe-drift .e5-banner-icon { background: rgba(var(--amber-rgb), 0.12); }
+.e5-banner.rpe-drift .e5-banner-title { color: var(--amber); }
+.e5-banner.milestone { background: rgba(var(--gold-rgb), 0.06); border: 1px solid rgba(var(--gold-rgb), 0.15); }
+.e5-banner.milestone .e5-banner-icon { background: rgba(var(--gold-rgb), 0.12); }
+.e5-banner.milestone .e5-banner-title { color: var(--gold); }
+.e5-banner-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-base); font-weight: 600; }
+.e5-banner-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-dim); }
+
+/* E5 Stat Chips */
+.e5-chip-row { display: flex; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.e5-chip { flex: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: var(--sp-4) var(--sp-4); display: flex; align-items: center; gap: var(--sp-4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.e5-chip-icon { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.e5-chip-val { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--text-bright); line-height: 1; }
+.e5-chip-val .unit { font-size: var(--fs-sm); font-weight: 500; color: var(--text-dim); }
+.e5-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
+
 /* No-program state */
 .home-empty { text-align: center; padding: 60px var(--sp-8); }
 .home-empty-icon { margin: 0 auto var(--sp-7); opacity: 0.15; }
@@ -1820,7 +1866,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.18</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/11/26e</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.18.19</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/12/26b</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2158,7 +2204,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       </div>
     </button>
 
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.18 · Build 3/11/26e</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.18.19 · Build 3/12/26b</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -4626,6 +4672,205 @@ function getBlockSummary(block) {
   };
 }
 
+// ── E5 Homepage Data Functions ─────────────────────────────────────────────────
+
+/**
+ * getE1RMTrends(block) — returns per-group e1RM trend data for the current cycle.
+ * Each group: { current, previous, delta, dataPoints: [{weekLabel, value}], status }
+ * status: 'adapting' (trending up), 'fatigue' (trending down), 'maintaining' (flat), null (no data)
+ */
+function getE1RMTrends(block) {
+  if (!block || !block.weeks) return null;
+  const trends = { squat: null, bench: null, deadlift: null };
+  const weeklyData = {}; // group → [{weekLabel, value}]
+
+  for (const week of block.weeks) {
+    const ws = _computeWeekSummary(block, week);
+    if (!ws) continue;
+    for (const [group, data] of Object.entries(ws.bestLifts)) {
+      if (!data || !data.e1rm) continue;
+      if (!weeklyData[group]) weeklyData[group] = [];
+      weeklyData[group].push({ weekLabel: week.label, value: Math.round(data.e1rm) });
+    }
+  }
+
+  for (const group of ['squat', 'bench', 'deadlift']) {
+    const pts = weeklyData[group];
+    if (!pts || pts.length === 0) { trends[group] = { current: null, previous: null, delta: 0, dataPoints: [], status: null }; continue; }
+    const current = pts[pts.length - 1].value;
+    const previous = pts.length >= 2 ? pts[pts.length - 2].value : null;
+    const delta = previous != null ? current - previous : 0;
+    // Status: look at last 3 data points for trend direction
+    let status = 'maintaining';
+    if (pts.length >= 2) {
+      const recent = pts.slice(-3);
+      const first = recent[0].value;
+      const last = recent[recent.length - 1].value;
+      const diff = last - first;
+      if (diff > 2) status = 'adapting';
+      else if (diff < -2) status = 'fatigue';
+    } else {
+      status = null; // not enough data
+    }
+    trends[group] = { current, previous, delta, dataPoints: pts, status };
+  }
+  return trends;
+}
+
+/**
+ * getExecutionScore(block) — compares logged vs prescribed for compliance %.
+ * Returns { pct, completedSessions, totalSessions }
+ */
+function getExecutionScore(block) {
+  if (!block || !block.weeks) return { pct: 0, completedSessions: 0, totalSessions: 0 };
+  let totalSessions = 0, completedSessions = 0;
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      if (!day.exercises || day.exercises.length === 0) continue;
+      totalSessions++;
+      if (isDayComplete(block, week, day)) completedSessions++;
+    }
+  }
+  const pct = totalSessions > 0 ? Math.round(completedSessions / totalSessions * 100) : 0;
+  return { pct, completedSessions, totalSessions };
+}
+
+/**
+ * getHomeBanners(block) — returns array of banner objects, priority-sorted.
+ * Only the first should display. Types: 'pr', 'rpe-drift', 'milestone'
+ * Each: { type, title, subtitle, group? }
+ * PR banners include a timestamp and expire after ~4 days.
+ */
+function getHomeBanners(block) {
+  if (!block || !block.weeks) return [];
+  const banners = [];
+  const bid = block.id;
+  const now = Date.now();
+  const PR_EXPIRY_MS = 4 * 24 * 60 * 60 * 1000; // 4 days
+
+  // ── PR detection: scan current block for per-group best, compare to all-time ──
+  if (!_prCache) _buildPRCache();
+  // Build current-block bests and find the set timestamp
+  const blockBests = { squat: null, bench: null, deadlift: null };
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      for (const ex of (day.exercises || [])) {
+        const group = classifyLift(ex.name);
+        if (!group || group === 'other') continue;
+        const pres = ex.prescription || '';
+        const parsed = parseSimple(pres) || parseRangeSet(pres) || parseBarePres(pres);
+        const numSets = parsed ? (parsed.sets || 1) : 4;
+        const extraCount = state.extraSets?.[lk(bid, week.label, day.name, ex.name)] || 0;
+        for (let si = 0; si < numSets + extraCount + 5; si++) {
+          const setKey = lk(bid, week.label, day.name, ex.name) + '||s' + si;
+          const val = state.logs[setKey];
+          if (!val || !val.done || !val.actual) continue;
+          const weight = parseFloat(val.actual);
+          const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(bid, week.label, day.name, ex.name, si);
+          if (!weight || weight <= 0 || !reps || reps <= 0) continue;
+          const wUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
+          const converted = convertWeight(weight, wUnit, getDisplayUnit());
+          const result = calc1rm(converted, reps, val.rpe ? parseFloat(val.rpe) : null);
+          if (!result) continue;
+          const cur = blockBests[group];
+          if (!cur || result.value > cur.e1rm) {
+            blockBests[group] = {
+              e1rm: result.value, name: ex.name,
+              weight: converted, reps, rpe: val.rpe ? parseFloat(val.rpe) : null,
+              ts: val.ts || null
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // Check each group for all-time PR in this block
+  for (const [group, data] of Object.entries(blockBests)) {
+    if (!data || !data.ts) continue;
+    const age = now - data.ts;
+    if (age > PR_EXPIRY_MS) continue; // expired
+    // Compare to all-time: _prCache has the best including this block
+    // We need to check if this block's best IS the all-time best
+    const allTimeBest = _prCache[group] || 0;
+    if (Math.round(data.e1rm) >= Math.round(allTimeBest)) {
+      const label = group.charAt(0).toUpperCase() + group.slice(1);
+      const unit = getDisplayUnit();
+      banners.push({
+        type: 'pr', group,
+        title: `PR — ${label} e1RM ${Math.round(data.e1rm)}${unit}`,
+        subtitle: `${Math.round(data.weight)}×${data.reps}${data.rpe ? ' @' + data.rpe : ''}`,
+        ts: data.ts
+      });
+    }
+  }
+
+  // ── RPE drift: avg prescribed RPE vs avg actual RPE over last 3 sessions per group ──
+  const rpeDrift = { squat: { prescribed: [], actual: [] }, bench: { prescribed: [], actual: [] }, deadlift: { prescribed: [], actual: [] } };
+  // Walk completed days in reverse to get last 3 sessions
+  const completedDays = [];
+  for (const week of block.weeks) {
+    for (const day of (week.days || [])) {
+      if (isDayComplete(block, week, day)) completedDays.push({ week, day });
+    }
+  }
+  const recentDays = completedDays.slice(-3);
+  for (const { week, day } of recentDays) {
+    for (const ex of (day.exercises || [])) {
+      const group = classifyLift(ex.name);
+      if (!group || group === 'other') continue;
+      const pres = ex.prescription || '';
+      // Extract prescribed RPE from prescription
+      const rpeMatch = pres.match(/@\s*([\d.]+)/);
+      const prescribedRpe = rpeMatch ? parseFloat(rpeMatch[1]) : null;
+      const parsed = parseSimple(pres) || parseRangeSet(pres) || parseBarePres(pres);
+      const numSets = parsed ? (parsed.sets || 1) : 4;
+      const extraCount = state.extraSets?.[lk(bid, week.label, day.name, ex.name)] || 0;
+      for (let si = 0; si < numSets + extraCount + 5; si++) {
+        const setKey = lk(bid, week.label, day.name, ex.name) + '||s' + si;
+        const val = state.logs[setKey];
+        if (!val || !val.done) continue;
+        if (val.rpe && prescribedRpe) {
+          rpeDrift[group].prescribed.push(prescribedRpe);
+          rpeDrift[group].actual.push(parseFloat(val.rpe));
+        }
+      }
+    }
+  }
+
+  for (const [group, data] of Object.entries(rpeDrift)) {
+    if (data.prescribed.length < 3) continue; // need enough data points
+    const avgPrescribed = data.prescribed.reduce((a, b) => a + b, 0) / data.prescribed.length;
+    const avgActual = data.actual.reduce((a, b) => a + b, 0) / data.actual.length;
+    const drift = avgActual - avgPrescribed;
+    if (drift >= 0.5) {
+      const label = group.charAt(0).toUpperCase() + group.slice(1);
+      banners.push({
+        type: 'rpe-drift', group,
+        title: `${label} RPE running +${drift.toFixed(1)} above prescribed`,
+        subtitle: `Last ${recentDays.length} sessions · same loads, higher effort`
+      });
+    }
+  }
+
+  // ── Block milestone: cycle just completed ──
+  if (block.completedAt) {
+    const age = now - block.completedAt;
+    if (age < 2 * 24 * 60 * 60 * 1000) { // 2 days
+      banners.push({
+        type: 'milestone',
+        title: `${displayBlockName(block.name)} Complete`,
+        subtitle: `${block.weeks.length} weeks · ${getExecutionScore(block).pct}% execution`
+      });
+    }
+  }
+
+  // Priority sort: pr > rpe-drift > milestone
+  const priority = { pr: 0, 'rpe-drift': 1, milestone: 2 };
+  banners.sort((a, b) => (priority[a.type] || 9) - (priority[b.type] || 9));
+  return banners;
+}
+
 // ── Session Summary (for completed-today hero card) ───────────────────────────
 function getSessionSummary(block, week, day) {
   if (!block || !week || !day) return null;
@@ -5260,11 +5505,8 @@ function renderHome() {
     </div>`;
   }
 
-  // ── Program Overview card (always shown) ──
-  const programOverviewHtml = renderProgramOverview();
-
-  // Finish Block prompt is now in the hero card (showFinishPrompt state)
-  const finishBlockHtml = '';
+  // ── E5 Homepage Components ──
+  const e5Html = renderE5Components(block, isBlockComplete);
 
   // Build update banner placeholder
   const updateBannerHtml = document.getElementById('update-banner') ? '<div id="update-banner-slot"></div>' : '';
@@ -5274,8 +5516,7 @@ function renderHome() {
     ${demoBannerHtml}
     ${updateBannerHtml}
     ${heroHtml}
-    ${programOverviewHtml}
-    ${finishBlockHtml}
+    ${e5Html}
   </div>`;
 
   // Move update banner into the slot if it exists
@@ -5285,6 +5526,114 @@ function renderHome() {
     updateBanner.style.display = '';
     updateSlot.replaceWith(updateBanner);
   }
+}
+
+/**
+ * renderE5Components(block, isBlockComplete) — builds E5 homepage: e1RM row + banner + chips
+ * Handles: active cycle, cold start (no data), completed cycle
+ */
+function renderE5Components(block, isBlockComplete) {
+  if (!block) return '';
+  const unit = getDisplayUnit();
+  const trends = getE1RMTrends(block);
+  const exec = getExecutionScore(block);
+  const banners = getHomeBanners(block);
+
+  // ── e1RM Row with sparklines + status ──
+  let e1rmHtml = '<div class="e5-e1rm-row">';
+  for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+    const t = trends ? trends[group] : null;
+    const hasCurrent = t && t.current != null;
+    const statusClass = t && t.status ? `status-${t.status === 'adapting' ? 'green' : t.status === 'fatigue' ? 'amber' : ''}` : '';
+
+    e1rmHtml += `<div class="e5-e1rm-card ${statusClass}">`;
+    e1rmHtml += `<div class="e5-e1rm-lift">${label}</div>`;
+
+    if (hasCurrent) {
+      e1rmHtml += `<div class="e5-e1rm-val">${t.current}</div>`;
+      // Delta
+      if (t.delta !== 0 && t.previous != null) {
+        const dir = t.delta > 0 ? 'up' : 'down';
+        const arrow = t.delta > 0 ? '↑' : '↓';
+        e1rmHtml += `<div class="e5-e1rm-delta ${dir}">${arrow} ${Math.abs(t.delta)}${unit}</div>`;
+      } else if (t.previous != null) {
+        e1rmHtml += `<div class="e5-e1rm-delta flat">— flat</div>`;
+      }
+      // Sparkline (need 2+ points)
+      if (t.dataPoints.length >= 2) {
+        e1rmHtml += renderE5Sparkline(t.dataPoints, t.status);
+      }
+      // Status label (need 2+ data points)
+      if (t.status) {
+        e1rmHtml += `<div class="e5-e1rm-status ${t.status}">${t.status === 'adapting' ? 'Adapting' : t.status === 'fatigue' ? 'Fatigue Signal' : 'Maintaining'}</div>`;
+      }
+    } else {
+      e1rmHtml += `<div class="e5-e1rm-empty">—</div>`;
+    }
+    e1rmHtml += '</div>';
+  }
+  e1rmHtml += '</div>';
+
+  // ── Conditional Banner (first/highest priority only) ──
+  let bannerHtml = '';
+  if (banners.length > 0) {
+    const b = banners[0];
+    const iconSvg = b.type === 'pr'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
+      : b.type === 'rpe-drift'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" width="14" height="14"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
+    bannerHtml = `<div class="e5-banner ${b.type}">
+      <div class="e5-banner-icon">${iconSvg}</div>
+      <div><div class="e5-banner-title">${escH(b.title)}</div><div class="e5-banner-sub">${escH(b.subtitle)}</div></div>
+    </div>`;
+  }
+
+  // ── Execution + Total Chips ──
+  const totalE1rm = trends
+    ? (trends.squat?.current || 0) + (trends.bench?.current || 0) + (trends.deadlift?.current || 0)
+    : 0;
+  const hasTotal = totalE1rm > 0;
+  // Delta for total: sum of individual deltas
+  const totalDelta = trends
+    ? (trends.squat?.delta || 0) + (trends.bench?.delta || 0) + (trends.deadlift?.delta || 0)
+    : 0;
+
+  let chipsHtml = '<div class="e5-chip-row">';
+  // Execution chip
+  chipsHtml += `<div class="e5-chip">
+    <div class="e5-chip-icon" style="background:rgba(var(--green-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div><div class="e5-chip-val">${exec.pct}<span class="unit">%</span></div><div class="e5-chip-label">Execution</div></div>
+  </div>`;
+  // Total chip
+  chipsHtml += `<div class="e5-chip">
+    <div class="e5-chip-icon" style="background:rgba(var(--gold-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
+    <div><div class="e5-chip-val">${hasTotal ? totalE1rm.toLocaleString() : '—'}<span class="unit">${hasTotal ? unit : ''}</span></div><div class="e5-chip-label">Est. Total${totalDelta > 0 ? ' · ↑' + totalDelta : totalDelta < 0 ? ' · ↓' + Math.abs(totalDelta) : ''}</div></div>
+  </div>`;
+  chipsHtml += '</div>';
+
+  return e1rmHtml + bannerHtml + chipsHtml;
+}
+
+/**
+ * renderE5Sparkline(dataPoints, status) — SVG sparkline for e1RM trend
+ */
+function renderE5Sparkline(dataPoints, status) {
+  if (!dataPoints || dataPoints.length < 2) return '';
+  const vals = dataPoints.map(d => d.value);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+  const w = 80, h = 22, pad = 2;
+  const points = vals.map((v, i) => {
+    const x = vals.length === 1 ? w / 2 : (i / (vals.length - 1)) * w;
+    const y = pad + ((max - v) / range) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lastX = vals.length === 1 ? w / 2 : w;
+  const lastY = pad + ((max - vals[vals.length - 1]) / range) * (h - pad * 2);
+  const color = status === 'fatigue' ? 'var(--amber)' : status === 'adapting' ? 'var(--green)' : 'var(--text-dim)';
+  return `<div class="e5-e1rm-spark"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/><circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="${color}"/></svg></div>`;
 }
 
 function getGreeting() {
@@ -7222,7 +7571,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.18';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.19';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -10875,7 +11224,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.18';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.18.19';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
