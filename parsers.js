@@ -285,7 +285,6 @@ const SYNONYM_MAP = {
 
   // ── Compound Synonyms ──
   'conventional pull':     'Deadlift',
-  'sumo dead':             'Sumo Deadlift',
   'rack deadlift':         'Rack Pull',
 
   // ── Bench Variations ──
@@ -2287,6 +2286,8 @@ function parseWorkbook(wb){
             if (ex.prescription == null) ex.prescription = '';
             if (ex.note == null) ex.note = '';
             if (ex.loggedWeight == null) ex.loggedWeight = '';
+            if (ex.lifterNote == null) ex.lifterNote = '';
+            if (!('supersetGroup' in ex)) ex.supersetGroup = null;
           }
         }
       }
@@ -5313,7 +5314,7 @@ function parseCSVImport(csvText, unitLabel) {
   return [{
     id: 'csv_' + ts,
     name: blockName,
-    format: 'H',
+    format: 'CSV',
     athleteName: '',
     dateRange: firstDate + ' – ' + lastDate,
     startDate: firstDate,
