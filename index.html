@@ -2438,7 +2438,7 @@ function _idbMigrateFromLS() {
       'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
       'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
       'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides',
-      'liftlog_last_backup', 'liftlog_rep_tip_seen', 'liftlog_calcDisplayUnit'
+      LAST_BACKUP_KEY, REP_TIP_KEY, 'liftlog_calcDisplayUnit'
     ];
     const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
     const store = tx.objectStore(_IDB_STORE);
@@ -2505,7 +2505,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.21.0';
-const APP_BUILD   = '3/13/26m';
+const APP_BUILD   = '3/13/26n';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2660,11 +2660,11 @@ function rePopulateSets(blocks){
 // Old top-level rePopulateSets call removed — now inside _bootApp()
 function loadBlocks(){ try{ if(_idbReady && _idbCache['liftlog_blocks']!==undefined) return _idbCache['liftlog_blocks']; const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>_showWarningToast('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
 function saveBlocks(){ _metricsCache = null; _prCache = null; _idbPut('liftlog_blocks', state.blocks); try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
-function loadCustomLifts(){ try{ if(_idbReady && _idbCache['liftlog_custom']!==undefined) return _idbCache['liftlog_custom']; return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
+function loadCustomLifts(){ try{ if(_idbReady && _idbCache['liftlog_custom']!==undefined) return _idbCache['liftlog_custom']; return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch(e){ console.error('[liftlog] loadCustomLifts error:',e); return []; } }
 function saveCustomLifts(){ _idbPut('liftlog_custom', state.customLifts); try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); showSaveError(); } }
-function loadTrackedLifts(){ try{ if(_idbReady && _idbCache['liftlog_tracked']!==undefined) return _idbCache['liftlog_tracked']; return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
+function loadTrackedLifts(){ try{ if(_idbReady && _idbCache['liftlog_tracked']!==undefined) return _idbCache['liftlog_tracked']; return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch(e){ console.error('[liftlog] loadTrackedLifts error:',e); return {}; } }
 function saveTrackedLifts(){ _idbPut('liftlog_tracked', state.trackedLifts); try{ localStorage.setItem('liftlog_tracked', JSON.stringify(state.trackedLifts)); }catch(e){ console.error('[liftlog] saveTrackedLifts error:',e); showSaveError(); } }
-function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) return _idbCache['liftlog_nav']; return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch{ return {}; } }
+function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) return _idbCache['liftlog_nav']; return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch(e){ console.error('[liftlog] loadNav error:',e); return {}; } }
 function saveNav(){ const navObj={blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay}; _idbPut('liftlog_nav', navObj); try{ localStorage.setItem('liftlog_nav', JSON.stringify(navObj)); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
@@ -4334,8 +4334,10 @@ const SCHEDULE_KEY         = 'liftlog_schedule';       // { blockId: [dow0, dow1
 const ATHLETE_KEY          = 'liftlog_athlete';         // { gender, age, bodyweight, bwUnit }
 const APP_SETTINGS_KEY     = 'liftlog_app_settings';   // { showScores: bool }
 const ONBOARDED_KEY        = 'liftlog_onboarded';      // '1' after onboarding complete
+const LAST_BACKUP_KEY      = 'liftlog_last_backup';    // timestamp string of last Drive backup
+const REP_TIP_KEY          = 'liftlog_rep_tip_seen';   // '1' after rep-tap tip dismissed
 
-function loadAppSettings()  { try { if(_idbReady && _idbCache[APP_SETTINGS_KEY]!==undefined) return _idbCache[APP_SETTINGS_KEY]; return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch { return {}; } }
+function loadAppSettings()  { try { if(_idbReady && _idbCache[APP_SETTINGS_KEY]!==undefined) return _idbCache[APP_SETTINGS_KEY]; return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch(e) { console.error('[liftlog] loadAppSettings error:',e); return {}; } }
 function saveAppSettings(s) { _idbPut(APP_SETTINGS_KEY, s); try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); showSaveError(); } }
 function getShowScores()    { const s = loadAppSettings(); return s.showScores    !== false; } // default ON
 
@@ -4346,11 +4348,11 @@ function loadUnitOverrides() {
   try {
     if(_idbReady && _idbCache[UNIT_OVERRIDES_KEY]!==undefined) return _idbCache[UNIT_OVERRIDES_KEY];
     return JSON.parse(localStorage.getItem(UNIT_OVERRIDES_KEY)||'{}');
-  } catch { return {}; }
+  } catch(e) { console.error('[liftlog] loadUnitOverrides error:',e); return {}; }
 }
 function saveUnitOverrides(o) {
   _idbPut(UNIT_OVERRIDES_KEY, o);
-  try { localStorage.setItem(UNIT_OVERRIDES_KEY, JSON.stringify(o)); } catch(e) { console.error(e); }
+  try { localStorage.setItem(UNIT_OVERRIDES_KEY, JSON.stringify(o)); } catch(e) { console.error('[liftlog] saveUnitOverrides error:',e); showSaveError(); }
 }
 
 // Global display unit preference — reads dedicated weightUnit, falls back to bwUnit (legacy), then lbs
@@ -4696,17 +4698,17 @@ function manualRestTimer() {
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
 
-function loadSchedule()  { try { if(_idbReady && _idbCache[SCHEDULE_KEY]!==undefined) return _idbCache[SCHEDULE_KEY]; return JSON.parse(localStorage.getItem(SCHEDULE_KEY)||'{}'); } catch { return {}; } }
+function loadSchedule()  { try { if(_idbReady && _idbCache[SCHEDULE_KEY]!==undefined) return _idbCache[SCHEDULE_KEY]; return JSON.parse(localStorage.getItem(SCHEDULE_KEY)||'{}'); } catch(e) { console.error('[liftlog] loadSchedule error:',e); return {}; } }
 function saveSchedule(d) { _idbPut(SCHEDULE_KEY, d); try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
 
 
 // Athlete profile
-function loadAthlete()  { try { if(_idbReady && _idbCache[ATHLETE_KEY]!==undefined) return _idbCache[ATHLETE_KEY]; return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch { return null; } }
+function loadAthlete()  { try { if(_idbReady && _idbCache[ATHLETE_KEY]!==undefined) return _idbCache[ATHLETE_KEY]; return JSON.parse(localStorage.getItem(ATHLETE_KEY)||'null'); } catch(e) { console.error('[liftlog] loadAthlete error:',e); return null; } }
 function saveAthlete(d) { _idbPut(ATHLETE_KEY, d); try { localStorage.setItem(ATHLETE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); showSaveError(); } }
 
 // Plate calculator display unit — which plates to show on the bar (independent of input unit)
 const CALC_DISPLAY_UNIT_KEY = 'liftlog_calcDisplayUnit';
-function loadCalcDisplayUnit() { try { if(_idbReady && _idbCache[CALC_DISPLAY_UNIT_KEY]!==undefined) return _idbCache[CALC_DISPLAY_UNIT_KEY]; return localStorage.getItem(CALC_DISPLAY_UNIT_KEY) || 'kg'; } catch { return 'kg'; } }
+function loadCalcDisplayUnit() { try { if(_idbReady && _idbCache[CALC_DISPLAY_UNIT_KEY]!==undefined) return _idbCache[CALC_DISPLAY_UNIT_KEY]; return localStorage.getItem(CALC_DISPLAY_UNIT_KEY) || 'kg'; } catch(e) { console.error('[liftlog] loadCalcDisplayUnit error:',e); return 'kg'; } }
 function saveCalcDisplayUnit(u) { _idbPut(CALC_DISPLAY_UNIT_KEY, u); try { localStorage.setItem(CALC_DISPLAY_UNIT_KEY, u); } catch(e) { console.error(e); } }
 
 
@@ -8003,8 +8005,8 @@ async function backupToDrive() {
 
     // Update last backup timestamp
     const _bkTs = new Date().toISOString();
-    _idbPut('liftlog_last_backup', _bkTs);
-    try { localStorage.setItem('liftlog_last_backup', _bkTs); } catch(e) { console.error(e); }
+    _idbPut(LAST_BACKUP_KEY, _bkTs);
+    try { localStorage.setItem(LAST_BACKUP_KEY, _bkTs); } catch(e) { console.error(e); }
     updateBackupTimestamp();
     _showWarningToast('Backed up to Google Drive \u2713', 'success');
   } catch (err) {
@@ -8115,8 +8117,8 @@ async function _silentAutoBackup() {
     await _uploadToDrive(fileName, json, 'application/json', _driveFolderIds.backups);
     // Update timestamp
     const _bkTs = new Date().toISOString();
-    _idbPut('liftlog_last_backup', _bkTs);
-    try { localStorage.setItem('liftlog_last_backup', _bkTs); } catch(e) { console.error(e); }
+    _idbPut(LAST_BACKUP_KEY, _bkTs);
+    try { localStorage.setItem(LAST_BACKUP_KEY, _bkTs); } catch(e) { console.error(e); }
     // Retention cleanup — keep last 10 auto-backups
     await _cleanupAutoBackups();
     console.log('[Drive] Auto-backup complete:', fileName);
@@ -10257,7 +10259,7 @@ function openBackupModal() {
 
   // Show last backup time if available
   const lastTime = document.getElementById('backup-modal-last-time');
-  const stored = (_idbReady && _idbCache['liftlog_last_backup']!==undefined) ? _idbCache['liftlog_last_backup'] : localStorage.getItem('liftlog_last_backup');
+  const stored = (_idbReady && _idbCache[LAST_BACKUP_KEY]!==undefined) ? _idbCache[LAST_BACKUP_KEY] : localStorage.getItem(LAST_BACKUP_KEY);
   if (lastTime && stored) {
     lastTime.textContent = 'Last backup: ' + new Date(stored).toLocaleString();
   }
@@ -11782,8 +11784,8 @@ function downloadBackup() {
 
   // Update last backup display
   const _bkTs = new Date().toISOString();
-  _idbPut('liftlog_last_backup', _bkTs);
-  try { localStorage.setItem('liftlog_last_backup', _bkTs); } catch(e) { console.error(e); }
+  _idbPut(LAST_BACKUP_KEY, _bkTs);
+  try { localStorage.setItem(LAST_BACKUP_KEY, _bkTs); } catch(e) { console.error(e); }
   updateBackupTimestamp();
   _showWarningToast('Backup downloaded ✓','success');
 }
@@ -11892,7 +11894,7 @@ function executeRestore() {
 function updateBackupTimestamp() {
   const el = document.getElementById('last-backup-time');
   if (!el) return;
-  const ts = (_idbReady && _idbCache['liftlog_last_backup']!==undefined) ? _idbCache['liftlog_last_backup'] : localStorage.getItem('liftlog_last_backup');
+  const ts = (_idbReady && _idbCache[LAST_BACKUP_KEY]!==undefined) ? _idbCache[LAST_BACKUP_KEY] : localStorage.getItem(LAST_BACKUP_KEY);
   if (ts) {
     el.textContent = 'Last backup: ' + new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
     el.style.display = 'block';
@@ -14422,7 +14424,7 @@ let _repsModalPrescribed = '';  // prescribed reps for comparison
 
 function openRepsEditor(sk, prescReps) {
   // Show one-time tooltip on first use
-  if (!(_idbReady && _idbCache['liftlog_rep_tip_seen']) && !localStorage.getItem('liftlog_rep_tip_seen')) {
+  if (!(_idbReady && _idbCache[REP_TIP_KEY]) && !localStorage.getItem(REP_TIP_KEY)) {
     showRepTip();
   }
   _repsModalKey = sk;
@@ -14449,6 +14451,7 @@ function closeRepsModal() {
 
 function adjustRepsModal(delta) {
   const input = document.getElementById('reps-modal-input');
+  if (!input) return;
   const cur = parseInt(input.value) || 0;
   const next = Math.max(0, cur + delta);
   input.value = next;
@@ -14458,6 +14461,7 @@ function saveRepsModal() {
   if (!_repsModalKey) return;
   const sk = _repsModalKey;
   const input = document.getElementById('reps-modal-input');
+  if (!input) return;
   const raw = input.value;
   const v = raw ? String(parseInt(raw)) : '';
 
@@ -14505,7 +14509,7 @@ function renderSetRow(sk) {
 
 function showRepTip() {
   // Mark seen immediately so re-tapping another exercise never re-shows
-  _idbPut('liftlog_rep_tip_seen', '1'); try{ localStorage.setItem('liftlog_rep_tip_seen', '1'); }catch(e){ console.error(e); }
+  _idbPut(REP_TIP_KEY, '1'); try{ localStorage.setItem(REP_TIP_KEY, '1'); }catch(e){ console.error(e); }
   const existing = document.getElementById('rep-tip-tooltip');
   if (existing) return;
   // Insert above the sets-grid, inside the card

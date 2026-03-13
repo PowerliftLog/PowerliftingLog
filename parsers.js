@@ -493,6 +493,18 @@ function spellCorrectExerciseName(name){
 const DAYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
 // ── UTILITIES ─────────────────────────────────────────────────────────────────
+
+// Shared cell normalization — used across 20+ scoring/parsing functions
+function _normalizeCell(val) { return String(val || '').toLowerCase().trim(); }
+
+// Excel date serial threshold — numbers above this in cells are likely date serials, not data
+const EXCEL_DATE_SERIAL_MIN = 40000;
+
+// Common regex patterns for week/day detection in scoring functions
+const RE_WEEK_NUM   = /^week\s*\d+/i;
+const RE_DAY_NUM    = /^day\s*\d/i;
+const RE_DAY_NAME   = /^(mon|tue|wed|thu|fri|sat|sun)/i;
+
 // Fix Excel date serialization: when a cell like "6-8" is stored as a date,
 // cell.v becomes a serial number (e.g. 45816). Use cell.w (formatted text) instead.
 function fixDateSerials(ws, rows) {
@@ -510,7 +522,7 @@ function fixDateSerials(ws, rows) {
         rows[r][c] = (cell && cell.w) ? cell.w : String(val);
       }
       // Keep the old number check as a safety net (in case cellDates misses something)
-      else if (typeof val === 'number' && val > 40000) {
+      else if (typeof val === 'number' && val > EXCEL_DATE_SERIAL_MIN) {
         const cellAddr = XLSX.utils.encode_cell({r: r + range.s.r, c: c + range.s.c});
         const cell = ws[cellAddr];
         if (cell && cell.w && /^\d+[-\/]\d+$/.test(cell.w)) {
@@ -591,7 +603,7 @@ function scoreC(wb) {
   let hasSplitHeaders = false, hasDayLabel = false;
   for (let i = 0; i < Math.min(40, rows.length); i++) {
     const row = rows[i]; if (!row) continue;
-    const strs = row.map(c => String(c||'').toLowerCase().trim());
+    const strs = row.map(_normalizeCell);
     if (strs.includes('sets') && strs.includes('reps') && (strs.includes('load') || strs.includes('weight'))) {
       hasSplitHeaders = true;
     }
@@ -623,7 +635,7 @@ function scoreD(wb) {
     let dSetsCount = 0, dHasDaySection = false, dSetsHeaderRow = -1;
     for (let i = 0; i < Math.min(15, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c||'').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const sc = strs.filter(s => s === 'sets').length;
       if (sc >= 2 && dSetsHeaderRow === -1) {
         const exRepeat = strs.filter(s => s === 'exercise').length;
@@ -681,7 +693,7 @@ function scoreE(wb) {
           let hasColHeaders = false;
           for (let j = i; j < Math.min(i + 3, rows.length); j++) {
             const hr = rows[j]; if (!hr) continue;
-            const hstrs = hr.map(c2 => String(c2 || '').toLowerCase().trim());
+            const hstrs = hr.map(_normalizeCell);
             if ((hstrs.includes('sets') || hstrs.includes('set')) && (hstrs.includes('reps') || hstrs.includes('rep goal'))) hasColHeaders = true;
             if (hstrs.includes('movement') || hstrs.includes('exercise movement')) hasColHeaders = true;
           }
@@ -722,7 +734,7 @@ function scoreE(wb) {
     if (score < 0.6) {
       for (let i = 0; i < Math.min(10, rows.length); i++) {
         const row = rows[i]; if (!row) continue;
-        const strs = row.map(c => String(c || '').toLowerCase().trim());
+        const strs = row.map(_normalizeCell);
         if (strs.includes('week') && strs.some(s => s.includes('primary lift') || s === 'exercise') && (strs.includes('sets') || strs.includes('reps'))) {
           score += 0.65; matched.push('Week+Exercise+Sets/Reps tabular headers'); break;
         }
@@ -740,7 +752,7 @@ function scoreE(wb) {
           if (/^Cycle\s*\d/i.test(str) || /^Week\s*\d.*\d+x\d/i.test(str) || /Phase\s*[-–]\s*Week\s*\d/i.test(str) || /^\d+\s*Rep\s*Wave/i.test(str)) hasCycle = true;
           if (/^(Bench|Squat|Deadlift|Press|Military|Overhead|OHP|Core\s*Lift|OH\s*Press)/i.test(str)) hasExNames = true;
         }
-        const strs = row.map(c => String(c || '').toLowerCase().trim());
+        const strs = row.map(_normalizeCell);
         if (strs.filter(s => s === 'weight').length >= 2 && strs.filter(s => s === 'reps').length >= 2) hasWeightRepsGroups = true;
       }
       if ((hasCycle && hasExNames) || (hasWeightRepsGroups && hasExNames)) {
@@ -786,7 +798,7 @@ function scoreF(wb) {
         score += 0.4; matched.push('2+ Week N columns horizontal');
         for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
           const sr = rows[j]; if (!sr) continue;
-          const strs = sr.map(c => String(c || '').toLowerCase().trim());
+          const strs = sr.map(_normalizeCell);
           const setsRepeat = strs.filter(s => s === 'sets').length;
           const hasIntensity = strs.some(s => s === 'intensity');
           if (setsRepeat >= 2 && hasIntensity) { score -= 0.2; negative.push('Sets+Intensity repeating (→D)'); continue; }
@@ -808,7 +820,7 @@ function scoreF(wb) {
         break;
       }
       // Madcow: Day + Exercise + W1/W2 columns
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       if (strs.some(s => s === 'day') && strs.some(s => s === 'exercise')) {
         let wLabels = strs.filter(s => /^w\d+/i.test(s)).length;
         let seqCount = row.filter(v => typeof v === 'number' && v === Math.floor(v) && v >= 1 && v <= 52).length;
@@ -1338,7 +1350,7 @@ function scoreU(wb) {
       for (let c = 0; c < Math.min(6, row.length); c++) {
         if (String(row[c]||'').trim().toLowerCase() === 'tier') hasTierHeader = true;
       }
-      const strs = row.map(c2 => String(c2||'').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const hasSets = strs.some(s => s === 'sets' || s === 'set');
       const hasReps = strs.some(s => s === 'reps' || s === 'rep');
       const hasWeight = strs.some(s => s === 'weight' || s === 'load' || s === 'lbs' || s === 'kg');
@@ -1410,7 +1422,7 @@ function scoreV(wb) {
     let hasRIR = false, hasPercentLoad = false, hasDayLabel = false, hasExerciseHeader = false;
     for (let i = 0; i < Math.min(20, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c||'').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       if (strs.some(s => s === 'rir' || s === 'rpe' || s === 'rir/rpe')) hasRIR = true;
       if (strs.some(s => s.includes('%') && /\d/.test(s))) hasPercentLoad = true;
       if (row[0] && /^Day\s*\d/i.test(String(row[0]).trim())) hasDayLabel = true;
@@ -1522,120 +1534,6 @@ function detectFormat(wb){
   }
 }
 
-// ── FORMAT E DETECTION ──────────────────────────────────────────────────────
-function detectE(wb) {
-  const SKIP_SHEET = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|output)$/i;
-  for (let si = 0; si < Math.min(6, wb.SheetNames.length); si++) {
-    const sn = wb.SheetNames[si];
-    if (SKIP_SHEET.test(sn.trim())) continue;
-    const ws = wb.Sheets[sn];
-    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
-      .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
-    if (!rows || rows.length < 5) continue;
-
-    // E-nSuns: day-of-week name or "Day N:" as standalone row value + many numeric values in data rows below
-    // BUT NOT if the rows below have column headers (Sets/Reps/Load/Intensity/Movement) — that's D/B
-    for (let i = 0; i < Math.min(50, rows.length); i++) {
-      const row = rows[i]; if (!row) continue;
-      for (let col = 0; col <= 2; col++) {
-        const val = row[col]; if (!val) continue;
-        const str = String(val).trim().toLowerCase();
-        const isDayName = DAYS.some(d => str === d || str.startsWith(d + ' '));
-        const isDayLabel = /^day\s*\d/i.test(String(val).trim());
-        if (isDayName || isDayLabel) {
-          // Must be standalone (not multi-day header like Format A)
-          const otherDays = row.filter((c2, ci) => ci !== col && c2 && DAYS.some(d => String(c2).trim().toLowerCase().startsWith(d)));
-          if (otherDays.length > 0) continue;
-          // Check the next 1-2 rows for column headers (would indicate D/C/B, not E-nSuns)
-          let hasColHeaders = false;
-          for (let j = i; j < Math.min(i + 3, rows.length); j++) {
-            const hr = rows[j]; if (!hr) continue;
-            const hstrs = hr.map(c2 => String(c2 || '').toLowerCase().trim());
-            if ((hstrs.includes('sets') || hstrs.includes('set')) && (hstrs.includes('reps') || hstrs.includes('rep goal'))) hasColHeaders = true;
-            if (hstrs.includes('movement') || hstrs.includes('exercise movement')) hasColHeaders = true;
-          }
-          if (hasColHeaders) continue;
-          // Verify numeric data below (alternating weight/rep pairs → many numbers)
-          for (let j = i + 1; j < Math.min(i + 6, rows.length); j++) {
-            const dr = rows[j]; if (!dr) continue;
-            let numCount = 0;
-            for (let c2 = col + 1; c2 < dr.length; c2++) {
-              if (typeof dr[c2] === 'number') numCount++;
-            }
-            if (numCount >= 6) return true;
-          }
-        }
-      }
-    }
-
-    // E-weekText: "Week N" labels + SxR text patterns (NxN), WITHOUT "Sets" column headers
-    // Also detect sheets with just SxR text patterns (Smolov — no explicit Week labels)
-    let hasWeekLabel = false, hasSxR = false, hasSetsColHeader = false;
-    let sxrCount = 0, hasBFormatMarker = false;
-    for (let i = 0; i < Math.min(30, rows.length); i++) {
-      const row = rows[i]; if (!row) continue;
-      for (let c = 0; c < Math.min(row.length, 25); c++) {
-        const val = row[c]; if (val == null) continue;
-        const str = String(val).trim();
-        if (/^Week\s*\d/i.test(str)) hasWeekLabel = true;
-        if (/^\d+\s*x\s*\d/i.test(str) || /^\d+x\d/i.test(str)) { hasSxR = true; sxrCount++; }
-        if (/^sets$/i.test(str) || /^sets\s*x/i.test(str) || /^sets\s*\//i.test(str)) hasSetsColHeader = true;
-        // B-format markers: "Record Weight", "Coach Notes", "Sets x RPE"
-        const lo = str.toLowerCase();
-        if (lo.includes('record') || lo.includes('coach') || (lo.includes('sets') && lo.includes('rpe'))) hasBFormatMarker = true;
-      }
-    }
-    if (hasWeekLabel && hasSxR && !hasSetsColHeader && !hasBFormatMarker) return true;
-    // Smolov-like: lots of SxR text without B-format or column headers
-    if (sxrCount >= 3 && !hasSetsColHeader && !hasBFormatMarker) return true;
-
-    // E-tabular: column headers including Week + lift/exercise + (Sets or Reps)
-    for (let i = 0; i < Math.min(10, rows.length); i++) {
-      const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
-      const hasWeek = strs.includes('week');
-      const hasLift = strs.some(s => s.includes('primary lift') || (s === 'exercise'));
-      const hasSR = strs.includes('sets') || strs.includes('reps');
-      if (hasWeek && hasLift && hasSR) return true;
-    }
-
-    // E-cycleWeek: "Cycle N" or "Week N NxN" headers + exercise names
-    // Also covers Juggernaut: phase headers with "Weight"/"Reps" repeating column groups
-    let hasCycle = false, hasExNames = false, hasWeekPres = false, hasPhaseWeek = false;
-    let hasWeightRepsGroups = false;
-    for (let i = 0; i < Math.min(20, rows.length); i++) {
-      const row = rows[i]; if (!row) continue;
-      for (let c = 0; c < Math.min(row.length, 15); c++) {
-        const val = row[c]; if (val == null) continue;
-        const str = String(val).trim();
-        if (/^Cycle\s*\d/i.test(str)) hasCycle = true;
-        if (/^Week\s*\d.*\d+x\d/i.test(str) || /^Week\s*\d.*\d+\/\d+\/\d/i.test(str)) hasWeekPres = true;
-        if (/Phase\s*[-–]\s*Week\s*\d/i.test(str) || /^\d+\s*Rep\s*Wave/i.test(str)) hasPhaseWeek = true;
-        if (/^(Bench|Squat|Deadlift|Press|Military|Overhead|OHP|Core\s*Lift|OH\s*Press)/i.test(str)) hasExNames = true;
-      }
-      // Check for repeating Weight/Reps column groups (Juggernaut pattern)
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
-      const wCols = strs.filter(s => s === 'weight').length;
-      const rCols = strs.filter(s => s === 'reps').length;
-      if (wCols >= 2 && rCols >= 2) hasWeightRepsGroups = true;
-    }
-    if ((hasCycle || hasWeekPres) && hasExNames) return true;
-    if (hasPhaseWeek && hasExNames) return true;
-    if (hasWeightRepsGroups && hasExNames) return true;
-
-    // E-parallel531: Week N as row separators + "Reps" header + multiple exercise column groups
-    for (let i = 0; i < Math.min(5, rows.length); i++) {
-      const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
-      if (/^week\s*\d/i.test(strs[0] || '')) {
-        const repsCols = strs.filter(s => s === 'reps').length;
-        if (repsCols >= 2) return true;
-      }
-    }
-  }
-  return false;
-}
-
 // ── FORMAT A PARSER ───────────────────────────────────────────────────────────
 function parseA(wb){
   const blocks=[];
@@ -1671,7 +1569,7 @@ function parseASheet(sn,rows){
   for(let i=0;i<Math.min(5,rows.length);i++){
     const r=rows[i]; if(!r) continue;
     for(let j=0;j<r.length;j++){
-      const c=String(r[j]||'').toLowerCase().trim();
+      const c=_normalizeCell(r[j]);
       if(c==='squat'&&typeof rows[i+1]?.[j]==='number') maxes.squat=rows[i+1][j];
       if(c==='bench'&&typeof rows[i+1]?.[j]==='number') maxes.bench=rows[i+1][j];
       if(c==='deadlift'&&typeof rows[i+1]?.[j]==='number') maxes.deadlift=rows[i+1][j];
@@ -1917,8 +1815,8 @@ function parseBSheet(sn,rows){
     for(let i=0;i<rows.length;i++){
       const row=rows[i]; if(!row) continue;
       const a=row[0];
-      // Excel serial date (> 40000) as day separator
-      if(typeof a === 'number' && a > 40000 && a < 50000){
+      // Excel serial date as day separator
+      if(typeof a === 'number' && a > EXCEL_DATE_SERIAL_MIN && a < 50000){
         // Check if next row has "Set 1"/"Set 2" headers
         const nextRow = rows[i+1];
         if(nextRow && nextRow.some(c => c != null && /^set\s*\d/i.test(String(c).trim()))){
@@ -2390,7 +2288,7 @@ function parseE_nSuns(wb) {
         let hasColHeaders = false;
         for (let j = i; j < Math.min(i + 3, rows.length); j++) {
           const hr = rows[j]; if (!hr) continue;
-          const hstrs = hr.map(c2 => String(c2 || '').toLowerCase().trim());
+          const hstrs = hr.map(_normalizeCell);
           if ((hstrs.includes('sets') || hstrs.includes('set')) && (hstrs.includes('reps') || hstrs.includes('rep goal'))) hasColHeaders = true;
           if (hstrs.includes('movement') || hstrs.includes('exercise movement')) hasColHeaders = true;
         }
@@ -2502,7 +2400,7 @@ function parseE_tabular(wb) {
     let hdrRow = -1, colMap = {};
     for (let i = 0; i < Math.min(10, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const wIdx = strs.indexOf('week');
       const lIdx = strs.findIndex(s => s.includes('primary lift') || s === 'exercise');
       const sIdx = strs.indexOf('sets');
@@ -2597,7 +2495,7 @@ function parseE_phaseGrid(wb) {
     let hdrRow = -1, phaseGroups = []; // [{name, weightCol, repsCol}]
     for (let i = 0; i < Math.min(20, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const wCols = []; const rCols = [];
       for (let c = 0; c < strs.length; c++) {
         if (strs[c] === 'weight') wCols.push(c);
@@ -2652,7 +2550,7 @@ function parseE_phaseGrid(wb) {
         let newHdr = -1;
         for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
           const hr = rows[j]; if (!hr) continue;
-          const hstrs = hr.map(c => String(c || '').toLowerCase().trim());
+          const hstrs = hr.map(_normalizeCell);
           if (hstrs.filter(s => s === 'weight').length >= 2) { newHdr = j; break; }
         }
         waveSections.push({ name: str, startRow: (newHdr >= 0 ? newHdr + 1 : i + 2) });
@@ -3172,7 +3070,7 @@ function parseE_parallel531(wb) {
     // Check for Week N in first few rows + multiple Reps headers
     for (let i = 0; i < Math.min(3, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       if (/^week\s*\d/i.test(strs[0] || '')) {
         const repsCols = strs.filter(s => s === 'reps').length;
         if (repsCols >= 2) { trainingSheet = sn; trainingRows = rows; break; }
@@ -3532,7 +3430,7 @@ function parseCAutoSheet(sn, rows) {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]; if (!row) continue;
-    const strs = row.map(c => String(c || '').toLowerCase().trim());
+    const strs = row.map(_normalizeCell);
     if (strs.includes('sets') && strs.includes('reps')) {
       setsIdx = strs.indexOf('sets');
       repsIdx = strs.indexOf('reps');
@@ -3561,7 +3459,7 @@ function parseCAutoSheet(sn, rows) {
     const row = rows[i]; if (!row) continue;
     const colA = String(row[0] || '').trim();
     const exVal = String(row[exIdx] || '').trim();
-    const strs = row.map(c => String(c || '').toLowerCase().trim());
+    const strs = row.map(_normalizeCell);
 
     if (/^day\s*\d/i.test(colA)) {
       let dayName = colA;
@@ -3687,7 +3585,7 @@ function detectF(wb) {
         // Exclude D-style files with Sets/Reps/Intensity/Load column groups
         for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
           const sr = rows[j]; if (!sr) continue;
-          const strs = sr.map(c => String(c || '').toLowerCase().trim());
+          const strs = sr.map(_normalizeCell);
           // D-style: Sets + Reps + (Intensity or Load) repeating — skip
           const setsRepeat = strs.filter(s => s === 'sets').length;
           const hasIntensity = strs.some(s => s === 'intensity');
@@ -3715,7 +3613,7 @@ function detectF(wb) {
       }
 
       // F3 Madcow: Day/Exercise header + W1/W2 or sequential numbered columns
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const hasDay = strs.some(s => s === 'day');
       const hasExercise = strs.some(s => s === 'exercise');
       if (hasDay && hasExercise) {
@@ -3793,7 +3691,7 @@ function parseF_stride3(wb) {
     let weekColGroups = [];
     for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 3, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const wCols = [], rCols = [], sCols = [], eCols = [];
       for (let c = 0; c < strs.length; c++) {
         if (strs[c] === 'weight') wCols.push(c);
@@ -3966,7 +3864,7 @@ function parseF_stride15(wb) {
     // Check for sub-header row with % repeating
     const subRow = rows[weekHeaderRow + 2];
     if (!subRow) continue;
-    const strs = subRow.map(c => String(c || '').toLowerCase().trim());
+    const strs = subRow.map(_normalizeCell);
     let pctCount = 0;
     for (const s of strs) { if (s === '%' || s === 'percentage') pctCount++; }
     if (pctCount < 2) continue;
@@ -4151,7 +4049,7 @@ function parseF_pctLoad(wb) {
       // Find sub-header row below with Percentage/Load repeating
       const nextRow = rows[i + 1];
       if (!nextRow) continue;
-      const strs = nextRow.map(c => String(c || '').toLowerCase().trim());
+      const strs = nextRow.map(_normalizeCell);
       const loadCols = [];
       let movCol = -1, setCol = -1, repsCol = -1;
       for (let c = 0; c < strs.length; c++) {
@@ -4235,7 +4133,7 @@ function parseF_stride1(wb) {
 
     for (let i = 0; i < Math.min(15, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const dIdx = strs.indexOf('day');
       const eIdx = strs.indexOf('exercise');
       if (dIdx === -1 || eIdx === -1) continue;
@@ -4797,7 +4695,7 @@ function parseDSheet(sheetName, rows) {
   let firstHeaderRow = null;
   for (let r = dayStartRows[0].rowIdx + 1; r < Math.min(dayStartRows[0].rowIdx + 3, rows.length); r++) {
     const row = rows[r]; if (!row) continue;
-    const strs = row.map(c => String(c || '').toLowerCase().trim());
+    const strs = row.map(_normalizeCell);
     const setsCount = strs.filter(s => s === 'sets').length;
     if (setsCount >= 1) {
       numWeeks = setsCount;
@@ -4816,7 +4714,7 @@ function parseDSheet(sheetName, rows) {
 
     for (let r = startRow + 1; r < Math.min(startRow + 4, endRow); r++) {
       const row = rows[r]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       if (strs.includes('sets')) {
         colHeaderIdx = r;
         for (let c = 0; c < strs.length; c++) {
@@ -6922,7 +6820,7 @@ function _lGetCellVal(ws, addr) {
 }
 
 function _lIsDateSerial(v) {
-  return (v instanceof Date) || (typeof v === 'number' && v > 40000 && v < 50000);
+  return (v instanceof Date) || (typeof v === 'number' && v > EXCEL_DATE_SERIAL_MIN && v < 50000);
 }
 
 function _lParseReps(text) {
@@ -10680,7 +10578,7 @@ function detectU(wb) {
         if (str === 'tier') hasTierHeader = true;
       }
       // Check for Sets/Reps/Weight headers in same row
-      const strs = row.map(c2 => String(c2 || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const hasSets = strs.some(s => s === 'sets' || s === 'set');
       const hasReps = strs.some(s => s === 'reps' || s === 'rep');
       const hasWeight = strs.some(s => s === 'weight' || s === 'load' || s === 'lbs' || s === 'kg');
@@ -10782,7 +10680,7 @@ function _parseU_multiSheet(wb) {
 
     for (let i = 0; i < Math.min(15, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c2 => String(c2 || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const si2 = strs.indexOf('sets');
       const ri = strs.indexOf('reps');
       if (si2 >= 0 && ri >= 0) {
@@ -11173,7 +11071,7 @@ function detectV(wb) {
     let hasExerciseHeader = false;
     for (let i = 0; i < Math.min(20, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       if (strs.some(s => s === 'rir' || s === 'rpe' || s === 'rir/rpe')) hasRIR = true;
       if (strs.some(s => s.includes('%') && /\d/.test(s))) hasPercentLoad = true;
       if (row[0] && /^Day\s*\d/i.test(String(row[0]).trim())) hasDayLabel = true;
@@ -11212,7 +11110,7 @@ function parseV(wb) {
     let headerRow = -1;
     for (let i = 0; i < Math.min(10, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const strs = row.map(c => String(c || '').toLowerCase().trim());
+      const strs = row.map(_normalizeCell);
       const hasEx = strs.some(s => s === 'exercise' || s === 'movement' || s === 'lift');
       const hasSets = strs.some(s => s === 'sets' || s === 'set');
       const hasReps = strs.some(s => s === 'reps' || s === 'rep');
@@ -11432,7 +11330,7 @@ if (typeof module !== 'undefined' && module.exports) {
     isCompLift, _classifyLiftBase, classifyLift: _classifyLiftBase, canonicalizeLift, _getBaseName,
     _smartExerciseMatch, _extractPrimaryKeyword,
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
-    DAYS, detectFormat, detectE, detectF, detectG,
+    DAYS, detectFormat, detectF, detectG,
     parseA, parseASheet, parseB, parseBSheet,
     parseWorkbook,
     parseE, parseE_nSuns, parseE_tabular, parseE_phaseGrid, parseE_weekText, parseE_cycleWeek, parseE_parallel531,
