@@ -1932,7 +1932,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.20.2</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/12/26f</span></div>
+      <div class="header-logo">UNRACK <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle">v0.20.3</span> <span style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle">3/13/26a</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2262,7 +2262,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
       <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
     </div>
 
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.20.2 · Build 3/12/26f</div>
+    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates">v0.20.3 · Build 3/13/26a</div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -3354,16 +3354,22 @@ function renderMetrics(){
   },0);
 }
 
+function _rerenderMetricsPreservingScroll(){
+  const sy=window.scrollY;
+  renderMetrics();
+  window.scrollTo(0,sy);
+}
+
 function toggleMetricsRows(groupKey){
   if(!state.metricsRowsExpanded) state.metricsRowsExpanded={};
   state.metricsRowsExpanded[groupKey]=!state.metricsRowsExpanded[groupKey];
-  renderMetrics();
+  _rerenderMetricsPreservingScroll();
 }
 
 function toggleOtherLift(name){
   if(!state.metricsOtherExpanded) state.metricsOtherExpanded={};
   state.metricsOtherExpanded[name]=!state.metricsOtherExpanded[name];
-  renderMetrics();
+  _rerenderMetricsPreservingScroll();
 }
 
 function toggleMaxCard(el) {
@@ -3373,15 +3379,18 @@ function toggleMaxCard(el) {
   allCards.forEach(c => { if (wasExpanded) c.classList.remove('expanded'); else c.classList.add('expanded'); });
 }
 function setMetricsDrill(val){ state.metricsDrillBlock=val; renderMetrics(); }
-function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; renderMetrics(); }
+function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; _rerenderMetricsPreservingScroll(); }
 
 function drawEmptyChart(canvasId){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
   const W=canvas.offsetWidth||400;
   const H=160;
-  canvas.width=W; canvas.height=H;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,W,H);
 
   // Draw dashed baseline
@@ -3412,10 +3421,9 @@ function _handleChartTap(canvasId, event){
   const canvas=document.getElementById(canvasId);
   if(!canvas||!_chartCoords[canvasId]) return;
   const rect=canvas.getBoundingClientRect();
-  const scaleX=canvas.width/rect.width;
-  const scaleY=canvas.height/rect.height;
-  const tapX=(event.clientX-rect.left)*scaleX;
-  const tapY=(event.clientY-rect.top)*scaleY;
+  // Coords are stored in logical (CSS) pixels, so map tap to logical space
+  const tapX=event.clientX-rect.left;
+  const tapY=event.clientY-rect.top;
   const coords=_chartCoords[canvasId];
   // Find closest point within 30px
   let closest=null, minDist=Infinity;
@@ -3478,9 +3486,9 @@ function _drawChartTooltip(canvasId){
     ctx.fillText(sub,bx+boxW/2,by+31);
   }
   // Highlight dot
-  ctx.fillStyle='#C9A84C'; ctx.beginPath(); ctx.arc(c.x,c.y,6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#C9A84C'; ctx.beginPath(); ctx.arc(c.x,c.y,4,0,Math.PI*2); ctx.fill();
   ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a0a';
-  ctx.beginPath(); ctx.arc(c.x,c.y,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(c.x,c.y,2,0,Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
@@ -3488,9 +3496,12 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
   const W=canvas.offsetWidth||400;
   const H=160;
-  canvas.width=W; canvas.height=H;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
 
   if(!pts||pts.length===0){ ctx.clearRect(0,0,W,H); return; }
 
@@ -3577,8 +3588,19 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     });
   }
 
-  // X labels
-  function shortLabel(s){ const m=s.match(/W(\d+)$/i); return m?`W${m[1]}`:s.replace(/cycle\s*/i,'C'); }
+  // X labels — prefer dates (M/D) when available, fall back to cycle·week labels
+  function xLabel(pt){
+    if(pt.completedDate){
+      const [y,m,d]=pt.completedDate.split('-');
+      return (parseInt(m))+'/'+parseInt(d);
+    }
+    // Keep cycle prefix when present: "C1 W2" → "C1·W2"
+    const s=pt.session;
+    const cm=s.match(/^C(\d+)\s*W(\d+)$/i);
+    if(cm) return 'C'+cm[1]+'\u00B7W'+cm[2];
+    const wm=s.match(/W(\d+)$/i);
+    return wm?'W'+wm[1]:s;
+  }
   const step=pts.length>6?Math.ceil(pts.length/4):1;
   ctx.font='9px Barlow,sans-serif'; ctx.textAlign='center';
   pts.forEach((pt,i)=>{
@@ -3586,7 +3608,7 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     const x=getX(i);
     const isCurrent=pt.blockId===lastBlockId;
     ctx.fillStyle=isCurrent?'#777':'#444';
-    ctx.fillText(shortLabel(pt.session),x,H-6);
+    ctx.fillText(xLabel(pt),x,H-6);
   });
 
   const coords=pts.map((pt,i)=>({
@@ -3596,7 +3618,7 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   }));
 
   if(coords.length===1){
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,3.5,0,Math.PI*2); ctx.fill();
   } else {
     // ── Draw segments per cycle with different opacities ──
     // Identify segments: groups of consecutive points with same blockId
@@ -3651,19 +3673,19 @@ function drawSingleVarChart(canvasId, pts, drillMode){
 
     // "Now" endpoint dot on the last point only
     const last=coords[coords.length-1];
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(last.x,last.y,5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(last.x,last.y,2.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(last.x,last.y,3.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(last.x,last.y,1.5,0,Math.PI*2); ctx.fill();
 
     // For few-cycle views (<=2 boundaries), also draw intermediate dots on current cycle
     if(numCycles<=2){
       const lastBound=boundaries.length>0?boundaries[boundaries.length-1]:0;
       for(let i=lastBound;i<coords.length-1;i++){
-        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,4,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2.5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1,0,Math.PI*2); ctx.fill();
       }
       // Faded dots for previous cycle
       for(let i=0;i<lastBound;i++){
-        ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2.5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1.5,0,Math.PI*2); ctx.fill();
       }
     }
   }
@@ -5748,25 +5770,10 @@ function renderE5Components(block, isBlockComplete) {
   const nwInfo = getNextWorkoutInfo();
   const currentWeekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
 
-  // ── Header: program name + date range ──
+  // ── Header: program name ──
   const blockName = displayBlockName(block.name) || 'Training Block';
-  let dateRange = '';
-  // Try to compute date range from completed dates
-  const allDates = [];
-  for (const w of block.weeks) {
-    for (const d of (w.days || [])) {
-      const cd = getDayCompletedDate(block, w, d);
-      if (cd) allDates.push(cd);
-    }
-  }
-  if (allDates.length > 0) {
-    const sorted = allDates.sort();
-    const fmt = s => { const [y,m,d] = s.split('-'); return m + '/' + d; };
-    dateRange = fmt(sorted[0]) + ' – present';
-  }
   let headerHtml = `<div class="e6-prog-header">
     <div class="e6-prog-name">${escH(blockName)}</div>
-    ${dateRange ? `<div class="e6-prog-dates">${dateRange}</div>` : ''}
   </div>`;
 
   // ── Chip: Est. Total (hidden until all 3 comp lifts have data) ──
@@ -7844,7 +7851,7 @@ async function _uploadToDrive(fileName, content, mimeType, folderId) {
 
 function _buildBackupPayload() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.20.2';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.20.3';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     if (_idbReady && _idbCache[key] !== undefined) {
@@ -11498,7 +11505,7 @@ const BACKUP_KEYS = [
 
 function downloadBackup() {
   const verEl = document.querySelector('.header-logo span');
-  const appVer = verEl ? verEl.textContent.trim() : 'v0.20.2';
+  const appVer = verEl ? verEl.textContent.trim() : 'v0.20.3';
   const data = { version: 1, timestamp: new Date().toISOString(), appVersion: appVer, data: {} };
   for (const key of BACKUP_KEYS) {
     // Prefer IDB cache, fall back to localStorage
