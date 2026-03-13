@@ -2471,8 +2471,8 @@ function _requestPersist() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.20.5';
-const APP_BUILD   = '3/13/26d';
+const APP_VERSION = 'v0.20.6';
+const APP_BUILD   = '3/13/26f';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3476,7 +3476,8 @@ function _drawChartTooltip(canvasId){
   _chartDrawing=true;
   drawSingleVarChart(canvasId, pts, true);
   _chartDrawing=false;
-  const W=canvas.width, H=canvas.height;
+  // Use CSS dimensions (not DPR-scaled canvas.width) since coords are in CSS pixels
+  const W=canvas.offsetWidth||canvas.width, H=canvas.offsetHeight||canvas.height;
   const sel=_chartSelectedPt[canvasId];
   if(!sel) return;
   const c=coords.find(cc=>cc.pt===sel);
@@ -4314,6 +4315,14 @@ function displayWeight(value, fromUnit) {
 function unitLabel(short) {
   const u = getDisplayUnit();
   return short ? (u === 'kg' ? 'kg' : 'lb') : u;
+}
+
+/** Format volume with consistent tiers: >=1M → "1.2m", >=1K → "45.3k", else locale string */
+function fmtVolume(v) {
+  if (v == null || v === 0) return '—';
+  if (v >= 1000000) return (v / 1000000).toFixed(1) + 'm';
+  if (v >= 1000) return (v / 1000).toFixed(1) + 'k';
+  return v.toLocaleString();
 }
 
 function toggleAthleteProfileForm() {
@@ -5466,11 +5475,8 @@ function renderLastWorkoutCard() {
   const meta = metaParts.filter(Boolean).join(' · ');
 
   // Stats
-  const _volThresh1 = getDisplayUnit() === 'kg' ? 4500 : 10000;
-  const vol = summary?.totalVolume
-    ? (summary.totalVolume >= _volThresh1 ? (summary.totalVolume / 1000).toFixed(1) + 'k' : summary.totalVolume.toLocaleString())
-    : '—';
-  const volUnit = summary?.totalVolume ? (summary.totalVolume >= _volThresh1 ? '' : ' '+getDisplayUnit()) : '';
+  const vol = summary?.totalVolume ? fmtVolume(summary.totalVolume) : '—';
+  const volUnit = summary?.totalVolume && summary.totalVolume < 1000 ? ' '+getDisplayUnit() : '';
   const sets = summary?.totalSets || '—';
   const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
 
@@ -5652,11 +5658,8 @@ function renderHome() {
       : '';
 
     // Stats
-    const _volThresh2 = getDisplayUnit() === 'kg' ? 4500 : 10000;
-    const vol = summary?.totalVolume
-      ? (summary.totalVolume >= _volThresh2 ? (summary.totalVolume / 1000).toFixed(1) + 'k' : summary.totalVolume.toLocaleString())
-      : '—';
-    const volUnit = summary?.totalVolume ? ' '+getDisplayUnit() : '';
+    const vol = summary?.totalVolume ? fmtVolume(summary.totalVolume) : '—';
+    const volUnit = summary?.totalVolume && summary.totalVolume < 1000 ? ' '+getDisplayUnit() : '';
     const sets = summary?.totalSets || '—';
     const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
 
@@ -5694,8 +5697,7 @@ function renderHome() {
       // ── Block Complete combined card (user explicitly finished the block) ──
       const bs = getBlockSummary(block);
       if (bs) {
-        const _bvt = getDisplayUnit() === 'kg' ? 4500 : 10000;
-        const bVol = bs.totalVolume >= _bvt ? (bs.totalVolume / 1000).toFixed(1) + 'k' : bs.totalVolume.toLocaleString();
+        const bVol = fmtVolume(bs.totalVolume);
         let dateRange = '';
         if (bs.firstDate && bs.lastDate) {
           const fmt = d => { const [y,m,dd] = d.split('-'); return m + '/' + dd; };
@@ -5998,6 +6000,7 @@ const _checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
+  _clearPrevPerfCache();
   ['home','workout','metrics','calc'].forEach(s=>{
     const el=document.getElementById('nav-'+s);
     if(el) el.classList.toggle('active', state.screen===s);
@@ -7556,10 +7559,10 @@ function updateDayTabCheckmarks(){
     if(complete&&!check){ tab.insertAdjacentHTML('beforeend','<span class="day-check">✓</span>'); tab.classList.add('done'); }
     else if(!complete&&check){ check.remove(); tab.classList.remove('done'); }
   });
-  // Also update week pill checkmarks
+  // Also update active week pill checkmark (only active week can change during a workout)
   document.querySelectorAll('.week-pill').forEach(pill=>{
     const wi=parseInt(pill.dataset.weekIdx);
-    if(isNaN(wi)) return;
+    if(isNaN(wi)||wi!==state.activeWeek) return;
     const w=block.weeks[wi]; if(!w) return;
     const allDone=w.days.filter(d=>d.exercises&&d.exercises.length>0).every(d=>isDayComplete(block,w,d));
     if(allDone&&!pill.classList.contains('done')) pill.classList.add('done');
@@ -7614,16 +7617,14 @@ function showCelebration(dayName, meta, onDismiss) {
 
   // ── Stats row ───────────────────────────────────────────────────────────────
   const statsEl = document.getElementById('cel-stats');
-  const vol = summary?.totalVolume
-    ? (summary.totalVolume >= 1000 ? (summary.totalVolume/1000).toFixed(1)+'k' : summary.totalVolume)
-    : '—';
+  const vol = summary?.totalVolume ? fmtVolume(summary.totalVolume) : '—';
   const sets   = summary?.totalSets  || '—';
   const avgRpe = summary?.avgRpe     != null ? summary.avgRpe : '—';
   const maxRpe = summary?.maxRpe     || '—';
 
   statsEl.innerHTML = `
     <div class="cel-stat">
-      <div class="cel-stat-val">${vol}<span class="cel-stat-unit">${typeof summary?.totalVolume === 'number' && summary.totalVolume >= 1000 ? '' : summary?.totalVolume ? ' '+getDisplayUnit() : ''}</span></div>
+      <div class="cel-stat-val">${vol}<span class="cel-stat-unit">${summary?.totalVolume && summary.totalVolume < 1000 ? ' '+getDisplayUnit() : ''}</span></div>
       <div class="cel-stat-label">Tonnage</div>
     </div>
     <div class="cel-stat">
@@ -9361,7 +9362,11 @@ function getPrevWeekNote(blockId,weekLabel,dayName,exName){
   }
   return null;
 }
+let _prevPerfCache = null;
+function _clearPrevPerfCache(){ _prevPerfCache = new Map(); }
 function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
+  const cacheKey = blockId+'||'+weekLabel+'||'+dayName+'||'+exName;
+  if(_prevPerfCache && _prevPerfCache.has(cacheKey)) return _prevPerfCache.get(cacheKey);
   function getSets(key, matchEx, srcBlockId, srcWeekLabel, srcDayName){
     const sets=[];
     const prescSets = matchEx?.prescription ? parseSets(matchEx.prescription) : [];
@@ -9433,7 +9438,7 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
       const key=[blockId,w.label,dayName,matchEx.name].join('||');
       if(!state.logs[key]?.done) continue;
       const sets=getSets(key, matchEx, blockId, w.label, dayName);
-      if(sets.length>0) return {label:w.label,source:null,sets};
+      if(sets.length>0){ const r={label:w.label,source:null,sets}; if(_prevPerfCache)_prevPerfCache.set(cacheKey,r); return r; }
     }
   }
   // Phase 2: search other blocks (most recent first)
@@ -9448,10 +9453,11 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
         const key=[b.id,w.label,d.name,matchEx.name].join('||');
         if(!state.logs[key]?.done) continue;
         const sets=getSets(key, matchEx, b.id, w.label, d.name);
-        if(sets.length>0) return {label:w.label,source:b.name||b.id,sets};
+        if(sets.length>0){ const r={label:w.label,source:b.name||b.id,sets}; if(_prevPerfCache)_prevPerfCache.set(cacheKey,r); return r; }
       }
     }
   }
+  if(_prevPerfCache)_prevPerfCache.set(cacheKey,null);
   return null;
 }
 
@@ -11365,7 +11371,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
       <div class="strip-stat-label">Compliance</div>
     </div>
     <div class="strip-stat">
-      <div class="strip-stat-val">${totalVolume >= 1000000 ? Math.round(totalVolume/1000000) + 'm' : totalVolume >= 1000 ? Math.round(totalVolume/1000) + 'k' : totalVolume}</div>
+      <div class="strip-stat-val">${fmtVolume(totalVolume)}</div>
       <div class="strip-stat-label">Volume (${unitLabel(true)})</div>
     </div>
     <div class="strip-stat">
