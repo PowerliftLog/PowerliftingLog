@@ -510,7 +510,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .block-name-edit { background: var(--surface-5); border: 1px solid var(--gold); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); padding: var(--sp-2) var(--sp-4); outline: none; width: 100%; letter-spacing: 0.04em; }
 .exercise-header { padding: var(--sp-6) var(--sp-6) var(--sp-5); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
 .exercise-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); letter-spacing: 0.02em; line-height: 1.15; flex: 1; }
-.exercise-check { width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: var(--sp-1); transition: all 0.15s; }
+.exercise-check { width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: var(--sp-1); transition: all 0.15s; box-sizing: content-box; padding: 9px; margin: -9px; margin-top: calc(var(--sp-1) - 9px); }
 .exercise-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: var(--green); }
 .exercise-check.inferred { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2); color: rgba(74,222,128,0.5); }
 .prescription { padding: 0 var(--sp-6) var(--sp-5); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); color: var(--gold-data); letter-spacing: 0.03em; }
@@ -523,7 +523,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-row:last-child { border-bottom: none; }
 .set-num { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-micro); color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; user-select: none; -webkit-user-select: none; }
 .set-presc-col { display: flex; flex-direction: column; gap: 1px; min-width: 70px; flex-shrink: 0; align-self: flex-end; padding-bottom: var(--sp-2); }
-.set-calc-btn { width: 26px; height: 26px; flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-sub); display: flex; align-items: center; justify-content: center; transition: color 0.15s; -webkit-tap-highlight-color: transparent; align-self: flex-end; }
+.set-calc-btn { width: 44px; height: 44px; flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-sub); display: flex; align-items: center; justify-content: center; transition: color 0.15s; -webkit-tap-highlight-color: transparent; align-self: flex-end; }
 .set-calc-btn:active { color: var(--gold); }
 .set-calc-btn svg { width: 18px; height: 18px; }
 
@@ -563,7 +563,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input::placeholder { color: var(--text-muted); font-size: var(--fs-sm); font-weight: 400; font-style: italic; opacity: 0.6; }
 .prescribed-label { width: 80px; text-align: center; font-size: var(--fs-base); color: var(--text-dimmer); }
-.set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; }
+.set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; box-sizing: content-box; padding: 6px; margin: -6px; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
 .set-check svg { width: 14px; height: 14px; }
 .pr-badge { display: inline-flex; align-items: center; gap: var(--sp-1); background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; padding: var(--sp-1) var(--sp-3); border-radius: 4px; margin-left: var(--sp-3); animation: prFlash 0.6s ease-out; }
@@ -2470,9 +2470,42 @@ function _requestPersist() {
   }
 }
 
+// Check storage quota and warn user if running low
+async function _checkStorageQuota() {
+  try {
+    // StorageManager API (IDB + caches — most accurate)
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      if (est.quota && est.usage) {
+        const pct = (est.usage / est.quota) * 100;
+        if (pct > 90) {
+          _showWarningToast('Storage almost full (' + Math.round(pct) + '%). Export your data soon to avoid data loss.', 'warn');
+        } else if (pct > 80) {
+          console.warn('[Storage] Usage at ' + Math.round(pct) + '% of quota (' + Math.round(est.usage/1024) + 'KB / ' + Math.round(est.quota/1024) + 'KB)');
+        }
+      }
+    }
+    // localStorage-specific check (5MB typical limit)
+    let lsBytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      lsBytes += (k.length + (localStorage.getItem(k) || '').length) * 2; // UTF-16
+    }
+    const lsPct = (lsBytes / (5 * 1024 * 1024)) * 100;
+    if (lsPct > 80) {
+      console.warn('[localStorage] Usage at ' + Math.round(lsPct) + '% (~' + Math.round(lsBytes/1024) + 'KB / 5120KB)');
+      if (lsPct > 90) {
+        _showWarningToast('Local storage almost full (' + Math.round(lsPct) + '%). Export your data to avoid data loss.', 'warn');
+      }
+    }
+  } catch (e) {
+    // Non-critical — fail silently
+  }
+}
+
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.21.0';
-const APP_BUILD   = '3/13/26j';
+const APP_BUILD   = '3/13/26m';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2486,6 +2519,7 @@ async function _bootApp() {
     await _idbLoadAll();
     await _idbMigrateFromLS();
     _requestPersist();
+    _checkStorageQuota();
   } catch (e) {
     console.warn('[IDB] Falling back to localStorage only:', e);
   }
@@ -3626,27 +3660,55 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     });
   }
 
-  // X labels — prefer dates (M/D) when available, fall back to cycle·week labels
-  function xLabel(pt){
-    if(pt.completedDate){
-      const [y,m,d]=pt.completedDate.split('-');
-      return (parseInt(m))+'/'+parseInt(d);
-    }
-    // Keep cycle prefix when present: "C1 W2" → "C1·W2"
+  // X labels — consistent format per chart: all dates OR all session labels, never mixed
+  const allHaveDates=pts.every(p=>!!p.completedDate);
+  function _dateLabel(pt){
+    const [y,m,d]=pt.completedDate.split('-');
+    return parseInt(m)+'/'+parseInt(d);
+  }
+  function _sessionLabel(pt){
     const s=pt.session;
+    // "C1 W2" → "C1·W2"
     const cm=s.match(/^C(\d+)\s*W(\d+)$/i);
     if(cm) return 'C'+cm[1]+'\u00B7W'+cm[2];
+    // "C1 6 WO" → "C1·6WO"
+    const cwo=s.match(/^C(\d+)\s+(\d+)\s*WO$/i);
+    if(cwo) return 'C'+cwo[1]+'\u00B7'+cwo[2]+'WO';
+    // "6 WO" → "6WO"
+    const wo=s.match(/^(\d+)\s*WO$/i);
+    if(wo) return wo[1]+'WO';
+    // "W3" passthrough
     const wm=s.match(/W(\d+)$/i);
-    return wm?'W'+wm[1]:s;
+    if(wm) return 'W'+wm[1];
+    // Truncate long labels
+    return s.length>8?s.substring(0,7)+'…':s;
   }
-  const step=pts.length>6?Math.ceil(pts.length/4):1;
+  function xLabel(pt){
+    if(allHaveDates) return _dateLabel(pt);
+    return _sessionLabel(pt);
+  }
+  // Label placement with overlap prevention
+  const maxLabels=5;
+  const step=pts.length>maxLabels?Math.ceil(pts.length/maxLabels):1;
   ctx.font='9px Barlow,sans-serif'; ctx.textAlign='center';
+  let lastLabelRight=-Infinity;
+  let lastLabelText='';
+  const labelMinGap=4; // minimum px between labels
   pts.forEach((pt,i)=>{
     if(i%step!==0&&i!==pts.length-1) return;
     const x=getX(i);
+    const label=xLabel(pt);
+    // Skip duplicate consecutive labels (e.g. same date for multiple weeks)
+    if(label===lastLabelText&&i!==pts.length-1) return;
+    const tw=ctx.measureText(label).width;
+    const labelLeft=x-tw/2;
+    // Skip if this label would overlap the previous one
+    if(labelLeft<lastLabelRight+labelMinGap&&i!==0) return;
     const isCurrent=pt.blockId===lastBlockId;
     ctx.fillStyle=isCurrent?'#777':'#444';
-    ctx.fillText(xLabel(pt),x,H-6);
+    ctx.fillText(label,x,H-6);
+    lastLabelRight=x+tw/2;
+    lastLabelText=label;
   });
 
   const coords=pts.map((pt,i)=>({
@@ -3714,17 +3776,16 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(last.x,last.y,3.5,0,Math.PI*2); ctx.fill();
     ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(last.x,last.y,1.5,0,Math.PI*2); ctx.fill();
 
-    // For few-cycle views (<=2 boundaries), also draw intermediate dots on current cycle
-    if(numCycles<=2){
-      const lastBound=boundaries.length>0?boundaries[boundaries.length-1]:0;
-      for(let i=lastBound;i<coords.length-1;i++){
-        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2.5,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1,0,Math.PI*2); ctx.fill();
-      }
-      // Faded dots for previous cycle
-      for(let i=0;i<lastBound;i++){
-        ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1.5,0,Math.PI*2); ctx.fill();
-      }
+    // Intermediate dots on current cycle (always) + faded dots on previous cycles
+    const lastBound=boundaries.length>0?boundaries[boundaries.length-1]:0;
+    for(let i=lastBound;i<coords.length-1;i++){
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2.5,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1,0,Math.PI*2); ctx.fill();
+    }
+    // Faded dots for previous cycles (limit to last 2 cycles to avoid clutter)
+    const prevStart=boundaries.length>=2?boundaries[boundaries.length-2]:0;
+    for(let i=prevStart;i<lastBound;i++){
+      ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1.5,0,Math.PI*2); ctx.fill();
     }
   }
   // Store coords for tap-to-inspect (skip during tooltip redraw)
@@ -4458,7 +4519,10 @@ const COMPOUND_KEYWORDS = ['squat','bench press','deadlift','dead lift','overhea
 function _isBarbellExercise(name) {
   const n = name.toLowerCase();
   if (n.includes('barbell') || n.includes('bb ') || n.startsWith('bb ')) return true;
-  return COMPOUND_KEYWORDS.some(k => n.includes(k));
+  if (COMPOUND_KEYWORDS.some(k => n.includes(k))) return true;
+  // Fallback: comp lift families (squat/bench/deadlift) are barbell movements
+  const group = classifyLift(name);
+  return group === 'squat' || group === 'bench' || group === 'deadlift';
 }
 
 let _restTimer = { intervalId: null, startedAt: 0, endsAt: 0, total: 0, exName: '' };
@@ -7016,6 +7080,8 @@ function completeWorkout(){
   saveLogs();
   // Fire-and-forget auto-backup to Drive (non-blocking)
   _silentAutoBackup();
+  // Check storage quota after workout save
+  _checkStorageQuota();
   // Capture celebration data before render() (render may mutate references)
   const _dayName = day.name;
   const _weekNum = block.weeks.findIndex(w => w.label === week.label);
