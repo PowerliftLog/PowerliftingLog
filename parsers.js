@@ -123,7 +123,9 @@ const LIFT_GROUP_DISQUALIFIERS = [
   'clean pull','snatch pull','hack lift','dimel','reeves deadlift','suitcase deadlift',
   'zercher deadlift','jefferson deadlift',
 ];
-function classifyLift(name){
+// Base classifier — returns group name or null. No access to runtime state.
+// index.html layers on custom lifts and 'other' fallback via classifyLift().
+function _classifyLiftBase(name){
   const n=name.toLowerCase();
   // If name contains a disqualifying word, it's an accessory regardless of keyword match
   const disqualified = LIFT_GROUP_DISQUALIFIERS.some(d=>n.includes(d));
@@ -9832,23 +9834,7 @@ function _rGetWeekCount(sheet) {
   return count > 0 ? count : 13; // Default to 13 if detection fails
 }
 
-/**
- * Get dates from sheet row 1
- * @param {object} sheet - XLSX sheet object
- * @returns {array}
- */
-function _rGetDates(sheet) {
-  const dates = [];
-  for (let col = 1; col <= 20; col++) {
-    const val = _rGetCell(sheet, 1, col);
-    if (val) {
-      dates.push(val);
-    } else {
-      break;
-    }
-  }
-  return dates;
-}
+// _rGetDates removed — defined but never called (audit W6)
 
 /**
  * Get cell value from sheet by row and column indices
@@ -11410,7 +11396,7 @@ function _vBuildPrescription(sets, reps, load, rir) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP,
-    isCompLift, classifyLift, canonicalizeLift, _getBaseName,
+    isCompLift, _classifyLiftBase, classifyLift: _classifyLiftBase, canonicalizeLift, _getBaseName,
     _smartExerciseMatch, _extractPrimaryKeyword,
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
     DAYS, detectFormat, detectE, detectF, detectG,
