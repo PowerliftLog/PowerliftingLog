@@ -2471,8 +2471,8 @@ function _requestPersist() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.20.9';
-const APP_BUILD   = '3/13/26i';
+const APP_VERSION = 'v0.21.0';
+const APP_BUILD   = '3/13/26j';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -5513,6 +5513,176 @@ function renderLastWorkoutCard() {
   </div>`;
 }
 
+// ── renderHome sub-functions ──────────────────────────────────────────────────
+
+function _renderUpNextHero(block, nwInfo) {
+  const { day, weekIdx, dayIdx, meta } = nwInfo;
+  const exs       = day.exercises || [];
+  const showCount = Math.min(3, exs.length);
+  const more      = exs.length - showCount;
+  const exRows    = exs.slice(0, showCount).map(ex => {
+    const pres = (ex.prescription || '').slice(0, 20) + (ex.prescription?.length > 20 ? '…' : '');
+    return `<div class="home-hero-ex">
+      <div class="home-hero-ex-dot"></div>
+      <div class="home-hero-ex-name">${escH(_displayExName(ex.name))}</div>
+      <div class="home-hero-ex-pres">${escH(pres)}</div>
+    </div>`;
+  }).join('');
+  return `<div class="home-hero" onclick="goToWorkout(${weekIdx},${dayIdx},true)">
+    <div class="home-hero-bg"></div>
+    <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+    <div class="home-hero-inner">
+      <h2 class="home-hero-label">Up Next</h2>
+      <div class="home-hero-day">${escH(day.name || 'Workout')}</div>
+      <div class="home-hero-meta">${escH(meta)}</div>
+      <div class="home-hero-exercises">
+        ${exRows}
+        ${more > 0 ? `<div class="home-hero-more">+${more} more</div>` : ''}
+      </div>
+      <div class="home-hero-cta">
+        <span class="home-hero-cta-text">Start Workout</span>
+        <span class="home-hero-cta-arrow">→</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _renderSessionHero(block, nwInfo, lastDone) {
+  const { week, day, weekIdx, dayIdx } = lastDone;
+  const summary = getSessionSummary(block, week, day);
+  const dayName = day.name || 'Workout';
+  const metaParts = [];
+  if (block.weeks.length > 1) metaParts.push('W' + (weekIdx + 1));
+  if (block.name) metaParts.push(displayBlockName(block.name));
+  const cDate = getDayCompletedDate(block, week, day);
+  if (cDate) { const [y,m,d] = cDate.split('-'); metaParts.push(m + '/' + d); }
+  const meta = metaParts.join(' · ');
+
+  // Build lift rows from comp best
+  const liftRows = [];
+  if (summary?.compBest) {
+    for (const [lift, data] of Object.entries(summary.compBest)) {
+      if (data && data.weight) {
+        const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
+        liftRows.push(`<div class="session-lift-row">
+          <div class="session-lift-name">${escH(lift)}</div>
+          <div class="session-lift-set">${data.reps}×${data.weight}${unitLabel(true)}${rpeStr}</div>
+        </div>`);
+      }
+    }
+  }
+  const liftRowsHtml = liftRows.length > 0
+    ? `<div class="session-lift-rows">${liftRows.join('')}</div>` : '';
+
+  const vol = summary?.totalVolume ? fmtVolume(summary.totalVolume) : '—';
+  const volUnit = summary?.totalVolume && summary.totalVolume < 1000 ? ' '+getDisplayUnit() : '';
+  const sets = summary?.totalSets || '—';
+  const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
+
+  // Block complete logic
+  const allLoadedDone = nwInfo && nwInfo.allDone && (nwInfo.weekIdx === block.weeks.length - 1);
+  const isExplicitlyComplete = !!block.completedAt;
+  if (block._initialWeeks == null) { block._initialWeeks = block.weeks.length; saveBlocks(); }
+  const wasFullProgramImport = block._initialWeeks >= 3;
+  const isAutoComplete = allLoadedDone && wasFullProgramImport;
+  let isBlockComplete = (isExplicitlyComplete || isAutoComplete);
+  const showFinishPrompt = allLoadedDone && !isBlockComplete && block.weeks.length >= 3;
+
+  let heroHtml = '';
+  if (showFinishPrompt) {
+    heroHtml = `<div class="session-hero finish-prompt-hero">
+      <div class="session-hero-bg"></div>
+      <div class="session-hero-inner">
+        <h2 class="session-hero-label"><div class="session-hero-label-dot" style="background:var(--gold)"></div>All Sessions Complete</h2>
+        <div class="session-hero-day">${escH(displayBlockName(block.name))}</div>
+        <div class="session-hero-meta">Done with this training cycle?</div>
+        <div class="finish-block-actions" style="margin-top:16px">
+          <div class="bc-btn bc-btn-primary" onclick="finishBlock()">Finish Block</div>
+          <div class="bc-btn bc-btn-secondary" onclick="openProgramModal()">Add More Weeks</div>
+        </div>
+      </div>
+    </div>`;
+  } else if (isBlockComplete) {
+    const bs = getBlockSummary(block);
+    if (bs) {
+      const bVol = fmtVolume(bs.totalVolume);
+      let dateRange = '';
+      if (bs.firstDate && bs.lastDate) {
+        const fmt = d => { const [y,m,dd] = d.split('-'); return m + '/' + dd; };
+        dateRange = ' · ' + fmt(bs.firstDate) + ' – ' + fmt(bs.lastDate);
+      }
+      let bLiftRows = '';
+      for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
+        const d = bs.bestLifts[group];
+        if (!d) continue;
+        const dispW = Math.round(d.weight);
+        const e1rm = d.e1rm ? Math.round(d.e1rm) : null;
+        const rpeStr = d.rpe ? `<span class="bc-lift-rpe">@${d.rpe}</span>` : '';
+        bLiftRows += `<div class="bc-lift-row">
+          <div class="bc-lift-name">${label}</div>
+          <div class="bc-lift-set">${dispW}×${d.reps}${rpeStr}</div>
+          ${e1rm ? `<div class="bc-lift-e1rm"><div class="bc-e1rm-val">${e1rm}</div><div class="bc-e1rm-label">E1RM</div></div>` : ''}
+        </div>`;
+      }
+      heroHtml = `<div class="bc-card">
+        <div class="bc-bg"></div>
+        <div class="bc-inner">
+          <div class="bc-label"><div class="bc-dot"></div>✓ Block Complete<div class="bc-undo" onclick="event.stopPropagation();undoFinishBlock()" title="Undo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div></div>
+          <div class="bc-block-name">${escH(bs.blockName)}</div>
+          <div class="bc-meta">${bs.totalWeeks} weeks · ${bs.completedDays}/${bs.totalDays} sessions${escH(dateRange)}</div>
+          <div class="bc-compliance">${bs.compliancePct}% Compliance</div>
+          ${bLiftRows ? `<div class="bc-lifts">${bLiftRows}</div>` : ''}
+          <div class="bc-stats">
+            <div class="bc-stat"><div class="bc-stat-val">${bVol}</div><div class="bc-stat-label">Volume</div></div>
+            <div class="bc-stat"><div class="bc-stat-val">${bs.totalSets}</div><div class="bc-stat-label">Sets</div></div>
+            <div class="bc-stat"><div class="bc-stat-val">${bs.avgRpe || '—'}</div><div class="bc-stat-label">Avg RPE</div></div>
+          </div>
+          <div class="bc-actions">
+            <div class="bc-btn bc-btn-primary" onclick="exportHTMLReport('${block.id}')">View Report</div>
+            <div class="bc-btn bc-btn-secondary" onclick="setScreen('metrics')">Metrics</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  } else {
+    heroHtml = `<div class="session-hero" onclick="goToWorkout(${weekIdx},${dayIdx})">
+      <div class="session-hero-bg"></div>
+      <div class="session-hero-inner">
+        <h2 class="session-hero-label"><div class="session-hero-label-dot"></div>✓ Last Session</h2>
+        <div class="session-hero-day">${escH(dayName)}</div>
+        <div class="session-hero-meta">${escH(meta)}</div>
+        ${liftRowsHtml}
+        <div class="session-stats">
+          <div class="session-stat"><div class="session-stat-val">${vol}<span class="unit">${volUnit}</span></div><div class="session-stat-label">Volume</div></div>
+          <div class="session-stat"><div class="session-stat-val">${sets}</div><div class="session-stat-label">Sets</div></div>
+          <div class="session-stat"><div class="session-stat-val">${avgRpe}</div><div class="session-stat-label">Avg RPE</div></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  return { heroHtml, isBlockComplete };
+}
+
+function _renderFreshHero(block, nwInfo) {
+  const nw = nwInfo || { day: block.weeks[0]?.days[0], weekIdx: 0, dayIdx: 0 };
+  const firstDay = nw.day;
+  return `<div class="home-hero" onclick="goToWorkout(${nw.weekIdx},${nw.dayIdx},true)">
+    <div class="home-hero-bg"></div>
+    <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+    <div class="home-hero-inner">
+      <h2 class="home-hero-label">Ready to Start</h2>
+      <div class="home-hero-day">${escH(firstDay?.name || 'Day 1')}</div>
+      <div class="home-hero-meta">${escH(displayBlockName(block.name) || 'New Block')}</div>
+      <div class="home-hero-cta">
+        <span class="home-hero-cta-text">Begin First Workout</span>
+        <span class="home-hero-cta-arrow">→</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── renderHome orchestrator ──────────────────────────────────────────────────
+
 function renderHome() {
   const block = state.activeBlock;
   const content = document.getElementById('main-content');
@@ -5535,16 +5705,13 @@ function renderHome() {
     return;
   }
 
-  // Lazy __complete__ stamp: if a day is organically complete (all exercises
-  // checked off) but missing the __complete__ flag, backfill it silently.
-  // This ensures completedDate exists for metrics/reports without requiring
-  // the user to tap "Finish Workout." No celebration, no UI change. (L081)
+  // Lazy __complete__ stamp (L081)
   let _lazyStamped = false;
   block.weeks.forEach(w => {
     (w.days || []).forEach(d => {
       if (!d.exercises || d.exercises.length === 0) return;
       const fk = lk(block.id, w.label, d.name, '__complete__');
-      if (state.logs[fk]?.done) return; // already stamped
+      if (state.logs[fk]?.done) return;
       if (isDayComplete(block, w, d)) {
         const _now = new Date();
         state.logs[fk] = { done: true, completedDate: `${_now.getFullYear()}-${_now.getMonth()+1}-${_now.getDate()}` };
@@ -5559,7 +5726,7 @@ function renderHome() {
     ? _athlete.name
     : (block.athleteName && block.athleteName !== 'Athlete' ? block.athleteName : null);
 
-  // Demo program banner
+  // Demo banner
   const _isDemoBlock = isDemoProgram(block);
   const demoBannerHtml = _isDemoBlock ? `
     <div id="demo-banner" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(var(--gold-rgb),0.08);border:1px solid rgba(var(--gold-rgb),0.2);border-radius:12px;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('file-input').click()">
@@ -5571,55 +5738,17 @@ function renderHome() {
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
     </div>` : '';
 
-  // Hero card — determine what to show
-  const nwInfo    = getNextWorkoutInfo();
-  const lastDone  = getLastCompletedWorkout();
-  let heroHtml    = '';
+  // Hero card
+  const nwInfo   = getNextWorkoutInfo();
+  const lastDone = getLastCompletedWorkout();
+  let heroHtml   = '';
   let isBlockComplete = false;
-  let allLoadedWeeksDone = false;
-  let showFinishPrompt = false;
-
-  // Determine hero state:
-  // 1. Next workout exists and is NOT complete → "Up Next" gold hero
-  // 2. All workouts complete → "All Complete" gold hero (done state)
-  // 3. No completed workouts yet → empty "first workout" card
-  // Otherwise → session summary of last completed workout (persists until next workout done)
 
   const nextIsIncomplete = nwInfo && !nwInfo.allDone;
 
   if (nextIsIncomplete) {
-    // ── "Up Next" hero ──
-    const { day, weekIdx, dayIdx, meta } = nwInfo;
-    const exs       = day.exercises || [];
-    const showCount = Math.min(3, exs.length);
-    const more      = exs.length - showCount;
-    const exRows    = exs.slice(0, showCount).map(ex => {
-      const pres = (ex.prescription || '').slice(0, 20) + (ex.prescription?.length > 20 ? '…' : '');
-      return `<div class="home-hero-ex">
-        <div class="home-hero-ex-dot"></div>
-        <div class="home-hero-ex-name">${escH(_displayExName(ex.name))}</div>
-        <div class="home-hero-ex-pres">${escH(pres)}</div>
-      </div>`;
-    }).join('');
-    heroHtml = `<div class="home-hero" onclick="goToWorkout(${weekIdx},${dayIdx},true)">
-      <div class="home-hero-bg"></div>
-      <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
-      <div class="home-hero-inner">
-        <h2 class="home-hero-label">Up Next</h2>
-        <div class="home-hero-day">${escH(day.name || 'Workout')}</div>
-        <div class="home-hero-meta">${escH(meta)}</div>
-        <div class="home-hero-exercises">
-          ${exRows}
-          ${more > 0 ? `<div class="home-hero-more">+${more} more</div>` : ''}
-        </div>
-        <div class="home-hero-cta">
-          <span class="home-hero-cta-text">Start Workout</span>
-          <span class="home-hero-cta-arrow">→</span>
-        </div>
-      </div>
-    </div>`;
+    heroHtml = _renderUpNextHero(block, nwInfo);
   } else if (nwInfo && nwInfo.allDone && !lastDone) {
-    // All complete but somehow no last workout found — shouldn't happen but handle gracefully
     heroHtml = `<div class="home-hero done">
       <div class="home-hero-bg"></div>
       <div class="home-hero-inner">
@@ -5633,157 +5762,17 @@ function renderHome() {
       </div>
     </div>`;
   } else if (lastDone) {
-    // ── Session summary hero (persists until next workout is done) ──
-    const { week, day, weekIdx, dayIdx } = lastDone;
-    const summary = getSessionSummary(block, week, day);
-    const dayName = day.name || 'Workout';
-    const metaParts = [];
-    if (block.weeks.length > 1) metaParts.push('W' + (weekIdx + 1));
-    if (block.name) metaParts.push(displayBlockName(block.name));
-    // Add date if available
-    const cDate = getDayCompletedDate(block, week, day);
-    if (cDate) {
-      const [y,m,d] = cDate.split('-');
-      metaParts.push(m + '/' + d);
-    }
-    const meta = metaParts.join(' · ');
-
-    // Build lift rows from comp best
-    const liftRows = [];
-    if (summary?.compBest) {
-      for (const [lift, data] of Object.entries(summary.compBest)) {
-        if (data && data.weight) {
-          const rpeStr = data.rpe ? ` <span class="rpe-val">@${data.rpe}</span>` : '';
-          liftRows.push(`<div class="session-lift-row">
-            <div class="session-lift-name">${escH(lift)}</div>
-            <div class="session-lift-set">${data.reps}×${data.weight}${unitLabel(true)}${rpeStr}</div>
-          </div>`);
-        }
-      }
-    }
-    const liftRowsHtml = liftRows.length > 0
-      ? `<div class="session-lift-rows">${liftRows.join('')}</div>`
-      : '';
-
-    // Stats
-    const vol = summary?.totalVolume ? fmtVolume(summary.totalVolume) : '—';
-    const volUnit = summary?.totalVolume && summary.totalVolume < 1000 ? ' '+getDisplayUnit() : '';
-    const sets = summary?.totalSets || '—';
-    const avgRpe = summary?.avgRpe != null ? summary.avgRpe : '—';
-
-    // Block complete: auto-trigger for multi-week first imports,
-    // explicit "Finish Block" for single-week-at-a-time users (once 3+ weeks loaded)
-    const allLoadedDone = nwInfo && nwInfo.allDone && (nwInfo.weekIdx === block.weeks.length - 1);
-    allLoadedWeeksDone = allLoadedDone;
-    const isExplicitlyComplete = !!block.completedAt;
-    // Stamp initial week count on first render so we know if user loaded 1 week or many
-    if (block._initialWeeks == null) { block._initialWeeks = block.weeks.length; saveBlocks(); }
-    const wasFullProgramImport = block._initialWeeks >= 3;
-    // Full program import (3+ weeks at once): auto-complete when all done
-    // Short imports (1-2 weeks): always require explicit "Finish Block"
-    const isAutoComplete = allLoadedDone && wasFullProgramImport;
-    if (isExplicitlyComplete || isAutoComplete) isBlockComplete = true;
-
-    // Finish-block prompt state: all loaded weeks done, not yet complete, 3+ weeks loaded
-    showFinishPrompt = allLoadedDone && !isBlockComplete && block.weeks.length >= 3;
-
-    if (showFinishPrompt) {
-      // ── Finish Block prompt as hero card ──
-      heroHtml = `<div class="session-hero finish-prompt-hero">
-        <div class="session-hero-bg"></div>
-        <div class="session-hero-inner">
-          <h2 class="session-hero-label"><div class="session-hero-label-dot" style="background:var(--gold)"></div>All Sessions Complete</h2>
-          <div class="session-hero-day">${escH(displayBlockName(block.name))}</div>
-          <div class="session-hero-meta">Done with this training cycle?</div>
-          <div class="finish-block-actions" style="margin-top:16px">
-            <div class="bc-btn bc-btn-primary" onclick="finishBlock()">Finish Block</div>
-            <div class="bc-btn bc-btn-secondary" onclick="openProgramModal()">Add More Weeks</div>
-          </div>
-        </div>
-      </div>`;
-    } else if (isBlockComplete) {
-      // ── Block Complete combined card (user explicitly finished the block) ──
-      const bs = getBlockSummary(block);
-      if (bs) {
-        const bVol = fmtVolume(bs.totalVolume);
-        let dateRange = '';
-        if (bs.firstDate && bs.lastDate) {
-          const fmt = d => { const [y,m,dd] = d.split('-'); return m + '/' + dd; };
-          dateRange = ' · ' + fmt(bs.firstDate) + ' – ' + fmt(bs.lastDate);
-        }
-        let bLiftRows = '';
-        for (const [group, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-          const d = bs.bestLifts[group];
-          if (!d) continue;
-          const dispW = Math.round(d.weight);
-          const e1rm = d.e1rm ? Math.round(d.e1rm) : null;
-          const rpeStr = d.rpe ? `<span class="bc-lift-rpe">@${d.rpe}</span>` : '';
-          bLiftRows += `<div class="bc-lift-row">
-            <div class="bc-lift-name">${label}</div>
-            <div class="bc-lift-set">${dispW}×${d.reps}${rpeStr}</div>
-            ${e1rm ? `<div class="bc-lift-e1rm"><div class="bc-e1rm-val">${e1rm}</div><div class="bc-e1rm-label">E1RM</div></div>` : ''}
-          </div>`;
-        }
-        heroHtml = `<div class="bc-card">
-          <div class="bc-bg"></div>
-          <div class="bc-inner">
-            <div class="bc-label"><div class="bc-dot"></div>✓ Block Complete<div class="bc-undo" onclick="event.stopPropagation();undoFinishBlock()" title="Undo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div></div>
-            <div class="bc-block-name">${escH(bs.blockName)}</div>
-            <div class="bc-meta">${bs.totalWeeks} weeks · ${bs.completedDays}/${bs.totalDays} sessions${escH(dateRange)}</div>
-            <div class="bc-compliance">${bs.compliancePct}% Compliance</div>
-            ${bLiftRows ? `<div class="bc-lifts">${bLiftRows}</div>` : ''}
-            <div class="bc-stats">
-              <div class="bc-stat"><div class="bc-stat-val">${bVol}</div><div class="bc-stat-label">Volume</div></div>
-              <div class="bc-stat"><div class="bc-stat-val">${bs.totalSets}</div><div class="bc-stat-label">Sets</div></div>
-              <div class="bc-stat"><div class="bc-stat-val">${bs.avgRpe || '—'}</div><div class="bc-stat-label">Avg RPE</div></div>
-            </div>
-            <div class="bc-actions">
-              <div class="bc-btn bc-btn-primary" onclick="exportHTMLReport('${block.id}')">View Report</div>
-              <div class="bc-btn bc-btn-secondary" onclick="setScreen('metrics')">Metrics</div>
-            </div>
-          </div>
-        </div>`;
-      }
-    } else {
-      // ── Last Session hero (normal or all-loaded-done) ──
-      heroHtml = `<div class="session-hero" onclick="goToWorkout(${weekIdx},${dayIdx})">
-        <div class="session-hero-bg"></div>
-        <div class="session-hero-inner">
-          <h2 class="session-hero-label"><div class="session-hero-label-dot"></div>✓ Last Session</h2>
-          <div class="session-hero-day">${escH(dayName)}</div>
-          <div class="session-hero-meta">${escH(meta)}</div>
-          ${liftRowsHtml}
-          <div class="session-stats">
-            <div class="session-stat"><div class="session-stat-val">${vol}<span class="unit">${volUnit}</span></div><div class="session-stat-label">Volume</div></div>
-            <div class="session-stat"><div class="session-stat-val">${sets}</div><div class="session-stat-label">Sets</div></div>
-            <div class="session-stat"><div class="session-stat-val">${avgRpe}</div><div class="session-stat-label">Avg RPE</div></div>
-          </div>
-        </div>
-      </div>`;
-    }
+    const result = _renderSessionHero(block, nwInfo, lastDone);
+    heroHtml = result.heroHtml;
+    isBlockComplete = result.isBlockComplete;
   } else {
-    // ── Fresh block, no workouts completed yet ──
-    const nw = nwInfo || { day: block.weeks[0]?.days[0], weekIdx: 0, dayIdx: 0 };
-    const firstDay = nw.day;
-    heroHtml = `<div class="home-hero" onclick="goToWorkout(${nw.weekIdx},${nw.dayIdx},true)">
-      <div class="home-hero-bg"></div>
-      <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
-      <div class="home-hero-inner">
-        <h2 class="home-hero-label">Ready to Start</h2>
-        <div class="home-hero-day">${escH(firstDay?.name || 'Day 1')}</div>
-        <div class="home-hero-meta">${escH(displayBlockName(block.name) || 'New Block')}</div>
-        <div class="home-hero-cta">
-          <span class="home-hero-cta-text">Begin First Workout</span>
-          <span class="home-hero-cta-arrow">→</span>
-        </div>
-      </div>
-    </div>`;
+    heroHtml = _renderFreshHero(block, nwInfo);
   }
 
-  // ── E5 Homepage Components ──
+  // E5/E6 program card
   const e5Html = renderE5Components(block, isBlockComplete);
 
-  // Build update banner placeholder
+  // Update banner
   const updateBannerHtml = document.getElementById('update-banner') ? '<div id="update-banner-slot"></div>' : '';
 
   content.innerHTML = `<div class="home-screen">
@@ -5794,7 +5783,6 @@ function renderHome() {
     ${e5Html}
   </div>`;
 
-  // Move update banner into the slot if it exists
   const updateSlot = document.getElementById('update-banner-slot');
   const updateBanner = document.getElementById('update-banner');
   if (updateSlot && updateBanner) {
