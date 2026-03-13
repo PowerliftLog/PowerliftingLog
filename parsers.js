@@ -4998,30 +4998,52 @@ function deduplicateExerciseNames(blocks) {
 }
 
 // ── SET PARSERS ───────────────────────────────────────────────────────────────
+// Session-level memoization caches — cleared via clearParseCache() on block/program change
+const _parseSetsCache = new Map();
+const _parseSimpleCache = new Map();
+const _parseRangeSetCache = new Map();
+const _parseBarePresCache = new Map();
+const _parseWarmupSetsCache = new Map();
+
+function clearParseCache() {
+  _parseSetsCache.clear();
+  _parseSimpleCache.clear();
+  _parseRangeSetCache.clear();
+  _parseBarePresCache.clear();
+  _parseWarmupSetsCache.clear();
+}
+
 function parseSets(pres){
   if(!pres) return [];
+  const cached = _parseSetsCache.get(pres);
+  if(cached !== undefined) return cached;
   // Bail out if prescription is a set range like "3-5x1 (405)" — let parseRangeSet handle it
-  if(/^\d+[\-–]\d+\s*x/i.test(pres.trim())) return [];
+  if(/^\d+[\-–]\d+\s*x/i.test(pres.trim())) { _parseSetsCache.set(pres,[]); return []; }
   const sets=[]; const pat=/(\d+x)?(\d+)\s*\(([^)]+)\)/g; let m;
   while((m=pat.exec(pres))!==null){
     const mult=m[1]?parseInt(m[1]):1;
     for(let i=0;i<mult;i++) sets.push({reps:parseInt(m[2]),weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim()))});
   }
+  _parseSetsCache.set(pres, sets);
   return sets;
 }
 
 function parseSimple(pres){
   if(!pres) return null;
+  if(_parseSimpleCache.has(pres)) return _parseSimpleCache.get(pres);
   const m=pres.match(/^(\d+)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
-  if(!m) return null;
-  if(pres.match(/^\d+[\-–]\d+x/i)) return null;
+  if(!m){ _parseSimpleCache.set(pres,null); return null; }
+  if(pres.match(/^\d+[\-–]\d+x/i)){ _parseSimpleCache.set(pres,null); return null; }
   const sets = parseInt(m[1]);
-  if(sets > 20) return null;
-  return{sets,reps:m[2].trim()};
+  if(sets > 20){ _parseSimpleCache.set(pres,null); return null; }
+  const result={sets,reps:m[2].trim()};
+  _parseSimpleCache.set(pres, result);
+  return result;
 }
 
 function parseRangeSet(pres){
   if(!pres) return null;
+  if(_parseRangeSetCache.has(pres)) return _parseRangeSetCache.get(pres);
   // Range with optional weight: "3-5x1 (405)" or "3-5x1"
   const mw=pres.match(/^(\d+)[\-–](\d+)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)\s*\(([^)]+)\)/i);
   if(mw){
@@ -5030,34 +5052,43 @@ function parseRangeSet(pres){
     const reps=mw[3].trim();
     const weight=mw[4].trim();
     const isRpe=isNaN(Number(weight));
-    return{sets,maxSets,reps,weight,isRpe};
+    const result={sets,maxSets,reps,weight,isRpe};
+    _parseRangeSetCache.set(pres, result);
+    return result;
   }
   const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(m){
     const sets=parseInt(m[1]);
     const maxSets=m[2]?parseInt(m[2]):null;
     const reps=m[3].trim();
-    return{sets,maxSets,reps};
+    const result={sets,maxSets,reps};
+    _parseRangeSetCache.set(pres, result);
+    return result;
   }
   const s=pres.match(/^(\d+)[\-–](\d+)\s*sets?/i);
-  if(s) return{sets:parseInt(s[1]),maxSets:parseInt(s[2]),reps:'open'};
+  if(s){ const result={sets:parseInt(s[1]),maxSets:parseInt(s[2]),reps:'open'}; _parseRangeSetCache.set(pres,result); return result; }
+  _parseRangeSetCache.set(pres, null);
   return null;
 }
 
 function parseBarePres(pres){
   if(!pres) return null;
+  if(_parseBarePresCache.has(pres)) return _parseBarePresCache.get(pres);
   const p=pres.trim();
-  if(/^\d+$/.test(p)) return{sets:1,reps:p};
-  if(/^\d+:\d{2}$/.test(p)) return{sets:1,reps:p};
+  let result = null;
+  if(/^\d+$/.test(p)) result={sets:1,reps:p};
+  else if(/^\d+:\d{2}$/.test(p)) result={sets:1,reps:p};
   // Rep range like "15-20" or "8-12"
-  if(/^\d+[\-–]\d+$/.test(p)) return{sets:1,reps:p};
-  return null;
+  else if(/^\d+[\-–]\d+$/.test(p)) result={sets:1,reps:p};
+  _parseBarePresCache.set(pres, result);
+  return result;
 }
 
 function parseWarmupSets(pres){
   if(!pres) return [];
+  if(_parseWarmupSetsCache.has(pres)) return _parseWarmupSetsCache.get(pres);
   const p=pres.trim();
-  if(!p.includes(',')) return [];
+  if(!p.includes(',')){ _parseWarmupSetsCache.set(pres,[]); return []; }
   const parts=p.split(',').map(s=>s.trim()).filter(Boolean);
   const sets=[];
   for(const part of parts){
@@ -5068,7 +5099,9 @@ function parseWarmupSets(pres){
       return [];
     }
   }
-  return sets.length>=2 ? sets : [];
+  const result = sets.length>=2 ? sets : [];
+  _parseWarmupSetsCache.set(pres, result);
+  return result;
 }
 
 // ── FORMAT H: STRONG / HEVY CSV IMPORT ────────────────────────────────────────

@@ -2471,8 +2471,8 @@ function _requestPersist() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.20.6';
-const APP_BUILD   = '3/13/26f';
+const APP_VERSION = 'v0.20.9';
+const APP_BUILD   = '3/13/26i';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2545,7 +2545,7 @@ function _announce(msg){const el=document.getElementById('sr-announce');if(el){e
 function _showWarningToast(msg,type){const t=document.createElement('div');t.className='save-error-toast'+(type==='success'?' toast-success':type==='warn'?' toast-warn':'');t.textContent=msg;document.body.appendChild(t);_announce(msg);setTimeout(()=>t.remove(),type==='success'?4000:8000);}
 function loadLogs(){ try{ if(_idbReady && _idbCache['liftlog_v4']!==undefined) return _idbCache['liftlog_v4']; return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>_showWarningToast('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
 let _saveLogsTimer=null;
-function _saveLogsImmediate(){ _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
+function _saveLogsImmediate(){ _metricsCache = null; _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
 
@@ -2625,7 +2625,7 @@ function rePopulateSets(blocks){
 }
 // Old top-level rePopulateSets call removed — now inside _bootApp()
 function loadBlocks(){ try{ if(_idbReady && _idbCache['liftlog_blocks']!==undefined) return _idbCache['liftlog_blocks']; const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>_showWarningToast('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
-function saveBlocks(){ _idbPut('liftlog_blocks', state.blocks); try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
+function saveBlocks(){ _metricsCache = null; _prCache = null; _idbPut('liftlog_blocks', state.blocks); try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
 function loadCustomLifts(){ try{ if(_idbReady && _idbCache['liftlog_custom']!==undefined) return _idbCache['liftlog_custom']; return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch{ return []; } }
 function saveCustomLifts(){ _idbPut('liftlog_custom', state.customLifts); try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); showSaveError(); } }
 function loadTrackedLifts(){ try{ if(_idbReady && _idbCache['liftlog_tracked']!==undefined) return _idbCache['liftlog_tracked']; return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch{ return {}; } }
@@ -2803,7 +2803,12 @@ function calc1rm(weight, reps, rpe){
 }
 
 // ── BUILD METRICS DATA ────────────────────────────────────────────────────────
+let _metricsCache = null;
+let _metricsCacheKey = null;
+
 function buildMetrics(drillBlockId){
+  const cacheKey = drillBlockId || 'all';
+  if (_metricsCache && _metricsCacheKey === cacheKey) return _metricsCache;
   const groups = { squat:{label:'Squat',variations:{}}, bench:{label:'Bench',variations:{}}, deadlift:{label:'Deadlift',variations:{}}, other:{label:'Other',variations:{}} };
   const blockIndex={};
   state.blocks.forEach((b,i)=>{ blockIndex[b.id]=i; });
@@ -2912,7 +2917,9 @@ function buildMetrics(drillBlockId){
         });
   }
 
-  return groups;
+  _metricsCacheKey = cacheKey;
+  _metricsCache = groups;
+  return _metricsCache;
 }
 
 function sessionOrder(label){
@@ -3902,6 +3909,7 @@ function saveTrackChanges(){
 
 
 function mergeBlocks(incoming){
+  if(typeof clearParseCache === 'function') clearParseCache();
   // Guard: prevent import from overwriting the active block mid-workout
   if(state.workoutActive){
     const activeId=state.activeBlock?.id;
@@ -6192,126 +6200,111 @@ function _displayExName(name) {
   return name.replace(/^circuit[\s\-:]+/i, '').trim();
 }
 
-function renderExCard(ex, groupKeys, block, week, day, exIdx) {
-  let h = '';
-  const key=lk(block.id,week.label,day.name,ex.name);
-  // Expand key includes position index to disambiguate duplicate exercise names in the same day
-  const expandKey = exIdx !== undefined ? key + '||' + exIdx : key;
-  const isCustomEx = ex.isCustom === true;
-  const log=state.logs[key]||{};
-  const isDone=log.done||false;
-  const isSkipped=log.skipped||false;
-  const pres=ex.prescription;
-  const sets=pres?parseSets(pres):[];
-  // Try comma-separated warmup notation: "135x8,225x6,275x3,315x1"
-  if(!sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) sets.push(...wu); }
-  const hasSets=sets.length>0;
-  const simple=parseSimple(pres);
-  const ranged=(!hasSets&&!simple)?parseRangeSet(pres):null;
-  const supersetRounds = ex.supersetGroup?.rounds || 1;
-  const bare=(!hasSets&&!simple&&!ranged)?parseBarePres(pres):null;
-  const bareWithRounds = bare ? {...bare, sets: supersetRounds} : null;
-  const inputMode=getExerciseInputMode(ex.name,pres);
+// ── EXERCISE CARD SUB-FUNCTIONS ───────────────────────────────────────────────
+const _calcIconSvg = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg>`;
 
-  const isComp=isCompLift(ex.name);
-  const group=classifyLift(ex.name);
-  const tracked=isTracked(ex.name);
-  const showTrackBtn=inputMode==='weighted';
+function _exCalcBtnHtml(weight, unit) {
+  if (!weight || weight <= 0) return '';
+  return `<button class="set-calc-btn" onclick="event.stopPropagation();_showPlatePopover(${weight},'${unit}')" aria-label="Plate calculator">${_calcIconSvg}</button>`;
+}
 
-  const trackBtn=showTrackBtn
-    ?`<button class="track-btn ${tracked?'tracked':''} ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="${tracked?'Remove from metrics':'Track in metrics'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>`
-    :'';
+function _exRepsButtonHtml(sk, sl, prescReps, label) {
+  if (/\d+\s*(sec|min|s|m)\b/i.test(String(prescReps))) label = String(prescReps);
+  const _hasActual = sl.actualReps && sl.actualReps !== String(prescReps);
+  const _display = _hasActual ? `<span style="color:var(--gold)">${sl.actualReps}</span> reps` : label;
+  return `<button class="set-prescribed-btn ${_hasActual?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${prescReps}')">${_display}<span class="set-prescribed-chevron">›</span></button>`;
+}
 
-  function presShortSummary(sets,simple,ranged,pres){
-    if(sets.length>0){
-      const firstWeight=sets[0].isRpe?`@ ${sets[0].weight}`:`@ ${sets[0].weight}${unitLabel(true)}`;
-      const allSame=sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight);
-      if(allSame) return `${sets.length}×${sets[0].reps} ${firstWeight}`;
-      return sets.map(s=>s.isRpe?`${s.reps}@${s.weight}`:`${s.reps}@${s.weight}${unitLabel(true)}`).join(' · ');
-    }
-    if(simple) return `${simple.sets}×${simple.reps}`;
-    if(ranged) {
-      const setsLabel = ranged.maxSets ? `${ranged.sets}–${ranged.maxSets}` : `${ranged.sets}`;
-      const weightLabel = ranged.weight ? (ranged.isRpe ? ` @ ${ranged.weight}` : ` @ ${ranged.weight}${unitLabel(true)}`) : '';
-      return `${setsLabel}×${ranged.reps}${weightLabel}`;
-    }
-    if(bareWithRounds) return `${bareWithRounds.sets>1?bareWithRounds.sets+'×':''}${bareWithRounds.reps}`;
-    if(pres) return pres;
-    return '';
-  }
-
-  // Ghost value: prescription weight > previous session weight > empty
-  function _ghostWeight(si) {
-    // 1) Try prescribed weight from parsed sets
-    if (hasSets && sets[si]) {
-      const w = sets[si].weight;
-      if (w && !sets[si].isRpe) return w;
-    }
-    // 1b) Try ranged prescription weight (e.g. "3-5x1 (405)")
-    if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
-    // 2) Try previous session
-    if (prevPerf && prevPerf.sets[si] && prevPerf.sets[si].actual && prevPerf.sets[si].actual !== '—') {
-      return prevPerf.sets[si].actual;
-    }
-    return '';
-  }
-
-  const _calcIconSvg = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg>`;
-  function calcBtnHtml(weight, unit) {
-    if (!weight || weight <= 0) return '';
-    return `<button class="set-calc-btn" onclick="event.stopPropagation();_showPlatePopover(${weight},'${unit}')" aria-label="Plate calculator">${_calcIconSvg}</button>`;
-  }
-
-  function setInputsHtml(sk,sl,placeholder,si,prescReps){
-    if(placeholder==='open') return `<div class="set-inputs-wrap">
+function _exSetInputsHtml(sk, sl, placeholder, si, prescReps, exName, inputMode, ghostVal) {
+  if (placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
                 <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
               </div>
             </div>`;
-    if(inputMode==='bw') return `<div class="set-inputs-wrap" style="max-width:120px">
+  if (inputMode==='bw') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
                 <input class="set-input" inputmode="numeric" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
               </div>
             </div>`;
-    if(inputMode==='cardio') return '';
-    if(inputMode==='bw-timed') return `<div class="set-inputs-wrap" style="max-width:120px">
+  if (inputMode==='cardio') return '';
+  if (inputMode==='bw-timed') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Time</div>
                 <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Time completed">
               </div>
             </div>`;
-    const ghost = (si !== undefined) ? _ghostWeight(si) : '';
-    const ghostStyle = ghost ? 'color:var(--text-muted)' : '';
-    const _isRepRange = prescReps && /^\d+[\-–]\d+$/.test(String(prescReps));
-    const _repsHtml = _isRepRange ? `
+  const ghostStyle = ghostVal ? 'color:var(--text-muted)' : '';
+  const _isRepRange = prescReps && /^\d+[\-–]\d+$/.test(String(prescReps));
+  const _repsHtml = _isRepRange ? `
               <div class="set-input-group reps-range-group"><div class="set-input-label">Reps</div>
                 <input class="set-input" inputmode="numeric" placeholder="${prescReps}" value="${sl.actualReps||''}" oninput="setActualReps('${esc(sk)}',this.value)" aria-label="Actual reps">
               </div>` : '';
-    return `<div class="set-inputs-wrap">
-              <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(ex.name)})</div>
-                <input class="set-input" inputmode="decimal" placeholder="${ghost}" style="${!sl.actual && ghost ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghost}" aria-label="Weight lifted">
+  return `<div class="set-inputs-wrap">
+              <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(exName)})</div>
+                <input class="set-input" inputmode="decimal" placeholder="${ghostVal}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghostVal}" aria-label="Weight lifted">
               </div>${_repsHtml}
               <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
                 <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
               </div>
             </div>`;
+}
+
+function _exPrevHintHtml(si, prevPerf) {
+  if (!prevPerf || !prevPerf.sets[si]) return '';
+  const ps = prevPerf.sets[si];
+  if (!ps.actual || ps.actual === '—') return '';
+  const repsStr = ps.actualReps ? ' × ' + ps.actualReps : '';
+  const hint = ps.actual + repsStr + (ps.rpe ? ' @' + ps.rpe : '');
+  return `<div class="set-prev-hint">Last: ${hint}</div>`;
+}
+
+// Returns the collapsed card header HTML (opens exercise-card div, does NOT close it)
+function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, isExpanded) {
+  const key = lk(block.id, week.label, day.name, ex.name);
+  const expandKey = exIdx !== undefined ? key + '||' + exIdx : key;
+  const isCustomEx = ex.isCustom === true;
+  const log = state.logs[key] || {};
+  const isDone = log.done || false;
+  const isSkipped = log.skipped || false;
+  const pres = ex.prescription;
+  const sets = pres ? parseSets(pres) : [];
+  if (!sets.length && pres) { const wu = parseWarmupSets(pres); if (wu.length) sets.push(...wu); }
+  const hasSets = sets.length > 0;
+  const simple = parseSimple(pres);
+  const ranged = (!hasSets && !simple) ? parseRangeSet(pres) : null;
+  const supersetRounds = ex.supersetGroup?.rounds || 1;
+  const bare = (!hasSets && !simple && !ranged) ? parseBarePres(pres) : null;
+  const bareWithRounds = bare ? {...bare, sets: supersetRounds} : null;
+  const inputMode = getExerciseInputMode(ex.name, pres);
+  const isComp = isCompLift(ex.name);
+  const tracked = isTracked(ex.name);
+  const showTrackBtn = inputMode === 'weighted';
+  const trackBtn = showTrackBtn
+    ? `<button class="track-btn ${tracked?'tracked':''} ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="${tracked?'Remove from metrics':'Track in metrics'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>`
+    : '';
+  const totalSetsCount = sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0);
+  const setsCompletedCount = [...Array(totalSetsCount)].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
+
+  function _presShortSummary() {
+    if (sets.length > 0) {
+      const firstWeight = sets[0].isRpe ? `@ ${sets[0].weight}` : `@ ${sets[0].weight}${unitLabel(true)}`;
+      const allSame = sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight);
+      if (allSame) return `${sets.length}×${sets[0].reps} ${firstWeight}`;
+      return sets.map(s=>s.isRpe?`${s.reps}@${s.weight}`:`${s.reps}@${s.weight}${unitLabel(true)}`).join(' · ');
+    }
+    if (simple) return `${simple.sets}×${simple.reps}`;
+    if (ranged) {
+      const setsLabel = ranged.maxSets ? `${ranged.sets}–${ranged.maxSets}` : `${ranged.sets}`;
+      const weightLabel = ranged.weight ? (ranged.isRpe ? ` @ ${ranged.weight}` : ` @ ${ranged.weight}${unitLabel(true)}`) : '';
+      return `${setsLabel}×${ranged.reps}${weightLabel}`;
+    }
+    if (bareWithRounds) return `${bareWithRounds.sets>1?bareWithRounds.sets+'×':''}${bareWithRounds.reps}`;
+    if (pres) return pres;
+    return '';
   }
+  const presSum = _presShortSummary();
 
-  // Tappable reps button — used across all set rendering paths (simple, ranged, bare)
-  function repsButtonHtml(sk, sl, prescReps, label) {
-    // Strip " reps" suffix for timed prescriptions (e.g. "45 sec reps" → "45 sec")
-    if (/\d+\s*(sec|min|s|m)\b/i.test(String(prescReps))) label = String(prescReps);
-    const _hasActual = sl.actualReps && sl.actualReps !== String(prescReps);
-    const _display = _hasActual ? `<span style="color:var(--gold)">${sl.actualReps}</span> reps` : label;
-    return `<button class="set-prescribed-btn ${_hasActual?'has-actual':''}" onclick="openRepsEditor('${esc(sk)}','${prescReps}')">${_display}<span class="set-prescribed-chevron">›</span></button>`;
-  }
-
-  const isExpanded=state.expandedEx.has(expandKey);
-  const presSum=presShortSummary(sets,simple,ranged,pres);
-  const setsCompletedCount=[...Array(sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0))].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
-  const totalSetsCount=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0);
-
-  h+=`<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
-  h+=`<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
+  let h = `<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
+  h += `<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
       <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${escH(_displayExName(ex.displayName||ex.name))}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
@@ -6323,217 +6316,234 @@ function renderExCard(ex, groupKeys, block, week, day, exIdx) {
     </div>
   </div>${!isExpanded?`<div class="ex-expand-handle" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')"><div class="ex-expand-pill"></div></div>`:''}`;
 
-  // Fetch prev week performance for both collapsed summary + expanded inline hints
-  const prevPerf=getPrevWeekPerformance(block.id,week.label,day.name,ex.name);
-
-  // Collapsed card: show top set (highest weight) from last week
-  if(!isExpanded && prevPerf && prevPerf.sets.length > 0){
+  if (!isExpanded && prevPerf && prevPerf.sets.length > 0) {
     const top = prevPerf.sets.reduce((best, s) => {
-      const w = parseFloat(s.actual) || 0;
-      const bw = parseFloat(best.actual) || 0;
+      const w = parseFloat(s.actual) || 0; const bw = parseFloat(best.actual) || 0;
       return w > bw ? s : best;
     }, prevPerf.sets[0]);
     const repsStr = top.actualReps ? ' × ' + top.actualReps : '';
     const summary = `${top.actual}${repsStr}${top.rpe ? ' @' + top.rpe : ''}`;
     const srcTag = prevPerf.source ? ` (${prevPerf.source})` : '';
-    h+=`<div class="collapsed-prev-summary">Last${srcTag}: ${summary}</div>`;
+    h += `<div class="collapsed-prev-summary">Last${srcTag}: ${summary}</div>`;
+  }
+  return h;
+}
+
+// Returns the expanded detail HTML: <div class="ex-detail">...[set rows][notes]</div>
+function _buildSetRows(ex, block, week, day, prevPerf) {
+  const key = lk(block.id, week.label, day.name, ex.name);
+  const isCustomEx = ex.isCustom === true;
+  const pres = ex.prescription;
+  const sets = pres ? parseSets(pres) : [];
+  if (!sets.length && pres) { const wu = parseWarmupSets(pres); if (wu.length) sets.push(...wu); }
+  const hasSets = sets.length > 0;
+  const simple = parseSimple(pres);
+  const ranged = (!hasSets && !simple) ? parseRangeSet(pres) : null;
+  const supersetRounds = ex.supersetGroup?.rounds || 1;
+  const bare = (!hasSets && !simple && !ranged) ? parseBarePres(pres) : null;
+  const bareWithRounds = bare ? {...bare, sets: supersetRounds} : null;
+  const inputMode = getExerciseInputMode(ex.name, pres);
+  const _isBarbell = _isBarbellExercise(ex.name);
+
+  function _ghostWeight(si) {
+    if (hasSets && sets[si]) { const w = sets[si].weight; if (w && !sets[si].isRpe) return w; }
+    if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
+    if (prevPerf && prevPerf.sets[si] && prevPerf.sets[si].actual && prevPerf.sets[si].actual !== '—') return prevPerf.sets[si].actual;
+    return '';
   }
 
-  if(isExpanded){
-    h+=`<div class="ex-detail">`;
-
-    const editingThis=state.editingExKey===key;
-    if(editingThis){
-      h+=`<div class="exercise-header" style="padding:10px 16px 4px">
+  let h = `<div class="ex-detail">`;
+  const editingThis = state.editingExKey === key;
+  if (editingThis) {
+    h += `<div class="exercise-header" style="padding:10px 16px 4px">
         <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${escH((ex.displayName||ex.name).trim())}" aria-label="Exercise name"
           onblur="saveExName('${esc(key)}','${esc(ex.name)}')"
           onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;render();}">
       </div>`;
-    } else {
-      const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
-      const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
-      const _unitToggleHtml = exUnitToggleHtml(ex.name);
-      if(isCustomEx && state.editingDay){
-        h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px 4px">
-          <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Exercise</button>
-          <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
-        </div>`;
-      }
-    }
-
-    function prevHintHtml(si){
-      if(!prevPerf||!prevPerf.sets[si]) return '';
-      const ps=prevPerf.sets[si];
-      if(!ps.actual || ps.actual === '—') return '';
-      const repsStr=ps.actualReps?' × '+ps.actualReps:'';
-      const hint=ps.actual+repsStr+(ps.rpe?' @'+ps.rpe:'');
-      return `<div class="set-prev-hint">Last: ${hint}</div>`;
-    }
-
-    // Build inline controls (Rest + LBS/KG) for prescription row
+  } else {
     const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
     const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
     const _unitToggleHtml = exUnitToggleHtml(ex.name);
-    const _inlineControls = (_restBtnHtml || _unitToggleHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}</div>` : '';
+    if (isCustomEx && state.editingDay) {
+      h += `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px 4px">
+          <button class="custom-ex-action-btn edit" onclick="openEditExerciseModal('${esc(key)}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Exercise</button>
+          <button class="custom-ex-action-btn delete" onclick="openDeleteExerciseSheet('${esc(key)}','${esc(ex.name)}',event)">✕ Delete</button>
+        </div>`;
+    }
+  }
 
-    if(hasSets){
-      h+=_inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
-      h+=`<div class="sets-grid">`;
-      const _isBarbell = _isBarbellExercise(ex.name);
-      sets.forEach((s,si)=>{
-        const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-        const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
-        const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
-        const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
-        const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
-        const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
-        h+=`<div class="set-row">
-          ${_isBarbell && _numWeight > 0 ? calcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button></div>
-          ${setInputsHtml(sk,sl,s.isRpe?getDisplayUnit():s.weight+unitLabel(true),si,s.reps)}
+  const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
+  const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
+  const _unitToggleHtml = exUnitToggleHtml(ex.name);
+  const _inlineControls = (_restBtnHtml || _unitToggleHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}</div>` : '';
+
+  if (hasSets) {
+    h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
+    h += `<div class="sets-grid">`;
+    sets.forEach((s, si) => {
+      const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
+      const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
+      const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
+      const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
+      const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
+      const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
+      h += `<div class="set-row">
+          ${_isBarbell && _numWeight > 0 ? _exCalcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button></div>
+          ${_exSetInputsHtml(sk, sl, s.isRpe?getDisplayUnit():s.weight+unitLabel(true), si, s.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${prevHintHtml(si)}`;
-      });
-
-      // Extra sets (+ Set button) — weighted style
-      const _extra=state.extraSets[key]||0;
-      if(_extra>0){
-        const _lastS=sets[sets.length-1]||{};
-        for(let _i=0;_i<_extra;_i++){
-          const _si=sets.length+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
-          const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
-          const _extraNw = !_lastS.isRpe && _lastS.weight && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
-          const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
-          const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
-          const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
-          const _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
-          h+=`<div class="set-row">
-            ${_isBarbell && _extraNw > 0 ? calcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
-            ${setInputsHtml(_sk,_sl,_lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()),_si,_lastS.reps)}
+        </div>${_exPrevHintHtml(si, prevPerf)}`;
+    });
+    const _extra = state.extraSets[key]||0;
+    if (_extra > 0) {
+      const _lastS = sets[sets.length-1]||{};
+      for (let _i = 0; _i < _extra; _i++) {
+        const _si = sets.length+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
+        const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
+        const _extraNw = !_lastS.isRpe && _lastS.weight && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
+        const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
+        const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
+        const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
+        const _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
+        h += `<div class="set-row">
+            ${_isBarbell && _extraNw > 0 ? _exCalcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
+            ${_exSetInputsHtml(_sk, _sl, _lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()), _si, _lastS.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
-        }
       }
-      h+=`</div>`;
-    } else if(pres&&simple){
-      h+=`<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
-      for(let si=0;si<simple.sets;si++){
-        const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-        h+=`<div class="set-row">
-          <div class="set-presc-col">${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}</div>
-          ${setInputsHtml(sk,sl,getDisplayUnit(),si,simple.reps)}
+    }
+    h += `</div>`;
+  } else if (pres && simple) {
+    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
+    for (let si = 0; si < simple.sets; si++) {
+      const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
+      h += `<div class="set-row">
+          <div class="set-presc-col">${_setNumHtml(sk, si)}${_exRepsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}</div>
+          ${_exSetInputsHtml(sk, sl, getDisplayUnit(), si, simple.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${prevHintHtml(si)}`;
-      }
-
-      // Extra sets — simple style
-      const _extra=state.extraSets[key]||0;
-      if(_extra>0){
-        for(let _i=0;_i<_extra;_i++){
-          const _si=simple.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
-          h+=`<div class="set-row">
-            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}</div>
-            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si,simple.reps)}
+        </div>${_exPrevHintHtml(si, prevPerf)}`;
+    }
+    const _extra = state.extraSets[key]||0;
+    if (_extra > 0) {
+      for (let _i = 0; _i < _extra; _i++) {
+        const _si = simple.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
+        h += `<div class="set-row">
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_exRepsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}</div>
+            ${_exSetInputsHtml(_sk, _sl, getDisplayUnit(), _si, simple.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
-        }
       }
-      h+=`</div>`;
-    } else if(pres&&ranged){
-      h+=_inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
-      h+=`<div class="sets-grid">`;
-      for(let si=0;si<ranged.sets;si++){
-        const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-        const isOpen=ranged.reps==='open';
-        h+=`<div class="set-row">
-          <div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':repsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}</div>
-          ${setInputsHtml(sk,sl,isOpen?'open':getDisplayUnit(),si,ranged.reps)}
+    }
+    h += `</div>`;
+  } else if (pres && ranged) {
+    h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
+    h += `<div class="sets-grid">`;
+    for (let si = 0; si < ranged.sets; si++) {
+      const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
+      const isOpen = ranged.reps === 'open';
+      h += `<div class="set-row">
+          <div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':_exRepsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}</div>
+          ${_exSetInputsHtml(sk, sl, isOpen?'open':getDisplayUnit(), si, ranged.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${prevHintHtml(si)}`;
-      }
-
-      // Extra sets — ranged style
-      const _extra=state.extraSets[key]||0;
-      if(_extra>0){
-        const _isOpen=ranged.reps==='open';
-        for(let _i=0;_i<_extra;_i++){
-          const _si=ranged.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
-          h+=`<div class="set-row">
-            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':repsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}</div>
-            ${setInputsHtml(_sk,_sl,_isOpen?'open':getDisplayUnit(),_si,ranged.reps)}
+        </div>${_exPrevHintHtml(si, prevPerf)}`;
+    }
+    const _extra = state.extraSets[key]||0;
+    if (_extra > 0) {
+      const _isOpen = ranged.reps === 'open';
+      for (let _i = 0; _i < _extra; _i++) {
+        const _si = ranged.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
+        h += `<div class="set-row">
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':_exRepsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}</div>
+            ${_exSetInputsHtml(_sk, _sl, _isOpen?'open':getDisplayUnit(), _si, ranged.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
-        }
       }
-      h+=`</div>`;
-    } else if(bareWithRounds){
-      h+=_inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
-      h+=`<div class="sets-grid">`;
-      for(let si=0;si<bareWithRounds.sets;si++){
-        const sk=key+`||s${si}`; const sl=state.logs[sk]||{};
-        h+=`<div class="set-row">
-          <div class="set-presc-col">${_setNumHtml(sk, si)}${repsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
-          ${setInputsHtml(sk,sl,getDisplayUnit(),si,bareWithRounds.reps)}
+    }
+    h += `</div>`;
+  } else if (bareWithRounds) {
+    h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
+    h += `<div class="sets-grid">`;
+    for (let si = 0; si < bareWithRounds.sets; si++) {
+      const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
+      h += `<div class="set-row">
+          <div class="set-presc-col">${_setNumHtml(sk, si)}${_exRepsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
+          ${_exSetInputsHtml(sk, sl, getDisplayUnit(), si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${prevHintHtml(si)}`;
-      }
-
-      // Extra sets — bare style
-      const _extra=state.extraSets[key]||0;
-      if(_extra>0){
-        for(let _i=0;_i<_extra;_i++){
-          const _si=bareWithRounds.sets+_i; const _sk=key+`||s${_si}`; const _sl=state.logs[_sk]||{};
-          h+=`<div class="set-row">
-            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${repsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
-            ${setInputsHtml(_sk,_sl,getDisplayUnit(),_si,bareWithRounds.reps)}
+        </div>${_exPrevHintHtml(si, prevPerf)}`;
+    }
+    const _extra = state.extraSets[key]||0;
+    if (_extra > 0) {
+      for (let _i = 0; _i < _extra; _i++) {
+        const _si = bareWithRounds.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
+        h += `<div class="set-row">
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_exRepsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
+            ${_exSetInputsHtml(_sk, _sl, getDisplayUnit(), _si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
-        }
       }
-      h+=`</div>`;
-    } else if(pres){
-      const sk=key+`||s0`; const sl=state.logs[sk]||{};
-      h+=`<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
-      h+=`<div class="set-row">
+    }
+    h += `</div>`;
+  } else if (pres) {
+    const sk = key+`||s0`; const sl = state.logs[sk]||{};
+    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
+    h += `<div class="set-row">
         <div class="set-presc-col">${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div></div>
-        ${setInputsHtml(sk,sl,getDisplayUnit(),0)}
+        ${_exSetInputsHtml(sk, sl, getDisplayUnit(), 0, undefined, ex.name, inputMode, '')}
         <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-      </div>${prevHintHtml(0)}`;
-      h+=`</div>`;
-    }
+      </div>${_exPrevHintHtml(0, prevPerf)}`;
+    h += `</div>`;
+  }
 
-    if(prevPerf){
-      const srcLabel=prevPerf.source
-        ?`vs ${escH(prevPerf.source)} — ${escH(prevPerf.label)}`
-        :`vs ${escH(prevPerf.label)}`;
-      h+=`<div class="prev-performance-src">${srcLabel}</div>`;
-    }
+  if (prevPerf) {
+    const srcLabel = prevPerf.source
+      ? `vs ${escH(prevPerf.source)} — ${escH(prevPerf.label)}`
+      : `vs ${escH(prevPerf.label)}`;
+    h += `<div class="prev-performance-src">${srcLabel}</div>`;
+  }
 
-    const allCoachNotes=[...(ex.coachNotes||[])];
-    if(ex.note&&!allCoachNotes.includes(ex.note)) allCoachNotes.unshift(ex.note);
-    if(allCoachNotes.length>0){
-      h+=`<div class="notes-section">
+  const allCoachNotes = [...(ex.coachNotes||[])];
+  if (ex.note && !allCoachNotes.includes(ex.note)) allCoachNotes.unshift(ex.note);
+  if (allCoachNotes.length > 0) {
+    h += `<div class="notes-section">
         <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Coach Notes</div>
         ${allCoachNotes.map(n=>`<div class="coach-note">${escH(n)}</div>`).join('')}
       </div>`;
-    }
+  }
 
-    const prevNote=getPrevWeekNote(block.id,week.label,day.name,ex.name);
-    const importedNote=log.lifterNote||null;
-    h+=`<div class="notes-section">
+  const log = state.logs[key]||{};
+  const prevNote = getPrevWeekNote(block.id, week.label, day.name, ex.name);
+  const importedNote = log.lifterNote || null;
+  h += `<div class="notes-section">
       <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> My Notes</div>
       ${importedNote?`<div class="coach-note" style="color:var(--text-sub);border-top:1px solid #222"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align:-1px;margin-right:4px;opacity:0.6"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>From sheet: ${escH(importedNote)}</div>`:''}
       ${prevNote?`<div class="lifter-prev-note">Last time: "${escH(prevNote)}"</div>`:''}
       <div class="notes-area"><textarea class="notes-input" placeholder="Add a note for next time..." oninput="setNote('${esc(key)}',this.value)" aria-label="Exercise notes">${escH(log.notes||'')}</textarea></div>
     </div>`;
-    h+=`</div>`; // ex-detail - close notes section
-    h+=`<div class="skip-row">
+  h += `</div>`; // ex-detail
+  return h;
+}
+
+// Returns skip/adjust row HTML (only shown when expanded)
+function _buildExCardFooter(ex, block, week, day) {
+  const key = lk(block.id, week.label, day.name, ex.name);
+  const isSkipped = (state.logs[key]||{}).skipped || false;
+  return `<div class="skip-row">
       <button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',-1)">− Set</button>
       <button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',1)">+ Set</button>
       <button class="skip-btn ${isSkipped?'active':''}" onclick="toggleSkip('${esc(key)}')">${isSkipped?'↩ Undo Skip':'Skip Exercise'}</button>
     </div>`;
-  }
+}
 
-  h+=`</div>`; // exercise-card
+function renderExCard(ex, groupKeys, block, week, day, exIdx) {
+  const key = lk(block.id, week.label, day.name, ex.name);
+  const expandKey = exIdx !== undefined ? key + '||' + exIdx : key;
+  const isExpanded = state.expandedEx.has(expandKey);
+  const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
+  let h = _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, isExpanded);
+  if (isExpanded) {
+    h += _buildSetRows(ex, block, week, day, prevPerf);
+    h += _buildExCardFooter(ex, block, week, day);
+  }
+  h += `</div>`; // exercise-card
   return h;
 }
 
@@ -7279,7 +7289,8 @@ function toggleSet(key){
   }
   state.logs[key]={...l, actual: actual, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
-  _prCache = null; // Invalidate PR cache on set toggle
+  // PR cache not invalidated here — toggleSet doesn't do inline PR detection.
+  // _checkInlinePR (called from setActual) handles targeted cache updates.
   if (nowDone && navigator.vibrate) navigator.vibrate(10);
   if (nowDone) _maybeAdvanceWeek();
   // Targeted DOM updates instead of full render() — prevents scroll jump
@@ -7335,16 +7346,19 @@ function _shouldFireRestTimer(setKey) {
 // e1RM-based PR lookup: liftGroup (squat/bench/deadlift) → best e1RM across ALL blocks + tested 1RM
 let _prCache = null;
 
-function _buildPRCache() {
-  _prCache = { squat: 0, bench: 0, deadlift: 0 };
+// Targeted PR cache update — only bumps up, never down. O(1) per call.
+function _updatePRCacheEntry(group, newE1RM) {
+  if (!_prCache || !group || group === 'other') return;
+  if (newE1RM > (_prCache[group] || 0)) _prCache[group] = newE1RM;
+}
 
-  // Seed with tested 1RM / training max from athlete profile
+// Extract shared helper: scan all logs for best comp-lift e1RM, seeded from athlete profile.
+function _getCompLiftMaxE1RMs() {
+  const out = { squat: 0, bench: 0, deadlift: 0 };
   const ath = loadAthlete() || {};
-  if (ath.tested1rm_squat)   _prCache.squat   = Number(ath.tested1rm_squat);
-  if (ath.tested1rm_bench)   _prCache.bench   = Number(ath.tested1rm_bench);
-  if (ath.tested1rm_deadlift) _prCache.deadlift = Number(ath.tested1rm_deadlift);
-
-  // Scan ALL logs across ALL blocks for best e1RM per comp lift group
+  if (ath.tested1rm_squat)    out.squat    = Number(ath.tested1rm_squat);
+  if (ath.tested1rm_bench)    out.bench    = Number(ath.tested1rm_bench);
+  if (ath.tested1rm_deadlift) out.deadlift = Number(ath.tested1rm_deadlift);
   for (const [key, val] of Object.entries(state.logs)) {
     if (!val.done || !val.actual) continue;
     const parts = key.split('||');
@@ -7355,16 +7369,18 @@ function _buildPRCache() {
     if (!group || group === 'other') continue;
     const rawWeight = parseFloat(val.actual);
     if (!rawWeight || rawWeight <= 0) continue;
-    // Convert to display unit so e1RM values are comparable across unit overrides
     const weight = convertWeight(rawWeight, getEntryUnit(val), getDisplayUnit());
     const reps = val.actualReps ? parseInt(val.actualReps) : _getPrescribedRepsForKey(parts[0], parts[1], parts[2], parts[3], parts[4]);
     if (!reps || reps <= 0) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
-    if (result && result.value > _prCache[group]) {
-      _prCache[group] = result.value;
-    }
+    if (result && result.value > out[group]) out[group] = result.value;
   }
+  return out;
+}
+
+function _buildPRCache() {
+  _prCache = _getCompLiftMaxE1RMs();
 }
 
 function _getPrescribedRepsForKey(blockId, weekLabel, dayName, exName, setLabel) {
@@ -7463,7 +7479,7 @@ function setActual(key,v){
   state.logs[key].done=shouldCheck;
   if(shouldCheck && !existing.ts) state.logs[key].ts = Date.now();
   saveLogs();
-  _prCache = null; // Invalidate PR cache on weight change
+  // _checkInlinePR below handles targeted PR cache update — no full invalidation needed.
   if (shouldCheck) _maybeAdvanceWeek();
 
   // Start rest timer BEFORE DOM calls (which could throw and prevent timer)
@@ -7509,7 +7525,7 @@ function setActualReps(key,v){
   state.logs[key] = {...sl, actualReps: v || undefined};
   if (!v) delete state.logs[key].actualReps;
   saveLogs();
-  _prCache = null;
+  // _checkInlinePR below handles targeted PR cache update — no full invalidation needed.
   // Re-check PR with updated reps
   const exName = _resolveExNameFromKey(key);
   const rawW = parseFloat(sl.actual);
@@ -9461,6 +9477,74 @@ function getPrevWeekPerformance(blockId,weekLabel,dayName,exName){
   return null;
 }
 
+// Resolve exercise object + context from an expand key (blockId||weekLabel||dayName||exName[||exIdx])
+function _resolveExFromExpandKey(ek) {
+  const parts = ek.split('||');
+  if (parts.length < 4) return null;
+  const [blockId, weekLabel, dayName, exName] = parts;
+  const exIdx = parts.length >= 5 && /^\d+$/.test(parts[4]) ? parseInt(parts[4]) : undefined;
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return null;
+  const week = block.weeks.find(w => w.label === weekLabel);
+  if (!week) return null;
+  const day = week.days.find(d => d.name === dayName);
+  if (!day) return null;
+  const ex = day.exercises.find(e => e.name === exName);
+  if (!ex) return null;
+  return { ex, block, week, day, exIdx };
+}
+
+function _applyTargetedExpand(ek, nowExpanded) {
+  const card = document.querySelector(`.exercise-card[data-expand-key="${CSS.escape(ek)}"]`);
+  if (!card) return false;
+  const ctx = _resolveExFromExpandKey(ek);
+  if (!ctx) return false;
+  const { ex, block, week, day } = ctx;
+
+  if (nowExpanded) {
+    // Remove expand-handle if present
+    const handle = card.querySelector('.ex-expand-handle');
+    if (handle) handle.remove();
+    // Remove old collapsed prev summary
+    const collapsedPrev = card.querySelector('.collapsed-prev-summary');
+    if (collapsedPrev) collapsedPrev.remove();
+    // Insert expanded content
+    const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
+    card.insertAdjacentHTML('beforeend', _buildSetRows(ex, block, week, day, prevPerf) + _buildExCardFooter(ex, block, week, day));
+    card.classList.remove('completed', 'skipped');
+    const log = state.logs[lk(block.id, week.label, day.name, ex.name)]||{};
+    if (log.done) card.classList.add('completed');
+    else if (log.skipped) card.classList.add('skipped');
+  } else {
+    // Remove expanded content (ex-detail + skip-row)
+    const detail = card.querySelector('.ex-detail');
+    if (detail) detail.remove();
+    const skipRow = card.querySelector('.skip-row');
+    if (skipRow) skipRow.remove();
+    // Re-add expand handle
+    const summary = card.querySelector('.ex-summary');
+    if (summary) {
+      const exKey = ek.replace(/\|\|\d+$/, '');
+      const groupKeys = card.dataset.groupKeys ? card.dataset.groupKeys.split(':::') : null;
+      const groupEncoded = groupKeys ? esc(groupKeys.join(':::')) : '';
+      summary.insertAdjacentHTML('afterend', `<div class="ex-expand-handle" onclick="toggleExpand('${esc(ek)}','${groupEncoded}')"><div class="ex-expand-pill"></div></div>`);
+    }
+    // Re-add collapsed prev summary
+    const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
+    if (prevPerf && prevPerf.sets.length > 0) {
+      const top = prevPerf.sets.reduce((best, s) => {
+        const w = parseFloat(s.actual)||0; const bw = parseFloat(best.actual)||0;
+        return w > bw ? s : best;
+      }, prevPerf.sets[0]);
+      const repsStr = top.actualReps ? ' × ' + top.actualReps : '';
+      const summary2 = `${top.actual}${repsStr}${top.rpe ? ' @' + top.rpe : ''}`;
+      const srcTag = prevPerf.source ? ` (${prevPerf.source})` : '';
+      card.insertAdjacentHTML('beforeend', `<div class="collapsed-prev-summary">Last${srcTag}: ${summary2}</div>`);
+    }
+  }
+  return true;
+}
+
 function toggleExpand(key, groupEncoded){
   const groupKeys=groupEncoded?groupEncoded.split(':::'):null;
   if(groupKeys&&groupKeys.length>1){
@@ -9471,9 +9555,17 @@ function toggleExpand(key, groupEncoded){
     if(state.expandedEx.has(key)){ state.expandedEx.delete(key); }
     else { state.expandedEx.add(key); }
   }
-  render();
-  // Always anchor back to the card that was tapped — handles both open and close,
-  // and correctly accounts for other cards collapsing above/below this one.
+
+  // Try targeted DOM update — fall back to full render() if card not found
+  const keysToUpdate = (groupKeys&&groupKeys.length>1) ? groupKeys : [key];
+  let allTargeted = true;
+  for (const ek of keysToUpdate) {
+    const nowExpanded = state.expandedEx.has(ek);
+    if (!_applyTargetedExpand(ek, nowExpanded)) { allTargeted = false; break; }
+  }
+  if (!allTargeted) render();
+
+  // Always anchor back to the card that was tapped
   requestAnimationFrame(()=>{
     const card=document.querySelector(`.exercise-card[data-expand-key="${CSS.escape(key)}"]`);
     if(card) card.scrollIntoView({block:'nearest',behavior:'instant'});
@@ -10298,7 +10390,60 @@ function _isAmrapPrescription(pres) {
   return false;
 }
 
-function _buildHTMLReport(blockId) {
+// ── Report sub-functions (pure trend classifier — no closure deps) ────────────
+function _rpt_classifyTrend(cl) {
+  if (!cl || !cl.e1rmByWeek) return { text: 'Insufficient data', color: 'gold' };
+  const vals = cl.e1rmByWeek.filter(v => v !== null);
+  if (vals.length < 2) return { text: 'Insufficient data', color: 'gold' };
+  const rpeVals = cl.rpeArr ? cl.rpeArr.filter(v => v !== null) : [];
+  const hasRpe = rpeVals.length >= 2;
+  const mid = Math.floor(vals.length / 2);
+  const firstHalf = vals.slice(0, mid);
+  const secondHalf = vals.slice(mid);
+  const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+  const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+  const e1rmDelta = avgSecond - avgFirst;
+  const e1rmPct = avgFirst > 0 ? (e1rmDelta / avgFirst) * 100 : 0;
+  let regressionWeeks = 0;
+  for (let i = 1; i < vals.length; i++) {
+    if (vals[i] < vals[i - 1] * 0.98) regressionWeeks++;
+  }
+  let rpeTrend = 'stable';
+  if (hasRpe) {
+    const rpeMid = Math.floor(rpeVals.length / 2);
+    const rpeFirst = rpeVals.slice(0, rpeMid);
+    const rpeSecond = rpeVals.slice(rpeMid);
+    const rpeAvgFirst = rpeFirst.reduce((a, b) => a + b, 0) / rpeFirst.length;
+    const rpeAvgSecond = rpeSecond.reduce((a, b) => a + b, 0) / rpeSecond.length;
+    const rpeDelta = rpeAvgSecond - rpeAvgFirst;
+    if (rpeDelta > 0.4) rpeTrend = 'rising';
+    else if (rpeDelta < -0.4) rpeTrend = 'falling';
+  }
+  const e1rmDeltaStr = (e1rmDelta >= 0 ? '+' : '') + Math.round(e1rmDelta);
+  const rpeDeltaStr = hasRpe ? ((rpeVals[rpeVals.length-1] - rpeVals[0]) >= 0 ? '+' : '') + (rpeVals[rpeVals.length-1] - rpeVals[0]).toFixed(1) : '';
+  const rpeNote = hasRpe && rpeTrend === 'rising' ? ` \u00b7 RPE ${rpeDeltaStr}` : hasRpe && rpeTrend === 'falling' ? ` \u00b7 RPE easing` : '';
+  if (e1rmPct > 2 && rpeTrend !== 'rising' && regressionWeeks === 0) {
+    return { text: `Steady climb (${e1rmDeltaStr}) \u2014 no dips${rpeNote}`, color: 'green' };
+  } else if (e1rmPct > 2 && rpeTrend !== 'rising') {
+    return { text: `Strong uptrend (${e1rmDeltaStr})${rpeNote}`, color: 'green' };
+  } else if (e1rmPct > 1 && rpeTrend === 'stable') {
+    return { text: `Gradual climb (${e1rmDeltaStr}) \u2014 consistent RPE`, color: 'green' };
+  } else if (e1rmPct > 1 && rpeTrend === 'rising') {
+    return { text: `Grinding higher (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
+  } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'stable') {
+    return { text: `Maintained (${e1rmDeltaStr}) \u2014 stable effort`, color: 'gold' };
+  } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'rising') {
+    return { text: `Stalling (${e1rmDeltaStr})${rpeNote}`, color: 'amber' };
+  } else if (e1rmPct < -1 && rpeTrend === 'rising') {
+    return { text: `Regression (${e1rmDeltaStr})${rpeNote}`, color: 'red' };
+  } else if (e1rmPct < -1) {
+    return { text: `Declining (${e1rmDeltaStr})${rpeNote}`, color: 'red' };
+  }
+  return { text: `Mixed signals (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
+}
+
+// ── Data extraction: all computation, zero HTML ───────────────────────────────
+function _getReportData(blockId) {
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return null;
   const weeks = block.weeks || [];
@@ -10513,69 +10658,8 @@ function _buildHTMLReport(blockId) {
     deadlift: getBestCompVariation('deadlift')
   };
 
-  // ── Per-lift trend classification ────────────────────────────────────────
-  // Analyzes e1RM direction + RPE direction → plain language + color
-  function classifyTrend(cl) {
-    if (!cl || !cl.e1rmByWeek) return { text: 'Insufficient data', color: 'gold' };
-    const vals = cl.e1rmByWeek.filter(v => v !== null);
-    if (vals.length < 2) return { text: 'Insufficient data', color: 'gold' };
-
-    const rpeVals = cl.rpeArr ? cl.rpeArr.filter(v => v !== null) : [];
-    const hasRpe = rpeVals.length >= 2;
-
-    // e1RM direction: compare first half avg vs second half avg
-    const mid = Math.floor(vals.length / 2);
-    const firstHalf = vals.slice(0, mid);
-    const secondHalf = vals.slice(mid);
-    const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-    const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-    const e1rmDelta = avgSecond - avgFirst;
-    const e1rmPct = avgFirst > 0 ? (e1rmDelta / avgFirst) * 100 : 0;
-
-    // Check for regression weeks (e1RM drop > 2% from previous week)
-    let regressionWeeks = 0;
-    for (let i = 1; i < vals.length; i++) {
-      if (vals[i] < vals[i - 1] * 0.98) regressionWeeks++;
-    }
-
-    // RPE direction
-    let rpeTrend = 'stable';
-    if (hasRpe) {
-      const rpeMid = Math.floor(rpeVals.length / 2);
-      const rpeFirst = rpeVals.slice(0, rpeMid);
-      const rpeSecond = rpeVals.slice(rpeMid);
-      const rpeAvgFirst = rpeFirst.reduce((a, b) => a + b, 0) / rpeFirst.length;
-      const rpeAvgSecond = rpeSecond.reduce((a, b) => a + b, 0) / rpeSecond.length;
-      const rpeDelta = rpeAvgSecond - rpeAvgFirst;
-      if (rpeDelta > 0.4) rpeTrend = 'rising';
-      else if (rpeDelta < -0.4) rpeTrend = 'falling';
-    }
-
-    // Build specific delta strings for per-lift differentiation
-    const e1rmDeltaStr = (e1rmDelta >= 0 ? '+' : '') + Math.round(e1rmDelta);
-    const rpeDeltaStr = hasRpe ? ((rpeVals[rpeVals.length-1] - rpeVals[0]) >= 0 ? '+' : '') + (rpeVals[rpeVals.length-1] - rpeVals[0]).toFixed(1) : '';
-    const rpeNote = hasRpe && rpeTrend === 'rising' ? ` \u00b7 RPE ${rpeDeltaStr}` : hasRpe && rpeTrend === 'falling' ? ` \u00b7 RPE easing` : '';
-
-    // Classification matrix — each branch includes specific numbers to differentiate lifts
-    if (e1rmPct > 2 && rpeTrend !== 'rising' && regressionWeeks === 0) {
-      return { text: `Steady climb (${e1rmDeltaStr}) \u2014 no dips${rpeNote}`, color: 'green' };
-    } else if (e1rmPct > 2 && rpeTrend !== 'rising') {
-      return { text: `Strong uptrend (${e1rmDeltaStr})${rpeNote}`, color: 'green' };
-    } else if (e1rmPct > 1 && rpeTrend === 'stable') {
-      return { text: `Gradual climb (${e1rmDeltaStr}) \u2014 consistent RPE`, color: 'green' };
-    } else if (e1rmPct > 1 && rpeTrend === 'rising') {
-      return { text: `Grinding higher (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
-    } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'stable') {
-      return { text: `Maintained (${e1rmDeltaStr}) \u2014 stable effort`, color: 'gold' };
-    } else if (Math.abs(e1rmPct) <= 1 && rpeTrend === 'rising') {
-      return { text: `Stalling (${e1rmDeltaStr})${rpeNote}`, color: 'amber' };
-    } else if (e1rmPct < -1 && rpeTrend === 'rising') {
-      return { text: `Regression (${e1rmDeltaStr})${rpeNote}`, color: 'red' };
-    } else if (e1rmPct < -1) {
-      return { text: `Declining (${e1rmDeltaStr})${rpeNote}`, color: 'red' };
-    }
-    return { text: `Mixed signals (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
-  }
+  // ── Week labels (needed by generateFlags below) ──────────────────────────
+  const weekLabels = weeks.map(w => w.label);
 
   // ── Per-lift flags generation ────────────────────────────────────────────
   function generateFlags(groupKey, cl) {
@@ -10764,8 +10848,6 @@ function _buildHTMLReport(blockId) {
     return result;
   }
 
-  const weekLabels = weeks.map(w => w.label);
-
   // Find peak week
   let peakWeekLabel = null, peakWeekTotal = 0;
   for (const wl of weekLabels) {
@@ -10776,52 +10858,12 @@ function _buildHTMLReport(blockId) {
     if (total > peakWeekTotal) { peakWeekTotal = total; peakWeekLabel = wl; }
   }
 
-  // ── BUILD HTML ───────────────────────────────────────────────────────────
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const athleteName = block.athleteName || athlete?.name || '';
-
-  // ── Comp lift cards HTML (with sparklines + trend) ───────────────────────
-  const liftCardColors = { squat: _tc('--gold','#C9A84C'), bench: '#7B9FD4', deadlift: _tc('--green','#7EC89A') };
-  const liftCardLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
-  const sparkCanvasIds = {};
-  let compCardsHtml = '';
-  for (const gk of ['squat', 'bench', 'deadlift']) {
-    const cl = compLifts[gk];
-    const color = liftCardColors[gk];
-    const label = liftCardLabels[gk];
-    if (!cl) {
-      compCardsHtml += `<div class="comp-card"><div class="comp-card-accent" style="background:${color}"></div><div class="comp-card-label">${label}</div><div class="comp-card-val">\u2014</div></div>`;
-      continue;
-    }
-    const deltaSign = cl.delta > 0 ? '+' : cl.delta < 0 ? '' : '';
-    const deltaColor = cl.delta > 0 ? _tc('--green','#4ade80') : cl.delta < 0 ? _tc('--red','#E22C2C') : '#555';
-    const deltaArrow = cl.delta > 0 ? '\u2191' : cl.delta < 0 ? '\u2193' : '\u2192';
-    const sparkId = 'spark-' + gk;
-    sparkCanvasIds[gk] = sparkId;
-    const trend = classifyTrend(cl);
-    compCardsHtml += `<div class="comp-card">
-      <div class="comp-card-accent" style="background:${color}"></div>
-      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:10px;color:#999;font-weight:400;margin-left:4px">(${escH(cl.name)})</span>` : ''}</div>
-      <div class="comp-card-e1rm-label">Peak e1RM</div>
-      <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
-      <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
-      <div class="comp-card-sparkline"><canvas id="${sparkId}" aria-label="${label} sparkline trend"></canvas></div>
-      <div class="comp-card-divider"></div>
-      <div class="comp-card-best-label">Best Set</div>
-      <div class="comp-card-best"><span class="comp-card-best-main">${cl.bestWeight}\u00d7${cl.bestReps}</span>${cl.bestRpe ? `<span class="comp-card-best-rpe"> @${cl.bestRpe}</span>` : ''}</div>
-      <div class="comp-card-trend">
-        <div class="comp-card-trend-dot ${trend.color}"></div>
-        <div class="comp-card-trend-text">${trend.text}</div>
-      </div>
-    </div>`;
-  }
-
-  // ── Flags HTML (per-lift + general) ─────────────────────────────────────
-  const allFlags = {};
-  for (const gk of ['squat', 'bench', 'deadlift']) {
-    allFlags[gk] = generateFlags(gk, compLifts[gk]);
-  }
-  // General flags
+  // ── Per-lift flags ────────────────────────────────────────────────────────
+  const allFlags = {
+    squat: generateFlags('squat', compLifts.squat),
+    bench: generateFlags('bench', compLifts.bench),
+    deadlift: generateFlags('deadlift', compLifts.deadlift)
+  };
   const generalFlags = [];
   if (compliancePct >= 85) {
     generalFlags.push({ color: 'green', text: `${compliancePct}% compliance \u2014 ${completedDays} of ${totalDays} prescribed sessions completed` });
@@ -10830,6 +10872,134 @@ function _buildHTMLReport(blockId) {
   } else if (totalDays > 0) {
     generalFlags.push({ color: 'red', text: `${compliancePct}% compliance \u2014 only ${completedDays} of ${totalDays} sessions completed` });
   }
+
+  // ── Volume + RPE chart data ──────────────────────────────────────────────
+  const volChartData = {
+    squat: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.squat || 0) / 1000)),
+    bench: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.bench || 0) / 1000)),
+    deadlift: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.deadlift || 0) / 1000)),
+    other: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.other || 0) / 1000))
+  };
+  const weeklyAvgRpe = weekLabels.map(wl => {
+    const d = rpeByWeek[wl];
+    return d && d.count > 0 ? +(d.total / d.count).toFixed(1) : null;
+  });
+
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const athleteName = block.athleteName || athlete?.name || '';
+
+  return {
+    block, weeks, blockLogs, athlete,
+    compLiftName, families, amrapData,
+    totalDays, completedDays, compliancePct, totalSets, totalVolume,
+    volumeByFamily, volumeByWeekFamily, totalRpe, rpeCount, avgRpe, rpeByWeek,
+    compLifts, allFlags, generalFlags,
+    estTotal, dotsScore, wilksScore,
+    weekLabels, peakWeekLabel,
+    volChartData, weeklyAvgRpe,
+    dateStr, athleteName
+  };
+}
+
+// ── Weekly top sets table HTML ────────────────────────────────────────────────
+function _buildWeeklyTable(data) {
+  const { families, compLiftName, amrapData, weekLabels, peakWeekLabel, block, weeks, compLifts } = data;
+
+  function getWeeklyTopSet(groupKey, weekLabel) {
+    const exercises = families[groupKey];
+    let bestComp = null, bestVar = null;
+    for (const [exName, weekData] of Object.entries(exercises)) {
+      const d = weekData[weekLabel];
+      if (!d) continue;
+      const isComp = exName === compLiftName[groupKey];
+      if (isComp && (!bestComp || d.e1rm > bestComp.e1rm)) {
+        bestComp = { ...d, exName, isVariation: false };
+      } else if (!isComp && (!bestVar || d.e1rm > bestVar.e1rm)) {
+        bestVar = { ...d, exName, isVariation: true };
+      }
+    }
+    const result = bestComp || bestVar;
+    if (result && amrapData[groupKey]?.[weekLabel]) {
+      result.isAmrap = true;
+      result.amrapReps = amrapData[groupKey][weekLabel].reps;
+    }
+    return result;
+  }
+
+  // Build week date labels from block.startDate or dateRange fallback
+  const weekDateLabels = {};
+  let _blockStart = block.startDate;
+  if (!_blockStart && block.dateRange) {
+    const drMatch = block.dateRange.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (drMatch) {
+      let yr = parseInt(drMatch[3]);
+      if (yr < 100) yr += 2000;
+      _blockStart = yr + '-' + drMatch[1].padStart(2, '0') + '-' + drMatch[2].padStart(2, '0');
+    }
+  }
+  if (_blockStart) {
+    const sd = new Date(_blockStart + 'T00:00:00');
+    if (!isNaN(sd.getTime())) {
+      weeks.forEach((w, i) => {
+        const wd = new Date(sd.getTime() + i * 7 * 86400000);
+        weekDateLabels[w.label] = (wd.getMonth() + 1) + '/' + wd.getDate();
+      });
+    }
+  }
+
+  const prevWeekE1rm = {};
+  let weeklyTableHtml = '';
+  for (let wi = 0; wi < weekLabels.length; wi++) {
+    const wl = weekLabels[wi];
+    const isPeak = wl === peakWeekLabel;
+    const rowClass = isPeak ? ' class="peak-week"' : '';
+    const peakBadge = isPeak ? `<span class="peak-badge">PEAK</span>` : '';
+    const dateTag = weekDateLabels[wl] ? `<span class="week-date">${weekDateLabels[wl]}</span>` : '';
+    let cells = `<td class="week-col">${wl}${dateTag}${peakBadge}</td>`;
+    for (const gk of ['squat', 'bench', 'deadlift']) {
+      const ts = getWeeklyTopSet(gk, wl);
+      if (ts) {
+        const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
+        const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size:9px;font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
+        const varLabel = ts.isVariation ? `<div style="font-size:9px;color:#999;margin-top:1px">${escH(ts.exName)}</div>` : '';
+        const e1rmTag = `<div class="weekly-e1rm">e1RM ${Math.round(ts.e1rm)}</div>`;
+        let deltaTag = '';
+        const prev = prevWeekE1rm[gk];
+        if (prev && ts.e1rm) {
+          const diff = Math.round(ts.e1rm - prev);
+          if (diff !== 0) {
+            const arrow = diff > 0 ? '\u2191' : '\u2193';
+            const color = diff > 0 ? _tc('--green','#4ade80') : _tc('--red','#E22C2C');
+            deltaTag = `<div class="weekly-delta" style="color:${color}">${arrow}${Math.abs(diff)}</div>`;
+          }
+        }
+        prevWeekE1rm[gk] = ts.e1rm;
+        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmTag}${deltaTag}${varLabel}</td>`;
+      } else {
+        cells += '<td class="no-data">\u2014</td>';
+      }
+    }
+    weeklyTableHtml += `<tr${rowClass}>${cells}</tr>`;
+  }
+  if (compLifts.squat || compLifts.bench || compLifts.deadlift) {
+    const fmtBest = (cl) => {
+      if (!cl || !cl.bestWeight) return '\u2014';
+      let s = `${cl.bestWeight}\u00d7${cl.bestReps}`;
+      if (cl.bestRpe) s += ` <span class="rpe-dim">@${cl.bestRpe}</span>`;
+      return s;
+    };
+    weeklyTableHtml += `<tr class="weekly-total-row"><td class="week-col" style="font-weight:700;color:var(--gold)">Best</td>`;
+    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.squat)}</td>`;
+    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.bench)}</td>`;
+    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.deadlift)}</td></tr>`;
+  }
+  return weeklyTableHtml;
+}
+
+// ── Flags & insights section HTML ─────────────────────────────────────────────
+function _buildInsightsSection(data) {
+  const { allFlags, generalFlags } = data;
+  const liftCardColors = { squat: _tc('--gold','#C9A84C'), bench: '#7B9FD4', deadlift: _tc('--green','#7EC89A') };
 
   const hasAnyFlags = Object.values(allFlags).some(f => f.length > 0) || generalFlags.length > 0;
   let flagsHtml = '';
@@ -10854,92 +11024,55 @@ function _buildHTMLReport(blockId) {
     }
     flagsHtml += '</div>';
   }
+  return flagsHtml;
+}
 
-  // ── Weekly top sets table HTML ───────────────────────────────────────────
-  // Build week date labels from block.startDate or dateRange fallback
-  const weekDateLabels = {};
-  let _blockStart = block.startDate;
-  if (!_blockStart && block.dateRange) {
-    // Parse start date from dateRange like "2/9/2026-3/6/26" or "2/9/26 – 3/6/26"
-    const drMatch = block.dateRange.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-    if (drMatch) {
-      let yr = parseInt(drMatch[3]);
-      if (yr < 100) yr += 2000;
-      _blockStart = yr + '-' + drMatch[1].padStart(2, '0') + '-' + drMatch[2].padStart(2, '0');
-    }
-  }
-  if (_blockStart) {
-    const sd = new Date(_blockStart + 'T00:00:00');
-    if (!isNaN(sd.getTime())) {
-      weeks.forEach((w, i) => {
-        const wd = new Date(sd.getTime() + i * 7 * 86400000);
-        weekDateLabels[w.label] = (wd.getMonth() + 1) + '/' + wd.getDate();
-      });
-    }
-  }
+// ── Full HTML document assembly ───────────────────────────────────────────────
+function _buildReportShell(data, weeklyTable, insights) {
+  const {
+    block, weeks, athlete, athleteName, dateStr,
+    compLifts, estTotal, dotsScore, wilksScore,
+    totalDays, completedDays, compliancePct, totalSets, totalVolume,
+    avgRpe, rpeCount, families, weekLabels, volChartData, weeklyAvgRpe
+  } = data;
 
-  // Cache previous week e1RM for delta arrows
-  const prevWeekE1rm = {};
-  let weeklyTableHtml = '';
-  for (let wi = 0; wi < weekLabels.length; wi++) {
-    const wl = weekLabels[wi];
-    const isPeak = wl === peakWeekLabel;
-    const rowClass = isPeak ? ' class="peak-week"' : '';
-    const peakBadge = isPeak ? `<span class="peak-badge">PEAK</span>` : '';
-    const dateTag = weekDateLabels[wl] ? `<span class="week-date">${weekDateLabels[wl]}</span>` : '';
-    let cells = `<td class="week-col">${wl}${dateTag}${peakBadge}</td>`;
-    for (const gk of ['squat', 'bench', 'deadlift']) {
-      const ts = getWeeklyTopSet(gk, wl);
-      if (ts) {
-        const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
-        const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size:9px;font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
-        const varLabel = ts.isVariation ? `<div style="font-size:9px;color:#999;margin-top:1px">${escH(ts.exName)}</div>` : '';
-        const e1rmTag = `<div class="weekly-e1rm">e1RM ${Math.round(ts.e1rm)}</div>`;
-        // Week-over-week delta arrow
-        let deltaTag = '';
-        const prev = prevWeekE1rm[gk];
-        if (prev && ts.e1rm) {
-          const diff = Math.round(ts.e1rm - prev);
-          if (diff !== 0) {
-            const arrow = diff > 0 ? '\u2191' : '\u2193';
-            const color = diff > 0 ? _tc('--green','#4ade80') : _tc('--red','#E22C2C');
-            deltaTag = `<div class="weekly-delta" style="color:${color}">${arrow}${Math.abs(diff)}</div>`;
-          }
-        }
-        prevWeekE1rm[gk] = ts.e1rm;
-        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmTag}${deltaTag}${varLabel}</td>`;
-      } else {
-        cells += '<td class="no-data">\u2014</td>';
-      }
+  const FAMILY_COLORS = [_tc('--gold','#C9A84C'),'#7B9FD4',_tc('--green','#7EC89A'),'#D47B7B','#B07BD4','#D4A97B','#7BD4D4'];
+  const cs = getComputedStyle(document.documentElement);
+  const tv = (v) => cs.getPropertyValue(v).trim();
+  const liftCardColors = { squat: _tc('--gold','#C9A84C'), bench: '#7B9FD4', deadlift: _tc('--green','#7EC89A') };
+  const liftCardLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
+  const sparkCanvasIds = {};
+  let compCardsHtml = '';
+  for (const gk of ['squat', 'bench', 'deadlift']) {
+    const cl = compLifts[gk];
+    const color = liftCardColors[gk];
+    const label = liftCardLabels[gk];
+    if (!cl) {
+      compCardsHtml += `<div class="comp-card"><div class="comp-card-accent" style="background:${color}"></div><div class="comp-card-label">${label}</div><div class="comp-card-val">\u2014</div></div>`;
+      continue;
     }
-    weeklyTableHtml += `<tr${rowClass}>${cells}</tr>`;
+    const deltaSign = cl.delta > 0 ? '+' : cl.delta < 0 ? '' : '';
+    const deltaColor = cl.delta > 0 ? _tc('--green','#4ade80') : cl.delta < 0 ? _tc('--red','#E22C2C') : '#555';
+    const deltaArrow = cl.delta > 0 ? '\u2191' : cl.delta < 0 ? '\u2193' : '\u2192';
+    const sparkId = 'spark-' + gk;
+    sparkCanvasIds[gk] = sparkId;
+    const trend = _rpt_classifyTrend(cl);
+    compCardsHtml += `<div class="comp-card">
+      <div class="comp-card-accent" style="background:${color}"></div>
+      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:10px;color:#999;font-weight:400;margin-left:4px">(${escH(cl.name)})</span>` : ''}</div>
+      <div class="comp-card-e1rm-label">Peak e1RM</div>
+      <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
+      <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
+      <div class="comp-card-sparkline"><canvas id="${sparkId}" aria-label="${label} sparkline trend"></canvas></div>
+      <div class="comp-card-divider"></div>
+      <div class="comp-card-best-label">Best Set</div>
+      <div class="comp-card-best"><span class="comp-card-best-main">${cl.bestWeight}\u00d7${cl.bestReps}</span>${cl.bestRpe ? `<span class="comp-card-best-rpe"> @${cl.bestRpe}</span>` : ''}</div>
+      <div class="comp-card-trend">
+        <div class="comp-card-trend-dot ${trend.color}"></div>
+        <div class="comp-card-trend-text">${trend.text}</div>
+      </div>
+    </div>`;
   }
-  // Add best actual set row at bottom (weight×reps, not e1RM which is already on comp cards)
-  if (compLifts.squat || compLifts.bench || compLifts.deadlift) {
-    const fmtBest = (cl) => {
-      if (!cl || !cl.bestWeight) return '\u2014';
-      let s = `${cl.bestWeight}\u00d7${cl.bestReps}`;
-      if (cl.bestRpe) s += ` <span class="rpe-dim">@${cl.bestRpe}</span>`;
-      return s;
-    };
-    weeklyTableHtml += `<tr class="weekly-total-row"><td class="week-col" style="font-weight:700;color:var(--gold)">Best</td>`;
-    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.squat)}</td>`;
-    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.bench)}</td>`;
-    weeklyTableHtml += `<td style="font-weight:700;color:var(--gold)">${fmtBest(compLifts.deadlift)}</td></tr>`;
-  }
-
-  // ── Volume + RPE chart data ──────────────────────────────────────────────
-  const volChartLabels = weekLabels;
-  const volChartData = {
-    squat: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.squat || 0) / 1000)),
-    bench: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.bench || 0) / 1000)),
-    deadlift: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.deadlift || 0) / 1000)),
-    other: weekLabels.map(wl => Math.round((volumeByWeekFamily[wl]?.other || 0) / 1000))
-  };
-  const weeklyAvgRpe = weekLabels.map(wl => {
-    const d = rpeByWeek[wl];
-    return d && d.count > 0 ? +(d.total / d.count).toFixed(1) : null;
-  });
 
   // ── Estimated total card HTML ────────────────────────────────────────────
   let estTotalHtml = '';
@@ -11097,7 +11230,7 @@ function drawSparkline(canvasId, data, color) {
   new Chart(document.getElementById('volRpeChart'), {
     type: 'bar',
     data: {
-      labels: ${JSON.stringify(volChartLabels)},
+      labels: ${JSON.stringify(weekLabels)},
       datasets: [
         { label:'Squat', data:${JSON.stringify(volChartData.squat)}, backgroundColor:'${_tc('--gold','#C9A84C')}', borderRadius:2, order:2 },
         { label:'Bench', data:${JSON.stringify(volChartData.bench)}, backgroundColor:'#7B9FD4', borderRadius:2, order:2 },
@@ -11392,7 +11525,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <div class="comp-cards">${compCardsHtml}</div>
 
   <!-- Flags & Insights -->
-  ${flagsHtml}
+  ${insights}
 
   <!-- Volume & RPE Trend -->
   <div class="section-card">
@@ -11410,7 +11543,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
     <table class="weekly-table">
       <thead><tr><th>Week</th><th style="color:${_tc('--gold','#C9A84C')}">Squat</th><th style="color:#7B9FD4">Bench</th><th style="color:${_tc('--green','#7EC89A')}">Deadlift</th></tr></thead>
       <thead><tr style="border:none"><th></th><th colspan="3" style="font-size:7px;font-weight:500;letter-spacing:.06em;color:${tv('--text-dim')||'#444'};padding:0 6px 4px;border:none">WEIGHT × REPS @ RPE</th></tr></thead>
-      <tbody>${weeklyTableHtml}</tbody>
+      <tbody>${weeklyTable}</tbody>
     </table>
   </div>
 
@@ -11432,6 +11565,14 @@ ${miniProgScripts}
 </html>`;
 
   return html;
+}
+
+function _buildHTMLReport(blockId) {
+  const data = _getReportData(blockId);
+  if (!data) return null;
+  const weeklyTable = _buildWeeklyTable(data);
+  const insights = _buildInsightsSection(data);
+  return _buildReportShell(data, weeklyTable, insights);
 }
 
 function exportHTMLReport(blockId) {
@@ -14282,13 +14423,30 @@ function renderSetRow(sk) {
   const exKey = sk.replace(/\|\|s\d+$/, '');
   const escaped = cssEsc(exKey);
   const card = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
-  let anchorOffset = null;
-  if (card) { anchorOffset = card.getBoundingClientRect().top; }
-  render();
-  if (card && anchorOffset !== null) {
-    const newCard = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
-    if (newCard) { window.scrollBy(0, newCard.getBoundingClientRect().top - anchorOffset); }
+  if (!card) { render(); return; }
+
+  const anchorOffset = card.getBoundingClientRect().top;
+
+  // Targeted: rebuild just the ex-detail section using _buildSetRows
+  const ctx = _resolveExFromExpandKey(card.dataset.expandKey || exKey);
+  if (ctx) {
+    const { ex, block, week, day } = ctx;
+    const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
+    const oldDetail = card.querySelector('.ex-detail');
+    if (oldDetail) {
+      const newDetailHtml = _buildSetRows(ex, block, week, day, prevPerf);
+      oldDetail.outerHTML = newDetailHtml;
+    } else {
+      render();
+      return;
+    }
+  } else {
+    render();
+    return;
   }
+
+  const newCard = document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+  if (newCard) window.scrollBy(0, newCard.getBoundingClientRect().top - anchorOffset);
 }
 
 function showRepTip() {
