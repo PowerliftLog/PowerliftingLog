@@ -515,7 +515,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .block-name-edit { background: var(--surface-5); border: 1px solid var(--gold); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); padding: var(--sp-2) var(--sp-4); outline: none; width: 100%; letter-spacing: 0.04em; }
 .exercise-header { padding: var(--sp-6) var(--sp-6) var(--sp-5); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
 .exercise-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); letter-spacing: 0.02em; line-height: 1.15; flex: 1; }
-.exercise-check { width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: var(--sp-1); transition: all 0.15s; box-sizing: content-box; padding: 9px; margin: -9px; margin-top: calc(var(--sp-1) - 9px); }
+.exercise-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: var(--sp-1); transition: all 0.15s; position: relative; }
+.exercise-check::before { content: ''; position: absolute; inset: -9px; }
 .exercise-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: var(--green); }
 .exercise-check.inferred { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2); color: rgba(74,222,128,0.5); }
 .prescription { padding: 0 var(--sp-6) var(--sp-5); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); color: var(--gold-data); letter-spacing: 0.03em; }
@@ -526,7 +527,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .sets-grid { padding: var(--sp-2) var(--sp-6) var(--sp-6); display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px var(--sp-1); border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
-.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-micro); color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; user-select: none; -webkit-user-select: none; }
+.set-row.set-done { background: rgba(var(--green-rgb), 0.05); }
+.set-row.set-done .set-input { opacity: 0.5; pointer-events: none; }
+.set-row.set-done .set-num { opacity: 0.4; }
+.set-row.set-done .set-prescribed-btn { opacity: 0.5; }
+.set-num { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-micro); color: var(--text-dimmer); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; user-select: none; -webkit-user-select: none; }
 .set-presc-col { display: flex; flex-direction: column; gap: 1px; min-width: 70px; flex-shrink: 0; align-self: flex-end; padding-bottom: var(--sp-2); }
 .set-calc-btn { width: 44px; height: 44px; flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-sub); display: flex; align-items: center; justify-content: center; transition: color 0.15s; -webkit-tap-highlight-color: transparent; align-self: flex-end; }
 .set-calc-btn:active { color: var(--gold); }
@@ -561,16 +566,18 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-prescribed { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--text-mid); white-space: nowrap; }
 .set-inputs-wrap { display: flex; flex-direction: row; gap: var(--sp-3); flex: 1; }
 .set-input-group { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-width: 0; }
+.set-inputs-wrap > .set-input-group:first-child { flex: 1.4; }
 .set-input-group.reps-range-group { flex: 1; }
-.set-input-label { font-size: var(--fs-sm); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; min-height: 28px; display: flex; align-items: flex-end; }
+.set-input-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; min-height: 28px; display: flex; align-items: flex-end; }
 .set-input { background: var(--surface-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); padding: var(--sp-4) var(--sp-3); min-height: 40px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input::placeholder { color: var(--text-muted); font-size: var(--fs-sm); font-weight: 400; font-style: italic; opacity: 0.6; }
 .prescribed-label { width: 80px; text-align: center; font-size: var(--fs-base); color: var(--text-dimmer); }
-.set-check { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; box-sizing: content-box; padding: 6px; margin: -6px; }
+.set-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; margin-bottom: 7px; position: relative; }
+.set-check::before { content: ''; position: absolute; inset: -9px; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
-.set-check svg { width: 14px; height: 14px; }
+.set-check svg { width: 12px; height: 12px; }
 .pr-badge { display: inline-flex; align-items: center; gap: var(--sp-1); background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; padding: var(--sp-1) var(--sp-3); border-radius: 4px; margin-left: var(--sp-3); animation: prFlash 0.6s ease-out; }
 @keyframes prFlash { 0% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 /* ── Edit Day / Add Day ──────────────────────────────────────────────────── */
@@ -717,6 +724,22 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
   70%  { opacity: 0.8; text-shadow: 0 0 10px rgba(74,222,128,0.4); }
   100% { opacity: 0.6; text-shadow: none; }
 }
+/* ── Workout Summary Card ── */
+.workout-summary-card { margin: var(--sp-6); padding: var(--sp-7); background: linear-gradient(135deg, rgba(74,222,128,0.06) 0%, rgba(74,222,128,0.02) 100%); border: 1px solid rgba(74,222,128,0.2); border-radius: 14px; }
+.summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-6); }
+.summary-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: var(--fs-xl); letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); }
+.summary-check { width: 24px; height: 24px; border-radius: 50%; background: rgba(74,222,128,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.summary-check svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.summary-stats { display: flex; }
+.summary-stat { flex: 1; text-align: center; padding: var(--sp-4) 0; }
+.summary-stat + .summary-stat { border-left: 1px solid rgba(74,222,128,0.1); }
+.summary-stat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: var(--fs-2xl); color: var(--text-bright); letter-spacing: 0.02em; }
+.summary-stat-label { font-size: var(--fs-xs); color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--sp-1); }
+.summary-pr-banner { display: flex; align-items: center; gap: var(--sp-4); margin-top: 14px; padding: 10px 12px; background: rgba(var(--gold-rgb),0.08); border: 1px solid rgba(var(--gold-rgb),0.15); border-radius: 8px; }
+.summary-pr-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--gold); letter-spacing: 0.03em; }
+.workout-reset-row { text-align: center; padding: 0 var(--sp-6) var(--sp-8); margin-top: -12px; }
+.workout-reset-btn { background: none; border: 1px solid var(--border-2); border-radius: 8px; padding: var(--sp-4) var(--sp-6); color: var(--text-faint); font-family: 'Barlow', sans-serif; font-size: var(--fs-base); font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: var(--sp-3); }
+.workout-reset-btn:hover { color: var(--text-sub); border-color: var(--text-dim); }
 .clear-workout-btn { background: none; border: none; cursor: pointer; font-size: var(--fs-xl); opacity: 0.5; padding: var(--sp-1) var(--sp-2); transition: opacity 0.15s; line-height: 1; }
 .clear-workout-btn:hover { opacity: 1; }
 
@@ -748,12 +771,12 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 
 /* ── Start/Resume Workout Banners ── */
 @keyframes startGlow {
-  0%, 100% { background: rgba(var(--gold-rgb),0.04); box-shadow: none; }
-  50% { background: rgba(var(--gold-rgb),0.09); box-shadow: inset 0 0 20px rgba(var(--gold-rgb),0.06); }
+  0%, 100% { box-shadow: 0 0 20px rgba(var(--gold-rgb),0.08); border-color: rgba(var(--gold-rgb),0.5); }
+  50% { box-shadow: 0 0 30px rgba(var(--gold-rgb),0.15); border-color: rgba(var(--gold-rgb),0.7); }
 }
-.workout-start-banner { display: flex; align-items: center; justify-content: center; padding: var(--sp-6) var(--sp-7); border-bottom: 1px solid rgba(var(--gold-rgb),0.1); cursor: pointer; animation: startGlow 3s ease-in-out infinite; }
-.workout-start-banner:active { background: rgba(var(--gold-rgb),0.14); animation: none; }
-.workout-start-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.workout-start-banner { display: flex; align-items: center; justify-content: center; padding: var(--sp-6); margin: var(--sp-6); background: linear-gradient(135deg, rgba(var(--gold-rgb),0.15) 0%, rgba(var(--gold-rgb),0.08) 100%); border: 1.5px solid rgba(var(--gold-rgb),0.5); border-radius: 14px; cursor: pointer; animation: startGlow 3s ease-in-out infinite; box-shadow: 0 0 20px rgba(var(--gold-rgb),0.08); }
+.workout-start-banner:active { background: rgba(var(--gold-rgb),0.2); animation: none; }
+.workout-start-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
 .workout-resume-banner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--sp-6) var(--sp-7); border: 1px solid rgba(var(--gold-rgb),0.2); border-left: none; border-right: none; cursor: pointer; background: transparent; }
 .workout-resume-banner:active { background: rgba(var(--gold-rgb),0.06); }
 .workout-resume-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
@@ -2509,8 +2532,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.21.2';
-const APP_BUILD   = '3/14/26p';
+const APP_VERSION = 'v0.22.1';
+const APP_BUILD   = '3/14/26r';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -6056,6 +6079,17 @@ function startWorkout(weekIdx, dayIdx) {
   state.activeWeek = weekIdx;
   state.activeDay = dayIdx;
   state.expandedEx = new Set();
+  // Record workout start time (only if not already started)
+  const block = state.activeBlock;
+  if (block) {
+    const week = block.weeks[weekIdx];
+    const day = week?.days[dayIdx];
+    if (day) {
+      const fk = lk(block.id, week.label, day.name, '__complete__');
+      const fl = state.logs[fk] || {};
+      if (!fl.startedAt) { state.logs[fk] = { ...fl, startedAt: Date.now() }; saveLogs(); }
+    }
+  }
   saveNav();
   if (state.screen !== 'workout') setScreen('workout');
   else render();
@@ -6290,17 +6324,20 @@ function _exSetInputsHtml(sk, sl, placeholder, si, prescReps, exName, inputMode,
               </div>
             </div>`;
   const ghostStyle = ghostVal ? 'color:var(--text-muted)' : '';
-  const _isRepRange = prescReps && /^\d+[\-–]\d+$/.test(String(prescReps));
-  const _repsHtml = _isRepRange ? `
+  /* Universal reps input — always present for weighted exercises */
+  const _repsPlaceholder = prescReps ? String(prescReps) : '';
+  const _unitLabel = getExUnit(exName);
+  const _weightPlaceholder = ghostVal ? ghostVal + ' ' + _unitLabel : _unitLabel;
+  const _repsHtml = `
               <div class="set-input-group reps-range-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="numeric" placeholder="${prescReps}" value="${sl.actualReps||''}" oninput="setActualReps('${esc(sk)}',this.value)" aria-label="Actual reps">
-              </div>` : '';
+                <input class="set-input" inputmode="numeric" placeholder="${_repsPlaceholder}" value="${sl.actualReps||''}" oninput="setActualReps('${esc(sk)}',this.value)" data-ghost-reps="${_repsPlaceholder}" aria-label="Actual reps">
+              </div>`;
   return `<div class="set-inputs-wrap">
-              <div class="set-input-group"><div class="set-input-label">Weight (${getExUnit(exName)})</div>
-                <input class="set-input" inputmode="decimal" placeholder="${ghostVal}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghostVal}" aria-label="Weight lifted">
+              <div class="set-input-group"><div class="set-input-label">Weight</div>
+                <input class="set-input" inputmode="decimal" placeholder="${_weightPlaceholder}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghostVal}" aria-label="Weight lifted">
               </div>${_repsHtml}
-              <div class="set-input-group"><div class="set-input-label">RPE (1–10)</div>
-                <input class="set-input rpe-input" inputmode="decimal" placeholder="" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
+              <div class="set-input-group"><div class="set-input-label">RPE</div>
+                <input class="set-input rpe-input" inputmode="decimal" placeholder="1-10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
               </div>
             </div>`;
 }
@@ -6364,14 +6401,14 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
   h += `<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
       <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${escH(_displayExName(ex.displayName||ex.name))}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
-      ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+setsCompletedCount+'/'+totalSetsCount+' sets':''}</div>`:''}
+      ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+(setsCompletedCount>0?setsCompletedCount+'/'+totalSetsCount+' sets':totalSetsCount+' sets'):''}</div>`:''}
     </div>
     <div class="ex-summary-right">
       ${showTrackBtn && !tracked ? `<button class="track-btn ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="Track in metrics"><span class="track-hint-inline">Track</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>` : trackBtn}
       ${isSkipped ? `<span class="skipped-badge">SKIPPED</span>` : ''}
       <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone?_checkSvg:''}</button>
     </div>
-  </div>${!isExpanded?`<div class="ex-expand-handle" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')"><div class="ex-expand-pill"></div></div>`:''}`;
+  </div>`; /* expand pill intentionally removed — card header is the tap target */
 
   if (!isExpanded && prevPerf && prevPerf.sets.length > 0) {
     const top = prevPerf.sets.reduce((best, s) => {
@@ -6405,10 +6442,13 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   function _ghostWeight(si) {
     if (hasSets && sets[si]) { const w = sets[si].weight; if (w && !sets[si].isRpe) return w; }
     if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
+    /* Extract weight from simple prescriptions like "3x5 @ 315" */
+    if (simple && pres) { const _wm = pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i); if (_wm) return _wm[1]; }
     if (prevPerf && prevPerf.sets[si] && prevPerf.sets[si].actual && prevPerf.sets[si].actual !== '—') return prevPerf.sets[si].actual;
     return '';
   }
 
+  function _setRowOpen(sk) { const d=(state.logs[sk]||{}).done; return `<div class="set-row${d?' set-done':''}">`; }
   let h = `<div class="ex-detail">`;
   const editingThis = state.editingExKey === key;
   if (editingThis) {
@@ -6444,8 +6484,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
       const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
       const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
-      h += `<div class="set-row">
-          ${_isBarbell && _numWeight > 0 ? _exCalcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs} onclick="openRepsEditor('${esc(sk)}','${s.reps}')">${_displayLabel}<span class="set-prescribed-chevron">›</span></button></div>
+      h += `${_setRowOpen(sk)}
+          ${_isBarbell && _numWeight > 0 ? _exCalcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs}>${_displayLabel}</span></div>
           ${_exSetInputsHtml(sk, sl, s.isRpe?getDisplayUnit():s.weight+unitLabel(true), si, s.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6460,8 +6500,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
         const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
         const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
-        const _extraPrescHtml = `<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${_lastS.reps}')">${_extraDisplayLabel}<span class="set-prescribed-chevron">›</span></button>`;
-        h += `<div class="set-row">
+        const _extraPrescHtml = `<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs}>${_extraDisplayLabel}</span>`;
+        h += `${_setRowOpen(_sk)}
             ${_isBarbell && _extraNw > 0 ? _exCalcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
             ${_exSetInputsHtml(_sk, _sl, _lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()), _si, _lastS.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
@@ -6482,8 +6522,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       const _simplePrescLabel = _simpleNumWeight > 0
         ? _simpleWeight+' '+unitLabel(true)+' × '+(_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span>' : simple.reps)
         : (_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span> reps' : simple.reps+' reps');
-      h += `<div class="set-row">
-          ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_simpleWeightAttrs} onclick="openRepsEditor('${esc(sk)}','${simple.reps}')">${_simplePrescLabel}<span class="set-prescribed-chevron">›</span></button></div>
+      h += `${_setRowOpen(sk)}
+          ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_simpleWeightAttrs}>${_simplePrescLabel}</span></div>
           ${_exSetInputsHtml(sk, sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), si, simple.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6496,8 +6536,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const _extraPrescLabel = _simpleNumWeight > 0
           ? _simpleWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : simple.reps)
           : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : simple.reps+' reps');
-        h += `<div class="set-row">
-            ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_simpleWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${simple.reps}')">${_extraPrescLabel}<span class="set-prescribed-chevron">›</span></button></div>
+        h += `${_setRowOpen(_sk)}
+            ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_simpleWeightAttrs}>${_extraPrescLabel}</span></div>
             ${_exSetInputsHtml(_sk, _sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), _si, simple.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -6518,8 +6558,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       const _rangedPrescLabel = isOpen ? '' : (_rangedNumWeight > 0
         ? _rangedWeight+' '+unitLabel(true)+' × '+(_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span>' : ranged.reps)
         : (_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span> reps' : ranged.reps+' reps'));
-      h += `<div class="set-row">
-          ${!isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':`<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_rangedWeightAttrs} onclick="openRepsEditor('${esc(sk)}','${ranged.reps}')">${_rangedPrescLabel}<span class="set-prescribed-chevron">›</span></button>`}</div>
+      h += `${_setRowOpen(sk)}
+          ${!isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':`<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_rangedWeightAttrs}>${_rangedPrescLabel}</span>`}</div>
           ${_exSetInputsHtml(sk, sl, isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), si, ranged.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6533,8 +6573,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const _extraRangedLabel = _isOpen ? '' : (_rangedNumWeight > 0
           ? _rangedWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : ranged.reps)
           : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : ranged.reps+' reps'));
-        h += `<div class="set-row">
-            ${!_isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':`<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_rangedWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${ranged.reps}')">${_extraRangedLabel}<span class="set-prescribed-chevron">›</span></button>`}</div>
+        h += `${_setRowOpen(_sk)}
+            ${!_isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':`<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_rangedWeightAttrs}>${_extraRangedLabel}</span>`}</div>
             ${_exSetInputsHtml(_sk, _sl, _isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), _si, ranged.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -6546,8 +6586,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     h += `<div class="sets-grid">`;
     for (let si = 0; si < bareWithRounds.sets; si++) {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
-      h += `<div class="set-row">
-          <div class="set-presc-col">${_setNumHtml(sk, si)}${_exRepsButtonHtml(sk, sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
+      h += `${_setRowOpen(sk)}
+          <div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn">${bareWithRounds.reps} reps</span></div>
           ${_exSetInputsHtml(sk, sl, getDisplayUnit(), si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6556,8 +6596,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     if (_extra > 0) {
       for (let _i = 0; _i < _extra; _i++) {
         const _si = bareWithRounds.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
-        h += `<div class="set-row">
-            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_exRepsButtonHtml(_sk, _sl, bareWithRounds.reps, bareWithRounds.reps+' reps')}</div>
+        h += `${_setRowOpen(_sk)}
+            <div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn">${bareWithRounds.reps} reps</span></div>
             ${_exSetInputsHtml(_sk, _sl, getDisplayUnit(), _si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -6567,7 +6607,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   } else if (pres) {
     const sk = key+`||s0`; const sl = state.logs[sk]||{};
     h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
-    h += `<div class="set-row">
+    h += `${_setRowOpen(sk)}
         <div class="set-presc-col">${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div></div>
         ${_exSetInputsHtml(sk, sl, getDisplayUnit(), 0, undefined, ex.name, inputMode, '')}
         <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
@@ -6674,7 +6714,7 @@ function renderExerciseList(block, week, day) {
 
   // Historical blocks: locked green, no controls
   if (isHistorical) {
-    h+=`<h2 class="workout-complete-msg">Workout Complete</h2>`;
+    h+=_buildWorkoutSummaryCard(block, week, day);
     return h;
   }
 
@@ -6685,14 +6725,14 @@ function renderExerciseList(block, week, day) {
 
   // Imported completed workout — green card, no Finish Workout, no trash
   if (isImportedComplete) {
-    h+=`<h2 class="workout-complete-msg">Workout Complete</h2>`;
+    h+=_buildWorkoutSummaryCard(block, week, day);
     return h;
   }
 
   // Live workout — user explicitly tapped Finish Workout
   if (isLiveComplete) {
-    h+=`<h2 class="workout-complete-msg">Workout Complete</h2>`;
-    h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset Workout</button></div>`;
+    h+=_buildWorkoutSummaryCard(block, week, day);
+    h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3.3-6.9"/><polyline points="3 2 3 7 8 7"/></svg> Reset Workout</button></div>`;
     return h;
   }
 
@@ -6712,6 +6752,54 @@ function renderExerciseList(block, week, day) {
 // ── Main orchestrator ─────────────────────────────────────────────────────────
 function isWorkoutActive(weekIdx, dayIdx) {
   return state.workoutActive && state.workoutActive.weekIdx === weekIdx && state.workoutActive.dayIdx === dayIdx;
+}
+
+function _buildWorkoutSummaryCard(block, week, day) {
+  const progress = getDayProgress(block, week, day);
+  let totalSets = 0;
+  day.exercises.forEach(ex => {
+    const key = lk(block.id, week.label, day.name, ex.name);
+    const pres = ex.prescription || '';
+    const sets = parseSets(pres);
+    const simpleP = parseSimple(pres);
+    const rangedP = (!sets.length && !simpleP) ? parseRangeSet(pres) : null;
+    const count = sets.length || simpleP?.sets || rangedP?.sets || 1;
+    const extra = (state.extraSets && state.extraSets[key]) || 0;
+    for (let si = 0; si < count + extra; si++) {
+      const sl = state.logs[key + `||s${si}`] || {};
+      if (sl.done) totalSets++;
+    }
+  });
+  const forceLog = state.logs[lk(block.id, week.label, day.name, '__complete__')] || {};
+  const startTs = forceLog.startedAt || 0;
+  const endTs = forceLog.completedAt || forceLog.ts || 0;
+  let durStr = '\u2014';
+  if (startTs && endTs) {
+    const mins = Math.round((endTs - startTs) / 60000);
+    durStr = mins > 0 ? `${mins}m` : '<1m';
+  }
+  let prList = [];
+  day.exercises.forEach(ex => {
+    const key = lk(block.id, week.label, day.name, ex.name);
+    const log = state.logs[key] || {};
+    if (log.pr) prList.push({ name: ex.name });
+  });
+  let h = `<div class="workout-summary-card">
+    <div class="summary-header">
+      <div class="summary-title">Workout Complete</div>
+      <div class="summary-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div class="summary-stats">
+      <div class="summary-stat"><div class="summary-stat-val">${progress.done}</div><div class="summary-stat-label">Exercises</div></div>
+      <div class="summary-stat"><div class="summary-stat-val">${totalSets}</div><div class="summary-stat-label">Sets</div></div>
+      <div class="summary-stat"><div class="summary-stat-val">${durStr}</div><div class="summary-stat-label">Duration</div></div>
+    </div>`;
+  if (prList.length > 0) {
+    const prText = prList.map(p => `New ${escH(p.name)} PR`).join(' \u00b7 ');
+    h += `<div class="summary-pr-banner"><div class="summary-pr-text">${prText}</div></div>`;
+  }
+  h += `</div>`;
+  return h;
 }
 
 function getDayProgress(block, week, day) {
@@ -6922,13 +7010,9 @@ function renderWorkout(){
     if (isComplete || isHistorical) {
       // Completed day — show preview list + complete message
       h += renderPreviewList(block, week, day);
-      if (isHistorical) {
-        h += `<h2 class="workout-complete-msg">Workout Complete</h2>`;
-      } else if (forceLog?.importedComplete) {
-        h += `<h2 class="workout-complete-msg">Workout Complete</h2>`;
-      } else {
-        h += `<h2 class="workout-complete-msg">Workout Complete</h2>`;
-        h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset Workout</button></div>`;
+      h += _buildWorkoutSummaryCard(block, week, day);
+      if (!isHistorical && !forceLog?.importedComplete) {
+        h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3.3-6.9"/><polyline points="3 2 3 7 8 7"/></svg> Reset Workout</button></div>`;
       }
     } else {
       // Not started or partial — show banner + preview list
@@ -7034,11 +7118,52 @@ function toggleEx(key){
   }
   
   if(nowDone && ex){
-    // Checking exercise ON → mark all its sets done too
+    // Checking exercise ON → mark all sets done + auto-fill ghost values
+    const pres=ex.prescription||'';
+    const _sets=pres?parseSets(pres):[];
+    if(!_sets.length && pres) { const wu=parseWarmupSets(pres); if(wu.length) _sets.push(...wu); }
+    const _simple=parseSimple(pres);
+    const _ranged=(!_sets.length&&!_simple)?parseRangeSet(pres):null;
+    const _unit = getExUnit(ex.name);
+
     for(let si=0;si<numSets;si++){
       const sk=key+`||s${si}`;
       const sl=state.logs[sk]||{};
-      if(!sl.done) state.logs[sk]={...sl,done:true};
+      if(!sl.done){
+        let fillWeight = sl.actual || '';
+        let fillReps = sl.actualReps || '';
+        // Auto-fill weight from prescription (low end of range)
+        if(!fillWeight){
+          if(_sets.length && _sets[si]){ const s=_sets[si]; if(s.weight && !s.isRpe) fillWeight=s.weight; }
+          else if(_ranged && _ranged.weight && !_ranged.isRpe) fillWeight=_ranged.weight;
+          // Fallback: extract @ weight from raw prescription for any branch
+          if(!fillWeight && pres){ const wm=pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i); if(wm) fillWeight=wm[1]; }
+        }
+        // Auto-fill reps from prescription (low end of range)
+        if(!fillReps){
+          let prescReps = '';
+          if(_sets.length && _sets[si]) prescReps = _sets[si].reps || '';
+          else if(_simple) prescReps = _simple.reps || '';
+          else if(_ranged) prescReps = _ranged.reps || '';
+          // Take low end: "8-12" → "8", "3-5" → "3"
+          const rm = String(prescReps).match(/^(\d+)/);
+          if(rm) fillReps = rm[1];
+        }
+        state.logs[sk]={...sl, done:true, actual:fillWeight||sl.actual, actualReps:fillReps||sl.actualReps, unit:_unit, ts:sl.ts||Date.now()};
+      }
+    }
+    // Update DOM inputs to reflect committed values
+    for(let si=0;si<numSets;si++){
+      const sk=key+`||s${si}`;
+      const sl=state.logs[sk]||{};
+      const btn=document.querySelector(`.set-check[data-set-key="${cssEsc(sk)}"]`);
+      const row=btn&&btn.closest('.set-row');
+      if(row){
+        const wInp=row.querySelector('.set-input[data-ghost]');
+        if(wInp && sl.actual && !wInp.value){ wInp.value=sl.actual; wInp.style.color=''; }
+        const rInp=row.querySelector('.set-input[data-ghost-reps]');
+        if(rInp && sl.actualReps && !rInp.value) rInp.value=sl.actualReps;
+      }
     }
   } else if(!nowDone && day){
     // Unchecking exercise → clear force-complete flag
@@ -7076,6 +7201,8 @@ function completeWorkout(){
   const day=week?.days[state.activeDay];
   if(!day) return;
   state.workoutActive = null;
+  // Kill rest timer if running
+  stopRestTimer();
   // Mark all exercises and their sets as done
   day.exercises.forEach(ex=>{
     const key=lk(block.id,week.label,day.name,ex.name);
@@ -7106,26 +7233,26 @@ function completeWorkout(){
   const forceKey=lk(block.id,week.label,day.name,'__complete__');
   const _today = new Date(); 
   const _dateStr = `${_today.getFullYear()}-${_today.getMonth()+1}-${_today.getDate()}`;
-  state.logs[forceKey]={done:true, completedDate: _dateStr};
+  const _existingForce = state.logs[forceKey] || {};
+  state.logs[forceKey]={..._existingForce, done:true, completedDate: _dateStr, completedAt: Date.now()};
   saveLogs();
   // Fire-and-forget auto-backup to Drive (non-blocking)
   _silentAutoBackup();
   // Check storage quota after workout save
   _checkStorageQuota();
-  // Capture celebration data before render() (render may mutate references)
+  // Capture celebration data — do NOT render() yet (would flash summary card under celebration)
   const _dayName = day.name;
   const _weekNum = block.weeks.findIndex(w => w.label === week.label);
   const _blockName = block.name || '';
-  render();
-  // Fire celebration after render settles
+  // Fire celebration immediately, render summary card only after it dismisses
   const metaParts = [];
   if (block.weeks.length > 1 && _weekNum !== -1) metaParts.push('W' + (_weekNum + 1));
   if (_blockName) metaParts.push(_blockName);
   setTimeout(() => {
     showCelebration(_dayName, metaParts.join(' · '), () => {
-      // Check for new 1RM singles before going home
+      // Check for new 1RM singles, then render the completed workout summary
       checkNewSingles(block, week, day, () => {
-        setScreen('home');
+        render();
         const main = document.getElementById('main-content');
         if (main) main.scrollTop = 0;
       });
@@ -7363,15 +7490,23 @@ function toggleSet(key){
   const nowDone = !l.done;
   const exName = _resolveExNameFromKey(key);
   const unit = l.unit || (exName ? getExUnit(exName) : getDisplayUnit());
-  // Commit ghost weight when checking a set with no weight entered
+  // Commit ghost weight and ghost reps when checking a set with no values entered
   let actual = l.actual;
-  if (nowDone && !actual) {
+  let actualReps = l.actualReps;
+  if (nowDone) {
     const btn = document.querySelector(`.set-check[data-set-key="${cssEsc(key)}"]`);
     const row = btn && btn.closest('.set-row');
-    const inp = row && row.querySelector('.set-input[data-ghost]');
-    if (inp && inp.dataset.ghost) { actual = inp.dataset.ghost; inp.value = actual; inp.style.color = ''; }
+    if (!actual) {
+      const inp = row && row.querySelector('.set-input[data-ghost]');
+      if (inp && inp.dataset.ghost) { actual = inp.dataset.ghost; inp.value = actual; inp.style.color = ''; }
+    }
+    /* commit ghost reps */
+    if (!actualReps) {
+      const repsInp = row && row.querySelector('.set-input[data-ghost-reps]');
+      if (repsInp && repsInp.dataset.ghostReps) { actualReps = repsInp.dataset.ghostReps; repsInp.value = actualReps; }
+    }
   }
-  state.logs[key]={...l, actual: actual, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
+  state.logs[key]={...l, actual: actual, actualReps: actualReps, done: nowDone, unit: unit, ts: nowDone ? (l.ts || Date.now()) : l.ts};
   saveLogs();
   // PR cache not invalidated here — toggleSet doesn't do inline PR detection.
   // _checkInlinePR (called from setActual) handles targeted cache updates.
@@ -7411,6 +7546,16 @@ function _shouldFireRestTimer(setKey) {
   const day = week.days.find(d => d.name === dayName);
   if (!day) return true;
   const ex = day.exercises.find(e => e.name === exName);
+  // Skip rest timer if this set completes the exercise (nothing left to rest for)
+  if (ex) {
+    const _p=ex.prescription; const _ss=_p?parseSets(_p):[]; if(!_ss.length&&_p){const _wu=parseWarmupSets(_p);if(_wu.length)_ss.push(..._wu);}
+    const _si2=parseSimple(_p); const _rn=(!_ss.length&&!_si2)?parseRangeSet(_p):null;
+    const _ssr=ex.supersetGroup?.rounds||0; const _br=(!_ss.length&&!_si2&&!_rn)?parseBarePres(_p):null;
+    const _total=_ss.length||(_si2?.sets||0)||(_rn?.sets||0)||(_br?(_ssr||_br.sets):0)||_ssr||(_p?1:0)||1;
+    const _extra=state.extraSets[lk(blockId,weekLabel,dayName,exName)]||0;
+    let _allDone=true; for(let i=0;i<_total+_extra;i++){if(!(state.logs[lk(blockId,weekLabel,dayName,exName)+`||s${i}`]||{}).done){_allDone=false;break;}}
+    if(_allDone) return false;
+  }
   if (!ex || !ex.supersetGroup) return true; // Not in a circuit — fire normally
 
   const groupLabel = ex.supersetGroup.label;
@@ -7635,6 +7780,8 @@ function updateSetCheckmark(key,isDone){
   if(btn){
     btn.className=isDone?'set-check done':'set-check';
     btn.innerHTML=isDone?_checkSvg:'';
+    const row=btn.closest('.set-row');
+    if(row){ if(isDone) row.classList.add('set-done'); else row.classList.remove('set-done'); }
   }
 }
 function updateProgressBar(){
@@ -7697,12 +7844,8 @@ function showCelebration(dayName, meta, onDismiss) {
 
   if (hasAnyLift) {
     liftsCard.style.display = '';
-    liftsEl.innerHTML = liftGroups.map(g => {
+    liftsEl.innerHTML = liftGroups.filter(g => summary.compBest[g]).map(g => {
       const best = summary.compBest[g];
-      if (!best) return `<div class="cel-lift-row">
-        <div class="cel-lift-name">${liftLabels[g]}</div>
-        <div class="cel-lift-none">—</div>
-      </div>`;
       const rpeStr = best.rpe ? `@${best.rpe}` : '';
       const prBadge = best.isPR ? `<div class="cel-lift-pr">PR</div>` : '';
       return `<div class="cel-lift-row">
@@ -9372,6 +9515,8 @@ function autoCompleteExercise(setKey){
     if (navigator.vibrate) navigator.vibrate(25);
     // Update main exercise checkmark without full render
     updateExerciseCheckmark(exKey,true);
+    // Auto-collapse: remove from expandedEx and collapse DOM
+    for(const ek of [...state.expandedEx]){ if(ek===exKey||ek.startsWith(exKey+'||')) { state.expandedEx.delete(ek); _applyTargetedExpand(ek, false); } }
     // Check if whole day is now resolved — activate finish button and scroll it into view
     checkAndActivateFinishButton(block, week, day);
   } else if(!allDone&&state.logs[exKey]?.done){
@@ -9605,14 +9750,7 @@ function _applyTargetedExpand(ek, nowExpanded) {
     if (detail) detail.remove();
     const skipRow = card.querySelector('.skip-row');
     if (skipRow) skipRow.remove();
-    // Re-add expand handle
-    const summary = card.querySelector('.ex-summary');
-    if (summary) {
-      const exKey = ek.replace(/\|\|\d+$/, '');
-      const groupKeys = card.dataset.groupKeys ? card.dataset.groupKeys.split(':::') : null;
-      const groupEncoded = groupKeys ? esc(groupKeys.join(':::')) : '';
-      summary.insertAdjacentHTML('afterend', `<div class="ex-expand-handle" onclick="toggleExpand('${esc(ek)}','${groupEncoded}')"><div class="ex-expand-pill"></div></div>`);
-    }
+    /* expand pill intentionally removed — card header is the tap target */
     // Re-add collapsed prev summary
     const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
     if (prevPerf && prevPerf.sets.length > 0) {
