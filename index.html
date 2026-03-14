@@ -2505,7 +2505,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.21.0';
-const APP_BUILD   = '3/13/26n';
+const APP_BUILD   = '3/13/26o';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -10498,8 +10498,12 @@ function _rpt_classifyTrend(cl) {
   return { text: `Mixed signals (${e1rmDeltaStr})${rpeNote}`, color: 'gold' };
 }
 
+// ── Report data cache (cleared each report generation) ────────────────────────
+const _reportDataCache = new Map();
+
 // ── Data extraction: all computation, zero HTML ───────────────────────────────
 function _getReportData(blockId) {
+  if (_reportDataCache.has(blockId)) return _reportDataCache.get(blockId);
   const block = state.blocks.find(b => b.id === blockId);
   if (!block) return null;
   const weeks = block.weeks || [];
@@ -10944,7 +10948,72 @@ function _getReportData(blockId) {
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const athleteName = block.athleteName || athlete?.name || '';
 
-  return {
+  // ── Status badge computation ────────────────────────────────────────────
+  const _liftLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
+  const _liftLevel = (flags) => {
+    if (flags.some(f => f.color === 'red')) return 'red';
+    if (flags.some(f => f.color === 'amber')) return 'amber';
+    return 'green';
+  };
+  const liftStatuses = {};
+  for (const gk of ['squat', 'bench', 'deadlift']) {
+    const cl = compLifts[gk];
+    const flags = allFlags[gk] || [];
+    const level = _liftLevel(flags);
+    const d = cl?.delta || 0;
+    const deltaStr = cl ? ((d >= 0 ? '+' : '') + d + ' ' + unitLabel(true)) : '';
+    const trend = cl ? _rpt_classifyTrend(cl) : null;
+    let summary = '';
+    if (level === 'green') summary = 'adapting';
+    else if (level === 'amber') summary = flags.find(f => f.color === 'amber')?.text?.split(' — ')[1] || 'watch';
+    else summary = flags.find(f => f.color === 'red')?.text?.split(' — ')[1] || 'attention needed';
+    liftStatuses[gk] = { level, delta: d, deltaStr, summary };
+  }
+  const redCount = Object.values(liftStatuses).filter(l => l.level === 'red').length;
+  const amberCount = Object.values(liftStatuses).filter(l => l.level === 'amber').length;
+  let overallStatus = 'green';
+  if (redCount >= 2) overallStatus = 'red';
+  else if (redCount >= 1 || amberCount >= 2) overallStatus = 'amber';
+  else if (amberCount >= 1) overallStatus = 'amber';
+  const problemLifts = Object.entries(liftStatuses).filter(([_, l]) => l.level !== 'green').map(([gk]) => _liftLabels[gk]);
+  const goodLifts = Object.entries(liftStatuses).filter(([_, l]) => l.level === 'green').map(([gk]) => _liftLabels[gk]);
+  let statusText = '';
+  if (overallStatus === 'green') {
+    statusText = 'All lifts progressing well across the block.';
+  } else {
+    statusText = '<strong>' + problemLifts.join(' and ') + (problemLifts.length === 1 ? ' needs' : ' need') + ' attention.</strong>';
+    // Add detail from the worst flag
+    const worstLift = Object.entries(liftStatuses).find(([_, l]) => l.level === 'red') || Object.entries(liftStatuses).find(([_, l]) => l.level === 'amber');
+    if (worstLift) {
+      const worstFlags = allFlags[worstLift[0]] || [];
+      const topFlag = worstFlags.find(f => f.color === 'red') || worstFlags.find(f => f.color === 'amber');
+      if (topFlag) statusText += ' ' + topFlag.text + '.';
+    }
+    if (goodLifts.length) statusText += ' ' + goodLifts.join(' and ') + ' progressing well.';
+  }
+  const statusBadge = { level: overallStatus, text: statusText, lifts: liftStatuses };
+
+  // ── Block-over-block deltas ─────────────────────────────────────────────
+  let blockDeltas = null;
+  const blockIdx = state.blocks.findIndex(b => b.id === blockId);
+  if (blockIdx > 0) {
+    const prevBlockId = state.blocks[blockIdx - 1].id;
+    const prevData = _getReportData(prevBlockId);
+    if (prevData) {
+      blockDeltas = {};
+      for (const gk of ['squat', 'bench', 'deadlift']) {
+        const currE1rm = compLifts[gk]?.bestE1rm || 0;
+        const prevE1rm = prevData.compLifts[gk]?.bestE1rm || 0;
+        blockDeltas[gk] = {
+          current: currE1rm, previous: prevE1rm,
+          delta: currE1rm && prevE1rm ? currE1rm - prevE1rm : null,
+          prevBlockName: displayBlockName(prevData.block.name)
+        };
+      }
+    }
+  }
+
+  const result = {
     block, weeks, blockLogs, athlete,
     compLiftName, families, amrapData,
     totalDays, completedDays, compliancePct, totalSets, totalVolume,
@@ -10953,8 +11022,11 @@ function _getReportData(blockId) {
     estTotal, dotsScore, wilksScore,
     weekLabels, peakWeekLabel,
     volChartData, weeklyAvgRpe,
-    dateStr, athleteName
+    dateStr, athleteName,
+    statusBadge, blockDeltas
   };
+  _reportDataCache.set(blockId, result);
+  return result;
 }
 
 // ── Weekly top sets table HTML ────────────────────────────────────────────────
@@ -11018,19 +11090,19 @@ function _buildWeeklyTable(data) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
         const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size:9px;font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
         const varLabel = ts.isVariation ? `<div style="font-size:9px;color:#999;margin-top:1px">${escH(ts.exName)}</div>` : '';
-        const e1rmTag = `<div class="weekly-e1rm">e1RM ${Math.round(ts.e1rm)}</div>`;
         let deltaTag = '';
         const prev = prevWeekE1rm[gk];
         if (prev && ts.e1rm) {
           const diff = Math.round(ts.e1rm - prev);
           if (diff !== 0) {
             const arrow = diff > 0 ? '\u2191' : '\u2193';
-            const color = diff > 0 ? _tc('--green','#4ade80') : _tc('--red','#E22C2C');
-            deltaTag = `<div class="weekly-delta" style="color:${color}">${arrow}${Math.abs(diff)}</div>`;
+            const cls = diff > 0 ? 'td-delta up' : 'td-delta down';
+            deltaTag = `<span class="${cls}">${arrow}${Math.abs(diff)}</span>`;
           }
         }
         prevWeekE1rm[gk] = ts.e1rm;
-        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmTag}${deltaTag}${varLabel}</td>`;
+        const e1rmWithDelta = `<div class="weekly-e1rm">e1RM ${Math.round(ts.e1rm)}${deltaTag}</div>`;
+        cells += `<td>${ts.topWeight}\u00d7${ts.topReps}${rpeStr}${amrapBadge}${e1rmWithDelta}${varLabel}</td>`;
       } else {
         cells += '<td class="no-data">\u2014</td>';
       }
@@ -11089,7 +11161,8 @@ function _buildReportShell(data, weeklyTable, insights) {
     block, weeks, athlete, athleteName, dateStr,
     compLifts, estTotal, dotsScore, wilksScore,
     totalDays, completedDays, compliancePct, totalSets, totalVolume,
-    avgRpe, rpeCount, families, weekLabels, volChartData, weeklyAvgRpe
+    avgRpe, rpeCount, families, weekLabels, volChartData, weeklyAvgRpe,
+    statusBadge, blockDeltas, allFlags, generalFlags
   } = data;
 
   const FAMILY_COLORS = [_tc('--gold','#C9A84C'),'#7B9FD4',_tc('--green','#7EC89A'),'#D47B7B','#B07BD4','#D4A97B','#7BD4D4'];
@@ -11097,7 +11170,30 @@ function _buildReportShell(data, weeklyTable, insights) {
   const tv = (v) => cs.getPropertyValue(v).trim();
   const liftCardColors = { squat: _tc('--gold','#C9A84C'), bench: '#7B9FD4', deadlift: _tc('--green','#7EC89A') };
   const liftCardLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
-  const sparkCanvasIds = {};
+
+  // ── Status Badge HTML ─────────────────────────────────────────────────
+  let statusBadgeHtml = '';
+  if (statusBadge) {
+    const badgeColors = { green: _tc('--green','#4ade80'), amber: _tc('--amber','#F5A623'), red: _tc('--red','#E22C2C') };
+    const badgeDotColor = badgeColors[statusBadge.level] || badgeColors.green;
+    const liftStatusLines = Object.entries(statusBadge.lifts || {}).map(([gk, liftStatus]) => {
+      const liftLabel = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' }[gk];
+      const liftColor = badgeColors[liftStatus.level] || badgeColors.green;
+      const deltaDisplay = liftStatus.deltaStr ? `<span style="color:${liftColor};margin-left:6px">${liftStatus.deltaStr}</span>` : '';
+      return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:4px"><span style="width:6px;height:6px;background:${liftColor};border-radius:50%;flex-shrink:0"></span><span>${liftLabel}</span><span style="color:${tv('--text-mid')||'#bbb'}">${liftStatus.summary}</span>${deltaDisplay}</div>`;
+    }).join('');
+    statusBadgeHtml = `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="width:12px;height:12px;background:${badgeDotColor};border-radius:50%;flex-shrink:0;margin-top:3px"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:${tv('--text-bright')||'#ddd'};line-height:1.4">${statusBadge.text}</div>
+          ${liftStatusLines}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Competition Lift Cards (3 columns, NO sparklines) ─────────────────
   let compCardsHtml = '';
   for (const gk of ['squat', 'bench', 'deadlift']) {
     const cl = compLifts[gk];
@@ -11110,8 +11206,6 @@ function _buildReportShell(data, weeklyTable, insights) {
     const deltaSign = cl.delta > 0 ? '+' : cl.delta < 0 ? '' : '';
     const deltaColor = cl.delta > 0 ? _tc('--green','#4ade80') : cl.delta < 0 ? _tc('--red','#E22C2C') : '#555';
     const deltaArrow = cl.delta > 0 ? '\u2191' : cl.delta < 0 ? '\u2193' : '\u2192';
-    const sparkId = 'spark-' + gk;
-    sparkCanvasIds[gk] = sparkId;
     const trend = _rpt_classifyTrend(cl);
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-accent" style="background:${color}"></div>
@@ -11119,7 +11213,6 @@ function _buildReportShell(data, weeklyTable, insights) {
       <div class="comp-card-e1rm-label">Peak e1RM</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
-      <div class="comp-card-sparkline"><canvas id="${sparkId}" aria-label="${label} sparkline trend"></canvas></div>
       <div class="comp-card-divider"></div>
       <div class="comp-card-best-label">Best Set</div>
       <div class="comp-card-best"><span class="comp-card-best-main">${cl.bestWeight}\u00d7${cl.bestReps}</span>${cl.bestRpe ? `<span class="comp-card-best-rpe"> @${cl.bestRpe}</span>` : ''}</div>
@@ -11130,155 +11223,60 @@ function _buildReportShell(data, weeklyTable, insights) {
     </div>`;
   }
 
-  // ── Estimated total card HTML ────────────────────────────────────────────
-  let estTotalHtml = '';
-  if (estTotal > 0) {
-    const rightSide = (dotsScore && wilksScore) ? `
-      <div class="est-total-scores">
-        <div class="est-total-score-row"><span class="est-total-score-label">DOTS</span><span class="est-total-score-val">${dotsScore.toFixed(1)}</span></div>
-        <div class="est-total-score-row"><span class="est-total-score-label">Wilks</span><span class="est-total-score-val">${wilksScore.toFixed(1)}</span></div>
-        ${athlete?.bodyweight ? `<div class="est-total-bw">${athlete.bodyweight} ${athlete.bwUnit || 'lbs'} BW</div>` : ''}
-      </div>` : '';
-    const sVal = compLifts.squat?.bestE1rm || 0;
-    const bVal = compLifts.bench?.bestE1rm || 0;
-    const dVal = compLifts.deadlift?.bestE1rm || 0;
-    const breakdownHtml = `<div class="est-total-breakdown">${sVal ? `<span>S:${sVal}` : ''}${bVal ? ` B:${bVal}` : ''}${dVal ? ` D:${dVal}` : ''}</span></div>`;
-    estTotalHtml = `<div class="est-total-card">
-      <div>
-        <div class="est-total-label">Estimated Total</div>
-        <div class="est-total-val">${estTotal.toLocaleString()}<span class="est-total-unit"> ${unitLabel(true)}</span></div>
-        ${breakdownHtml}
-      </div>
-      ${rightSide}
-    </div>`;
-  }
-
-  // ── Volume + RPE legend ─────────────────────────────────────────────────
-  const volLegendHtml = [['Squat',_tc('--gold','#C9A84C')],['Bench','#7B9FD4'],['Deadlift',_tc('--green','#7EC89A')],['Other','#555']].map(([l,c]) =>
-    `<span class="vol-legend-item"><span class="vol-legend-dot" style="background:${c}"></span>${l}</span>`
-  ).join('') + (rpeCount > 0 ? '<span class="vol-legend-item"><span class="vol-legend-dot" style="background:var(--red);border-radius:50%"></span>Avg RPE</span>' : '');
-
-  // ── Compact 3-up progression charts ─────────────────────────────────────
-  const progChartInits = [];
-  let progressionHtml = '<div class="progression-grid">';
-  for (const [groupKey, groupLabel] of [['squat','Squat'],['bench','Bench'],['deadlift','Deadlift']]) {
-    const exercises = families[groupKey];
-    const exNames = Object.keys(exercises).filter(n => Object.keys(exercises[n]).length > 0);
-    if (!exNames.length) {
-      progressionHtml += `<div class="prog-mini"><div class="prog-mini-label">${groupLabel}</div><div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:11px">No data</div></div>`;
-      continue;
+  // ── Block-over-Block Deltas (3-column grid) ──────────────────────────
+  let blockDeltasHtml = '';
+  if (blockDeltas) {
+    blockDeltasHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">';
+    for (const gk of ['squat', 'bench', 'deadlift']) {
+      const bd = blockDeltas[gk];
+      const color = liftCardColors[gk];
+      const label = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' }[gk];
+      if (!bd.delta) {
+        blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;text-align:center">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
+          <div style="font-size:12px;color:${tv('--text-dim')||'#666'}">No change</div>
+        </div>`;
+        continue;
+      }
+      const deltaSign = bd.delta > 0 ? '+' : '';
+      const deltaColor = bd.delta > 0 ? _tc('--green','#4ade80') : _tc('--red','#E22C2C');
+      blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:${tv('--text-bright')||'#ddd'};margin-bottom:2px">${bd.current}</div>
+        <div style="font-size:11px;color:${deltaColor};font-weight:600">${deltaSign}${bd.delta} ${unitLabel(true)}</div>
+        <div style="font-size:9px;color:${tv('--text-sub')||'#888'};margin-top:4px">vs ${bd.prevBlockName}</div>
+      </div>`;
     }
-
-    const allWeekLabels = [...new Set(
-      exNames.flatMap(n => Object.keys(exercises[n]))
-    )].sort((a, b) => sessionOrder(a) - sessionOrder(b));
-
-    // Sort: comp lifts first, then variations by best e1RM
-    const sortedExNames = [...exNames].sort((a, b) => {
-      const aComp = isCompLift(a) ? 0 : 1;
-      const bComp = isCompLift(b) ? 0 : 1;
-      if (aComp !== bComp) return aComp - bComp;
-      const aMax = Math.max(...Object.values(exercises[a]).map(w => w.e1rm));
-      const bMax = Math.max(...Object.values(exercises[b]).map(w => w.e1rm));
-      return bMax - aMax;
-    });
-    // Show top 3 variations max for compact view
-    const displayExNames = sortedExNames.slice(0, 3);
-
-    const chartId = 'prog_' + groupKey;
-    const datasets = displayExNames.map((n, i) => {
-      const isComp = isCompLift(n);
-      const color = isComp ? liftCardColors[groupKey] : FAMILY_COLORS[(i + 1) % FAMILY_COLORS.length];
-      const data = allWeekLabels.map(wl => exercises[n][wl] ? Math.round(exercises[n][wl].e1rm) : null);
-      return {
-        label: n, data,
-        borderColor: color, backgroundColor: 'transparent',
-        pointBackgroundColor: color, pointBorderColor: tv('--bg') || '#0a0a0a', pointBorderWidth: 1,
-        borderWidth: isComp ? 2 : 1.5,
-        borderDash: isComp ? [] : [4, 3],
-        tension: 0.3, spanGaps: true, pointRadius: 2
-      };
-    });
-    progChartInits.push({ id: chartId, labels: allWeekLabels, datasets });
-
-    let varListHtml = displayExNames.map((n, i) => {
-      const isComp = isCompLift(n);
-      const color = isComp ? liftCardColors[groupKey] : FAMILY_COLORS[(i + 1) % FAMILY_COLORS.length];
-      const peakE1rm = Math.max(...Object.values(exercises[n]).map(w => w.e1rm));
-      return `<div class="prog-mini-var"><span class="prog-mini-var-dot" style="background:${color}"></span><span class="prog-mini-var-name">${n}</span><span class="prog-mini-var-val">${Math.round(peakE1rm)}</span></div>`;
-    }).join('');
-
-    progressionHtml += `<div class="prog-mini">
-      <div class="prog-mini-label">${groupLabel}</div>
-      <div class="prog-mini-chart"><canvas id="${chartId}" aria-label="${groupLabel} e1RM progression"></canvas></div>
-      <div class="prog-mini-vars">${varListHtml}</div>
-    </div>`;
+    blockDeltasHtml += '</div>';
   }
-  progressionHtml += '</div>';
 
-  // ── Sparkline init script ────────────────────────────────────────────────
-  const sparkScript = `
-function drawSparkline(canvasId, data, color) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  // Filter nulls for drawing but keep positions
-  const validData = data.map((v, i) => v !== null ? { i, v } : null).filter(Boolean);
-  if (validData.length < 2) return;
-  const ctx = canvas.getContext('2d');
-  if(!ctx) return;
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  ctx.scale(dpr, dpr);
-  const w = rect.width, h = rect.height, pad = 4;
-  const min = Math.min(...validData.map(d => d.v)) - 5;
-  const max = Math.max(...validData.map(d => d.v)) + 5;
-  const range = max - min || 1;
-  const total = data.length;
-  function getX(i) { return pad + (i / (total - 1)) * (w - pad * 2); }
-  function getY(v) { return h - pad - ((v - min) / range) * (h - pad * 2); }
-  // Fill gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, color + '30');
-  grad.addColorStop(1, color + '00');
-  ctx.beginPath();
-  ctx.moveTo(getX(validData[0].i), h);
-  for (const d of validData) ctx.lineTo(getX(d.i), getY(d.v));
-  ctx.lineTo(getX(validData[validData.length - 1].i), h);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-  // Line
-  ctx.beginPath();
-  for (let j = 0; j < validData.length; j++) {
-    const d = validData[j];
-    if (j === 0) ctx.moveTo(getX(d.i), getY(d.v));
-    else ctx.lineTo(getX(d.i), getY(d.v));
-  }
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.stroke();
-  // End dot
-  const last = validData[validData.length - 1];
-  ctx.beginPath();
-  ctx.arc(getX(last.i), getY(last.v), 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-}
-`;
-
-  // Build sparkline calls
-  let sparkCalls = '';
-  for (const gk of ['squat', 'bench', 'deadlift']) {
-    const cl = compLifts[gk];
-    if (cl && sparkCanvasIds[gk]) {
-      sparkCalls += `drawSparkline('${sparkCanvasIds[gk]}', ${JSON.stringify(cl.e1rmByWeek)}, '${liftCardColors[gk]}');\n`;
+  // ── e1RM Trend Chart (Chart.js line chart) ───────────────────────────
+  const e1rmChartScript = `
+  const goldColor = '${_tc('--gold','#C9A84C')}';
+  const greenColor = '${_tc('--green','#7EC89A')}';
+  new Chart(document.getElementById('e1rmChart'), {
+    type: 'line',
+    data: {
+      labels: ${JSON.stringify(weekLabels)},
+      datasets: [
+        { label:'Squat', data: ${JSON.stringify(compLifts.squat?.e1rmByWeek || [])}, borderColor: goldColor, backgroundColor: 'transparent', pointBackgroundColor: goldColor, pointBorderColor: '${tv('--bg')||'#0a0a0a'}', pointBorderWidth: 1.5, borderWidth: 2, pointRadius: 3, tension: 0.3, spanGaps: true, fill: false },
+        { label:'Bench', data: ${JSON.stringify(compLifts.bench?.e1rmByWeek || [])}, borderColor: '#7B9FD4', backgroundColor: 'transparent', pointBackgroundColor: '#7B9FD4', pointBorderColor: '${tv('--bg')||'#0a0a0a'}', pointBorderWidth: 1.5, borderWidth: 2, pointRadius: 3, tension: 0.3, spanGaps: true, fill: false },
+        { label:'Deadlift', data: ${JSON.stringify(compLifts.deadlift?.e1rmByWeek || [])}, borderColor: greenColor, backgroundColor: 'transparent', pointBackgroundColor: greenColor, pointBorderColor: '${tv('--bg')||'#0a0a0a'}', pointBorderWidth: 1.5, borderWidth: 2, pointRadius: 3, tension: 0.3, spanGaps: true, fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '${tv('--text-mid')||'#bbb'}', font: { family: 'Barlow Condensed', size: 11 }, padding: 10 } },
+        tooltip: { backgroundColor: '#141414', borderColor: '#222', borderWidth: 1, titleColor: '#888', bodyColor: '#ccc', padding: 8 }
+      },
+      scales: {
+        x: { ticks: { color: '#555', font: { family: 'Barlow Condensed', size: 10 } }, grid: { display: false }, border: { display: false } },
+        y: { ticks: { color: '#444', font: { family: 'Barlow Condensed', size: 10 } }, grid: { color: '#1a1a1a' }, border: { display: false } }
+      }
     }
-  }
+  });`;
 
   // ── Volume + RPE dual-axis chart script ──────────────────────────────────
   const hasRpeData = weeklyAvgRpe.some(v => v !== null);
@@ -11329,25 +11327,33 @@ function drawSparkline(canvasId, data, color) {
     }
   });`;
 
-  // ── Mini progression chart scripts ──────────────────────────────────────
-  const miniProgScripts = progChartInits.map(c => `
-  new Chart(document.getElementById('${c.id}'), {
-    type: 'line',
-    data: { labels: ${JSON.stringify(c.labels)}, datasets: ${JSON.stringify(c.datasets)} },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'#141414', borderColor:'#222', borderWidth:1,
-          titleColor:'#888', bodyColor:'#ccc', padding:6, bodyFont:{size:10},
-          callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y }
-        }
-      },
-      scales:{ x:{display:false}, y:{display:false} },
-      elements:{point:{radius:2,hoverRadius:4}}
-    }
-  });`).join('\n');
+  // ── Volume + RPE legend ─────────────────────────────────────────────────
+  const volLegendHtml = [['Squat',_tc('--gold','#C9A84C')],['Bench','#7B9FD4'],['Deadlift',_tc('--green','#7EC89A')],['Other','#555']].map(([l,c]) =>
+    `<span class="vol-legend-item"><span class="vol-legend-dot" style="background:${c}"></span>${l}</span>`
+  ).join('') + (rpeCount > 0 ? '<span class="vol-legend-item"><span class="vol-legend-dot" style="background:var(--red);border-radius:50%"></span>Avg RPE</span>' : '');
+
+  // ── Estimated total card HTML ────────────────────────────────────────────
+  let estTotalHtml = '';
+  if (estTotal > 0) {
+    const rightSide = (dotsScore && wilksScore) ? `
+      <div class="est-total-scores">
+        <div class="est-total-score-row"><span class="est-total-score-label">DOTS</span><span class="est-total-score-val">${dotsScore.toFixed(1)}</span></div>
+        <div class="est-total-score-row"><span class="est-total-score-label">Wilks</span><span class="est-total-score-val">${wilksScore.toFixed(1)}</span></div>
+        ${athlete?.bodyweight ? `<div class="est-total-bw">${athlete.bodyweight} ${athlete.bwUnit || 'lbs'} BW</div>` : ''}
+      </div>` : '';
+    const sVal = compLifts.squat?.bestE1rm || 0;
+    const bVal = compLifts.bench?.bestE1rm || 0;
+    const dVal = compLifts.deadlift?.bestE1rm || 0;
+    const breakdownHtml = `<div class="est-total-breakdown">${sVal ? `<span>S:${sVal}` : ''}${bVal ? ` B:${bVal}` : ''}${dVal ? ` D:${dVal}` : ''}</span></div>`;
+    estTotalHtml = `<div class="est-total-card">
+      <div>
+        <div class="est-total-label">Estimated Total</div>
+        <div class="est-total-val">${estTotal.toLocaleString()}<span class="est-total-unit"> ${unitLabel(true)}</span></div>
+        ${breakdownHtml}
+      </div>
+      ${rightSide}
+    </div>`;
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // FINAL HTML
@@ -11402,7 +11408,6 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .comp-card-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;line-height:1;margin-bottom:1px}
 .comp-card-unit{font-size:12px;font-weight:600;color:${tv('--text-sub')||'#999'}}
 .comp-card-delta{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;margin-bottom:4px}
-.comp-card-sparkline{height:36px;margin:0 -4px 6px}
 .comp-card-divider{height:1px;background:${tv('--border')||'#222'};margin-bottom:6px}
 .comp-card-best-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${tv('--text-sub')||'#888'};margin-bottom:2px}
 .comp-card-best{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:${tv('--text-faint')||'#aaa'};margin-bottom:6px}
@@ -11438,17 +11443,6 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .vol-legend-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
 .vol-chart-wrap{height:170px}
 
-/* Block Progression (compact 3-up) */
-.progression-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.prog-mini{background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;overflow:hidden}
-.prog-mini-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:6px}
-.prog-mini-chart{height:100px;margin:0 -4px}
-.prog-mini-vars{margin-top:6px;border-top:1px solid ${tv('--surface-3')||'#1a1a1a'};padding-top:6px}
-.prog-mini-var{display:flex;align-items:center;gap:4px;padding:1px 0}
-.prog-mini-var-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.prog-mini-var-name{font-size:10px;color:${tv('--text-sub')||'#999'};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog-mini-var-val{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:${tv('--text-mid')||'#bbb'}}
-
 /* Weekly top sets */
 .weekly-table{width:100%;border-collapse:collapse;font-size:11px}
 .weekly-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};padding:4px 6px;text-align:left;border-bottom:1px solid ${tv('--border')||'#222'}}
@@ -11466,6 +11460,9 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 .weekly-table tr.peak-week .week-date{color:rgba(201,168,76,.6)}
 .peak-badge{display:inline-block;font-size:7px;font-weight:700;letter-spacing:.06em;background:var(--gold);color:#000;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
 .weekly-total-row td{border-top:2px solid ${tv('--border')||'#222'};border-bottom:none;padding-top:8px}
+.td-delta{display:inline-block;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px}
+.td-delta.up{background:rgba(126,200,154,.15);color:${_tc('--green','#4ade80')}}
+.td-delta.down{background:rgba(226,44,44,.15);color:${_tc('--red','#E22C2C')}}
 
 /* Footer */
 .rpt-footer{margin-top:16px;font-size:11px;color:${tv('--text-sub')||'#888'};display:flex;justify-content:space-between}
@@ -11488,17 +11485,12 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .comp-card{padding:14px 14px 10px;border-radius:12px}
   .comp-card-val{font-size:30px}
   .comp-card-delta{font-size:13px}
-  .comp-card-sparkline{height:44px}
   .comp-card-best{font-size:13px}
   .comp-card-trend-text{font-size:10px}
   .flags-section{padding:18px;border-radius:14px}
   .flag-text{font-size:13px}
   .section-card{padding:18px;border-radius:14px}
   .vol-chart-wrap{height:220px}
-  .progression-grid{gap:12px}
-  .prog-mini{padding:14px;border-radius:12px}
-  .prog-mini-chart{height:130px}
-  .prog-mini-var-name{font-size:10px}
   .weekly-table td{padding:7px 8px;font-size:13px}
   .weekly-table th{font-size:10px;padding:5px 8px}
 }
@@ -11508,21 +11500,11 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .report{max-width:1000px}
   .stats-strip{grid-template-columns:repeat(4,1fr);gap:12px}
   .vol-chart-wrap{height:260px}
-  .prog-mini-chart{height:150px}
 }
 
-/* Small mobile — stack comp cards and progression */
+/* Small mobile — stack comp cards */
 @media (max-width:420px){
   .comp-cards{grid-template-columns:1fr;gap:8px}
-  .comp-card{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto;gap:0 10px}
-  .comp-card-accent{grid-column:1/-1}
-  .comp-card-sparkline{grid-column:2;grid-row:2/5;width:80px;height:40px;margin:0;align-self:center}
-  .comp-card-divider{display:none}
-  .comp-card-best-label{display:inline;font-size:8px}
-  .comp-card-best{display:inline;margin-left:4px;margin-bottom:0}
-  .comp-card-trend{grid-column:1/-1}
-  .progression-grid{grid-template-columns:1fr}
-  .prog-mini-chart{height:120px}
   .stats-strip{grid-template-columns:repeat(2,1fr)}
 }
 
@@ -11532,8 +11514,8 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .report{padding:10px;max-width:100%}
   html,body{background:${tv('--bg')||'#0a0a0a'}}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .comp-card,.section-card,.prog-mini,.flags-section{break-inside:avoid}
-  .vol-chart-wrap,.prog-mini-chart{break-inside:avoid}
+  .comp-card,.section-card,.flags-section{break-inside:avoid}
+  .vol-chart-wrap{break-inside:avoid}
   @page{size:portrait;margin:8mm}
 }
 </style>
@@ -11541,7 +11523,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 <body>
 <div class="report">
 
-  <!-- Header -->
+  <!-- 1. Header -->
   <div class="rpt-hdr">
     <div class="rpt-brand">UNRACK</div>
     ${athleteName ? `<div class="rpt-athlete">${escH(athleteName)}</div>` : ''}
@@ -11553,47 +11535,39 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
     </div>
   </div>
 
-  <!-- Stats Strip -->
-  <div class="stats-strip">
-    <div class="strip-stat">
-      <div class="strip-stat-val" style="color:${compliancePct >= 85 ? _tc('--green','#4ade80') : compliancePct >= 70 ? _tc('--amber','#F5A623') : _tc('--red','#E22C2C')}">${compliancePct}<span class="strip-stat-sub">%</span></div>
-      <div class="strip-stat-label">Compliance</div>
-    </div>
-    <div class="strip-stat">
-      <div class="strip-stat-val">${fmtVolume(totalVolume)}</div>
-      <div class="strip-stat-label">Volume (${unitLabel(true)})</div>
-    </div>
-    <div class="strip-stat">
-      <div class="strip-stat-val">${avgRpe}</div>
-      <div class="strip-stat-label">Avg RPE</div>
-    </div>
-    <div class="strip-stat">
-      <div class="strip-stat-val">${totalSets}</div>
-      <div class="strip-stat-label">Sets Done</div>
-    </div>
-  </div>
+  <!-- 2. Status Badge -->
+  ${statusBadgeHtml}
 
-  <!-- Estimated Total -->
-  ${estTotalHtml}
+  <!-- 3. Flags & Insights -->
+  ${insights}
 
-  <!-- Comp Lift Cards -->
+  <!-- 4. Block-over-Block Deltas -->
+  ${blockDeltasHtml}
+
+  <!-- 5. Competition Lift Cards (no sparklines) -->
   <div class="section-title" style="margin-bottom:8px">Competition Lifts</div>
   <div class="comp-cards">${compCardsHtml}</div>
 
-  <!-- Flags & Insights -->
-  ${insights}
+  <!-- 6. e1RM Trend Chart (Chart.js line) -->
+  <div class="section-card">
+    <div class="section-title">e1RM Trend</div>
+    <div style="height:220px"><canvas id="e1rmChart" aria-label="e1RM trend over weeks"></canvas></div>
+  </div>
 
-  <!-- Volume & RPE Trend -->
+  <!-- 7. Volume & RPE Trend -->
   <div class="section-card">
     <div class="section-title">Volume &amp; RPE Trend</div>
     <div class="vol-legend">${volLegendHtml}</div>
     <div class="vol-chart-wrap"><canvas id="volRpeChart" aria-label="Volume and RPE trend over time"></canvas></div>
   </div>
 
-  <!-- E1RM Progression Charts -->
-  ${progressionHtml}
+  <!-- 8. Planned vs Actual Deviation (placeholder) -->
+  <div class="section-card">
+    <div class="section-title">Planned vs Actual Deviation</div>
+    <div style="text-align:center;padding:20px 0;color:${tv('--text-dim')||'#666'};font-size:12px">No deviation data available</div>
+  </div>
 
-  <!-- Weekly Top Sets -->
+  <!-- 9. Weekly Top Sets -->
   <div class="section-card">
     <div class="section-title">Weekly Top Sets</div>
     <table class="weekly-table">
@@ -11603,7 +11577,30 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
     </table>
   </div>
 
-  <!-- Footer -->
+  <!-- 10. Estimated Total & DOTS/Wilks -->
+  ${estTotalHtml}
+
+  <!-- 11. Stats Strip (Compliance, Avg RPE, Volume, Total Sets) -->
+  <div class="stats-strip">
+    <div class="strip-stat">
+      <div class="strip-stat-val" style="color:${compliancePct >= 85 ? _tc('--green','#4ade80') : compliancePct >= 70 ? _tc('--amber','#F5A623') : _tc('--red','#E22C2C')}">${compliancePct}<span class="strip-stat-sub">%</span></div>
+      <div class="strip-stat-label">Compliance</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-stat-val">${avgRpe}</div>
+      <div class="strip-stat-label">Avg RPE</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-stat-val">${fmtVolume(totalVolume)}</div>
+      <div class="strip-stat-label">Volume</div>
+    </div>
+    <div class="strip-stat">
+      <div class="strip-stat-val">${totalSets}</div>
+      <div class="strip-stat-label">Sets Done</div>
+    </div>
+  </div>
+
+  <!-- 12. Footer -->
   <div class="rpt-footer">
     <span>UNRACK</span>
     <span>${dateStr}</span>
@@ -11612,10 +11609,8 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
 </div>
 <button class="save-btn" onclick="setTimeout(()=>window.print(),300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save as PDF</button>
 <script>
-${sparkScript}
-${sparkCalls}
+${e1rmChartScript}
 ${volChartScript}
-${miniProgScripts}
 <\/script>
 </body>
 </html>`;
@@ -11624,6 +11619,7 @@ ${miniProgScripts}
 }
 
 function _buildHTMLReport(blockId) {
+  _reportDataCache.clear();
   const data = _getReportData(blockId);
   if (!data) return null;
   const weeklyTable = _buildWeeklyTable(data);
