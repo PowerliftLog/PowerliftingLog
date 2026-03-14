@@ -1437,6 +1437,98 @@ function scoreV(wb) {
   return { id, score: Math.min(1.0, score), signals: { matched, missing, negative } };
 }
 
+// ── FORMAT W SCORE (Simple Specific Scientific coaching template) ─────────────
+function scoreW(wb) {
+  const id = 'W';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  // Signal 1: "SIMPLE SPECIFIC SCIENTIFIC" title in any sheet's first 5 rows
+  let foundTitle = false;
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      for (const cell of row) {
+        if (cell && /simple\s+specific\s+scientific/i.test(String(cell).trim())) {
+          score += 0.5; matched.push('"SIMPLE SPECIFIC SCIENTIFIC" title found');
+          foundTitle = true; break;
+        }
+      }
+      if (foundTitle) break;
+    }
+    if (foundTitle) break;
+  }
+  if (!foundTitle) missing.push('"SIMPLE SPECIFIC SCIENTIFIC" title');
+
+  // Signals 2 & 3: PROGRAM sheet with horizontal week groups + repeating EXERCISE sub-headers
+  let foundProgram = false;
+  for (const sn of wb.SheetNames) {
+    if (!/^program$/i.test(sn.trim())) continue;
+    foundProgram = true;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+
+    let weekHeaderRow = -1;
+    const weekPositions = [];
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const wpos = [];
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] && /^WEEK\s*\d/i.test(String(row[c]).trim())) wpos.push(c);
+      }
+      if (wpos.length >= 2) { weekHeaderRow = i; weekPositions.push(...wpos); break; }
+    }
+
+    if (weekPositions.length >= 4) {
+      score += 0.2; matched.push('4 horizontal WEEK N headers in PROGRAM sheet');
+    } else if (weekPositions.length >= 2) {
+      score += 0.1; matched.push('2+ horizontal WEEK N headers in PROGRAM sheet');
+    } else {
+      missing.push('WEEK N horizontal headers in PROGRAM sheet');
+    }
+
+    if (weekHeaderRow >= 0 && weekPositions.length >= 2) {
+      let foundExHeaders = false;
+      for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 5, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        let exCount = 0;
+        for (const wc of weekPositions) {
+          if (row[wc] && /^exercise$/i.test(String(row[wc]).trim())) exCount++;
+        }
+        if (exCount >= 2) {
+          score += 0.2; matched.push('EXERCISE sub-headers repeating at week positions');
+          foundExHeaders = true; break;
+        }
+      }
+      if (!foundExHeaders) missing.push('EXERCISE sub-headers at week column positions');
+    }
+    break;
+  }
+  if (!foundProgram) missing.push('PROGRAM sheet');
+
+  // Signal 4: HOMEPAGE_FAQ sheet with ESTIMATED 1 REP MAX
+  for (const sn of wb.SheetNames) {
+    if (!/homepage|faq/i.test(sn.trim())) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    let found1RM = false;
+    for (let i = 0; i < Math.min(12, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      if (row.some(c => c && /estimated\s*1\s*rep\s*max/i.test(String(c)))) {
+        score += 0.1; matched.push('ESTIMATED 1 REP MAX in HOMEPAGE_FAQ');
+        found1RM = true; break;
+      }
+    }
+    if (!found1RM) missing.push('ESTIMATED 1 REP MAX in HOMEPAGE_FAQ');
+    break;
+  }
+
+  if (score === 0) missing.push('"SIMPLE SPECIFIC SCIENTIFIC" title, WEEK N horizontal headers');
+  return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+}
+
 // ── TIE-BREAKING HELPERS ──────────────────────────────────────────────────────
 
 function _tryParse(wb, formatId) {
@@ -1464,6 +1556,7 @@ function _tryParse(wb, formatId) {
       case 'T': return parseT(wb);
       case 'U': return parseU(wb);
       case 'V': return parseV(wb);
+      case 'W': return parseW(wb);
       default: return null;
     }
   } catch(e) { return null; }
@@ -1497,7 +1590,7 @@ function detectFormat(wb){
       scoreG(wb), scoreH(wb), scoreI(wb), scoreJ(wb), scoreK(wb),
       scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
       scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
-      scoreV(wb)
+      scoreV(wb), scoreW(wb)
     ].sort((a, b) => b.score - a.score);
 
     const top = scores[0];
@@ -2059,6 +2152,7 @@ function parseWorkbook(wb){
   else if (fmt === 'T') blocks = parseT(wb);
   else if (fmt === 'U') blocks = parseU(wb);
   else if (fmt === 'V') blocks = parseV(wb);
+  else if (fmt === 'W') blocks = parseW(wb);
   else if (fmt === 'C') blocks = parseCAutoFormat(wb);
   else if (fmt === 'D') blocks = parseD(wb);
   else blocks = parseB(wb);
@@ -4911,6 +5005,72 @@ function clearParseCache() {
   _parseWarmupSetsCache.clear();
 }
 
+// ── parseSets helper: parses a single prescription segment (no semicolons/commas)
+// Handles all @ notation, AMRAP, plus-notation, and (for comma-split context) plain NxM and bare N.
+function _parseSingleSetGroup(seg){
+  seg = seg.trim();
+  if(!seg) return null;
+  // NxM(weight) — existing parenthesized format, extended to AMRAP/AMAP/MR/F/? as reps
+  {
+    const sets=[]; const pat=/(\d+x)?(\d+|AMRAP|AMAP|MR|F|\?)\s*\(([^)]+)\)/gi; let m;
+    while((m=pat.exec(seg))!==null){
+      const mult=m[1]?parseInt(m[1]):1;
+      const rraw=m[2]; const rups=rraw.toUpperCase();
+      const reps=/^\d+$/.test(rraw)?parseInt(rraw):(rups==='AMAP'||rups==='MR'||rups==='F')?'AMRAP':rraw;
+      const amrapFlag=reps==='AMRAP';
+      for(let i=0;i<mult;i++) sets.push({reps,weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim())),...(amrapFlag?{amrap:true}:{})});
+    }
+    if(sets.length>0) return sets;
+  }
+  let r;
+  // NxAMRAP @RPE — aliases: AMRAP, AMAP, MR, F
+  r=seg.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[3]); return Array.from({length:n},()=>({reps:'AMRAP',rpe,amrap:true})); }
+  // NxAMRAP bare — aliases: AMRAP, AMAP, MR, F
+  r=seg.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*$/i);
+  if(r){ const n=parseInt(r[1]); return Array.from({length:n},()=>({reps:'AMRAP',amrap:true})); }
+  // NxM @RPE (with keyword)  e.g. "3x5 @RPE8"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); return Array.from({length:n},()=>({reps,rpe})); }
+  // NxM @weight lbs/kg  e.g. "3x6 @330lbs"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight=parseFloat(r[3]),unit=r[4].toLowerCase(); return Array.from({length:n},()=>({reps,weight,unit})); }
+  // NxM @-drop%  e.g. "2x7 @-15%"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)%\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),dropPercent=parseFloat(r[3])/100; return Array.from({length:n},()=>({reps,dropPercent})); }
+  // NxM @%  e.g. "5x8 @75%"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)%\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100; return Array.from({length:n},()=>({reps,percentage})); }
+  // NxM @0.decimal  e.g. "3x5 @0.80"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(0\.\d+)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3]); return Array.from({length:n},()=>({reps,percentage})); }
+  // NxM+ (plus-notation, last set AMRAP)  e.g. "3x5+"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\+\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); const s=Array.from({length:n-1},()=>({reps})); s.push({reps,amrap:true}); return s; }
+  // N@RPE bare (single set)  e.g. "5@6"
+  r=seg.match(/^(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ return [{reps:parseInt(r[1]),rpe:parseFloat(r[2])}]; }
+  // NxM @bare number (no keyword, treat as RPE)  e.g. "2x5@8"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); return Array.from({length:n},()=>({reps,rpe})); }
+  // Nx? (open/unknown reps)  e.g. "3x?" — n≤20 guard
+  r=seg.match(/^(\d+)\s*x\s*\?\s*$/);
+  if(r){ const n=parseInt(r[1]); if(n>20) return null; return Array.from({length:n},()=>({reps:'?'})); }
+  // Range-set with @RPE (for comma-split context)  e.g. "2-3x3@9"
+  r=seg.match(/^(\d+)[\-–](\d+)\s*x\s*(\d+)\s*@\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[3]),rpe=parseFloat(r[4]); return Array.from({length:n},()=>({reps,rpe})); }
+  // +Nunit xR xS (relative weight, from-zero offset)  e.g. "+5kg x6 x2"
+  r=seg.match(/^\+(\d+(?:\.\d+)?)\s*(kg|lbs?)\s*x\s*(\d+)\s*x\s*(\d+)\s*$/i);
+  if(r){ const weight='+'+r[1],unit=r[2].toLowerCase(),reps=parseInt(r[3]),n=parseInt(r[4]); return Array.from({length:n},()=>({reps,weight,unit})); }
+  // NxM plain (for comma-split context only)  e.g. "3x5"  — n≤20 guard prevents warmup "135x8" producing 135 sets
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); if(n>20) return null; return Array.from({length:n},()=>({reps})); }
+  // Bare number (for comma-split context)  e.g. "5"
+  r=seg.match(/^(\d+)\s*$/);
+  if(r){ return [{reps:parseInt(r[1])}]; }
+  return null;
+}
+
 function parseSets(pres){
   if(!pres) return [];
   pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
@@ -4918,13 +5078,83 @@ function parseSets(pres){
   if(cached !== undefined) return cached;
   // Bail out if prescription is a set range like "3-5x1 (405)" — let parseRangeSet handle it
   if(/^\d+[\-–]\d+\s*x/i.test(pres.trim())) { _parseSetsCache.set(pres,[]); return []; }
-  const sets=[]; const pat=/(\d+x)?(\d+)\s*\(([^)]+)\)/g; let m;
-  while((m=pat.exec(pres))!==null){
-    const mult=m[1]?parseInt(m[1]):1;
-    for(let i=0;i<mult;i++) sets.push({reps:parseInt(m[2]),weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim()))});
+
+  // Semicolon split: "1x5 @RPE5; 2x7 @-15%" → parse each segment and concat
+  if(pres.includes(';')){
+    const segs=pres.split(';').map(s=>s.trim()).filter(Boolean);
+    if(segs.length>1){
+      const sets=[];
+      for(const seg of segs) sets.push(...parseSets(seg));
+      _parseSetsCache.set(pres,sets); return sets;
+    }
   }
-  _parseSetsCache.set(pres, sets);
-  return sets;
+
+  // Existing NxM(weight) global pattern — extended to AMRAP/AMAP/MR/F/? as reps
+  {
+    const sets=[]; const pat=/(\d+x)?(\d+|AMRAP|AMAP|MR|F|\?)\s*\(([^)]+)\)/gi; let m;
+    while((m=pat.exec(pres))!==null){
+      const mult=m[1]?parseInt(m[1]):1;
+      const rraw=m[2]; const rups=rraw.toUpperCase();
+      const reps=/^\d+$/.test(rraw)?parseInt(rraw):(rups==='AMAP'||rups==='MR'||rups==='F')?'AMRAP':rraw;
+      const amrapFlag=reps==='AMRAP';
+      for(let i=0;i<mult;i++) sets.push({reps,weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim())),...(amrapFlag?{amrap:true}:{})});
+    }
+    if(sets.length>0){ _parseSetsCache.set(pres,sets); return sets; }
+  }
+
+  // Comma split: "5@6, 5@7, 2x5@8" or "3x5, 5x3, 1x1+" — each segment parsed via helper
+  if(pres.includes(',')){
+    const segs=pres.split(',').map(s=>s.trim()).filter(Boolean);
+    const sets=[]; let ok=true;
+    for(const seg of segs){
+      const parsed=_parseSingleSetGroup(seg);
+      if(parsed&&parsed.length>0) sets.push(...parsed);
+      else{ ok=false; break; }
+    }
+    if(ok&&sets.length>0){ _parseSetsCache.set(pres,sets); return sets; }
+  }
+
+  // New single-group @ patterns (no plain NxM — parseSets("3x5") still returns [])
+  let r;
+  // NxAMRAP @RPE — aliases: AMRAP, AMAP, MR, F  e.g. "3xAMRAP @RPE8"
+  r=pres.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps:'AMRAP',rpe,amrap:true})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxAMRAP bare — aliases: AMRAP, AMAP, MR, F  e.g. "3xAMRAP" or "4xAMAP"
+  r=pres.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*$/i);
+  if(r){ const n=parseInt(r[1]); const sets=Array.from({length:n},()=>({reps:'AMRAP',amrap:true})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @RPE (with keyword)  e.g. "3x5 @RPE8"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @weight lbs/kg  e.g. "3x6 @330lbs"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight=parseFloat(r[3]),unit=r[4].toLowerCase(); const sets=Array.from({length:n},()=>({reps,weight,unit})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @-drop%  e.g. "2x7 @-15%"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)%\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),dropPercent=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,dropPercent})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @%  e.g. "5x8 @75%"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)%\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @0.decimal  e.g. "3x5 @0.80"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(0\.\d+)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM+ (plus-notation)  e.g. "3x5+"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\+\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); const sets=Array.from({length:n-1},()=>({reps})); sets.push({reps,amrap:true}); _parseSetsCache.set(pres,sets); return sets; }
+  // N@RPE bare  e.g. "5@6"
+  r=pres.match(/^(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ const sets=[{reps:parseInt(r[1]),rpe:parseFloat(r[2])}]; _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @bare number (no keyword, treat as RPE)  e.g. "2x5@8"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; }
+  // Nx? (open/unknown reps)  e.g. "3x?"
+  r=pres.match(/^(\d+)\s*x\s*\?\s*$/);
+  if(r){ const n=parseInt(r[1]); const sets=Array.from({length:n},()=>({reps:'?'})); _parseSetsCache.set(pres,sets); return sets; }
+  // +Nunit xR xS (relative weight offset)  e.g. "+5kg x6 x2"
+  r=pres.match(/^\+(\d+(?:\.\d+)?)\s*(kg|lbs?)\s*x\s*(\d+)\s*x\s*(\d+)\s*$/i);
+  if(r){ const weight='+'+r[1],unit=r[2].toLowerCase(),reps=parseInt(r[3]),n=parseInt(r[4]); const sets=Array.from({length:n},()=>({reps,weight,unit})); _parseSetsCache.set(pres,sets); return sets; }
+
+  _parseSetsCache.set(pres,[]);
+  return [];
 }
 
 function parseSimple(pres){
@@ -4992,8 +5222,18 @@ function parseBarePres(pres){
   let result = null;
   if(/^\d+$/.test(p)) result={sets:1,reps:p};
   else if(/^\d+:\d{2}$/.test(p)) result={sets:1,reps:p};
-  // Rep range like "15-20" or "8-12"
-  else if(/^\d+[\-–]\d+$/.test(p)) result={sets:1,reps:p};
+  // Rep range like "15-20" or "8-12" (with or without spaces around dash)
+  else if(/^\d+\s*[\-–]\s*\d+$/.test(p)) result={sets:1,reps:p.replace(/\s/g,'')};
+  // "N reps" or "1 rep (rest note)" — "N" is set count 1, reps = N
+  else if(/^\d+\s+reps?(\s.*)?$/i.test(p)) result={sets:1,reps:String(parseInt(p))};
+  // "N sets" — N sets of unspecified reps
+  else if(/^\d+\s+sets?$/i.test(p)) result={sets:parseInt(p),reps:'open'};
+  // "(N)" — parenthesized weight only  e.g. "(312)"
+  else if(/^\(\s*\d+(?:\.\d+)?\s*\)$/.test(p)){ const w=p.replace(/[()]/g,'').trim(); result={sets:1,reps:'1',weight:w}; }
+  // "NRM" — rep-max notation  e.g. "5RM"
+  else if(/^\d+RM$/i.test(p)) result={sets:1,reps:String(parseInt(p))};
+  // "Max Attempt" or "Max Out" — 1 set of max weight/reps
+  else if(/^max\s+(attempt|out)[!]*/i.test(p)) result={sets:1,reps:'max'};
   _parseBarePresCache.set(pres, result);
   return result;
 }
@@ -11339,6 +11579,533 @@ function _vBuildPrescription(sets, reps, load, rir) {
   return parts;
 }
 
+// ── FORMAT W PARSER (Simple Specific Scientific coaching template) ────────────
+// Layout: HOMEPAGE_FAQ for athlete/maxes; PROGRAM has 4 horizontal week groups
+// (stride=7 columns), 7 days per section, multi-row exercises combined.
+function parseW(wb) {
+  // ── Step 1: Extract from HOMEPAGE_FAQ ──────────────────────────────────────
+  let athleteName = '';
+  let maxes = { squat: null, bench: null, deadlift: null };
+  let programName = 'Simple Specific Scientific';
+
+  for (const sn of wb.SheetNames) {
+    if (!/homepage|faq/i.test(sn)) continue;
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    // Row 1 (0-indexed): title (e.g., "SIMPLE SPECIFIC SCIENTIFIC")
+    if (rows[1] && rows[1][0]) {
+      const raw = String(rows[1][0]).trim();
+      programName = raw.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+    }
+    // Row 3 (0-indexed): Athlete name at col 1
+    if (rows[3] && rows[3][1] != null) athleteName = String(rows[3][1]).trim();
+    // Rows 8-10 (0-indexed): SQUAT/DEADLIFT/BENCH 1RM-LB at col 11 (M column)
+    if (rows[8]  && rows[8][11]  != null) maxes.squat    = Number(rows[8][11]);
+    if (rows[9]  && rows[9][11]  != null) maxes.deadlift = Number(rows[9][11]);
+    if (rows[10] && rows[10][11] != null) maxes.bench    = Number(rows[10][11]);
+    break;
+  }
+
+  // ── Step 2: Parse PROGRAM sheet ────────────────────────────────────────────
+  const programSn = wb.SheetNames.find(sn => /^program$/i.test(sn.trim()));
+  if (!programSn) return null;
+
+  const ws = wb.Sheets[programSn];
+  const rows = _w_cleanRows(ws);
+  const sheetRange = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const colOffset = sheetRange.s.c;
+  const rowOffset = sheetRange.s.r;
+  if (!rows || rows.length < 5) return null;
+
+  // Find week header row: ≥2 "WEEK N" labels in a single row
+  let weekHeaderRow = -1;
+  const weekPositions = []; // [{col, label}]
+  for (let i = 0; i < Math.min(10, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const wpos = [];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] && /^WEEK\s*\d/i.test(String(row[c]).trim()))
+        wpos.push({ col: c, label: String(row[c]).trim() });
+    }
+    if (wpos.length >= 2) { weekHeaderRow = i; weekPositions.push(...wpos); break; }
+  }
+  if (weekHeaderRow === -1 || weekPositions.length < 2) return null;
+
+  const base0 = weekPositions[0].col;
+  const stride = weekPositions.length > 1 ? weekPositions[1].col - weekPositions[0].col : 7;
+
+  // Detect column offsets within a week group from first sub-header row
+  let exOff = 0, setsOff = 1, repsOff = 2, loadOff = 3;
+  for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 5, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    let found = 0;
+    for (let c = base0; c < base0 + stride && c < row.length; c++) {
+      const s = String(row[c] || '').toLowerCase().trim();
+      if (s === 'exercise')                            { exOff   = c - base0; found++; }
+      else if (s === 'sets')                           { setsOff = c - base0; found++; }
+      else if (s === 'reps')                           { repsOff = c - base0; found++; }
+      else if (s === 'load' || s === 'load/rpe' || s === 'load / rpe') { loadOff = c - base0; found++; }
+    }
+    if (found >= 3) break;
+  }
+
+  // Find day sections: rows where "exercise" appears at ≥2 week column positions
+  const daySections = []; // [{subHeaderRow, dayNum}]
+  let dayNum = 0;
+  for (let i = weekHeaderRow + 1; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    let exCount = 0;
+    for (const wp of weekPositions) {
+      if (String(row[wp.col + exOff] || '').toLowerCase().trim() === 'exercise') exCount++;
+    }
+    if (exCount >= 2) { dayNum++; daySections.push({ subHeaderRow: i, dayNum }); }
+  }
+  if (daySections.length === 0) return null;
+
+  // ── Parse exercise groups per day section ──────────────────────────────────
+  const dayData = []; // [{dayNum, weekExerciseSets: Array[nWeeks][]}]
+
+  for (let d = 0; d < daySections.length; d++) {
+    const startRow = daySections[d].subHeaderRow + 1;
+    const endRow   = d + 1 < daySections.length ? daySections[d + 1].subHeaderRow - 1 : rows.length;
+
+    // Build exercise groups from first week column (primary structure reference)
+    const exerciseGroups = []; // [{name, rows: [arrRowIdx]}]
+    for (let r = startRow; r < endRow; r++) {
+      const row = rows[r]; if (!row) continue;
+
+      // Skip rows with no sets/reps data in any week
+      let hasData = false;
+      for (const wp of weekPositions) {
+        if (row[wp.col + setsOff] != null || row[wp.col + repsOff] != null) { hasData = true; break; }
+      }
+      if (!hasData) continue;
+
+      const nameRaw = row[base0 + exOff];
+      const exName  = nameRaw ? String(nameRaw).trim() : '';
+
+      if (/^rest\s*day$/i.test(exName)) continue; // skip REST DAY rows
+
+      const isNamed = exName && /[a-zA-Z]{2,}/.test(exName) && !/^(exercise|week)/i.test(exName);
+      if (isNamed) {
+        const prev = exerciseGroups.length > 0 ? exerciseGroups[exerciseGroups.length - 1] : null;
+        // Same name as previous = backdown row with name repeated → combine
+        if (prev && prev.name === exName) {
+          prev.rows.push(r);
+        } else {
+          exerciseGroups.push({ name: exName, rows: [r] });
+        }
+      } else if (exerciseGroups.length > 0 && !exName) {
+        // Anonymous continuation row → belongs to previous exercise
+        exerciseGroups[exerciseGroups.length - 1].rows.push(r);
+      }
+    }
+
+    // Build per-week exercise lists from exercise groups
+    const weekExerciseSets = weekPositions.map(() => []);
+    for (const eg of exerciseGroups) {
+      for (let w = 0; w < weekPositions.length; w++) {
+        const wBase = weekPositions[w].col;
+
+        // Prefer this week's exercise name if it differs from first week's
+        let weekExName = eg.name;
+        for (const ri of eg.rows) {
+          const r2 = rows[ri];
+          const wkRaw = r2[wBase + exOff];
+          const wkName = wkRaw ? String(wkRaw).trim() : '';
+          if (wkName && /[a-zA-Z]{2,}/.test(wkName) && !/^(exercise|week)/i.test(wkName)) {
+            weekExName = wkName; break;
+          }
+        }
+
+        // Build prescription parts from all rows in this exercise group
+        const presParts = [];
+        for (const ri of eg.rows) {
+          const r2 = rows[ri];
+          const setsVal = r2[wBase + setsOff];
+          const repsVal = r2[wBase + repsOff];
+          if (setsVal == null && repsVal == null) continue;
+
+          const sc = parseInt(setsVal) || 0;
+          if (sc <= 0) continue;
+          const rp = repsVal != null ? String(repsVal).trim() : '';
+
+          // Read formatted load value from worksheet cell (handles formula strings like "330lbs")
+          let ld = '';
+          const rawLoad = r2[wBase + loadOff];
+          if (rawLoad != null) {
+            const physRow = ri + rowOffset;
+            const physCol = wBase + loadOff + colOffset;
+            const cellAddr = XLSX.utils.encode_cell({ r: physRow, c: physCol });
+            const cell = ws[cellAddr];
+            ld = (cell && cell.w) ? String(cell.w).trim() : String(rawLoad).trim();
+          }
+
+          const pres = _w_buildPrescription(sc, rp, ld);
+          if (pres) presParts.push(pres);
+        }
+
+        if (presParts.length > 0) {
+          weekExerciseSets[w].push({
+            name: weekExName,
+            prescription: presParts.join('; '),
+            note: '', lifterNote: '', loggedWeight: '', supersetGroup: null
+          });
+        }
+      }
+    }
+
+    dayData.push({ dayNum: daySections[d].dayNum, weekExerciseSets });
+  }
+
+  // ── Build week objects ──────────────────────────────────────────────────────
+  const allWeeks = [];
+  for (let w = 0; w < weekPositions.length; w++) {
+    const weekDays = [];
+    for (const dd of dayData) {
+      const exercises = dd.weekExerciseSets[w];
+      if (!exercises || exercises.length === 0) continue;
+      weekDays.push({ name: 'Day ' + dd.dayNum, exercises });
+    }
+    if (weekDays.length > 0) {
+      const rawLabel = weekPositions[w].label;
+      const label = rawLabel.replace(/^WEEK\s*(\d+)$/i, (_, n) => 'Week ' + n) || rawLabel;
+      allWeeks.push({ label, days: weekDays });
+    }
+  }
+  if (allWeeks.length === 0) return null;
+
+  const dateRange = _w_computeDateRange(rows, weekHeaderRow, weekPositions);
+  const blockName = programName + (athleteName ? ' \u2014 ' + athleteName : '');
+
+  return [{
+    id: 'W_' + Date.now(),
+    name: blockName,
+    format: 'W',
+    athleteName,
+    dateRange,
+    maxes,
+    weeks: allWeeks
+  }];
+}
+
+// ── Helper: strip leading apostrophes from sheet cells ───────────────────────
+function _w_cleanRows(ws) {
+  return XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+    .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+}
+
+// ── Helper: build Format W prescription string ───────────────────────────────
+// Handles RPE (integer 1-10), absolute weight ("330lbs"), percent drop ("-15%"), AMRAP
+function _w_buildPrescription(sets, reps, loadStr) {
+  if (!sets || sets <= 0) return null;
+  const repsStr = /^amrap$/i.test(reps) ? 'AMRAP' : (reps || '');
+  const ld = loadStr || '';
+  let loadPart = '';
+  if (ld) {
+    if (/^-?\d+%$/.test(ld)) {
+      // Percentage drop like "-15%" → @-15%
+      loadPart = ' @' + ld;
+    } else if (/lbs$/i.test(ld) || /kg$/i.test(ld)) {
+      // Absolute weight like "330lbs" → @330lbs
+      loadPart = ' @' + ld;
+    } else if (/^\d+$/.test(ld) && parseInt(ld) >= 1 && parseInt(ld) <= 10) {
+      // Integer 1-10 → RPE
+      loadPart = ' @RPE' + ld;
+    } else if (ld) {
+      loadPart = ' @' + ld;
+    }
+  }
+  return sets + 'x' + repsStr + loadPart;
+}
+
+// ── Helper: compute date range string from PROGRAM sheet rows ─────────────────
+function _w_computeDateRange(rows, weekHeaderRow, weekPositions) {
+  const base0 = weekPositions[0].col;
+  let firstSerial = null;
+  let lastSerial  = null;
+
+  // First date: row immediately after week header with a date serial at base column
+  for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 4, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const val = row[base0];
+    if (typeof val === 'number' && val > 40000 && val < 60000) { firstSerial = val; break; }
+  }
+
+  // Last date: scan backwards for a date serial at the last week's column
+  const lastWp = weekPositions[weekPositions.length - 1];
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const row = rows[i]; if (!row) continue;
+    const val = row[lastWp.col];
+    if (typeof val === 'number' && val > 40000 && val < 60000) { lastSerial = val; break; }
+  }
+
+  if (!firstSerial) return '';
+  const toDate = s => new Date((s - 25569) * 86400 * 1000);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmt = d => MONTHS[d.getUTCMonth()] + ' ' + d.getUTCDate();
+  const startDate = toDate(firstSerial);
+  const endDate   = lastSerial ? toDate(lastSerial) : null;
+  if (!endDate) return fmt(startDate) + ', ' + startDate.getUTCFullYear();
+  const yr = endDate.getUTCFullYear();
+  const sameYr = startDate.getUTCFullYear() === yr;
+  return sameYr
+    ? fmt(startDate) + ' \u2013 ' + fmt(endDate) + ', ' + yr
+    : fmt(startDate) + ', ' + startDate.getUTCFullYear() + ' \u2013 ' + fmt(endDate) + ', ' + yr;
+}
+
+
+// ── ADAPTIVE PARSER — SESSION 1: OCCUPANCY MATRIX + REGION DETECTION ─────────
+// Pure utility functions — no side effects on existing parsers or pipeline.
+
+/**
+ * _resolveMergedCells(ws)
+ * Build a lookup map from every non-top-left cell address inside a merge range
+ * to the top-left cell address of that range.
+ * Must run before _buildOccupancyMatrix so merged cells get the correct value/type.
+ *
+ * @param {object} ws — SheetJS worksheet
+ * @returns {object} { cellAddr: topLeftAddr } for all non-top-left merged cells
+ */
+function _resolveMergedCells(ws) {
+  const map = {};
+  if (!ws || !ws['!merges']) return map;
+  for (const merge of ws['!merges']) {
+    const tlAddr = XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c });
+    for (let r = merge.s.r; r <= merge.e.r; r++) {
+      for (let c = merge.s.c; c <= merge.e.c; c++) {
+        if (r === merge.s.r && c === merge.s.c) continue; // top-left is the source cell
+        map[XLSX.utils.encode_cell({ r, c })] = tlAddr;
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * _buildOccupancyMatrix(ws)
+ * Convert a SheetJS worksheet into a 2D grid of typed cells.
+ * Cell types: 'empty' | 'string' | 'number' | 'formula' | 'date'
+ * Merged cells resolve to the top-left cell's value and type.
+ * Formula cells carry their computed value; numericValue is set when result is numeric.
+ *
+ * @param {object} ws — SheetJS worksheet
+ * @returns {{ cells: Array<Array<{type, value, numericValue?}>>,
+ *             rowCount, colCount, startRow, startCol, range }}
+ */
+function _buildOccupancyMatrix(ws) {
+  if (!ws || !ws['!ref']) {
+    return { cells: [], rowCount: 0, colCount: 0, startRow: 0, startCol: 0, range: null };
+  }
+
+  const mergeMap = _resolveMergedCells(ws);
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const rowCount = range.e.r - range.s.r + 1;
+  const colCount = range.e.c - range.s.c + 1;
+
+  const cells = [];
+  for (let r = 0; r < rowCount; r++) {
+    cells[r] = [];
+    for (let c = 0; c < colCount; c++) {
+      const addr = XLSX.utils.encode_cell({ r: r + range.s.r, c: c + range.s.c });
+      const resolvedAddr = mergeMap[addr] || addr; // follow merge to top-left
+      const cell = ws[resolvedAddr];
+
+      if (!cell || cell.t === 'z' || cell.v == null || cell.v === '') {
+        cells[r][c] = { type: 'empty', value: null };
+      } else if (cell.t === 'd' || cell.v instanceof Date) {
+        cells[r][c] = { type: 'date', value: cell.v };
+      } else if (cell.f) {
+        // Formula: tag 'formula', expose numericValue when computed result is numeric
+        const v = cell.v;
+        cells[r][c] = { type: 'formula', value: v, numericValue: typeof v === 'number' ? v : null };
+      } else if (cell.t === 'n') {
+        cells[r][c] = { type: 'number', value: cell.v };
+      } else if (cell.t === 's') {
+        const v = String(cell.v).trim();
+        cells[r][c] = v === '' ? { type: 'empty', value: null } : { type: 'string', value: v };
+      } else if (cell.t === 'b') {
+        // Boolean — treat as string for text-pattern matching
+        cells[r][c] = { type: 'string', value: String(cell.v) };
+      } else {
+        cells[r][c] = { type: 'empty', value: null };
+      }
+    }
+  }
+
+  return { cells, rowCount, colCount, startRow: range.s.r, startCol: range.s.c, range };
+}
+
+/**
+ * _scoreRegionWorkoutLikeness(cells, minR, maxR, minC, maxC)
+ * Score a rectangular sub-region of the occupancy matrix for how likely it is
+ * to contain workout training data (exercises + numeric prescriptions).
+ *
+ * Signals (spec section 1b):
+ *   +0.50 — column with >=3 exercise-name-like strings (L176: /[a-zA-Z]{2,}/, not pure numbers)
+ *   +0.30 — column of small integers (sets 1-10 / reps 1-30; >=40% of non-empty column cells)
+ *   +0.20 — region has both string AND numeric cells (mixed-type region)
+ *   +0.10 — weight indicator (numbers >20 or strings matching /\d+\s*(lbs?|kg)/)
+ *   -> 0.0  — pure text block (>80% string, zero numeric cells) — rejected immediately
+ *
+ * @returns {number} score clamped to 0.0-1.0
+ */
+function _scoreRegionWorkoutLikeness(cells, minR, maxR, minC, maxC) {
+  let totalCells = 0;
+  let stringCells = 0;
+  let numericCells = 0;
+
+  for (let r = minR; r <= maxR; r++) {
+    for (let c = minC; c <= maxC; c++) {
+      if (!cells[r] || !cells[r][c]) continue;
+      const t = cells[r][c].type;
+      totalCells++;
+      if (t === 'string') stringCells++;
+      if (t === 'number' || (t === 'formula' && cells[r][c].numericValue != null)) numericCells++;
+    }
+  }
+
+  if (totalCells === 0) return 0;
+
+  // Reject pure text blocks: >80% string AND zero numeric cells
+  if (stringCells / totalCells > 0.80 && numericCells === 0) return 0;
+
+  let hasExerciseColumn = false;
+  let hasSmallIntColumn = false;
+  let hasWeightColumn = false;
+
+  for (let c = minC; c <= maxC; c++) {
+    let exerciseNameCount = 0;
+    let smallIntCount = 0;
+    let weightCount = 0;
+    let totalInCol = 0;
+
+    for (let r = minR; r <= maxR; r++) {
+      if (!cells[r] || !cells[r][c]) continue;
+      const cell = cells[r][c];
+      if (cell.type === 'empty') continue;
+      totalInCol++;
+
+      if (cell.type === 'string' && typeof cell.value === 'string') {
+        const v = cell.value;
+        // L176: two consecutive alpha chars minimum; skip pure-number strings
+        if (/[a-zA-Z]{2,}/.test(v) && !/^\d+\.?\d*$/.test(v.trim())) {
+          exerciseNameCount++;
+        }
+        if (/\d+\s*(lbs?|kg)\b/i.test(v)) weightCount++;
+      }
+
+      const numVal = cell.type === 'number' ? cell.value :
+                     (cell.type === 'formula' ? cell.numericValue : null);
+      if (numVal != null) {
+        if (Number.isInteger(numVal) && numVal >= 1 && numVal <= 30) smallIntCount++;
+        if (numVal > 20) weightCount++;
+      }
+    }
+
+    if (exerciseNameCount >= 3) hasExerciseColumn = true;
+    if (totalInCol > 0 && smallIntCount >= 2 && smallIntCount / totalInCol >= 0.40) hasSmallIntColumn = true;
+    if (weightCount >= 2) hasWeightColumn = true;
+  }
+
+  let score = 0;
+  if (hasExerciseColumn) score += 0.50;
+  if (hasSmallIntColumn) score += 0.30;
+  if (numericCells > 0 && stringCells > 0) score += 0.20;
+  if (hasWeightColumn) score += 0.10;
+
+  return Math.min(score, 1.0);
+}
+
+/**
+ * _detectRegions(matrix, ws)
+ * Flood-fill (BFS) over the occupancy matrix to find connected components of
+ * non-empty cells. Each component's bounding box becomes a candidate region.
+ * Regions smaller than 3 rows x 2 columns are discarded.
+ * Survivors are scored via _scoreRegionWorkoutLikeness and sorted highest-first.
+ *
+ * Coordinate conventions in returned regions:
+ *   startRow/endRow/startCol/endCol -- absolute 0-indexed sheet position
+ *   relStartRow/relEndRow/relStartCol/relEndCol -- relative to matrix cells[][]
+ *
+ * @param {{ cells, rowCount, colCount, startRow, startCol }} matrix
+ * @param {object} ws -- original worksheet (available to future passes)
+ * @returns {Array<{startRow,endRow,startCol,endCol,
+ *                  relStartRow,relEndRow,relStartCol,relEndCol,
+ *                  height,width,cellCount,workoutScore}>}
+ */
+function _detectRegions(matrix, ws) {
+  const { cells, rowCount, colCount, startRow, startCol } = matrix;
+  if (!rowCount || !colCount || !cells.length) return [];
+
+  const visited = Array.from({ length: rowCount }, () => new Uint8Array(colCount));
+  const regions = [];
+
+  for (let r = 0; r < rowCount; r++) {
+    for (let c = 0; c < colCount; c++) {
+      if (visited[r][c]) continue;
+      if (!cells[r] || !cells[r][c] || cells[r][c].type === 'empty') {
+        visited[r][c] = 1;
+        continue;
+      }
+
+      // BFS to collect full connected component
+      const queue = [[r, c]];
+      visited[r][c] = 1;
+      let head = 0;
+      let minR = r, maxR = r, minC = c, maxC = c;
+      let cellCount = 0;
+
+      while (head < queue.length) {
+        const [cr, cc] = queue[head++];
+        cellCount++;
+        if (cr < minR) minR = cr;
+        if (cr > maxR) maxR = cr;
+        if (cc < minC) minC = cc;
+        if (cc > maxC) maxC = cc;
+
+        // 4-directional neighbors only (no diagonals)
+        const next = [[cr - 1, cc], [cr + 1, cc], [cr, cc - 1], [cr, cc + 1]];
+        for (const [nr, nc] of next) {
+          if (nr < 0 || nr >= rowCount || nc < 0 || nc >= colCount) continue;
+          if (visited[nr][nc]) continue;
+          visited[nr][nc] = 1;
+          if (cells[nr] && cells[nr][nc] && cells[nr][nc].type !== 'empty') {
+            queue.push([nr, nc]);
+          }
+        }
+      }
+
+      const height = maxR - minR + 1;
+      const width  = maxC - minC + 1;
+
+      // Minimum size: 3 rows x 2 columns (spec requirement)
+      if (height < 3 || width < 2) continue;
+
+      const workoutScore = _scoreRegionWorkoutLikeness(cells, minR, maxR, minC, maxC);
+
+      regions.push({
+        startRow:    minR + startRow,   // absolute sheet row (0-indexed)
+        endRow:      maxR + startRow,
+        startCol:    minC + startCol,   // absolute sheet col (0-indexed)
+        endCol:      maxC + startCol,
+        relStartRow: minR,              // relative to matrix cells[][]
+        relEndRow:   maxR,
+        relStartCol: minC,
+        relEndCol:   maxC,
+        height,
+        width,
+        cellCount,
+        workoutScore
+      });
+    }
+  }
+
+  // Sort: highest workout score first; ties broken by cell count (denser = more data)
+  regions.sort((a, b) => b.workoutScore - a.workoutScore || b.cellCount - a.cellCount);
+  return regions;
+}
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -11375,8 +12142,11 @@ if (typeof module !== 'undefined' && module.exports) {
     _extractMaxesFromSheet,
     detectU, parseU, _parseU_multiSheet, _parseU_singleSheet, _uBuildPrescription,
     detectV, parseV, _vBuildPrescription,
+    scoreW, parseW, _w_cleanRows, _w_buildPrescription, _w_computeDateRange,
     _fixParenTypos, _isCircuitPrefix, _isCoachInstruction, _isSectionHeader, _isHeaderTerm, HEADER_BLOCKLIST,
     EXERCISE_ALIASES, _normalizeExerciseName,
+    // Adaptive Parser — Session 1
+    _resolveMergedCells, _buildOccupancyMatrix, _scoreRegionWorkoutLikeness, _detectRegions,
   };
 }
 
