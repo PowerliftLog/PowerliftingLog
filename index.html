@@ -66,38 +66,43 @@
     };
     document.body.appendChild(b);
   }
-  // Tap build number to force-refresh
+  // Shared update check — used by header button and settings version tap
+  function _checkForUpdate(el) {
+    if (!el) return;
+    const orig = el.dataset.original || el.textContent;
+    el.dataset.original = orig;
+    el.textContent = 'Checking…';
+    el.style.opacity = '1';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg && reg.waiting) {
+          el.textContent = 'Updating…';
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        } else if (reg) {
+          reg.update().then(() => {
+            setTimeout(() => {
+              if (reg.waiting) {
+                el.textContent = 'Updating…';
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              } else {
+                el.textContent = 'Up to date ✓';
+                setTimeout(() => { el.style.opacity = el.id === 'hdr-update-btn' ? '1' : '0.6'; el.textContent = orig; }, 1500);
+              }
+            }, 1000);
+          }).catch(() => { location.reload(); });
+        } else {
+          location.reload();
+        }
+      }).catch(() => { location.reload(); });
+    } else {
+      location.reload();
+    }
+  }
+  // Tap build number in settings to force-refresh
   document.addEventListener('DOMContentLoaded', () => {
     const vEl = document.getElementById('settings-version-tap');
     if (!vEl) return;
-    vEl.addEventListener('click', () => {
-      vEl.textContent = 'Checking for updates…';
-      vEl.style.opacity = '1';
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then(reg => {
-          if (reg && reg.waiting) {
-            vEl.textContent = 'Updating…';
-            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-          } else if (reg) {
-            reg.update().then(() => {
-              setTimeout(() => {
-                if (reg.waiting) {
-                  vEl.textContent = 'Updating…';
-                  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                } else {
-                  vEl.textContent = 'Already up to date ✓';
-                  setTimeout(() => { vEl.style.opacity = '0.6'; vEl.textContent = vEl.dataset.original; }, 1500);
-                }
-              }, 1000);
-            }).catch(() => { location.reload(); });
-          } else {
-            location.reload();
-          }
-        }).catch(() => { location.reload(); });
-      } else {
-        location.reload();
-      }
-    });
+    vEl.addEventListener('click', () => _checkForUpdate(vEl));
     vEl.dataset.original = vEl.textContent;
   });
 </script>
@@ -1935,7 +1940,7 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span id="hdr-ver" style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-build" style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle"></span></div>
+      <div class="header-logo">UNRACK <span id="hdr-ver" style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-build" style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-update-btn" onclick="_checkForUpdate(this)" style="font-size:9px;font-weight:600;color:var(--gold,#D4A843);letter-spacing:0.02em;vertical-align:middle;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:4px 0;margin-left:2px">Check for update</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
