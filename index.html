@@ -2504,8 +2504,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.21.0';
-const APP_BUILD   = '3/13/26o';
+const APP_VERSION = 'v0.21.1';
+const APP_BUILD   = '3/14/26o';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3228,7 +3228,7 @@ function renderMetrics(){
 
     h+=`<div class="metrics-lift-group">`;
     // When only one variation, show specific exercise name; when multiple, show group label
-    const displayTitle = allVars.length === 1 ? allVars[0][0] : group.label;
+    const displayTitle = varsWithData.length === 1 ? varsWithData[0][0] : group.label;
     h+=`<div class="metrics-lift-header">
       <h2 class="metrics-lift-title">${escH(displayTitle)}</h2>
       <div style="text-align:right">
@@ -3237,12 +3237,11 @@ function renderMetrics(){
       </div>
     </div>`;
 
-    if(allVars.length > 1){
+    if(varsWithData.length > 1){
       h+=`<div class="var-pill-row">`;
-      allVars.forEach(([vname])=>{
+      varsWithData.forEach(([vname])=>{
         const isActive = vname === activeVar;
-        const isEmpty = group.variations[vname].length === 0;
-        h+=`<button class="var-pill${isActive?' active':''}${isEmpty?' empty':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${escH(vname)}</button>`;
+        h+=`<button class="var-pill${isActive?' active':''}" onclick="setMetricsVar('${esc(groupKey)}','${esc(vname)}')">${escH(vname)}</button>`;
       });
       h+=`</div>`;
     }
@@ -3660,8 +3659,7 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     });
   }
 
-  // X labels — consistent format per chart: all dates OR all session labels, never mixed
-  const allHaveDates=pts.every(p=>!!p.completedDate);
+  // X labels — prefer dates per-point, fall back to session labels for points missing completedDate
   function _dateLabel(pt){
     const [y,m,d]=pt.completedDate.split('-');
     return parseInt(m)+'/'+parseInt(d);
@@ -3684,7 +3682,7 @@ function drawSingleVarChart(canvasId, pts, drillMode){
     return s.length>8?s.substring(0,7)+'…':s;
   }
   function xLabel(pt){
-    if(allHaveDates) return _dateLabel(pt);
+    if(pt.completedDate) return _dateLabel(pt);
     return _sessionLabel(pt);
   }
   // Label placement with overlap prevention
@@ -6467,12 +6465,21 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     }
     h += `</div>`;
   } else if (pres && simple) {
+    /* Extract weight from simple prescriptions like "3x5 @ 315" or "3-5×1 @ 405lb" */
+    const _simpleWm = pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i);
+    const _simpleWeight = _simpleWm ? _simpleWm[1] : '';
+    const _simpleNumWeight = _simpleWeight ? parseFloat(_simpleWeight) : 0;
+    const _simpleWeightAttrs = _simpleNumWeight > 0 ? ` data-weight="${_simpleNumWeight}" data-unit="${getExUnit(ex.name)}"` : '';
     h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
     for (let si = 0; si < simple.sets; si++) {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
+      const _hasActualReps = sl.actualReps && sl.actualReps !== String(simple.reps);
+      const _simplePrescLabel = _simpleNumWeight > 0
+        ? _simpleWeight+' '+unitLabel(true)+' × '+(_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span>' : simple.reps)
+        : (_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span> reps' : simple.reps+' reps');
       h += `<div class="set-row">
-          <div class="set-presc-col">${_setNumHtml(sk, si)}${_exRepsButtonHtml(sk, sl, simple.reps, simple.reps+' reps')}</div>
-          ${_exSetInputsHtml(sk, sl, getDisplayUnit(), si, simple.reps, ex.name, inputMode, _ghostWeight(si))}
+          ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_simpleWeightAttrs} onclick="openRepsEditor('${esc(sk)}','${simple.reps}')">${_simplePrescLabel}<span class="set-prescribed-chevron">›</span></button></div>
+          ${_exSetInputsHtml(sk, sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), si, simple.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
     }
@@ -6480,9 +6487,13 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     if (_extra > 0) {
       for (let _i = 0; _i < _extra; _i++) {
         const _si = simple.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
+        const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(simple.reps);
+        const _extraPrescLabel = _simpleNumWeight > 0
+          ? _simpleWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : simple.reps)
+          : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : simple.reps+' reps');
         h += `<div class="set-row">
-            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_exRepsButtonHtml(_sk, _sl, simple.reps, simple.reps+' reps')}</div>
-            ${_exSetInputsHtml(_sk, _sl, getDisplayUnit(), _si, simple.reps, ex.name, inputMode, _ghostWeight(_si))}
+            ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_simpleWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${simple.reps}')">${_extraPrescLabel}<span class="set-prescribed-chevron">›</span></button></div>
+            ${_exSetInputsHtml(_sk, _sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), _si, simple.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
       }
