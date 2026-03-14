@@ -2509,8 +2509,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.21.1';
-const APP_BUILD   = '3/14/26o';
+const APP_VERSION = 'v0.21.2';
+const APP_BUILD   = '3/14/26p';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -6505,14 +6505,22 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     }
     h += `</div>`;
   } else if (pres && ranged) {
+    /* Extract weight from ranged parser or raw prescription for label + calc button */
+    const _rangedWeight = ranged.weight || '';
+    const _rangedNumWeight = _rangedWeight && !ranged.isRpe ? parseFloat(_rangedWeight) : 0;
+    const _rangedWeightAttrs = _rangedNumWeight > 0 ? ` data-weight="${_rangedNumWeight}" data-unit="${getExUnit(ex.name)}"` : '';
     h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
     h += `<div class="sets-grid">`;
     for (let si = 0; si < ranged.sets; si++) {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
       const isOpen = ranged.reps === 'open';
+      const _hasActualReps = sl.actualReps && sl.actualReps !== String(ranged.reps);
+      const _rangedPrescLabel = isOpen ? '' : (_rangedNumWeight > 0
+        ? _rangedWeight+' '+unitLabel(true)+' × '+(_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span>' : ranged.reps)
+        : (_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span> reps' : ranged.reps+' reps'));
       h += `<div class="set-row">
-          <div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':_exRepsButtonHtml(sk, sl, ranged.reps, ranged.reps+' reps')}</div>
-          ${_exSetInputsHtml(sk, sl, isOpen?'open':getDisplayUnit(), si, ranged.reps, ex.name, inputMode, _ghostWeight(si))}
+          ${!isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':`<button class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_rangedWeightAttrs} onclick="openRepsEditor('${esc(sk)}','${ranged.reps}')">${_rangedPrescLabel}<span class="set-prescribed-chevron">›</span></button>`}</div>
+          ${_exSetInputsHtml(sk, sl, isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), si, ranged.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
     }
@@ -6521,9 +6529,13 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       const _isOpen = ranged.reps === 'open';
       for (let _i = 0; _i < _extra; _i++) {
         const _si = ranged.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
+        const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(ranged.reps);
+        const _extraRangedLabel = _isOpen ? '' : (_rangedNumWeight > 0
+          ? _rangedWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : ranged.reps)
+          : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : ranged.reps+' reps'));
         h += `<div class="set-row">
-            <div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':_exRepsButtonHtml(_sk, _sl, ranged.reps, ranged.reps+' reps')}</div>
-            ${_exSetInputsHtml(_sk, _sl, _isOpen?'open':getDisplayUnit(), _si, ranged.reps, ex.name, inputMode, _ghostWeight(_si))}
+            ${!_isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':`<button class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_rangedWeightAttrs} onclick="openRepsEditor('${esc(_sk)}','${ranged.reps}')">${_extraRangedLabel}<span class="set-prescribed-chevron">›</span></button>`}</div>
+            ${_exSetInputsHtml(_sk, _sl, _isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), _si, ranged.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
       }

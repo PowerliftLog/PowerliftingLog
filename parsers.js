@@ -4913,6 +4913,7 @@ function clearParseCache() {
 
 function parseSets(pres){
   if(!pres) return [];
+  pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
   const cached = _parseSetsCache.get(pres);
   if(cached !== undefined) return cached;
   // Bail out if prescription is a set range like "3-5x1 (405)" — let parseRangeSet handle it
@@ -4928,6 +4929,7 @@ function parseSets(pres){
 
 function parseSimple(pres){
   if(!pres) return null;
+  pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
   if(_parseSimpleCache.has(pres)) return _parseSimpleCache.get(pres);
   const m=pres.match(/^(\d+)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(!m){ _parseSimpleCache.set(pres,null); return null; }
@@ -4941,8 +4943,9 @@ function parseSimple(pres){
 
 function parseRangeSet(pres){
   if(!pres) return null;
+  pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
   if(_parseRangeSetCache.has(pres)) return _parseRangeSetCache.get(pres);
-  // Range with optional weight: "3-5x1 (405)" or "3-5x1"
+  // Range with optional weight in parens: "3-5x1 (405)"
   const mw=pres.match(/^(\d+)[\-–](\d+)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)\s*\(([^)]+)\)/i);
   if(mw){
     const sets=parseInt(mw[1]);
@@ -4954,12 +4957,25 @@ function parseRangeSet(pres){
     _parseRangeSetCache.set(pres, result);
     return result;
   }
+  // Range with optional weight after @: "3-5x1 @ 435lb" or "3-5x1 @ 435"
+  const mAt=pres.match(/^(\d+)[\-–](\d+)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)\s*@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?\s*$/i);
+  if(mAt){
+    const sets=parseInt(mAt[1]);
+    const maxSets=parseInt(mAt[2]);
+    const reps=mAt[3].trim();
+    const weight=mAt[4].trim();
+    const result={sets,maxSets,reps,weight,isRpe:false};
+    _parseRangeSetCache.set(pres, result);
+    return result;
+  }
   const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(m){
     const sets=parseInt(m[1]);
     const maxSets=m[2]?parseInt(m[2]):null;
     const reps=m[3].trim();
-    const result={sets,maxSets,reps};
+    /* Extract @ weight if present: "3x5 @ 315lb" */
+    const atW=pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?\s*$/i);
+    const result=atW?{sets,maxSets,reps,weight:atW[1],isRpe:false}:{sets,maxSets,reps};
     _parseRangeSetCache.set(pres, result);
     return result;
   }
