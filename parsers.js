@@ -2205,6 +2205,7 @@ function _tryParse(wb, formatId) {
       case 'V': return parseV(wb);
       case 'W': return parseW(wb);
       case 'X': return parseX(wb);
+      case 'FAMILYE': return parseFamilyE(wb);
       case 'FAMILYB': return parseFamilyB(wb);
       case 'FAMILYC': return parseFamilyC(wb);
       case 'ADAPTIVE': return parseAdaptive(wb);
@@ -2241,7 +2242,7 @@ function detectFormat(wb){
       scoreG(wb), scoreH(wb), scoreI(wb), scoreJ(wb), scoreK(wb),
       scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
       scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
-      scoreV(wb), scoreW(wb), scoreX(wb),
+      scoreV(wb), scoreW(wb), scoreX(wb), scoreFamilyE(wb),
       scoreFamilyC(wb),
       scoreFamilyB(wb),
       scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
@@ -2808,6 +2809,7 @@ function parseWorkbook(wb){
   else if (fmt === 'V') blocks = parseV(wb);
   else if (fmt === 'W') blocks = parseW(wb);
   else if (fmt === 'X') blocks = parseX(wb);
+  else if (fmt === 'FAMILYE') blocks = parseFamilyE(wb);
   else if (fmt === 'FAMILYB') blocks = parseFamilyB(wb);
   else if (fmt === 'FAMILYC') blocks = parseFamilyC(wb);
   else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
@@ -14540,6 +14542,386 @@ function parseX(wb) {
   }
 }
 
+// ── FORMAT FAMILY E PARSER (Jeff Nippard / Powerbuilding — Single-Sheet 11-col) ──
+
+// Column mapper for the 11-column Nippard layout
+function _fe_mapColumns(headerRow) {
+  const map = {
+    exercise: -1, warmupSets: -1, workingSets: -1, reps: -1,
+    load: -1, pct1rm: -1, rpe: -1, rest: -1, sub1: -1, sub2: -1, notes: -1,
+  };
+  const subCols = [];
+  headerRow.forEach(function(cell, i) {
+    const c = _normalizeCell(cell);
+    if (!c) return;
+    if (c === 'exercise')                                      map.exercise    = i;
+    else if (c.includes('warm') && c.includes('set'))          map.warmupSets  = i;
+    else if (c.includes('working') && c.includes('set'))       map.workingSets = i;
+    else if (c === 'sets' && map.workingSets === -1)           map.workingSets = i;
+    else if (c === 'reps')                                     map.reps        = i;
+    else if (c === 'load' || c === 'weight')                   map.load        = i;
+    else if (c.includes('%1rm') || c.includes('% 1rm') || (c.includes('1rm') && !map.pct1rm)) map.pct1rm = i;
+    else if (c === 'rpe')                                      map.rpe         = i;
+    else if (c === 'rest')                                     map.rest        = i;
+    else if (c.includes('sub') || c.includes('substitut'))     subCols.push(i);
+    else if (c === 'notes' || c === 'note')                    map.notes       = i;
+  });
+  if (subCols.length > 0) map.sub1 = subCols[0];
+  if (subCols.length > 1) map.sub2 = subCols[1];
+  return map;
+}
+
+// Find the column-header row (scan first 15 rows for Exercise + Sets + Reps)
+function _fe_findHeaderRow(rows) {
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const cells = row.map(function(c) { return _normalizeCell(c); });
+    const hasExercise = cells.some(function(c) { return c === 'exercise'; });
+    const hasSets     = cells.some(function(c) { return c.includes('set'); });
+    const hasReps     = cells.some(function(c) { return c === 'reps'; });
+    if (hasExercise && hasSets && hasReps) return i;
+  }
+  return -1;
+}
+
+// Build the prescription string (e.g. "4x5 @80% @RPE ~7")
+function _fe_buildPrescription(colMap, row) {
+  const setsRaw = colMap.workingSets >= 0 ? row[colMap.workingSets] : null;
+  const repsRaw = colMap.reps        >= 0 ? row[colMap.reps]        : null;
+  if (setsRaw == null || repsRaw == null) return '';
+  const setsStr = String(setsRaw).trim();
+  const repsStr = String(repsRaw).trim();
+  if (!setsStr || !repsStr) return '';
+
+  let pres = setsStr + 'x' + repsStr;
+
+  // %1RM (skip if N/A or blank)
+  if (colMap.pct1rm >= 0 && row[colMap.pct1rm] != null) {
+    const pctRaw  = String(row[colMap.pct1rm]).trim();
+    const pctNorm = pctRaw.toLowerCase();
+    if (pctRaw && pctNorm !== 'n/a' && pctNorm !== '-') {
+      pres += ' @' + pctRaw;
+    }
+  }
+
+  // RPE (space before "RPE" as spec requires: @RPE 7, not @RPE7)
+  if (colMap.rpe >= 0 && row[colMap.rpe] != null) {
+    const rpeRaw = String(row[colMap.rpe]).trim();
+    if (rpeRaw && rpeRaw !== '-') {
+      pres += ' @RPE ' + rpeRaw;
+    }
+  }
+
+  // Absolute load (rare)
+  if (colMap.load >= 0 && row[colMap.load] != null) {
+    const loadRaw  = String(row[colMap.load]).trim();
+    const loadNorm = loadRaw.toLowerCase();
+    if (loadRaw && loadNorm !== 'n/a' && loadNorm !== '-') {
+      pres += ' @' + loadRaw + 'lbs';
+    }
+  }
+
+  return pres;
+}
+
+// Build the coach-note string from sub options + notes columns
+function _fe_buildNote(colMap, row) {
+  const parts = [];
+  const subs  = [];
+  if (colMap.sub1 >= 0 && row[colMap.sub1] != null) {
+    const s = String(row[colMap.sub1]).trim();
+    if (s) subs.push(s);
+  }
+  if (colMap.sub2 >= 0 && row[colMap.sub2] != null) {
+    const s = String(row[colMap.sub2]).trim();
+    if (s) subs.push(s);
+  }
+  if (subs.length > 0) parts.push('Subs: ' + subs.join(', '));
+  if (colMap.notes >= 0 && row[colMap.notes] != null) {
+    const n = String(row[colMap.notes]).trim();
+    if (n) parts.push(n);
+  }
+  return parts.join('. ');
+}
+
+// Score function: returns { id, score, signals }
+function scoreFamilyE(wb) {
+  const id = 'FAMILYE';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  try {
+    const sheetNames = wb.SheetNames;
+
+    // Negative signal: 2+ "Week N" tabs → GZCL format (Format X), not Nippard
+    const weekTabs = sheetNames.filter(function(n) { return /^Week\s+\d+$/i.test(n.trim()); });
+    if (weekTabs.length >= 2) {
+      score -= 0.30;
+      negative.push(weekTabs.length + ' Week N tabs — likely GZCL/Format X');
+    }
+
+    // Signal 1: single-sheet workbook
+    if (sheetNames.length === 1) {
+      score += 0.05;
+      matched.push('single-sheet workbook');
+    } else {
+      missing.push('single-sheet workbook');
+    }
+
+    const ws = wb.Sheets[sheetNames[0]];
+    if (!ws) {
+      missing.push('data in first sheet');
+      return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+    }
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows || rows.length < 5) {
+      missing.push('enough rows in first sheet');
+      return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+    }
+
+    // Find column header row (scan first 15 rows)
+    const headerRowIdx = _fe_findHeaderRow(rows);
+
+    if (headerRowIdx >= 0) {
+      const hCells = rows[headerRowIdx].map(function(c) { return _normalizeCell(c); });
+
+      // Signal 2: Exercise + "Working Sets" (Nippard-specific) + Reps
+      const hasExercise    = hCells.some(function(c) { return c === 'exercise'; });
+      const hasWorkingSets = hCells.some(function(c) { return c.includes('working') && c.includes('set'); });
+      const hasGenericSets = hCells.some(function(c) { return c.includes('set'); });
+      const hasReps        = hCells.some(function(c) { return c === 'reps'; });
+
+      if (hasExercise && hasWorkingSets && hasReps) {
+        score += 0.25;
+        matched.push('column header: Exercise + Working Sets + Reps');
+      } else if (hasExercise && hasGenericSets && hasReps) {
+        score += 0.05;
+        matched.push('column header: Exercise + Sets + Reps (generic)');
+      } else {
+        missing.push('column header with Exercise + Sets + Reps');
+      }
+
+      // Signal 3: %1RM column (strong differentiator from generic Exercise/Sets/Reps formats)
+      const has1RM = hCells.some(function(c) { return c.includes('%1rm') || c.includes('% 1rm') || c.includes('1rm'); });
+      if (has1RM) {
+        score += 0.20;
+        matched.push('%1RM column found');
+      } else {
+        missing.push('%1RM column');
+      }
+
+      // Signal 4: Sub Option columns (highly specific to Nippard-style programs)
+      const hasSub = hCells.some(function(c) { return c.includes('sub'); });
+      if (hasSub) {
+        score += 0.15;
+        matched.push('Sub Option column(s) found');
+      } else {
+        missing.push('Sub/Substitution column');
+      }
+    } else {
+      missing.push('column header row with Exercise + Sets + Reps');
+    }
+
+    // Signal 5: 1RM labels in header section (rows above column headers)
+    const headerSection = rows.slice(0, Math.max(0, headerRowIdx >= 0 ? headerRowIdx : 10));
+    let found1RM = 0;
+    for (const row of headerSection) {
+      if (!row) continue;
+      const colA = _normalizeCell(row[0]);
+      if (colA.includes('1rm') && (colA.includes('squat') || colA.includes('bench') ||
+          colA.includes('deadlift') || colA.includes('ohp') || colA.includes('overhead'))) {
+        found1RM++;
+      }
+    }
+    if (found1RM >= 2) {
+      score += 0.15;
+      matched.push(found1RM + ' 1RM value labels found in header section');
+    } else if (found1RM === 1) {
+      score += 0.05;
+      matched.push('1 1RM value label found in header section');
+    } else {
+      missing.push('1RM lift labels (Squat 1RM / Bench 1RM / etc.) in header rows');
+    }
+
+    // Signal 6: ALL-CAPS day header rows in col A (no data in other cols)
+    const dataStart = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+    let allCapsRows = 0;
+    for (let i = dataStart; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const colA = String(row[0] || '').trim();
+      if (!colA) continue;
+      if (colA === colA.toUpperCase() && /[A-Z]{3,}/.test(colA)) {
+        const otherBlank = row.slice(1).every(function(c) { return c == null || String(c).trim() === ''; });
+        if (otherBlank) allCapsRows++;
+      }
+    }
+    if (allCapsRows >= 2) {
+      score += 0.10;
+      matched.push(allCapsRows + ' ALL-CAPS day/section header rows found');
+    } else if (allCapsRows === 1) {
+      score += 0.05;
+      matched.push('1 ALL-CAPS day header row found');
+    } else {
+      missing.push('ALL-CAPS day header rows in col A');
+    }
+
+    return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+  } catch (e) {
+    console.error('[liftlog] scoreFamilyE error:', e);
+    return { id, score: 0, signals: { matched, missing, negative: ['error: ' + e.message] } };
+  }
+}
+
+// Parser: returns standard block array
+function parseFamilyE(wb) {
+  try {
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) return [];
+
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows || rows.length < 5) return [];
+
+    // Program name from first non-blank cell
+    let programName = 'Powerbuilding Program';
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const raw = String(row[0] || '').trim();
+      if (raw && raw.length > 2 && raw.length < 100 && !/^\d+$/.test(raw) &&
+          !raw.toLowerCase().includes('unit') && !raw.toLowerCase().includes('1rm')) {
+        programName = raw;
+        break;
+      }
+    }
+
+    // Find column header row
+    const headerRowIdx = _fe_findHeaderRow(rows);
+    if (headerRowIdx === -1) return [];
+
+    // Extract 1RM values from header section
+    const maxes = { squat: null, bench: null, deadlift: null };
+    for (let i = 0; i < headerRowIdx; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const colA   = _normalizeCell(row[0]);
+      const colBNum = row[1] != null ? parseFloat(String(row[1])) : NaN;
+      if (!isNaN(colBNum)) {
+        if (colA.includes('squat')    && colA.includes('1rm')) maxes.squat    = colBNum;
+        if (colA.includes('bench')    && colA.includes('1rm')) maxes.bench    = colBNum;
+        if (colA.includes('deadlift') && colA.includes('1rm')) maxes.deadlift = colBNum;
+      }
+    }
+
+    // Map columns
+    const colMap = _fe_mapColumns(rows[headerRowIdx]);
+    if (colMap.exercise === -1 || colMap.workingSets === -1) return [];
+
+    // Parse data rows into week/day/exercise structure
+    const weekBlocks = [];       // [{ label, days }]
+    let currentWeekLabel = 'Week 1';
+    let currentDays      = [];
+    let currentDay       = null;
+
+    function _flushDay() {
+      if (currentDay && currentDay.exercises.length > 0) {
+        currentDays.push(currentDay);
+        currentDay = null;
+      }
+    }
+    function _flushWeek() {
+      _flushDay();
+      if (currentDays.length > 0) {
+        weekBlocks.push({ label: currentWeekLabel, days: currentDays });
+        currentDays = [];
+      }
+    }
+
+    for (let i = headerRowIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+
+      const colAVal = row[colMap.exercise >= 0 ? colMap.exercise : 0];
+      const colAStr = String(colAVal || '').trim();
+
+      // Blank row (all cells empty)
+      if (!colAStr && row.every(function(c) { return c == null || String(c).trim() === ''; })) continue;
+
+      // Week boundary: "Week N" in col A
+      if (/^week\s+\d+$/i.test(colAStr)) {
+        _flushWeek();
+        currentWeekLabel = colAStr;
+        continue;
+      }
+
+      // REST DAY: skip entirely
+      if (/rest\s*day/i.test(colAStr)) continue;
+
+      // Day header: ALL-CAPS in col A, other cols blank
+      if (colAStr && colAStr === colAStr.toUpperCase() && /[A-Z]{3,}/.test(colAStr)) {
+        const otherBlank = row.slice(1).every(function(c) { return c == null || String(c).trim() === ''; });
+        if (otherBlank) {
+          _flushDay();
+          currentDay = { name: colAStr, exercises: [] };
+          continue;
+        }
+      }
+
+      // Exercise row: needs text name + numeric working sets
+      const exRaw  = colAStr;
+      if (!exRaw || !/[a-zA-Z]{2,}/.test(exRaw)) continue;
+
+      const setsRaw = colMap.workingSets >= 0 ? row[colMap.workingSets] : null;
+      const setsNum = setsRaw != null ? parseFloat(String(setsRaw)) : NaN;
+      if (isNaN(setsNum) || setsNum <= 0) continue;
+
+      // Superset prefix detection (A1., A2., B1. …)
+      let exName      = exRaw;
+      let supersetGroup = null;
+      const ssMatch = exRaw.match(/^([A-Z])(\d+)\.\s*/);
+      if (ssMatch) {
+        supersetGroup = ssMatch[1];                // 'A', 'B', …
+        exName        = exRaw.slice(ssMatch[0].length).trim();
+      }
+
+      const prescription = _fe_buildPrescription(colMap, row);
+      const noteStr      = _fe_buildNote(colMap, row);
+      const restStr      = (colMap.rest >= 0 && row[colMap.rest] != null)
+        ? String(row[colMap.rest]).trim() : '';
+
+      if (!currentDay) currentDay = { name: 'Day 1', exercises: [] };
+
+      currentDay.exercises.push({
+        name:         exName,
+        prescription,
+        sets:         [],
+        coachNotes:   noteStr ? [noteStr] : [],
+        note:         restStr ? 'Rest: ' + restStr : null,
+        lifterNote:   null,
+        supersetGroup,
+      });
+    }
+
+    _flushWeek();
+
+    if (weekBlocks.length === 0) return [];
+
+    return [{
+      id:          'familye_' + Date.now(),
+      name:         programName,
+      format:       'FAMILYE',
+      athleteName:  '',
+      dateRange:    '',
+      maxes,
+      weeks:        weekBlocks,
+    }];
+  } catch (e) {
+    console.error('[liftlog] parseFamilyE error:', e);
+    return [];
+  }
+}
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -14600,6 +14982,8 @@ if (typeof module !== 'undefined' && module.exports) {
     _fc_parseMeta, _fc_findHeaderRow, _fc_countWeeks, _fc_buildPrescription,
     // Parser X (GZCLP / GZCL Family — Tiered Week-Tab Structure)
     scoreX, parseX, _x_mapColumns, _x_tierLabel,
+    // Family E Parser (Jeff Nippard / Powerbuilding — Single-Sheet 11-col)
+    scoreFamilyE, parseFamilyE, _fe_findHeaderRow, _fe_mapColumns, _fe_buildPrescription, _fe_buildNote,
   };
 }
 

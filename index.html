@@ -528,7 +528,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px var(--sp-1); border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
 .set-row.set-done { background: rgba(var(--green-rgb), 0.05); }
-.set-row.set-done .set-input { opacity: 0.5; pointer-events: none; }
+.set-row.set-done .set-input { /* no opacity dim — user may still be typing */ }
 .set-row.set-done .set-num { opacity: 0.4; }
 .set-row.set-done .set-prescribed-btn { opacity: 0.5; }
 .set-num { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-micro); color: var(--text-dimmer); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; user-select: none; -webkit-user-select: none; }
@@ -2535,7 +2535,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.22.6';
-const APP_BUILD   = '3/15/26b';
+const APP_BUILD   = '3/15/26c';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -6333,18 +6333,18 @@ function _exRepsButtonHtml(sk, sl, prescReps, label) {
 function _exSetInputsHtml(sk, sl, placeholder, si, prescReps, exName, inputMode, ghostVal) {
   if (placeholder==='open') return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
+                <input class="set-input" inputmode="decimal" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" onblur="_onWeightBlur('${esc(sk)}')" aria-label="Actual reps">
               </div>
             </div>`;
   if (inputMode==='bw') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Reps</div>
-                <input class="set-input" inputmode="numeric" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Actual reps">
+                <input class="set-input" inputmode="numeric" placeholder="reps" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" onblur="_onWeightBlur('${esc(sk)}')" aria-label="Actual reps">
               </div>
             </div>`;
   if (inputMode==='cardio') return '';
   if (inputMode==='bw-timed') return `<div class="set-inputs-wrap" style="max-width:120px">
               <div class="set-input-group"><div class="set-input-label">Time</div>
-                <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" aria-label="Time completed">
+                <input class="set-input" placeholder="time" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" onblur="_onWeightBlur('${esc(sk)}')" aria-label="Time completed">
               </div>
             </div>`;
   const ghostStyle = ghostVal ? 'color:var(--text-muted)' : '';
@@ -6358,7 +6358,7 @@ function _exSetInputsHtml(sk, sl, placeholder, si, prescReps, exName, inputMode,
               </div>`;
   return `<div class="set-inputs-wrap">
               <div class="set-input-group"><div class="set-input-label">Weight</div>
-                <input class="set-input" inputmode="decimal" placeholder="${_weightPlaceholder}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" data-ghost="${ghostVal}" aria-label="Weight lifted">
+                <input class="set-input" inputmode="decimal" placeholder="${_weightPlaceholder}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" onblur="_onWeightBlur('${esc(sk)}')" data-ghost="${ghostVal}" aria-label="Weight lifted">
               </div>${_repsHtml}
               <div class="set-input-group"><div class="set-input-label">RPE</div>
                 <input class="set-input rpe-input" inputmode="decimal" placeholder="1-10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
@@ -7795,13 +7795,8 @@ function setActual(key,v){
   // _checkInlinePR below handles targeted PR cache update — no full invalidation needed.
   if (shouldCheck) _maybeAdvanceWeek();
 
-  // Start rest timer BEFORE DOM calls (which could throw and prevent timer)
-  if (shouldCheck && !existing.done && getRestTimerMode() === 'auto' && _shouldFireRestTimer(key)) {
-    try {
-      const exName = _resolveExNameFromKey(key);
-      if (exName) startRestTimer(exName);
-    } catch(e) { console.error('[rest-timer] setActual hook error:', e); }
-  }
+  // Rest timer NOT fired here — fires on blur (leaving the weight field) instead.
+  // See _onWeightBlur() below.
 
   // Update set checkmark directly without full render
   updateSetCheckmark(key,shouldCheck);
@@ -7857,6 +7852,18 @@ function setRpe(key,v){
   saveLogs();
   // RPE doesn't trigger checkmark, but might trigger exercise complete
   autoCompleteExercise(key);
+}
+function _onWeightBlur(key) {
+  const sl = state.logs[key];
+  if (!sl || !sl.done) return; // no weight entered
+  if (sl._restFired) return;  // already fired for this set
+  if (getRestTimerMode() !== 'auto') return;
+  if (!_shouldFireRestTimer(key)) return;
+  const exName = _resolveExNameFromKey(key);
+  if (exName) {
+    sl._restFired = true; // prevent re-firing on subsequent blurs
+    startRestTimer(exName);
+  }
 }
 function updateSetCheckmark(key,isDone){
   const escaped=key.replace(/'/g,"\\'");
@@ -9599,8 +9606,8 @@ function autoCompleteExercise(setKey){
     if (navigator.vibrate) navigator.vibrate(25);
     // Update main exercise checkmark without full render
     updateExerciseCheckmark(exKey,true);
-    // Auto-collapse: remove from expandedEx and collapse DOM
-    for(const ek of [...state.expandedEx]){ if(ek===exKey||ek.startsWith(exKey+'||')) { state.expandedEx.delete(ek); _applyTargetedExpand(ek, false); } }
+    // No auto-collapse — user stays in the card to finish entering data.
+    // They collapse manually or hit Finish Workout when ready.
     // Check if whole day is now resolved — activate finish button and scroll it into view
     checkAndActivateFinishButton(block, week, day);
   } else if(!allDone&&state.logs[exKey]?.done){
