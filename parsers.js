@@ -1529,6 +1529,45 @@ function scoreW(wb) {
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
+// ── ADAPTIVE PARSER SCORE ─────────────────────────────────────────────────────
+// Returns max 0.3 so dedicated parsers always win when they score > 0.3.
+// Fires as fallback only when no dedicated parser recognises the file.
+function scoreAdaptive(wb) {
+  const id = 'ADAPTIVE';
+  try {
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
+      return { id, score: 0.0, signals: { matched: [], missing: ['no sheets'], negative: [] } };
+    }
+
+    // Quick workout-region scan across all non-empty sheets.
+    // Threshold ≥ 0.5 means the region has at least an exercise-name column (+0.50),
+    // which filters out pure-text FAQ/instruction blocks.
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      if (!ws || !ws['!ref']) continue;
+      const matrix = _buildOccupancyMatrix(ws);
+      const regions = _detectRegions(matrix, ws);
+      const workoutRegions = regions.filter(r => r.workoutScore >= 0.5);
+      if (workoutRegions.length > 0) {
+        return {
+          id,
+          score: 0.3,
+          signals: {
+            matched: [workoutRegions.length + ' workout-like region(s) in sheet "' + sn + '"'],
+            missing: [],
+            negative: []
+          }
+        };
+      }
+    }
+
+    return { id, score: 0.0, signals: { matched: [], missing: ['no workout-like regions found'], negative: [] } };
+  } catch (e) {
+    console.error('[liftlog] scoreAdaptive error:', e);
+    return { id, score: 0.0, signals: { matched: [], missing: [], negative: ['error: ' + e.message] } };
+  }
+}
+
 // ── TIE-BREAKING HELPERS ──────────────────────────────────────────────────────
 
 function _tryParse(wb, formatId) {
@@ -1557,6 +1596,7 @@ function _tryParse(wb, formatId) {
       case 'U': return parseU(wb);
       case 'V': return parseV(wb);
       case 'W': return parseW(wb);
+      case 'ADAPTIVE': return parseAdaptive(wb);
       default: return null;
     }
   } catch(e) { return null; }
@@ -1590,7 +1630,8 @@ function detectFormat(wb){
       scoreG(wb), scoreH(wb), scoreI(wb), scoreJ(wb), scoreK(wb),
       scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
       scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
-      scoreV(wb), scoreW(wb)
+      scoreV(wb), scoreW(wb),
+      scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
     ].sort((a, b) => b.score - a.score);
 
     const top = scores[0];
@@ -2153,6 +2194,7 @@ function parseWorkbook(wb){
   else if (fmt === 'U') blocks = parseU(wb);
   else if (fmt === 'V') blocks = parseV(wb);
   else if (fmt === 'W') blocks = parseW(wb);
+  else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
   else if (fmt === 'C') blocks = parseCAutoFormat(wb);
   else if (fmt === 'D') blocks = parseD(wb);
   else blocks = parseB(wb);
@@ -3786,12 +3828,14 @@ function parseF_stride3(wb) {
     for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 3, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
       const strs = row.map(_normalizeCell);
-      const wCols = [], rCols = [], sCols = [], eCols = [];
+      const wCols = [], rCols = [], sCols = [], eCols = [], rpeCols = [], nCols = [];
       for (let c = 0; c < strs.length; c++) {
         if (strs[c] === 'weight') wCols.push(c);
         if (strs[c] === 'reps') rCols.push(c);
         if (strs[c] === 'sets') sCols.push(c);
         if (strs[c] === 'exercise') eCols.push(c);
+        if (strs[c] === 'rpe') rpeCols.push(c);
+        if (strs[c] === 'notes' || strs[c] === 'note' || strs[c] === 'coach notes') nCols.push(c);
       }
       if (wCols.length >= 2 && rCols.length >= 2) {
         subHeaderRow = i;
@@ -3800,7 +3844,9 @@ function parseF_stride3(wb) {
             weightCol: wCols[g],
             repsCol: rCols[g] !== undefined ? rCols[g] : wCols[g] + 1,
             setsCol: sCols[g] !== undefined ? sCols[g] : -1,
-            exCol: eCols[g] !== undefined ? eCols[g] : -1
+            exCol: eCols[g] !== undefined ? eCols[g] : -1,
+            rpeCol: rpeCols[g] !== undefined ? rpeCols[g] : -1,
+            noteCol: nCols[g] !== undefined ? nCols[g] : -1
           });
         }
         break;
@@ -3857,6 +3903,7 @@ function parseF_stride3(wb) {
         for (let w = 0; w < weekColGroups.length; w++) {
           const g = weekColGroups[w];
           const sets = [];
+          const noteItems = [];
           for (const ri of eg.rows) {
             const row = rows[ri];
             const weight = row[g.weightCol];
@@ -3864,11 +3911,18 @@ function parseF_stride3(wb) {
             const setsNum = g.setsCol >= 0 ? (parseInt(row[g.setsCol]) || 0) : 0;
             // Also check for per-week exercise name (different exercises per week in same row position)
             const weekExName = g.exCol >= 0 && row[g.exCol] ? String(row[g.exCol]).trim() : '';
+            // Read RPE from separate column if available
+            const rpeVal = g.rpeCol >= 0 && row[g.rpeCol] != null ? String(row[g.rpeCol]).trim() : '';
+            // Read notes column if available
+            if (g.noteCol >= 0 && row[g.noteCol] != null) {
+              const n = String(row[g.noteCol]).trim();
+              if (n && !/^(notes?|coach\s*notes?)$/i.test(n)) noteItems.push(n);
+            }
             if (weight != null || reps != null) {
-              sets.push({weight: typeof weight === 'number' ? weight : null, reps: reps != null ? String(reps) : '', setsNum, weekExName});
+              sets.push({weight: typeof weight === 'number' ? weight : null, reps: reps != null ? String(reps) : '', setsNum, weekExName, rpe: rpeVal});
             }
           }
-          weekSets.push(sets);
+          weekSets.push({sets, note: noteItems.join('; ')});
         }
         dayExercises.push({name: eg.name, weekSets});
       }
@@ -3883,7 +3937,9 @@ function parseF_stride3(wb) {
         const exercises = [];
         for (const ex of dd.exercises) {
           if (w >= ex.weekSets.length) continue;
-          const sets = ex.weekSets[w];
+          const weekSetData = ex.weekSets[w];
+          const sets = weekSetData.sets;
+          const weekNote = weekSetData.note || '';
           if (sets.length === 0) continue;
           // Group sets by resolved weekExName to handle rows with different exercises per week
           const _resolveName = (s) => (s.weekExName && /[a-zA-Z]{2,}/.test(s.weekExName) && !/^(Exercise|Week)/i.test(s.weekExName))
@@ -3898,14 +3954,15 @@ function parseF_stride3(wb) {
             const presParts = [];
             for (const s of groupSets) {
               const sc = s.setsNum > 0 ? s.setsNum : 1;
+              const rpeSuffix = (s.rpe && /^\d+(\.\d+)?$/.test(s.rpe)) ? ' @RPE' + s.rpe : '';
               if (s.weight != null && s.weight > 0 && s.reps) {
-                presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')');
+                presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')' + rpeSuffix);
               } else if (s.reps) {
-                presParts.push(sc + 'x' + s.reps);
+                presParts.push(sc + 'x' + s.reps + rpeSuffix);
               }
             }
             if (presParts.length === 0) continue;
-            exercises.push({name: useName, prescription: presParts.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
+            exercises.push({name: useName, prescription: presParts.join(', '), note: weekNote, lifterNote: '', loggedWeight: '', supersetGroup: null});
           }
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
@@ -4043,13 +4100,15 @@ function parseF_stride6(wb) {
     const sr = rows[headerRow + 1];
     if (!sr) continue;
     const base = weekDayPositions[0].col;
-    let exOff = -1, setsOff = -1, repsOff = -1, weightOff = -1;
+    let exOff = -1, setsOff = -1, repsOff = -1, weightOff = -1, rpeOff = -1, noteOff = -1;
     for (let c = base; c < base + stride && c < sr.length; c++) {
       const s = String(sr[c] || '').toLowerCase().trim();
       if (s === 'exercise') exOff = c - base;
       else if (s === 'sets') setsOff = c - base;
       else if (s === 'reps') repsOff = c - base;
       else if (s === 'weight') weightOff = c - base;
+      else if (s === 'rpe') rpeOff = c - base;
+      else if (s === 'notes' || s === 'note' || s === 'coach notes') noteOff = c - base;
     }
     if (exOff === -1 && setsOff === -1) continue;
 
@@ -4084,15 +4143,24 @@ function parseF_stride6(wb) {
           const wv = weightOff >= 0 ? row[gb + weightOff] : null;
           const rr = rv != null ? String(rv) : '';
           const wt = typeof wv === 'number' && wv > 0 ? Math.round(wv) : null;
+          // Read RPE from separate column
+          const rpeRaw = rpeOff >= 0 && row[gb + rpeOff] != null ? String(row[gb + rpeOff]).trim() : '';
+          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE' + rpeRaw : '';
+          // Read notes column
+          let exNote = '';
+          if (noteOff >= 0 && row[gb + noteOff] != null) {
+            const n = String(row[gb + noteOff]).trim();
+            if (n && !/^(notes?|coach\s*notes?)$/i.test(n)) exNote = n;
+          }
 
           let pres = '';
-          if (sv > 0 && rr && wt) pres = sv + 'x' + rr + '(' + wt + ')';
-          else if (sv > 0 && rr) pres = sv + 'x' + rr;
+          if (sv > 0 && rr && wt) pres = sv + 'x' + rr + '(' + wt + ')' + rpeSuffix;
+          else if (sv > 0 && rr) pres = sv + 'x' + rr + rpeSuffix;
 
           const wk = pos.week, dy = pos.day;
           if (!weekMap[wk]) weekMap[wk] = {};
           if (!weekMap[wk][dy]) weekMap[wk][dy] = [];
-          weekMap[wk][dy].push({name: exName, prescription: pres, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
+          weekMap[wk][dy].push({name: exName, prescription: pres, note: exNote, lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
       }
     }
@@ -4144,17 +4212,19 @@ function parseF_pctLoad(wb) {
       const nextRow = rows[i + 1];
       if (!nextRow) continue;
       const strs = nextRow.map(_normalizeCell);
-      const loadCols = [];
-      let movCol = -1, setCol = -1, repsCol = -1;
+      const loadCols = [], rpeCols = [];
+      let movCol = -1, setCol = -1, repsCol = -1, noteCol = -1;
       for (let c = 0; c < strs.length; c++) {
         if (strs[c] === 'movement' || strs[c] === 'exercise') movCol = c;
         if (strs[c] === 'set' || strs[c] === 'sets') setCol = c;
         if (strs[c] === 'reps') repsCol = c;
         if (strs[c] === 'load') loadCols.push(c);
+        if (strs[c] === 'rpe') rpeCols.push(c);
+        if (strs[c] === 'notes' || strs[c] === 'note' || strs[c] === 'coach notes') noteCol = c;
       }
       if (loadCols.length < 2 || movCol === -1) continue;
 
-      daySections.push({row: i, name: String(row[0]).trim(), weekPositions, movCol, setCol, repsCol, loadCols, subHeaderRow: i + 1});
+      daySections.push({row: i, name: String(row[0]).trim(), weekPositions, movCol, setCol, repsCol, loadCols, rpeCols, noteCol, subHeaderRow: i + 1});
     }
 
     if (daySections.length === 0) continue;
@@ -4175,17 +4245,26 @@ function parseF_pctLoad(wb) {
         if (!exName || !/[a-zA-Z]{2,}/.test(exName)) continue;
         const sets = sec.setCol >= 0 ? (parseInt(row[sec.setCol]) || 0) : 0;
         const reps = sec.repsCol >= 0 && row[sec.repsCol] != null ? String(row[sec.repsCol]) : '';
+        // Read notes column
+        let exNote = '';
+        if (sec.noteCol >= 0 && row[sec.noteCol] != null) {
+          const n = String(row[sec.noteCol]).trim();
+          if (n && !/^(notes?|coach\s*notes?)$/i.test(n)) exNote = n;
+        }
 
         const weekData = [];
         for (let w = 0; w < sec.loadCols.length; w++) {
           const load = row[sec.loadCols[w]];
           const wt = typeof load === 'number' && load > 0 ? Math.round(load) : null;
+          // Read RPE from separate column if available
+          const rpeRaw = (sec.rpeCols && sec.rpeCols[w] != null && row[sec.rpeCols[w]] != null) ? String(row[sec.rpeCols[w]]).trim() : '';
+          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE' + rpeRaw : '';
           let pres = '';
-          if (sets > 0 && reps && wt) pres = sets + 'x' + reps + '(' + wt + ')';
-          else if (sets > 0 && reps) pres = sets + 'x' + reps;
+          if (sets > 0 && reps && wt) pres = sets + 'x' + reps + '(' + wt + ')' + rpeSuffix;
+          else if (sets > 0 && reps) pres = sets + 'x' + reps + rpeSuffix;
           weekData.push(pres);
         }
-        exercises.push({name: exName, weekData});
+        exercises.push({name: exName, weekData, note: exNote});
       }
       dayData.push({name: sec.name, exercises});
     }
@@ -4198,7 +4277,7 @@ function parseF_pctLoad(wb) {
         const dayExercises = [];
         for (const ex of dd.exercises) {
           if (w >= ex.weekData.length || !ex.weekData[w]) continue;
-          dayExercises.push({name: ex.name, prescription: ex.weekData[w], note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
+          dayExercises.push({name: ex.name, prescription: ex.weekData[w], note: ex.note || '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
         if (dayExercises.length > 0) weekDays.push({name: dd.name, exercises: dayExercises});
       }
@@ -4382,7 +4461,7 @@ function parseF_coach(wb) {
 
     // Find EXERCISE/SETS/REPS/LOAD sub-header rows (can appear multiple times for different day sections)
     // Detect column offsets within a week group
-    let exOff = -1, setsOff = -1, repsOff = -1, loadOff = -1;
+    let exOff = -1, setsOff = -1, repsOff = -1, loadOff = -1, topSetOff = -1, ratingOff = -1;
     let firstSubHeaderRow = -1;
 
     for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 4, rows.length); i++) {
@@ -4394,6 +4473,8 @@ function parseF_coach(wb) {
         else if (s === 'sets') setsOff = c - base;
         else if (s === 'reps') repsOff = c - base;
         else if (s === 'load' || s === 'load/rpe' || s === 'load / rpe') loadOff = c - base;
+        else if (s === 'top set') topSetOff = c - base;
+        else if (s === 'rating') ratingOff = c - base;
       }
       if (exOff >= 0 && setsOff >= 0 && repsOff >= 0) { firstSubHeaderRow = i; break; }
     }
@@ -4454,6 +4535,7 @@ function parseF_coach(wb) {
         for (let w = 0; w < weekPositions.length; w++) {
           const wBase = weekPositions[w].col;
           const presParts = [];
+          const noteParts = [];
           // Check per-week exercise name (may differ from first week)
           let weekExName = '';
           for (const ri of eg.rows) {
@@ -4500,8 +4582,29 @@ function parseF_coach(wb) {
             } else if (sc > 0) {
               presParts.push(sc + ' sets');
             }
+
+            // Read TOP SET value for this row
+            if (topSetOff >= 0) {
+              const tsRaw = row[wBase + topSetOff];
+              if (tsRaw != null) {
+                const ts = String(tsRaw).trim();
+                if (ts && !/^top\s*set$/i.test(ts)) {
+                  noteParts.push(_w_formatTopSet(ts));
+                }
+              }
+            }
+            // Read RATING value for this row
+            if (ratingOff >= 0) {
+              const rtRaw = row[wBase + ratingOff];
+              if (rtRaw != null) {
+                const rt = String(rtRaw).trim();
+                if (rt && !/^rating$/i.test(rt)) {
+                  noteParts.push('Rating: ' + rt);
+                }
+              }
+            }
           }
-          weekData.push({pres: presParts.join(', '), weekExName: weekExName || eg.name});
+          weekData.push({pres: presParts.join(', '), weekExName: weekExName || eg.name, note: noteParts.join('; ')});
         }
         dayExercises.push({name: eg.name, weekData});
       }
@@ -4518,7 +4621,7 @@ function parseF_coach(wb) {
           if (w >= ex.weekData.length) continue;
           const wd = ex.weekData[w];
           if (!wd.pres) continue;
-          exercises.push({name: wd.weekExName, prescription: wd.pres, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
+          exercises.push({name: wd.weekExName, prescription: wd.pres, note: wd.note || '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
         if (exercises.length > 0) weekDays.push({name: dd.name, exercises});
       }
@@ -5201,6 +5304,8 @@ function parseRangeSet(pres){
   const m=pres.match(/^(\d+)[\-–]?(\d*)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(m){
     const sets=parseInt(m[1]);
+    // Sanity: >20 sets in one NxM notation is almost certainly a weight misinterpretation (e.g. "45x45.0 @50%")
+    if(sets>20){ _parseRangeSetCache.set(pres, null); return null; }
     const maxSets=m[2]?parseInt(m[2]):null;
     const reps=m[3].trim();
     /* Extract @ weight if present: "3x5 @ 315lb" */
@@ -5318,7 +5423,7 @@ function parseCSVImport(csvText, unitLabel) {
     const r = rows[i];
     const get = (key) => r[col[key]] || '';
 
-    let date, workoutName, exerciseName, setOrder, weight, reps, rpe, notes;
+    let date, workoutName, exerciseName, setOrder, weight, reps, rpe, notes, restTime, equipment;
 
     if (fmt === 'strong') {
       date = get('date');
@@ -5327,8 +5432,10 @@ function parseCSVImport(csvText, unitLabel) {
       setOrder = parseInt(get('set order')) || 0;
       weight = get('weight');
       reps = get('reps');
-      rpe = '';
+      rpe = get('rpe') || '';
       notes = get('notes');
+      restTime = get('seconds') || get('rest_seconds') || get('rest time') || '';
+      equipment = get('equipment') || '';
     } else if (fmt === 'fitnotes') {
       // FitNotes CSV: Date, Exercise, Category, Weight (kg), Weight (lbs), Reps, Distance, Distance Unit, Time, Notes, Kind
       date = get('date');  // YYYY-MM-DD
@@ -5353,6 +5460,8 @@ function parseCSVImport(csvText, unitLabel) {
       const kind = get('kind').toLowerCase();
       if (kind === 'warmup') { notes = (notes ? notes + ' ' : '') + 'Warmup'; }
       if (kind === 'dropset') { notes = (notes ? notes + ' ' : '') + 'Dropset'; }
+      restTime = get('time') || get('rest_seconds') || '';
+      equipment = get('equipment') || '';
     } else if (fmt === 'fitbod') {
       // Fitbod CSV: Date, Exercise, Reps, Weight(kg), Duration(s), Distance(m), Incline, Resistance, isWarmup, Note, multiplier
       const rawDate = get('date');
@@ -5376,6 +5485,12 @@ function parseCSVImport(csvText, unitLabel) {
       if (isWarmup === 'true' || isWarmup === '1' || isWarmup === 'yes') {
         notes = (notes ? notes + ' ' : '') + 'Warmup';
       }
+      restTime = get('duration(s)') || get('rest_seconds') || '';
+      const _resistance = get('resistance'), _incline = get('incline');
+      const _eqParts = [];
+      if (_resistance && _resistance.trim() && _resistance !== '0') _eqParts.push(_resistance.trim());
+      if (_incline && _incline.trim() && _incline !== '0') _eqParts.push('Incline ' + _incline.trim());
+      equipment = _eqParts.join(', ') || get('equipment') || '';
     } else {
       // Hevy — parse date from start_time
       const startRaw = get('start_time');
@@ -5389,6 +5504,8 @@ function parseCSVImport(csvText, unitLabel) {
       reps = get('reps');
       rpe = get('rpe');
       notes = get('exercise_notes');
+      restTime = get('duration_seconds') || get('rest_seconds') || '';
+      equipment = get('equipment') || '';
     }
 
     // Skip rows with no exercise name
@@ -5398,7 +5515,7 @@ function parseCSVImport(csvText, unitLabel) {
     const rep = parseInt(reps);
     if ((isNaN(w) || w === 0) && (isNaN(rep) || rep === 0)) continue;
 
-    entries.push({ date, workoutName, exerciseName, setOrder, weight: isNaN(w) ? '' : String(w), reps: isNaN(rep) ? '' : String(rep), rpe, notes });
+    entries.push({ date, workoutName, exerciseName, setOrder, weight: isNaN(w) ? '' : String(w), reps: isNaN(rep) ? '' : String(rep), rpe, notes, restTime: restTime || '', equipment: equipment || '' });
   }
 
   if (!entries.length) return null;
@@ -5473,7 +5590,18 @@ function parseCSVImport(csvText, unitLabel) {
         }
 
         const prescription = setParts.join(', ');
-        const note = sets[0].notes || null;
+        // Build enriched note with supplementary data (rest time, equipment)
+        const _noteParts = [];
+        if (sets[0].notes) _noteParts.push(sets[0].notes);
+        const _restVal = sets.find(s => s.restTime && s.restTime.trim() && s.restTime !== '0')?.restTime;
+        if (_restVal) {
+          const _sec = parseFloat(_restVal);
+          if (!isNaN(_sec) && _sec > 0) {
+            _noteParts.push(_sec >= 120 ? 'Rest: ' + Math.round(_sec / 60) + 'm' : 'Rest: ' + Math.round(_sec) + 's');
+          }
+        }
+        if (sets[0].equipment) _noteParts.push('Equipment: ' + sets[0].equipment);
+        const note = _noteParts.length > 0 ? _noteParts.join(' | ') : null;
 
         exercises.push({
           name: exName,
@@ -5945,6 +6073,7 @@ function parseBulgarianMethod(wb) {
       // Structure: (A) marker in col 0 or col 7 (split), exercise name next col, then rows of sets
       const dayExercises = {}; // dayNum -> [{name, sets: [{reps, weight}]}]
       dayColumns.forEach(dc => { dayExercises[dc.dayNum] = []; });
+      const dayContext = {}; // dayNum -> { bw, form, sessionNotes }
 
       let curExName = null;
       let curExSets = {}; // dayNum -> [{reps, weight}]
@@ -5973,10 +6102,18 @@ function parseBulgarianMethod(wb) {
             return `${c.count}x${c.reps}${wt}`;
           });
 
+          // Build note from daily context (bodyweight, form quality, session notes)
+          const _ctx = dayContext[dc.dayNum];
+          const _ctxParts = [];
+          if (_ctx) {
+            if (_ctx.bw) _ctxParts.push('BW: ' + _ctx.bw);
+            if (_ctx.form) _ctxParts.push('Form: ' + _ctx.form);
+            if (_ctx.sessionNotes) _ctxParts.push(_ctx.sessionNotes);
+          }
           dayExercises[dc.dayNum].push({
             name: _hCapitalizeName(curExName),
             prescription: parts.join(', '),
-            note: ''
+            note: _ctxParts.length > 0 ? _ctxParts.join(' | ') : ''
           });
         }
         curExName = null;
@@ -6002,6 +6139,39 @@ function parseBulgarianMethod(wb) {
         // "Your typical warmup" = warmup separator, skip
         const col1 = row[1] ? String(row[1]).trim() : '';
         if (/warmup/i.test(col1)) { continue; }
+
+        // Detect daily context labels (bodyweight, form quality, session notes)
+        const _col1Lower = col1.toLowerCase();
+        if (/^(body\s*weight|bw|current\s*weight)$/.test(_col1Lower)) {
+          for (const dc of dayColumns) {
+            const val = row[dc.col];
+            if (typeof val === 'number' && val > 0) {
+              if (!dayContext[dc.dayNum]) dayContext[dc.dayNum] = {};
+              dayContext[dc.dayNum].bw = val;
+            }
+          }
+          continue;
+        }
+        if (/^(form|quality|rating)$/.test(_col1Lower)) {
+          for (const dc of dayColumns) {
+            const val = row[dc.col];
+            if (val != null && String(val).trim()) {
+              if (!dayContext[dc.dayNum]) dayContext[dc.dayNum] = {};
+              dayContext[dc.dayNum].form = String(val).trim();
+            }
+          }
+          continue;
+        }
+        if (/^(notes?|session\s*notes?|comments?)$/.test(_col1Lower)) {
+          for (const dc of dayColumns) {
+            const val = row[dc.col];
+            if (val != null && String(val).trim()) {
+              if (!dayContext[dc.dayNum]) dayContext[dc.dayNum] = {};
+              dayContext[dc.dayNum].sessionNotes = String(val).trim();
+            }
+          }
+          continue;
+        }
 
         // "(Optional)" or "Daily Min" / "Daily Max" labels
         if (/^\(optional\)|daily\s*(min|max)/i.test(col1)) {
@@ -10526,6 +10696,7 @@ function detectT(workbook) {
  */
 function parseT(workbook) {
   const sheets = workbook.SheetNames;
+  const volumeLandmarks = _tExtractVolumeLandmarks(workbook);
   const weekSheets = sheets.filter(s => /^Week \d+$/.test(s)).sort((a, b) => {
     const numA = parseInt(a.match(/\d+/)[0]);
     const numB = parseInt(b.match(/\d+/)[0]);
@@ -10552,7 +10723,7 @@ function parseT(workbook) {
       dataStartRow = 5;
     }
 
-    const days = _tParseDays(ws, dataStartRow);
+    const days = _tParseDays(ws, dataStartRow, volumeLandmarks);
 
     weeks.push({
       label: `Week ${weekNum}`,
@@ -10574,7 +10745,7 @@ function parseT(workbook) {
 /**
  * Parse days from worksheet starting at given row
  */
-function _tParseDays(ws, startRow) {
+function _tParseDays(ws, startRow, volumeLandmarks) {
   const days = [];
   let currentDayNum = null;
   let currentExercises = [];
@@ -10639,7 +10810,7 @@ function _tParseDays(ws, startRow) {
     }
 
     // Parse exercise from this row
-    const exercise = _tParseExercise(ws, row);
+    const exercise = _tParseExercise(ws, row, volumeLandmarks);
     if (exercise) {
       currentExercises.push(exercise);
     }
@@ -10661,7 +10832,7 @@ function _tParseDays(ws, startRow) {
 /**
  * Parse a single exercise row
  */
-function _tParseExercise(ws, row) {
+function _tParseExercise(ws, row, volumeLandmarks) {
   const muscleCell = ws[`B${row}`];
   const exerciseCell = ws[`C${row}`];
   const setsCell = ws[`D${row}`];
@@ -10691,7 +10862,7 @@ function _tParseExercise(ws, row) {
   if (!prescription) return null;
 
   // Build note
-  const note = _tBuildNote(muscle, notes, exerciseName);
+  const note = _tBuildNote(muscle, notes, exerciseName, volumeLandmarks);
 
   return {
     name: exerciseName,
@@ -10734,9 +10905,59 @@ function _tBuildPrescription(sets, reps, weight) {
 }
 
 /**
+ * Extract MRV/MEV volume landmarks from General Overview or Exercise Table sheet.
+ * Returns map: { "chest": { mrv: 20, mev: 10 }, ... } (keys lowercased)
+ */
+function _tExtractVolumeLandmarks(workbook) {
+  const volumeMap = {};
+  const metaSheet = workbook.SheetNames.find(s => s === 'General Overview' || s === 'Exercise Table');
+  if (!metaSheet) return volumeMap;
+
+  const ws = workbook.Sheets[metaSheet];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+  // Find header row with MRV/MEV columns
+  let headerRow = -1;
+  let muscleCol = -1, mrvCol = -1, mevCol = -1;
+
+  for (let i = 0; i < Math.min(30, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      const val = row[c] ? String(row[c]).trim().toLowerCase() : '';
+      if (val === 'mrv' || val.includes('maximum recoverable')) { mrvCol = c; headerRow = i; }
+      if (val === 'mev' || val.includes('minimum effective')) { mevCol = c; headerRow = i; }
+      if (/^(muscle\s*group|muscle|body\s*part)$/.test(val)) muscleCol = c;
+    }
+    if (mrvCol >= 0 || mevCol >= 0) break;
+  }
+
+  if (headerRow < 0 || muscleCol < 0) return volumeMap;
+
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    const muscle = row[muscleCol] ? String(row[muscleCol]).trim() : '';
+    if (!muscle || muscle.length < 2) continue;
+    // Stop at blank muscle rows
+    if (!muscle) break;
+
+    const mrv = mrvCol >= 0 && row[mrvCol] != null ? row[mrvCol] : null;
+    const mev = mevCol >= 0 && row[mevCol] != null ? row[mevCol] : null;
+
+    if (mrv != null || mev != null) {
+      volumeMap[muscle.toLowerCase()] = {
+        mrv: typeof mrv === 'number' ? mrv : null,
+        mev: typeof mev === 'number' ? mev : null
+      };
+    }
+  }
+
+  return volumeMap;
+}
+
+/**
  * Build note string from muscle group and other notes
  */
-function _tBuildNote(muscle, notes, exerciseName) {
+function _tBuildNote(muscle, notes, exerciseName, volumeLandmarks) {
   const parts = [];
 
   if (muscle) {
@@ -10757,6 +10978,17 @@ function _tBuildNote(muscle, notes, exerciseName) {
     }
     if (notes.includes('RPE') || notes.includes('RIR')) {
       parts.push('RPE/RIR: check notes');
+    }
+  }
+
+  // Add MRV/MEV volume landmarks if available for this muscle group
+  if (muscle && volumeLandmarks) {
+    const vl = volumeLandmarks[muscle.toLowerCase()];
+    if (vl) {
+      const vlParts = [];
+      if (vl.mrv != null) vlParts.push('MRV: ' + vl.mrv + ' sets');
+      if (vl.mev != null) vlParts.push('MEV: ' + vl.mev + ' sets');
+      if (vlParts.length > 0) parts.push(vlParts.join(' | '));
     }
   }
 
@@ -11635,7 +11867,7 @@ function parseW(wb) {
   const stride = weekPositions.length > 1 ? weekPositions[1].col - weekPositions[0].col : 7;
 
   // Detect column offsets within a week group from first sub-header row
-  let exOff = 0, setsOff = 1, repsOff = 2, loadOff = 3;
+  let exOff = 0, setsOff = 1, repsOff = 2, loadOff = 3, topSetOff = -1, ratingOff = -1;
   for (let i = weekHeaderRow + 1; i < Math.min(weekHeaderRow + 5, rows.length); i++) {
     const row = rows[i]; if (!row) continue;
     let found = 0;
@@ -11645,6 +11877,8 @@ function parseW(wb) {
       else if (s === 'sets')                           { setsOff = c - base0; found++; }
       else if (s === 'reps')                           { repsOff = c - base0; found++; }
       else if (s === 'load' || s === 'load/rpe' || s === 'load / rpe') { loadOff = c - base0; found++; }
+      else if (s === 'top set')                        { topSetOff = c - base0; }
+      else if (s === 'rating')                         { ratingOff = c - base0; }
     }
     if (found >= 3) break;
   }
@@ -11718,8 +11952,9 @@ function parseW(wb) {
           }
         }
 
-        // Build prescription parts from all rows in this exercise group
+        // Build prescription parts and collect TOP SET / RATING notes
         const presParts = [];
+        const noteParts = [];
         for (const ri of eg.rows) {
           const r2 = rows[ri];
           const setsVal = r2[wBase + setsOff];
@@ -11743,13 +11978,35 @@ function parseW(wb) {
 
           const pres = _w_buildPrescription(sc, rp, ld);
           if (pres) presParts.push(pres);
+
+          // Read TOP SET value for this row
+          if (topSetOff >= 0) {
+            const tsRaw = r2[wBase + topSetOff];
+            if (tsRaw != null) {
+              const ts = String(tsRaw).trim();
+              if (ts && !/^top\s*set$/i.test(ts)) {
+                noteParts.push(_w_formatTopSet(ts));
+              }
+            }
+          }
+
+          // Read RATING value for this row
+          if (ratingOff >= 0) {
+            const rtRaw = r2[wBase + ratingOff];
+            if (rtRaw != null) {
+              const rt = String(rtRaw).trim();
+              if (rt && !/^rating$/i.test(rt)) {
+                noteParts.push('Rating: ' + rt);
+              }
+            }
+          }
         }
 
         if (presParts.length > 0) {
           weekExerciseSets[w].push({
             name: weekExName,
             prescription: presParts.join('; '),
-            note: '', lifterNote: '', loggedWeight: '', supersetGroup: null
+            note: noteParts.join('; '), lifterNote: '', loggedWeight: '', supersetGroup: null
           });
         }
       }
@@ -11762,10 +12019,12 @@ function parseW(wb) {
   const allWeeks = [];
   for (let w = 0; w < weekPositions.length; w++) {
     const weekDays = [];
+    let seqDay = 0;
     for (const dd of dayData) {
       const exercises = dd.weekExerciseSets[w];
       if (!exercises || exercises.length === 0) continue;
-      weekDays.push({ name: 'Day ' + dd.dayNum, exercises });
+      seqDay++;
+      weekDays.push({ name: 'Day ' + seqDay, exercises });
     }
     if (weekDays.length > 0) {
       const rawLabel = weekPositions[w].label;
@@ -11817,6 +12076,18 @@ function _w_buildPrescription(sets, reps, loadStr) {
     }
   }
   return sets + 'x' + repsStr + loadPart;
+}
+
+// ── Helper: format TOP SET cell value into a note string ─────────────────────
+// "396-407" → "Top set: 396-407 lbs"
+// "374lbs CAP" → "Cap: 374 lbs"
+function _w_formatTopSet(val) {
+  const capMatch = val.match(/^(\d+)\s*lbs?\s+CAP\s*$/i);
+  if (capMatch) return 'Cap: ' + capMatch[1] + ' lbs';
+  // Weight range like "396-407" or "496-507, 523-535"
+  if (/^\d[\d,\s\-–]+$/.test(val)) return 'Top set: ' + val + ' lbs';
+  // Fallback: return as-is
+  return 'Top set: ' + val;
 }
 
 // ── Helper: compute date range string from PROGRAM sheet rows ─────────────────
@@ -12106,6 +12377,1408 @@ function _detectRegions(matrix, ws) {
   return regions;
 }
 
+// ── SESSION 2: Layout Classification + Header/Boundary Detection ──────────────
+
+/**
+ * _classifySheetLayout(ws)
+ * Internal helper — classify a single worksheet's structural pattern.
+ * Checks for horizontal-weeks first (week labels in row spanning columns),
+ * then block-based (2+ header rows at distinct vertical positions),
+ * then defaults to vertical-columnar.
+ *
+ * @param {object} ws — SheetJS worksheet
+ * @returns {'horizontal-weeks'|'block-based'|'vertical'}
+ */
+function _classifySheetLayout(ws) {
+  if (!ws || !ws['!ref']) return 'vertical';
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const maxRow = Math.min(range.e.r, range.s.r + 60); // scan first 60 rows
+  const maxCol = Math.min(range.e.c, range.s.c + 30);
+
+  const HEADER_KW = /^(exercise|movement|lift|name|sets?|reps?|weight|wt|load|lbs?|kg|rpe|rir|effort|intensity|%|percent)$/i;
+  const WEEK_LABEL_RE = /\bweek\s*\d+|\bwk\s*\d+/i;
+
+  const headerRowPositions = [];
+  let weekLabelRowCount = 0;
+  const weekLabelCols = new Set();
+
+  for (let r = range.s.r; r <= maxRow; r++) {
+    let headerKwCount = 0;
+    let weekLabelsInRow = 0;
+
+    for (let c = range.s.c; c <= maxCol; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (!cell || cell.v == null) continue;
+      const v = String(cell.v).trim();
+      if (HEADER_KW.test(v)) headerKwCount++;
+      if (WEEK_LABEL_RE.test(v)) {
+        weekLabelsInRow++;
+        weekLabelCols.add(c);
+      }
+    }
+
+    if (headerKwCount >= 2) headerRowPositions.push(r);
+    if (weekLabelsInRow >= 1) weekLabelRowCount++;
+  }
+
+  // Horizontal-weeks: 2+ week labels spread across different columns in same/adjacent rows
+  if (weekLabelRowCount >= 1 && weekLabelCols.size >= 2) return 'horizontal-weeks';
+
+  // Block-based: 2+ header rows at non-adjacent positions (gap > 3 rows)
+  const distinctBlocks = [];
+  for (const pos of headerRowPositions) {
+    if (!distinctBlocks.length || pos - distinctBlocks[distinctBlocks.length - 1] > 3) {
+      distinctBlocks.push(pos);
+    }
+  }
+  if (distinctBlocks.length >= 2) return 'block-based';
+
+  return 'vertical';
+}
+
+/**
+ * _classifyLayout(wb, regions)
+ * Classify the workbook's structural pattern into one of four options:
+ *   'week-per-tab'     — majority of tab names match /week|wk|w\d+|phase|block|cycle/i
+ *   'block-based'      — multiple header rows at different positions separated by blank rows
+ *   'horizontal-weeks' — week labels span column groups within a sheet
+ *   'vertical'         — single header row, exercises down (default fallback)
+ *
+ * Checked in priority order: week-per-tab → horizontal-weeks → block-based → vertical.
+ *
+ * @param {object} wb      — SheetJS workbook
+ * @param {Array}  regions — workout-like regions from _detectRegions (may be empty)
+ * @returns {{ pattern: string, sheetLayouts: {[sheetName]: string}, weekTabNames: string[] }}
+ */
+function _classifyLayout(wb, regions) {
+  if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
+    return { pattern: 'vertical', sheetLayouts: {}, weekTabNames: [] };
+  }
+
+  const WEEK_TAB_RE = /week|wk|w\d+|phase|block|cycle/i;
+  const sheetLayouts = {};
+
+  // ── Priority 1: week-per-tab ─────────────────────────────────────────────
+  // Require ≥2 matching tabs AND they make up ≥40% of all tabs
+  const weekTabs = wb.SheetNames.filter(s => WEEK_TAB_RE.test(s.trim()));
+  if (weekTabs.length >= 2 && weekTabs.length / wb.SheetNames.length >= 0.40) {
+    for (const sn of wb.SheetNames) {
+      sheetLayouts[sn] = WEEK_TAB_RE.test(sn.trim()) ? 'week-per-tab' : 'meta';
+    }
+    return { pattern: 'week-per-tab', sheetLayouts, weekTabNames: weekTabs };
+  }
+
+  // ── Per-sheet classification ─────────────────────────────────────────────
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    if (!ws || !ws['!ref']) { sheetLayouts[sn] = 'vertical'; continue; }
+    sheetLayouts[sn] = _classifySheetLayout(ws);
+  }
+
+  // ── Determine dominant pattern ───────────────────────────────────────────
+  const counts = { 'block-based': 0, 'horizontal-weeks': 0, 'vertical': 0 };
+  for (const p of Object.values(sheetLayouts)) {
+    if (p in counts) counts[p]++;
+  }
+
+  // Priority: horizontal-weeks > block-based > vertical
+  let pattern = 'vertical';
+  if (counts['horizontal-weeks'] > 0) pattern = 'horizontal-weeks';
+  else if (counts['block-based'] >= counts['vertical'] && counts['block-based'] > 0) pattern = 'block-based';
+
+  return { pattern, sheetLayouts, weekTabNames: weekTabs };
+}
+
+/**
+ * _detectHeaders(ws, region)
+ * Score candidate rows in the first 20 rows of a region to find the header row.
+ *
+ * Scoring per row:
+ *   +40 per keyword — domain keywords: exercise, sets, reps, weight, load, rpe, intensity, %
+ *   +30             — row is all-string AND row below has >50% numeric cells (type transition)
+ *   +10             — all cells non-empty AND all values unique
+ *
+ * @param {object} ws     — SheetJS worksheet
+ * @param {object} region — from _detectRegions: { startRow, endRow, startCol, endCol, ... }
+ * @returns {{ row: number, score: number, keywords: string[] }}
+ *          row = -1 if no header found (pure data region or tiny region)
+ */
+function _detectHeaders(ws, region) {
+  const { startRow, endRow, startCol, endCol } = region;
+  const scanEnd = Math.min(endRow, startRow + 19); // first 20 rows only
+  const width = endCol - startCol + 1;
+
+  // Domain keywords that signal a header row (checked case-insensitively)
+  const DOMAIN_KW = /^(exercise|exercises|movement|lift|name|sets?|reps?|weight|wt|load|lbs?|kg|rpe|rir|effort|intensity|%|percent|notes?|comments?|cues?)$/i;
+
+  let bestRow = -1;
+  let bestScore = 0;
+  let bestKeywords = [];
+
+  for (let r = startRow; r <= scanEnd; r++) {
+    let score = 0;
+    const keywords = [];
+    let allString = true;
+    let nonEmpty = 0;
+    const values = [];
+
+    for (let c = startCol; c <= endCol; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      const rawVal = cell ? cell.v : null;
+      const v = rawVal != null ? String(rawVal).trim() : '';
+
+      if (!v) {
+        allString = false; // empty cell means row isn't fully string
+        continue;
+      }
+      nonEmpty++;
+      values.push(v);
+
+      // Track if all non-empty cells are string type
+      if (!cell || cell.t !== 's') allString = false;
+
+      // Check for domain keywords — each match scores +40
+      if (DOMAIN_KW.test(v)) {
+        score += 40;
+        keywords.push(v);
+      }
+    }
+
+    // Type-transition: this row all-string, next row >50% numeric
+    if (allString && nonEmpty > 0 && r + 1 <= endRow) {
+      let numericNext = 0, totalNext = 0;
+      for (let c = startCol; c <= endCol; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: r + 1, c })];
+        if (!cell || cell.v == null) continue;
+        totalNext++;
+        if (cell.t === 'n' || (cell.f && typeof cell.v === 'number')) numericNext++;
+      }
+      if (totalNext > 0 && numericNext / totalNext > 0.50) score += 30;
+    }
+
+    // All non-empty + unique values across the full width
+    if (nonEmpty === width && new Set(values).size === values.length) score += 10;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestRow = r;
+      bestKeywords = keywords;
+    }
+  }
+
+  return { row: bestRow, score: bestScore, keywords: bestKeywords };
+}
+
+/**
+ * _detectDayBoundaries(ws, region, layout)
+ * Find where training days start and end within a detected region.
+ *
+ * Signals (checked in priority order):
+ *   1. Blank rows (all cells empty within column span) — most common separator
+ *   2. Repeated header rows (EXERCISE/SETS/REPS keywords re-appearing)
+ *   3. Day label text in first column ("Day 1", "Monday", "Upper", etc.)
+ *   4. Date serial in first column of new block
+ *
+ * @param {object} ws     — SheetJS worksheet
+ * @param {object} region — from _detectRegions: { startRow, endRow, startCol, endCol }
+ * @param {object} layout — from _classifyLayout (unused currently, reserved for pattern-specific logic)
+ * @returns {Array<{ startRow: number, endRow: number, label: string|null, dateSerial: number|null }>}
+ */
+function _detectDayBoundaries(ws, region, layout) {
+  const { startRow, endRow, startCol, endCol } = region;
+
+  const DAY_LABEL_RE = /^(day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|upper|lower|push|pull|legs?|squat\s*day|bench\s*day|deadlift\s*day|[a-z]+\s+day\b)/i;
+  const HEADER_KW_RE = /^(exercise|movement|lift|sets?|reps?|weight|load|rpe)$/i;
+
+  // ── Pass 1: classify every row within the region ─────────────────────────
+  const rowInfo = [];
+  for (let r = startRow; r <= endRow; r++) {
+    let isEmpty = true;
+    let dayLabel = null;
+    let headerKwCount = 0;
+    let dateSerial = null;
+
+    for (let c = startCol; c <= endCol; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (!cell || cell.v == null || String(cell.v).trim() === '') continue;
+      isEmpty = false;
+      const v = String(cell.v).trim();
+
+      // First column only: look for day labels and dates
+      if (c === startCol) {
+        if (DAY_LABEL_RE.test(v)) dayLabel = v;
+        // SheetJS date: cell.t === 'd', OR numeric Excel serial (40000–50000 ≈ 2009–2036)
+        if (cell.t === 'd' || (cell.t === 'n' && cell.v > 40000 && cell.v < 55000)) {
+          dateSerial = cell.v;
+        }
+      }
+      if (HEADER_KW_RE.test(v.toLowerCase())) headerKwCount++;
+    }
+
+    rowInfo.push({ r, isEmpty, dayLabel, headerKwCount, dateSerial });
+  }
+
+  // ── Pass 2: group rows into day blocks ───────────────────────────────────
+  const days = [];
+  let blockStart = -1;
+  let blockLabel = null;
+  let blockDate = null;
+  let pendingLabel = null; // day label row seen just before data starts
+  let pendingDate = null;
+  let blankRunLength = 0;
+
+  const closeBlock = (endR) => {
+    if (blockStart >= 0) {
+      days.push({ startRow: blockStart, endRow: endR, label: blockLabel, dateSerial: blockDate });
+      blockStart = -1;
+      blockLabel = null;
+      blockDate = null;
+    }
+  };
+
+  for (let i = 0; i < rowInfo.length; i++) {
+    const info = rowInfo[i];
+
+    if (info.isEmpty) {
+      blankRunLength++;
+      // Close block on first blank row (or start of a blank run)
+      if (blankRunLength === 1 && blockStart >= 0) {
+        closeBlock(info.r - 1);
+      }
+      continue;
+    }
+
+    blankRunLength = 0;
+
+    // Standalone day-label row (no data keywords) → store as pending label for next block
+    const isDayLabelOnlyRow = info.dayLabel && info.headerKwCount === 0 && blockStart < 0;
+    if (isDayLabelOnlyRow) {
+      pendingLabel = info.dayLabel;
+      pendingDate = info.dateSerial;
+      continue;
+    }
+
+    // Repeated header row mid-region → close current block, skip this row
+    if (info.headerKwCount >= 2 && blockStart >= 0) {
+      closeBlock(info.r - 1);
+      // This header row belongs to the next block; don't open the block yet
+      pendingLabel = pendingLabel; // carry over any pending label
+      continue;
+    }
+
+    // Start of a new data block
+    if (blockStart < 0) {
+      blockStart = info.r;
+      blockLabel = pendingLabel || info.dayLabel;
+      blockDate = pendingDate || info.dateSerial;
+      pendingLabel = null;
+      pendingDate = null;
+    }
+  }
+
+  // Close final open block
+  closeBlock(endRow);
+
+  // If no boundaries found, treat the whole region as a single day
+  if (days.length === 0) {
+    days.push({ startRow, endRow, label: null, dateSerial: null });
+  }
+
+  return days;
+}
+
+/**
+ * _detectWeekBoundaries(wb, regions, layout)
+ * Find week divisions in the workbook based on the detected layout pattern.
+ *
+ * Returns shape varies by pattern:
+ *   week-per-tab:      [{ label, sheetName }]
+ *   horizontal-weeks:  [{ label, sheetName, columns: [startCol, endCol] }]
+ *   block-based/vert:  [{ label, sheetName, startRow, endRow }]
+ *
+ * @param {object} wb      — SheetJS workbook
+ * @param {Array}  regions — workout-like regions from _detectRegions (primary sheet)
+ * @param {object} layout  — from _classifyLayout
+ * @returns {Array<object>}
+ */
+function _detectWeekBoundaries(wb, regions, layout) {
+  if (!wb || !wb.SheetNames) return [];
+  const { pattern, sheetLayouts, weekTabNames } = layout;
+
+  // ── week-per-tab: each matching tab is one week ──────────────────────────
+  if (pattern === 'week-per-tab') {
+    return (weekTabNames || []).map(sn => ({ label: sn, sheetName: sn }));
+  }
+
+  const WEEK_LABEL_RE = /\b(week|wk|w)\s*(\d+)\b/i;
+  const weeks = [];
+
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    if (!ws || !ws['!ref']) continue;
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const sheetPat = sheetLayouts ? (sheetLayouts[sn] || pattern) : pattern;
+
+    if (sheetPat === 'horizontal-weeks') {
+      // ── Horizontal: scan header rows for "WEEK N" spanning column groups ──
+      const maxScanRow = Math.min(range.e.r, range.s.r + 10);
+      for (let r = range.s.r; r <= maxScanRow; r++) {
+        const weekLabelsInRow = [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
+          if (!cell || cell.v == null) continue;
+          const v = String(cell.v).trim();
+          const m = v.match(WEEK_LABEL_RE);
+          if (m) weekLabelsInRow.push({ label: v, col: c, weekNum: parseInt(m[2], 10) });
+        }
+        if (weekLabelsInRow.length >= 2) {
+          // Build column-group ranges from the label positions
+          for (let i = 0; i < weekLabelsInRow.length; i++) {
+            const startC = weekLabelsInRow[i].col;
+            const endC = (i + 1 < weekLabelsInRow.length)
+              ? weekLabelsInRow[i + 1].col - 1
+              : range.e.c;
+            weeks.push({ label: weekLabelsInRow[i].label, sheetName: sn, columns: [startC, endC] });
+          }
+          break; // found week-label row for this sheet — don't scan further
+        }
+      }
+    } else {
+      // ── Vertical / block-based: scan for "WEEK N" label rows ─────────────
+      let lastWeekStart = -1;
+      let lastWeekLabel = null;
+
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        // Check first 4 columns for a week label
+        for (let c = range.s.c; c <= Math.min(range.e.c, range.s.c + 3); c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
+          if (!cell || cell.v == null) continue;
+          const v = String(cell.v).trim();
+          const m = v.match(WEEK_LABEL_RE);
+          if (m) {
+            // Close previous week
+            if (lastWeekStart >= 0) {
+              weeks.push({ label: lastWeekLabel, sheetName: sn, startRow: lastWeekStart, endRow: r - 1 });
+            }
+            lastWeekStart = r;
+            lastWeekLabel = v;
+            break;
+          }
+        }
+      }
+      // Close final week for this sheet
+      if (lastWeekStart >= 0) {
+        weeks.push({ label: lastWeekLabel, sheetName: sn, startRow: lastWeekStart, endRow: range.e.r });
+      }
+    }
+  }
+
+  return weeks;
+}
+
+// ── SESSION 3: COLUMN INFERENCE + DATA EXTRACTION ─────────────────────────────
+// Pure functions — no side effects on existing parsers or pipeline.
+
+/**
+ * _scoreColumnForType(type, headerVal, values, colIdx, totalCols, prevAssigned)
+ * Internal helper for _inferColumns.
+ * Scores a single column for how well it fits a given data type.
+ *
+ * Scoring:
+ *   Header keyword match → +50 pts
+ *   Value pattern match  → up to +30 pts (proportional to % of cells matching)
+ *   Position signal      → +20 pts ideal position, +8 pts reasonable position
+ *
+ * @param {string} type         — 'exercise'|'sets'|'reps'|'weight'|'rpe'|'percentage'|'notes'
+ * @param {string} headerVal    — raw header cell text for this column
+ * @param {Array}  values       — cell values from data rows in this column
+ * @param {number} colIdx       — 0-based index of this column in [startCol, endCol] range
+ * @param {number} totalCols    — total columns in the scan range
+ * @param {object} prevAssigned — column assignments so far: { exercise: absColIdx, sets: absColIdx, ... }
+ * @returns {number} score 0-100
+ */
+function _scoreColumnForType(type, headerVal, values, colIdx, totalCols, prevAssigned) {
+  let score = 0;
+  const hv = String(headerVal || '').toLowerCase().trim();
+  const nonNull = values.filter(v => v != null && String(v).trim() !== '');
+
+  if (type === 'exercise') {
+    if (/^(exercise|exercises?|movement|lift|name)$/i.test(hv)) score += 50;
+    // Value pattern: strings with 2+ consecutive alpha chars, not pure numbers (L176)
+    const exCount = nonNull.filter(v => {
+      const s = String(v).trim();
+      return /[a-zA-Z]{2,}/.test(s) && !/^\d+\.?\d*$/.test(s);
+    }).length;
+    if (nonNull.length > 0) score += Math.round((exCount / nonNull.length) * 30);
+    // Position: leftmost column is ideal for exercise names
+    if (colIdx === 0) score += 20;
+    else if (colIdx === 1 && prevAssigned.exercise == null) score += 10;
+
+  } else if (type === 'sets') {
+    if (/^(sets?|s)$/i.test(hv)) score += 50;
+    // Value pattern: small integers 1-10
+    const intCount = nonNull.filter(v => {
+      const n = Number(v);
+      return Number.isInteger(n) && n >= 1 && n <= 10;
+    }).length;
+    if (nonNull.length > 0) score += Math.round((intCount / nonNull.length) * 30);
+    // Position: right after exercise column
+    const exCol = prevAssigned.exercise != null ? prevAssigned.exercise : -1;
+    if (exCol >= 0 && colIdx === exCol + 1) score += 20;
+    else if (colIdx >= 1 && colIdx <= 3) score += 8;
+
+  } else if (type === 'reps') {
+    if (/^(reps?|r)$/i.test(hv)) score += 50;
+    // Value pattern: 1-30, AMRAP variants, "N+" notation
+    const repCount = nonNull.filter(v => {
+      const s = String(v).trim();
+      const n = Number(s);
+      return /^(amrap|amap|mr|f)$/i.test(s) ||
+             /^\d+\+$/.test(s) ||
+             (Number.isFinite(n) && n >= 1 && n <= 30);
+    }).length;
+    if (nonNull.length > 0) score += Math.round((repCount / nonNull.length) * 30);
+    // Position: right after sets column
+    const setsCol = prevAssigned.sets != null ? prevAssigned.sets : -1;
+    if (setsCol >= 0 && colIdx === setsCol + 1) score += 20;
+    else if (colIdx >= 2 && colIdx <= 4) score += 8;
+
+  } else if (type === 'weight') {
+    if (/^(weight|wt|load|lbs?|kg|load\/rpe|load \/ rpe)$/i.test(hv)) score += 50;
+    // Value pattern: numbers >20, strings with "lbs"/"kg", negative percentages
+    const wCount = nonNull.filter(v => {
+      const s = String(v).trim();
+      // Strip trailing unit for numeric check
+      const numPart = s.replace(/[a-zA-Z%\s]+$/, '').replace(/^-/, '').trim();
+      const n = Number(numPart);
+      return /\d+\s*(lbs?|kg)\b/i.test(s) ||
+             /^-?\d+(\.\d+)?%$/.test(s) ||  // percentage drop like -15%
+             (Number.isFinite(n) && n > 20 && n < 2000);
+    }).length;
+    if (nonNull.length > 0) score += Math.round((wCount / nonNull.length) * 30);
+    // Position: after reps column
+    const repsCol = prevAssigned.reps != null ? prevAssigned.reps : -1;
+    if (repsCol >= 0 && colIdx === repsCol + 1) score += 20;
+    else if (colIdx >= 3) score += 5;
+
+  } else if (type === 'rpe') {
+    if (/^(rpe|rir|effort)$/i.test(hv)) score += 50;
+    // Value pattern: numbers 5-10 in half-step increments (5, 5.5, 6, ..., 10)
+    const rpeCount = nonNull.filter(v => {
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 5 && n <= 10 &&
+             Math.round(n * 2) === n * 2;
+    }).length;
+    if (nonNull.length > 0) score += Math.round((rpeCount / nonNull.length) * 30);
+    // Position: after weight column
+    const wtCol = prevAssigned.weight != null ? prevAssigned.weight : -1;
+    if (wtCol >= 0 && colIdx === wtCol + 1) score += 20;
+
+  } else if (type === 'percentage') {
+    if (/^(%|percent|intensity|pct)$/i.test(hv)) score += 50;
+    // Value pattern: 50-105 (whole percent) or 0.50-1.05 (decimal fraction)
+    const pctCount = nonNull.filter(v => {
+      const n = Number(v);
+      return Number.isFinite(n) &&
+             ((n >= 50 && n <= 105) || (n > 0.49 && n < 1.06));
+    }).length;
+    if (nonNull.length > 0) score += Math.round((pctCount / nonNull.length) * 30);
+    // Position: near weight column
+    const wtCol2 = prevAssigned.weight != null ? prevAssigned.weight : -1;
+    if (wtCol2 >= 0 && Math.abs(colIdx - wtCol2) <= 2) score += 10;
+
+  } else if (type === 'notes') {
+    if (/^(notes?|comments?|cues?|tips?)$/i.test(hv)) score += 50;
+    // Value pattern: longer strings (>10 chars)
+    const noteCount = nonNull.filter(v => String(v).trim().length > 10).length;
+    if (nonNull.length > 0) score += Math.round((noteCount / nonNull.length) * 30);
+    // Position: last column in region
+    if (colIdx === totalCols - 1) score += 20;
+  }
+
+  return score;
+}
+
+/**
+ * _inferColumns(ws, region, headerRow, colRange)
+ * Score each column in a region against known column types and return
+ * the best-matching absolute column index for each type.
+ *
+ * Handles dual-purpose LOAD/RPE columns per spec §2a disambiguation rule:
+ * if a column has BOTH weight strings ("330lbs") and RPE integers (5-10),
+ * mark isDualLoadRpe=true and let extraction parse each cell individually.
+ *
+ * @param {object}  ws         — SheetJS worksheet
+ * @param {object}  region     — { startRow, endRow, startCol, endCol }
+ * @param {object}  headerRow  — { row: N, score, keywords } from _detectHeaders (row=-1 = none)
+ * @param {object}  [colRange] — optional { startCol, endCol } override for column scan range
+ * @returns {{ exercise, sets, reps, weight, rpe, percentage, notes: number (-1 = not found),
+ *             isDualLoadRpe: boolean, colScores: object }}
+ */
+function _inferColumns(ws, region, headerRow, colRange) {
+  if (!ws || !region) {
+    return { exercise: -1, sets: -1, reps: -1, weight: -1, rpe: -1,
+             percentage: -1, notes: -1, isDualLoadRpe: false, colScores: {} };
+  }
+
+  const scanStartCol = (colRange && colRange.startCol != null) ? colRange.startCol : region.startCol;
+  const scanEndCol   = (colRange && colRange.endCol   != null) ? colRange.endCol   : region.endCol;
+  const startRow = region.startRow;
+  const endRow   = region.endRow;
+
+  const headerRowNum = (headerRow && headerRow.row >= startRow && headerRow.row <= endRow)
+    ? headerRow.row : -1;
+  const dataStartRow = headerRowNum >= 0 ? headerRowNum + 1 : startRow;
+  const totalCols    = scanEndCol - scanStartCol + 1;
+
+  // ── Build per-column stats ────────────────────────────────────────────────
+  const colData = [];
+  for (let c = scanStartCol; c <= scanEndCol; c++) {
+    const colIdx = c - scanStartCol;
+
+    let headerVal = '';
+    if (headerRowNum >= 0) {
+      const hcell = ws[XLSX.utils.encode_cell({ r: headerRowNum, c })];
+      if (hcell && hcell.v != null) headerVal = String(hcell.v).trim();
+    }
+
+    // Prefer formatted string (.w) for values like "330lbs", "AMRAP"
+    const values = [];
+    for (let r = dataStartRow; r <= endRow; r++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell && cell.v != null && String(cell.v).trim() !== '') {
+        values.push(cell.w !== undefined ? cell.w : cell.v);
+      }
+    }
+
+    colData.push({ c, colIdx, headerVal, values });
+  }
+
+  // ── Greedy assignment: process types in priority order ────────────────────
+  const TYPES = ['exercise', 'sets', 'reps', 'weight', 'rpe', 'percentage', 'notes'];
+  const result = { isDualLoadRpe: false, colScores: {} };
+  const assignedCols = new Set();
+
+  for (const type of TYPES) {
+    let bestC = -1, bestScore = 0;
+    for (const col of colData) {
+      if (assignedCols.has(col.c)) continue;
+      const score = _scoreColumnForType(
+        type, col.headerVal, col.values, col.colIdx, totalCols, result
+      );
+      if (score > bestScore) {
+        bestScore = score;
+        bestC = col.c;
+      }
+    }
+    result[type] = bestScore > 0 ? bestC : -1;
+    if (bestC >= 0) assignedCols.add(bestC);
+  }
+
+  // ── Dual-purpose LOAD/RPE detection ──────────────────────────────────────
+  if (result.weight >= 0) {
+    const wd = colData.find(cd => cd.c === result.weight);
+    if (wd) {
+      let hasAbsWeight = false, hasRpeInt = false;
+      for (const v of wd.values) {
+        const s = String(v).trim();
+        const rawNum = Number(s);
+        if (/\d+\s*(lbs?|kg)/i.test(s) || (Number.isFinite(rawNum) && rawNum > 20)) hasAbsWeight = true;
+        if (Number.isInteger(rawNum) && rawNum >= 5 && rawNum <= 10) hasRpeInt = true;
+      }
+      if (hasAbsWeight && hasRpeInt) result.isDualLoadRpe = true;
+    }
+  }
+
+  // ── Store per-column scores for debugging / confidence ────────────────────
+  for (const col of colData) {
+    result.colScores[col.c] = {};
+    for (const type of TYPES) {
+      result.colScores[col.c][type] = _scoreColumnForType(
+        type, col.headerVal, col.values, col.colIdx, totalCols, {}
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * _buildPrescription(sets, reps, loadStr, rpeVal, pctVal)
+ * Assemble a prescription string compatible with parseSets() / parseSimple().
+ *
+ * Priority for load annotation: explicit RPE column > explicit % column > parsed loadStr.
+ * loadStr parsing: "330lbs" → @330lbs, "-15%" → @-15%, "-0.15" → @-15%,
+ *                  "8" (RPE int 5-10) → @RPE8, "75" (50-105) → @75%, ">20" → @Nlbs.
+ *
+ * @param {number|string} sets    — number of sets (must parse to integer 1-50)
+ * @param {number|string} reps    — reps value (number, "AMRAP", "5+", etc.)
+ * @param {string}        loadStr — formatted load value from worksheet (.w or .v)
+ * @param {number|null}   rpeVal  — explicit RPE value from a dedicated RPE column
+ * @param {number|null}   pctVal  — explicit percentage from a dedicated % column
+ * @returns {string|null}
+ */
+function _buildPrescription(sets, reps, loadStr, rpeVal, pctVal) {
+  const sc = parseInt(sets);
+  if (!sc || sc <= 0 || sc > 50) return null;
+
+  const repsStr = reps != null ? String(reps).trim() : '';
+  if (!repsStr) return null;
+
+  const repsOut = /^(amrap|amap|mr|f)$/i.test(repsStr) ? 'AMRAP' : repsStr;
+  const base = sc + 'x' + repsOut;
+
+  // Build load annotation
+  let loadPart = '';
+
+  if (rpeVal != null) {
+    const r = Number(rpeVal);
+    if (Number.isFinite(r) && r >= 5 && r <= 10) loadPart = ' @RPE' + r;
+  }
+
+  if (!loadPart && pctVal != null) {
+    const p = Number(pctVal);
+    if (Number.isFinite(p)) {
+      if (p > 0.49 && p < 1.06) loadPart = ' @' + Math.round(p * 100) + '%';
+      else if (p >= 50 && p <= 105) loadPart = ' @' + Math.round(p) + '%';
+    }
+  }
+
+  if (!loadPart) {
+    const ld = String(loadStr || '').trim();
+    if (ld) {
+      if (/^-?\d+(\.\d+)?%$/.test(ld)) {
+        loadPart = ' @' + ld;                                   // "-15%" → "@-15%"
+      } else if (/\d+\s*(lbs?|kg)\b/i.test(ld)) {
+        loadPart = ' @' + ld.replace(/\s+/g, '');               // "330 lbs" → "@330lbs"
+      } else if (/^-?\d+(\.\d+)?$/.test(ld)) {
+        const n = Number(ld);
+        if (n < 0) {
+          // Negative decimal → percentage drop (e.g. -0.15 → @-15%)
+          loadPart = ' @' + Math.round(n * 100) + '%';
+        } else if (n >= 5 && n <= 10) {
+          loadPart = ' @RPE' + n;                               // integer 5-10 → RPE
+        } else if (n >= 50 && n <= 105) {
+          loadPart = ' @' + n + '%';                            // 50-105 → percentage
+        } else if (n > 20) {
+          loadPart = ' @' + n + 'lbs';                         // bare number > 20 → lbs
+        }
+      } else if (ld) {
+        loadPart = ' @' + ld;                                   // passthrough
+      }
+    }
+  }
+
+  return base + loadPart;
+}
+
+/**
+ * _handleMultiRowExercise(ws, rowIndices, columns)
+ * Process row indices from a day block, detect multi-row exercise patterns,
+ * and return combined exercise objects.
+ *
+ * Multi-row patterns (spec §2d):
+ *   1. Empty exercise cell + has prescription data → continuation of previous
+ *   2. Same exercise name as previous row → additional set prescription
+ *   3. Negative number in LOAD column → relative percentage drop (e.g. -0.15 = @-15%)
+ *
+ * @param {object}  ws         — SheetJS worksheet
+ * @param {Array}   rowIndices — absolute row indices to process
+ * @param {object}  columns    — { exercise, sets, reps, weight, rpe, percentage, isDualLoadRpe }
+ * @returns {Array<{name, prescription, note, lifterNote, loggedWeight, supersetGroup}>}
+ */
+function _handleMultiRowExercise(ws, rowIndices, columns) {
+  const groups = []; // { name: string, parts: string[] }
+
+  for (const r of rowIndices) {
+    // ── Read exercise name ─────────────────────────────────────────────────
+    let exName = '';
+    if (columns.exercise >= 0) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: columns.exercise })];
+      if (cell && cell.v != null) exName = String(cell.v).trim();
+    }
+
+    // Skip rows that are themselves header rows or day-label rows
+    if (/^(exercise|exercises?|movement|lift)$/i.test(exName)) continue;
+    if (/^(week|day)\s*\d/i.test(exName)) continue;
+    if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(exName)) continue;
+
+    // ── Read sets ──────────────────────────────────────────────────────────
+    let setsVal = null;
+    if (columns.sets >= 0) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: columns.sets })];
+      if (cell && cell.v != null) setsVal = cell.v;
+    }
+
+    // ── Read reps (prefer .w for AMRAP strings) ───────────────────────────
+    let repsVal = null;
+    if (columns.reps >= 0) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: columns.reps })];
+      if (cell && cell.v != null) {
+        repsVal = cell.w !== undefined ? cell.w : String(cell.v).trim();
+      }
+    }
+
+    // ── Read load/weight (prefer formatted string .w) ─────────────────────
+    let loadStr = '';
+    if (columns.weight >= 0) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: columns.weight })];
+      if (cell && cell.v != null) {
+        loadStr = cell.w !== undefined ? String(cell.w).trim() : String(cell.v).trim();
+      }
+    }
+
+    // ── Read explicit RPE column ───────────────────────────────────────────
+    let rpeVal = null;
+    if (columns.rpe >= 0) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: columns.rpe })];
+      if (cell && cell.v != null) rpeVal = cell.v;
+    }
+
+    // ── Read explicit percentage column ───────────────────────────────────
+    let pctVal = null;
+    if (columns.percentage >= 0) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: columns.percentage })];
+      if (cell && cell.v != null) pctVal = cell.v;
+    }
+
+    // Skip entirely empty rows
+    const hasAnyData = setsVal != null || repsVal != null || loadStr !== '';
+    if (!hasAnyData && !exName) continue;
+
+    // ── Continuation vs. new exercise ─────────────────────────────────────
+    const hasValidName = exName && /[a-zA-Z]{2,}/.test(exName); // L176
+    const prevGroup = groups.length > 0 ? groups[groups.length - 1] : null;
+    const isContinuation =
+      (!hasValidName && prevGroup && hasAnyData) ||           // empty name, has data
+      (hasValidName && prevGroup && exName === prevGroup.name); // same name as prev
+
+    if (isContinuation && prevGroup) {
+      const pres = _buildPrescription(setsVal, repsVal, loadStr, rpeVal, pctVal);
+      if (pres) prevGroup.parts.push(pres);
+    } else if (hasValidName) {
+      const newGroup = { name: exName, parts: [] };
+      const pres = _buildPrescription(setsVal, repsVal, loadStr, rpeVal, pctVal);
+      if (pres) newGroup.parts.push(pres);
+      groups.push(newGroup);
+    }
+  }
+
+  // L165: every exercise object must include supersetGroup: null
+  return groups.map(g => ({
+    name: g.name,
+    prescription: g.parts.join('; '),
+    note: '',
+    lifterNote: '',
+    loggedWeight: '',
+    supersetGroup: null
+  }));
+}
+
+// ── Adaptive Parser: Internal sub-functions (_ap_ prefix per L075) ────────────
+
+/**
+ * _ap_findPrimarySheet(wb, layout)
+ * Find the primary training sheet, skipping metadata/helper sheets.
+ */
+function _ap_findPrimarySheet(wb, layout) {
+  const { pattern, sheetLayouts } = layout;
+  const META_RE = /homepage|faq|instruction|readme|about|intro|meta|overview|summary|nutrition|movement\s*prep|warm.?up|maxe?s?|calculator|input/i;
+
+  // For horizontal-weeks: prefer sheets classified as such
+  if (pattern === 'horizontal-weeks') {
+    for (const [sn, pat] of Object.entries(sheetLayouts || {})) {
+      if (pat === 'horizontal-weeks' && !META_RE.test(sn) && wb.Sheets[sn]) return sn;
+    }
+  }
+
+  // For block-based: prefer sheets classified as block-based
+  if (pattern === 'block-based') {
+    for (const [sn, pat] of Object.entries(sheetLayouts || {})) {
+      if (pat === 'block-based' && !META_RE.test(sn) && wb.Sheets[sn]) return sn;
+    }
+  }
+
+  // For vertical: prefer vertical-classified sheets
+  for (const [sn, pat] of Object.entries(sheetLayouts || {})) {
+    if (pat === 'vertical' && !META_RE.test(sn) && wb.Sheets[sn] && wb.Sheets[sn]['!ref']) return sn;
+  }
+
+  // Fallback: first non-metadata sheet with data
+  for (const sn of wb.SheetNames) {
+    if (META_RE.test(sn)) continue;
+    if (wb.Sheets[sn] && wb.Sheets[sn]['!ref']) return sn;
+  }
+
+  return wb.SheetNames[0];
+}
+
+/**
+ * _ap_inferProgramName(wb, sheetName)
+ * Try to find a program name from the first few rows of the primary sheet,
+ * or fall back to the sheet name.
+ */
+function _ap_inferProgramName(wb, sheetName) {
+  const ws = wb.Sheets[sheetName];
+  if (!ws || !ws['!ref']) return sheetName || 'Training Program';
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  // Scan first 3 rows, first 6 cols for a title-like string
+  for (let r = range.s.r; r <= Math.min(range.s.r + 3, range.e.r); r++) {
+    for (let c = range.s.c; c <= Math.min(range.s.c + 5, range.e.c); c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (!cell || cell.v == null) continue;
+      const v = String(cell.v).trim();
+      // A title: 5-80 chars, has real words, not a domain keyword
+      if (v.length >= 5 && v.length <= 80 && /[a-zA-Z]{3,}/.test(v) &&
+          !/^(exercise|sets?|reps?|week|day|load|weight|rpe|date)$/i.test(v)) {
+        return v;
+      }
+    }
+  }
+  return sheetName || 'Training Program';
+}
+
+/**
+ * _ap_extractDaysFromBounds(ws, dayBoundsArr, colMap)
+ * Build exercise-populated day objects from pre-computed day boundaries.
+ * @returns {Array<{name, exercises}>}
+ */
+function _ap_extractDaysFromBounds(ws, dayBoundsArr, colMap) {
+  const days = [];
+  for (let i = 0; i < dayBoundsArr.length; i++) {
+    const db = dayBoundsArr[i];
+    const rowIndices = [];
+    for (let r = db.startRow; r <= db.endRow; r++) rowIndices.push(r);
+
+    const exercises = _handleMultiRowExercise(ws, rowIndices, colMap);
+    if (exercises.length > 0) {
+      days.push({ name: db.label || ('Day ' + (i + 1)), exercises });
+    }
+  }
+  return days;
+}
+
+/**
+ * _ap_extractHorizontal(ws, range, weekBoundsForSheet)
+ * Extract workout data from a horizontal-weeks layout.
+ * Weeks = column groups; day sections = repeated header rows.
+ *
+ * Column offsets are inferred once from the first week group and
+ * reused for all subsequent week groups (they share the same layout).
+ *
+ * @param {object}  ws                 — SheetJS worksheet
+ * @param {object}  range              — XLSX decoded range { s:{r,c}, e:{r,c} }
+ * @param {Array}   weekBoundsForSheet — [{ label, columns: [startC, endC] }]
+ * @returns {Array<{label, days}>}
+ */
+function _ap_extractHorizontal(ws, range, weekBoundsForSheet) {
+  if (!weekBoundsForSheet || weekBoundsForSheet.length === 0) return null;
+
+  const firstWk = weekBoundsForSheet[0];
+
+  // ── Infer column offsets from the first week's column group ──────────────
+  const firstRegion = {
+    startRow: range.s.r,
+    endRow:   range.e.r,
+    startCol: firstWk.columns[0],
+    endCol:   firstWk.columns[1]
+  };
+  const firstHeader = _detectHeaders(ws, firstRegion);
+  const colMap = _inferColumns(ws, firstRegion, firstHeader);
+
+  // Relative offsets from each week's start column
+  const exOff   = colMap.exercise   >= 0 ? colMap.exercise   - firstWk.columns[0] : 0;
+  const setsOff = colMap.sets       >= 0 ? colMap.sets       - firstWk.columns[0] : 1;
+  const repsOff = colMap.reps       >= 0 ? colMap.reps       - firstWk.columns[0] : 2;
+  const loadOff = colMap.weight     >= 0 ? colMap.weight     - firstWk.columns[0] : 3;
+  const rpeOff  = colMap.rpe        >= 0 ? colMap.rpe        - firstWk.columns[0] : -1;
+  const pctOff  = colMap.percentage >= 0 ? colMap.percentage - firstWk.columns[0] : -1;
+
+  // ── Find day sections: rows where exercise column has "EXERCISE" keyword ─
+  const EXERCISE_KW_RE = /^(exercise|exercises?)$/i;
+  const daySections = [];
+  let dayNum = 0;
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    // At least one week group must show "EXERCISE" in this row
+    for (const wk of weekBoundsForSheet) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: wk.columns[0] + exOff })];
+      if (cell && cell.v && EXERCISE_KW_RE.test(String(cell.v).trim())) {
+        dayNum++;
+        daySections.push({ headerRow: r, dayNum });
+        break;
+      }
+    }
+  }
+
+  if (daySections.length === 0) {
+    // ── Hybrid fallback: exercise/sets/reps are shared columns left of week groups ─
+    // Pattern: exercise names in col 0, sets/reps in shared cols, only weight repeats per week.
+    // Examples: Reddit PPL, Norwegian PPL.
+    return _ap_extractHybridHorizontal(ws, range, weekBoundsForSheet);
+  }
+
+  // ── Initialize per-week arrays ────────────────────────────────────────────
+  const weekData = weekBoundsForSheet.map(wk => ({ label: wk.label, days: [] }));
+
+  // ── Extract per day section ───────────────────────────────────────────────
+  for (let d = 0; d < daySections.length; d++) {
+    const startDataRow = daySections[d].headerRow + 1;
+    const endDataRow   = d + 1 < daySections.length
+      ? daySections[d + 1].headerRow - 1
+      : range.e.r;
+
+    const rowIndices = [];
+    for (let r = startDataRow; r <= endDataRow; r++) rowIndices.push(r);
+
+    const dayLabel = 'Day ' + daySections[d].dayNum;
+
+    // For each week, build its column map and extract exercises
+    for (let w = 0; w < weekBoundsForSheet.length; w++) {
+      const wkStartCol = weekBoundsForSheet[w].columns[0];
+      const weekCols = {
+        exercise:   wkStartCol + exOff,
+        sets:       wkStartCol + setsOff,
+        reps:       wkStartCol + repsOff,
+        weight:     loadOff >= 0 ? wkStartCol + loadOff : -1,
+        rpe:        rpeOff  >= 0 ? wkStartCol + rpeOff  : -1,
+        percentage: pctOff  >= 0 ? wkStartCol + pctOff  : -1,
+        isDualLoadRpe: colMap.isDualLoadRpe
+      };
+      const exercises = _handleMultiRowExercise(ws, rowIndices, weekCols);
+      if (exercises.length > 0) {
+        weekData[w].days.push({ name: dayLabel, exercises });
+      }
+    }
+  }
+
+  return weekData.filter(w => w.days.length > 0);
+}
+
+/**
+ * _ap_extractHybridHorizontal(ws, range, weekBoundsForSheet)
+ * Hybrid horizontal layout: exercise/sets/reps are shared columns LEFT of all
+ * week groups; only weight repeats per week (e.g. Reddit PPL, Norwegian PPL).
+ *
+ * Detection strategy:
+ *   1. Infer shared columns from the region left of all week groups
+ *   2. Detect day boundaries within the shared region
+ *   3. For each day × week: use shared cols + week's first column as weight
+ */
+function _ap_extractHybridHorizontal(ws, range, weekBoundsForSheet) {
+  if (!weekBoundsForSheet || weekBoundsForSheet.length === 0) return null;
+
+  // Region to the LEFT of the first week group (shared exercise/sets/reps cols)
+  const minWeekCol = Math.min(...weekBoundsForSheet.map(w => w.columns[0]));
+  if (minWeekCol <= range.s.c) return null; // no room for shared cols
+
+  const sharedRegion = {
+    startRow: range.s.r,
+    endRow:   range.e.r,
+    startCol: range.s.c,
+    endCol:   minWeekCol - 1
+  };
+
+  // Infer column types within the shared region
+  const sharedHeader = _detectHeaders(ws, sharedRegion);
+  const sharedCols   = _inferColumns(ws, sharedRegion, sharedHeader);
+
+  if (sharedCols.exercise < 0) return null;
+
+  // Detect day boundaries within the shared region
+  const dayBoundsArr = _detectDayBoundaries(ws, sharedRegion, { pattern: 'block-based', sheetLayouts: {}, weekTabNames: [] });
+  if (!dayBoundsArr || dayBoundsArr.length === 0) return null;
+
+  const weekData = weekBoundsForSheet.map(wk => ({ label: wk.label, days: [] }));
+
+  for (let d = 0; d < dayBoundsArr.length; d++) {
+    const db = dayBoundsArr[d];
+    const rowIndices = [];
+    for (let r = db.startRow; r <= db.endRow; r++) rowIndices.push(r);
+    const dayLabel = db.label || ('Day ' + (d + 1));
+
+    for (let w = 0; w < weekBoundsForSheet.length; w++) {
+      const wk = weekBoundsForSheet[w];
+      // Shared exercise/sets/reps + this week's first column as weight
+      const weekCols = {
+        exercise:   sharedCols.exercise,
+        sets:       sharedCols.sets,
+        reps:       sharedCols.reps >= 0 ? sharedCols.reps : -1,
+        weight:     wk.columns[0],  // first col of week group = weight for that week
+        rpe:        -1,
+        percentage: sharedCols.percentage >= 0 ? sharedCols.percentage : -1,
+        isDualLoadRpe: false
+      };
+      const exercises = _handleMultiRowExercise(ws, rowIndices, weekCols);
+      if (exercises.length > 0) {
+        weekData[w].days.push({ name: dayLabel, exercises });
+      }
+    }
+  }
+
+  return weekData.filter(w => w.days.length > 0);
+}
+
+/**
+ * _ap_extractWeekPerTab(wb, layout)
+ * Extract workout data from a week-per-tab layout.
+ * Each matching tab = one week. Column inference and day detection per tab.
+ *
+ * @param {object} wb     — SheetJS workbook
+ * @param {object} layout — from _classifyLayout
+ * @returns {Array<{label, days}>}
+ */
+function _ap_extractWeekPerTab(wb, layout) {
+  const { weekTabNames } = layout;
+  if (!weekTabNames || weekTabNames.length === 0) return null;
+
+  const weeks = [];
+
+  for (const sn of weekTabNames) {
+    const ws = wb.Sheets[sn];
+    if (!ws || !ws['!ref']) continue;
+
+    const matrix = _buildOccupancyMatrix(ws);
+    const regions = _detectRegions(matrix, ws);
+    if (!regions || regions.length === 0) continue;
+
+    // Use the highest workout-score region
+    const primaryRegion = regions.find(r => r.workoutScore >= 0.5) || regions[0];
+    const headerInfo = _detectHeaders(ws, primaryRegion);
+    const colMap = _inferColumns(ws, primaryRegion, headerInfo);
+
+    if (colMap.exercise < 0) continue;
+
+    const dayBoundsArr = _detectDayBoundaries(ws, primaryRegion, layout);
+    const extractedDays = _ap_extractDaysFromBounds(ws, dayBoundsArr, colMap);
+
+    if (extractedDays.length > 0) {
+      weeks.push({ label: sn, days: extractedDays });
+    }
+  }
+
+  return weeks.length > 0 ? weeks : null;
+}
+
+/**
+ * _adaptiveExtract(wb, regions, layout, headers, columns, dayBounds, weekBounds)
+ * Orchestrate full data extraction using the adaptive parser pipeline.
+ *
+ * Dispatches to the appropriate sub-extractor based on layout pattern.
+ * Pre-computed detection results are used when provided (non-null);
+ * otherwise computed internally from the workbook.
+ *
+ * Output shape matches all other parsers (spec L021):
+ *   [{ name, format:'adaptive', athleteName, dateRange, maxes, weeks }]
+ *   weeks: [{ label, days: [{ name, exercises: [{ name, prescription, ... }] }] }]
+ *
+ * @param {object} wb         — SheetJS workbook
+ * @param {Array}  regions    — workout-like regions from _detectRegions (may have .sheetName)
+ * @param {object} layout     — from _classifyLayout
+ * @param {object} headers    — { [sheetName]: headerInfo }   (optional, computed if null)
+ * @param {object} columns    — { [sheetName]: colMap }       (optional, computed if null)
+ * @param {object} dayBounds  — { [sheetName]: dayBoundsArr } (optional, computed if null)
+ * @param {Array}  weekBounds — from _detectWeekBoundaries    (optional, computed if null)
+ * @returns {Array|null}
+ */
+function _adaptiveExtract(wb, regions, layout, headers, columns, dayBounds, weekBounds) {
+  if (!wb) return null;
+
+  // Compute layout internally if not provided (all params are optional per spec)
+  let resolvedLayout = layout;
+  let resolvedRegions = regions;
+  if (!resolvedLayout) {
+    const primarySn = wb.SheetNames.find(sn => wb.Sheets[sn] && wb.Sheets[sn]['!ref']) || wb.SheetNames[0];
+    const ws0 = wb.Sheets[primarySn];
+    if (ws0) {
+      const mat = _buildOccupancyMatrix(ws0);
+      resolvedRegions = resolvedRegions || _detectRegions(mat, ws0);
+    }
+    resolvedLayout = _classifyLayout(wb, resolvedRegions || []);
+  }
+
+  const { pattern } = resolvedLayout;
+
+  // Resolve week bounds (compute if not provided)
+  const resolvedWeekBounds = weekBounds ||
+    _detectWeekBoundaries(wb, resolvedRegions || [], resolvedLayout);
+
+  // ── week-per-tab ────────────────────────────────────────────────────────
+  if (pattern === 'week-per-tab') {
+    const weekResult = _ap_extractWeekPerTab(wb, resolvedLayout);
+    if (!weekResult) return null;
+    const primarySn = (resolvedLayout.weekTabNames || [])[0] || wb.SheetNames[0];
+    return [{
+      name: _ap_inferProgramName(wb, primarySn),
+      format: 'adaptive',
+      athleteName: '',
+      dateRange: '',
+      maxes: { squat: null, bench: null, deadlift: null },
+      weeks: weekResult
+    }];
+  }
+
+  // ── Find primary sheet ──────────────────────────────────────────────────
+  const primarySn = _ap_findPrimarySheet(wb, resolvedLayout);
+  if (!primarySn || !wb.Sheets[primarySn]) return null;
+  const ws = wb.Sheets[primarySn];
+  if (!ws['!ref']) return null;
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  const sheetWeekBounds = resolvedWeekBounds.filter(w => w.sheetName === primarySn);
+
+  let weekResult = null;
+
+  if (pattern === 'horizontal-weeks') {
+    weekResult = _ap_extractHorizontal(ws, range, sheetWeekBounds);
+  } else {
+    // vertical or block-based
+    // Identify the primary workout region for this sheet
+    let primaryRegion = null;
+    if (resolvedRegions && resolvedRegions.length > 0) {
+      const sheetRegions = resolvedRegions.filter(r => !r.sheetName || r.sheetName === primarySn);
+      primaryRegion = sheetRegions.find(r => r.workoutScore >= 0.5) || sheetRegions[0] || resolvedRegions[0];
+    }
+    if (!primaryRegion) {
+      primaryRegion = { startRow: range.s.r, endRow: range.e.r,
+                        startCol: range.s.c, endCol: range.e.c };
+    }
+
+    const colMap = (columns && columns[primarySn]) ||
+      _inferColumns(ws, primaryRegion,
+        (headers && headers[primarySn]) || _detectHeaders(ws, primaryRegion));
+
+    const dayBoundsArr = (dayBounds && dayBounds[primarySn]) ||
+      _detectDayBoundaries(ws, primaryRegion, resolvedLayout);
+
+    weekResult = _ap_extractVertical(ws, range, colMap, dayBoundsArr, sheetWeekBounds);
+  }
+
+  if (!weekResult || weekResult.length === 0) return null;
+
+  return [{
+    name: _ap_inferProgramName(wb, primarySn),
+    format: 'adaptive',
+    athleteName: '',
+    dateRange: '',
+    maxes: { squat: null, bench: null, deadlift: null },
+    weeks: weekResult
+  }];
+}
+
+/**
+ * _ap_extractVertical(ws, range, colMap, dayBoundsArr, weekBoundsArr)
+ * Extract workout data from a vertical or block-based layout.
+ * Weeks are separated by "WEEK N" label rows; days by blank rows / headers.
+ *
+ * @param {object} ws            — SheetJS worksheet
+ * @param {object} range         — XLSX decoded range
+ * @param {object} colMap        — from _inferColumns
+ * @param {Array}  dayBoundsArr  — from _detectDayBoundaries
+ * @param {Array}  weekBoundsArr — from _detectWeekBoundaries for this sheet
+ * @returns {Array<{label, days}>}
+ */
+function _ap_extractVertical(ws, range, colMap, dayBoundsArr, weekBoundsArr) {
+  if (!colMap || colMap.exercise < 0) return null;
+  if (!dayBoundsArr || dayBoundsArr.length === 0) return null;
+
+  const weeks = [];
+
+  if (weekBoundsArr && weekBoundsArr.length > 0) {
+    // Assign each day boundary to the week that contains its row range
+    const weekDayMap = weekBoundsArr.map(wb_e => ({ label: wb_e.label, days: [] }));
+
+    for (const db of dayBoundsArr) {
+      let assigned = false;
+      for (let wi = 0; wi < weekBoundsArr.length; wi++) {
+        const we = weekBoundsArr[wi];
+        const wkStart = we.startRow != null ? we.startRow : range.s.r;
+        const wkEnd   = we.endRow   != null ? we.endRow   : range.e.r;
+        if (db.startRow >= wkStart && db.endRow <= wkEnd) {
+          weekDayMap[wi].days.push(db);
+          assigned = true;
+          break;
+        }
+      }
+      // If a day doesn't fit in any week, assign to last week
+      if (!assigned && weekDayMap.length > 0) {
+        weekDayMap[weekDayMap.length - 1].days.push(db);
+      }
+    }
+
+    for (const { label, days } of weekDayMap) {
+      const extractedDays = _ap_extractDaysFromBounds(ws, days, colMap);
+      if (extractedDays.length > 0) weeks.push({ label, days: extractedDays });
+    }
+  } else {
+    // No explicit week boundaries — treat whole region as one week
+    const extractedDays = _ap_extractDaysFromBounds(ws, dayBoundsArr, colMap);
+    if (extractedDays.length > 0) weeks.push({ label: 'Week 1', days: extractedDays });
+  }
+
+  return weeks.length > 0 ? weeks : null;
+}
+
+/**
+ * _scoreAdaptiveConfidence(result, detectionContext)
+ * Compute a 0.0-1.0 confidence score for an adaptive parse result.
+ *
+ * Six components (spec §Confidence Scoring):
+ *   Exercise recognition  (25%): % of names matching SYNONYM_MAP or lift keywords
+ *   Header detection      (20%): headerScore ≥70→1.0, 40→0.7, 10→0.4, <10→0.0
+ *   Column mapping        (20%): 4/4 core cols=1.0, 3/4=0.75, 2/4=0.5, 1/4=0.25
+ *   Layout confidence     (15%): clean pattern match=1.0, ambiguous=0.5
+ *   Data completeness     (10%): % exercises with non-empty prescription
+ *   Value validity        (10%): % prescriptions parseable by parseSets/parseSimple
+ *
+ * @param {Array}  result           — blocks array from _adaptiveExtract
+ * @param {object} detectionContext — {
+ *   headerScore: number,     // from _detectHeaders.score (0-100)
+ *   columnMap: object,       // from _inferColumns
+ *   layoutConfidence: number // 0.0-1.0
+ * }
+ * @returns {number} 0.0-1.0
+ */
+function _scoreAdaptiveConfidence(result, detectionContext) {
+  if (!result || !Array.isArray(result) || result.length === 0) return 0;
+  const ctx = detectionContext || {};
+
+  // ── Component 1: Exercise recognition (25%) ────────────────────────────
+  let totalEx = 0, recognizedEx = 0;
+  const LIFT_KW_RE = /\b(squat|bench|deadlift|press|row|pull|curl|dip|lunge|carry|raise|extension|pushdown|plank|fly|flye|hinge|rdl|sumo|ohp|sldl|rdl)\b/i;
+  for (const block of result) {
+    for (const week of (block.weeks || [])) {
+      for (const day of (week.days || [])) {
+        for (const ex of (day.exercises || [])) {
+          totalEx++;
+          const name = ex.name || '';
+          const isKnown = canonicalizeLift(name) != null || LIFT_KW_RE.test(name);
+          if (isKnown) recognizedEx++;
+        }
+      }
+    }
+  }
+  const exerciseScore = totalEx > 0 ? recognizedEx / totalEx : 0;
+
+  // ── Component 2: Header detection (20%) ────────────────────────────────
+  const rawHeaderScore = ctx.headerScore || 0;
+  const headerScore =
+    rawHeaderScore >= 70 ? 1.0 :
+    rawHeaderScore >= 40 ? 0.7 :
+    rawHeaderScore >= 10 ? 0.4 : 0;
+
+  // ── Component 3: Column mapping (20%) ──────────────────────────────────
+  const cm = ctx.columnMap || {};
+  const coreFound = [cm.exercise, cm.sets, cm.reps, cm.weight].filter(v => v != null && v >= 0).length;
+  const columnScore = coreFound >= 4 ? 1.0 : coreFound === 3 ? 0.75 : coreFound === 2 ? 0.5 : 0.25;
+
+  // ── Component 4: Layout confidence (15%) ───────────────────────────────
+  const layoutScore = ctx.layoutConfidence != null ? ctx.layoutConfidence : 0.75;
+
+  // ── Component 5: Data completeness (10%) ───────────────────────────────
+  let withPres = 0;
+  for (const block of result) {
+    for (const week of (block.weeks || [])) {
+      for (const day of (week.days || [])) {
+        for (const ex of (day.exercises || [])) {
+          if (ex.prescription && String(ex.prescription).trim()) withPres++;
+        }
+      }
+    }
+  }
+  const completenessScore = totalEx > 0 ? withPres / totalEx : 0;
+
+  // ── Component 6: Value validity (10%) ──────────────────────────────────
+  let totalPres = 0, validPres = 0;
+  for (const block of result) {
+    for (const week of (block.weeks || [])) {
+      for (const day of (week.days || [])) {
+        for (const ex of (day.exercises || [])) {
+          const pres = String(ex.prescription || '').trim();
+          if (!pres || pres === '-' || pres === '\u2014') continue;
+          totalPres++;
+          const parsed = parseSets(pres);
+          const simple = parseSimple(pres);
+          if ((parsed && parsed.length > 0) || simple) validPres++;
+        }
+      }
+    }
+  }
+  const validityScore = totalPres > 0 ? validPres / totalPres : 0.5;
+
+  // ── Weighted sum ────────────────────────────────────────────────────────
+  const confidence =
+    exerciseScore     * 0.25 +
+    headerScore       * 0.20 +
+    columnScore       * 0.20 +
+    layoutScore       * 0.15 +
+    completenessScore * 0.10 +
+    validityScore     * 0.10;
+
+  return Math.min(Math.max(confidence, 0), 1);
+}
+
+// ── ADAPTIVE PARSER ORCHESTRATOR ─────────────────────────────────────────────
+/**
+ * parseAdaptive(wb)
+ * Orchestrate the full two-pass adaptive pipeline.
+ *   Pass 1: occupancy matrix → region detection → layout classification
+ *   Pass 2: column inference → data extraction → confidence scoring
+ *
+ * Attaches `adaptiveConfidence` (0.0-1.0) to blocks[0].
+ * Returns standard block array format (same shape as all other parsers).
+ */
+function parseAdaptive(wb) {
+  try {
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) return null;
+
+    // ── Pass 1: Layout Detection ──────────────────────────────────────────
+    // Use first non-empty sheet for matrix / region analysis.
+    // _adaptiveExtract handles multi-sheet routing internally.
+    const primarySn0 = wb.SheetNames.find(sn => wb.Sheets[sn] && wb.Sheets[sn]['!ref']) || wb.SheetNames[0];
+    const ws0 = wb.Sheets[primarySn0];
+    if (!ws0 || !ws0['!ref']) return null;
+
+    const matrix = _buildOccupancyMatrix(ws0);
+    const regions = _detectRegions(matrix, ws0);
+    const layout = _classifyLayout(wb, regions);
+
+    // ── Pass 2: Full Extraction ───────────────────────────────────────────
+    const blocks = _adaptiveExtract(wb, regions, layout, null, null, null, null);
+    if (!blocks || !blocks.length) return null;
+
+    // ── Confidence Scoring ────────────────────────────────────────────────
+    const layoutConfidenceMap = {
+      'week-per-tab':     1.0,
+      'horizontal-weeks': 1.0,
+      'block-based':      0.75,
+      'vertical':         0.5
+    };
+    const layoutConf = layoutConfidenceMap[layout.pattern] || 0.5;
+
+    // Gather header / column context from the primary workout region
+    const primaryRegion = regions.find(r => r.workoutScore >= 0.5) || regions[0] || null;
+    let detectionContext = { layoutConfidence: layoutConf };
+    if (primaryRegion) {
+      const headerInfo = _detectHeaders(ws0, primaryRegion);
+      const colMap = _inferColumns(ws0, primaryRegion, headerInfo);
+      detectionContext = {
+        headerScore: headerInfo ? headerInfo.score : 0,
+        columnMap: colMap,
+        layoutConfidence: layoutConf
+      };
+    }
+
+    const confidence = _scoreAdaptiveConfidence(blocks, detectionContext);
+    blocks[0].adaptiveConfidence = confidence;
+
+    return blocks;
+  } catch (e) {
+    console.error('[liftlog] parseAdaptive error:', e);
+    return null;
+  }
+}
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -12147,6 +13820,15 @@ if (typeof module !== 'undefined' && module.exports) {
     EXERCISE_ALIASES, _normalizeExerciseName,
     // Adaptive Parser — Session 1
     _resolveMergedCells, _buildOccupancyMatrix, _scoreRegionWorkoutLikeness, _detectRegions,
+    // Adaptive Parser — Session 2
+    _classifySheetLayout, _classifyLayout, _detectHeaders, _detectDayBoundaries, _detectWeekBoundaries,
+    // Adaptive Parser — Session 3
+    _scoreColumnForType, _inferColumns, _buildPrescription, _handleMultiRowExercise,
+    _ap_findPrimarySheet, _ap_inferProgramName, _ap_extractDaysFromBounds,
+    _ap_extractHorizontal, _ap_extractHybridHorizontal, _ap_extractVertical, _ap_extractWeekPerTab,
+    _adaptiveExtract, _scoreAdaptiveConfidence,
+    // Adaptive Parser — Session 4
+    scoreAdaptive, parseAdaptive,
   };
 }
 

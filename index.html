@@ -2532,8 +2532,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.22.1';
-const APP_BUILD   = '3/14/26s';
+const APP_VERSION = 'v0.22.4';
+const APP_BUILD   = '3/14/26c';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2674,7 +2674,7 @@ function rePopulateSets(blocks){
               }
               const setEntry={done:true};
               if(exLog.actual) setEntry.actual=exLog.actual;
-              else if(!s.isRpe) setEntry.actual=String(s.weight);
+              else if(s.weight&&!s.isRpe) setEntry.actual=String(s.weight);
               if(exLog.rpe) setEntry.rpe=exLog.rpe;
               state.logs[sk]=setEntry;
             });
@@ -2696,7 +2696,7 @@ function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) r
 function saveNav(){ const navObj={blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay}; _idbPut('liftlog_nav', navObj); try{ localStorage.setItem('liftlog_nav', JSON.stringify(navObj)); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
-function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML; }
+function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML.replace(/"/g,'&quot;'); }
 function cssEsc(s){ return CSS.escape ? CSS.escape(s) : s.replace(/([[\](){}|\\^$*.+?])/g,'\\$1'); }
 
 // ── SCREEN NAV ────────────────────────────────────────────────────────────────
@@ -3004,9 +3004,17 @@ function getPrescribedWeight(blockId,weekLabel,dayName,exName,setIdx){
   const sets=parseSets(ex.prescription);
   const s=sets[setIdx];
   if(!s) return null;
-  if(s.isRpe) return null; // RPE-based — can't assume weight
+  if(s.isRpe) return null; // old RPE format — weight field holds RPE string
   const w=parseFloat(s.weight);
-  return isNaN(w)?null:w;
+  if(!isNaN(w)) return w;
+  // New: resolve percentage against stored 1RM
+  if(s.percentage != null){
+    const ath=loadAthlete()||{};
+    const group=classifyLift(exName);
+    const rm1=group?Number(ath['tested1rm_'+group])||0:0;
+    if(rm1>0) return Math.round(rm1*s.percentage);
+  }
+  return null;
 }
 
 function getSetReps(blockId,weekLabel,dayName,exName,setIdx){
@@ -4006,6 +4014,14 @@ function mergeBlocks(incoming){
     }
   }
   deduplicateExerciseNames(incoming);
+  // Ensure unique day names within each week (prevents log-key collisions)
+  for(const b of incoming){
+    for(const w of b.weeks){
+      const seen={}; for(let i=0;i<w.days.length;i++){const n=w.days[i].name; seen[n]=(seen[n]||0)+1;}
+      const dups=Object.keys(seen).filter(n=>seen[n]>1);
+      if(dups.length){const ct={}; for(let i=0;i<w.days.length;i++){const d=w.days[i]; if(seen[d.name]>1){ct[d.name]=(ct[d.name]||0)+1; d.name=d.name+' #'+ct[d.name];}}}
+    }
+  }
   // Safety: ensure every block has an id
   for(const b of incoming){
     if(!b.id) b.id = (b.name||'block').replace(/[^a-zA-Z0-9]/g,'_').substring(0,40) + '_' + Date.now();
@@ -6367,7 +6383,7 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
   const ranged = (!hasSets && !simple) ? parseRangeSet(pres) : null;
   const supersetRounds = ex.supersetGroup?.rounds || 1;
   const bare = (!hasSets && !simple && !ranged) ? parseBarePres(pres) : null;
-  const bareWithRounds = bare ? {...bare, sets: supersetRounds} : null;
+  const bareWithRounds = bare ? {...bare, sets: supersetRounds > 1 ? supersetRounds : bare.sets} : null;
   const inputMode = getExerciseInputMode(ex.name, pres);
   const isComp = isCompLift(ex.name);
   const tracked = isTracked(ex.name);
@@ -6380,10 +6396,18 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
 
   function _presShortSummary() {
     if (sets.length > 0) {
-      const firstWeight = sets[0].isRpe ? `@ ${sets[0].weight}` : `@ ${sets[0].weight}${unitLabel(true)}`;
-      const allSame = sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight);
-      if (allSame) return `${sets.length}×${sets[0].reps} ${firstWeight}`;
-      return sets.map(s=>s.isRpe?`${s.reps}@${s.weight}`:`${s.reps}@${s.weight}${unitLabel(true)}`).join(' · ');
+      function _sl(s) {
+        if (s.weight && !s.isRpe) return `@ ${s.weight}${unitLabel(true)}`;
+        if (s.isRpe) return `@ ${s.weight}`; // old isRpe format
+        if (s.rpe != null) return `@RPE${s.rpe}`;
+        if (s.percentage != null) return `@${Math.round(s.percentage*100)}%`;
+        if (s.dropPercent != null) return `@${Math.round(s.dropPercent*100)}%`;
+        return '';
+      }
+      const _rStr = s => s.reps === 'AMRAP' ? 'AMRAP' : String(s.reps);
+      const allSame = sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight&&s.rpe===sets[0].rpe&&s.percentage===sets[0].percentage&&s.dropPercent===sets[0].dropPercent);
+      if (allSame) return `${sets.length}×${_rStr(sets[0])} ${_sl(sets[0])}`.trim();
+      return sets.map(s=>`${_rStr(s)} ${_sl(s)}`.trim()).join(' · ');
     }
     if (simple) return `${simple.sets}×${simple.reps}`;
     if (ranged) {
@@ -6435,12 +6459,39 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   const ranged = (!hasSets && !simple) ? parseRangeSet(pres) : null;
   const supersetRounds = ex.supersetGroup?.rounds || 1;
   const bare = (!hasSets && !simple && !ranged) ? parseBarePres(pres) : null;
-  const bareWithRounds = bare ? {...bare, sets: supersetRounds} : null;
+  const bareWithRounds = bare ? {...bare, sets: supersetRounds > 1 ? supersetRounds : bare.sets} : null;
   const inputMode = getExerciseInputMode(ex.name, pres);
   const _isBarbell = _isBarbellExercise(ex.name);
 
+  // Build prescription label for a parseSets set object.
+  // Pass actualReps to highlight actual reps in gold instead of prescribed.
+  function _setLabel(s, actualReps) {
+    const rStr = actualReps != null
+      ? '<span style="color:var(--gold)">'+actualReps+'</span>'
+      : (s.reps === 'AMRAP' ? 'AMRAP' : String(s.reps));
+    if (s.weight && !s.isRpe) return s.weight+unitLabel(true)+' × '+rStr;
+    if (s.isRpe) return rStr+' '+s.weight; // old isRpe format
+    if (s.rpe != null) return rStr+' @RPE'+s.rpe;
+    if (s.percentage != null) return rStr+' @'+Math.round(s.percentage*100)+'%';
+    if (s.dropPercent != null) return rStr+' @'+Math.round(Math.abs(s.dropPercent)*100)+'% drop';
+    return rStr+' reps';
+  }
+
   function _ghostWeight(si) {
-    if (hasSets && sets[si]) { const w = sets[si].weight; if (w && !sets[si].isRpe) return w; }
+    if (hasSets && sets[si]) {
+      const s = sets[si];
+      const w = s.weight;
+      if (w && !s.isRpe) return w; // absolute weight (old or new format)
+      // Resolve percentage against stored 1RM
+      if (s.percentage != null) {
+        const ath = loadAthlete()||{};
+        const group = classifyLift(ex.name);
+        const rm1 = group ? Number(ath['tested1rm_'+group])||0 : 0;
+        if (rm1 > 0) return String(Math.round(rm1*s.percentage));
+      }
+      // RPE-only or drop percent — no ghost weight, don't fall through to prevPerf
+      if (s.rpe != null || s.dropPercent != null || s.isRpe) return '';
+    }
     if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
     /* Extract weight from simple prescriptions like "3x5 @ 315" */
     if (simple && pres) { const _wm = pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i); if (_wm) return _wm[1]; }
@@ -6480,13 +6531,14 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     sets.forEach((s, si) => {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
       const _hasActualReps = sl.actualReps && sl.actualReps !== String(s.reps);
-      const _numWeight = !s.isRpe && s.weight && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
+      const _numWeight = s.weight && !s.isRpe && !isNaN(parseFloat(s.weight)) ? parseFloat(s.weight) : 0;
       const _weightAttrs = _numWeight > 0 ? ` data-weight="${_numWeight}" data-unit="${getExUnit(ex.name)}"` : '';
-      const _prescLabel = s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × '+s.reps;
-      const _displayLabel = _hasActualReps ? (s.isRpe ? s.reps+' '+s.weight : s.weight+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + sl.actualReps + '</span>') : _prescLabel;
+      const _prescLabel = _setLabel(s);
+      const _displayLabel = _hasActualReps ? _setLabel(s, sl.actualReps) : _prescLabel;
+      const _inputPl = _numWeight > 0 ? s.weight+unitLabel(true) : getDisplayUnit();
       h += `${_setRowOpen(sk)}
           ${_isBarbell && _numWeight > 0 ? _exCalcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs}>${_displayLabel}</span></div>
-          ${_exSetInputsHtml(sk, sl, s.isRpe?getDisplayUnit():s.weight+unitLabel(true), si, s.reps, ex.name, inputMode, _ghostWeight(si))}
+          ${_exSetInputsHtml(sk, sl, _inputPl, si, s.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
     });
@@ -6496,14 +6548,15 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       for (let _i = 0; _i < _extra; _i++) {
         const _si = sets.length+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
         const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
-        const _extraNw = !_lastS.isRpe && _lastS.weight && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
+        const _extraNw = _lastS.weight && !_lastS.isRpe && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
         const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
-        const _extraPrescLabel = _lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × '+(_lastS.reps||'—');
-        const _extraDisplayLabel = _extraHasActual ? (_lastS.isRpe ? (_lastS.reps||'—')+' '+(_lastS.weight||'') : (_lastS.weight||'—')+' '+unitLabel(true)+' × <span style="color:var(--gold)">' + _sl.actualReps + '</span>') : _extraPrescLabel;
+        const _extraPrescLabel = _setLabel(_lastS);
+        const _extraDisplayLabel = _extraHasActual ? _setLabel(_lastS, _sl.actualReps) : _extraPrescLabel;
         const _extraPrescHtml = `<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs}>${_extraDisplayLabel}</span>`;
+        const _extraInputPl = _extraNw > 0 ? _lastS.weight+unitLabel(true) : getDisplayUnit();
         h += `${_setRowOpen(_sk)}
             ${_isBarbell && _extraNw > 0 ? _exCalcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
-            ${_exSetInputsHtml(_sk, _sl, _lastS.isRpe?getDisplayUnit():(_lastS.weight?_lastS.weight+unitLabel(true):getDisplayUnit()), _si, _lastS.reps, ex.name, inputMode, _ghostWeight(_si))}
+            ${_exSetInputsHtml(_sk, _sl, _extraInputPl, _si, _lastS.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
       }
@@ -7223,7 +7276,7 @@ function completeWorkout(){
         const sl=state.logs[sk]||{};
         if(!sl.done){
           const setEntry={done:true};
-          if(!sl.actual&&sets[si]&&!sets[si].isRpe) setEntry.actual=String(sets[si].weight);
+          if(!sl.actual&&sets[si]&&sets[si].weight&&!sets[si].isRpe) setEntry.actual=String(sets[si].weight);
           state.logs[sk]={...sl,...setEntry};
         }
       }
@@ -10530,7 +10583,7 @@ function _buildTrainingLogWorkbook(blockId, scope) {
             const sk = exKey + '||s' + si;
             const log = blockLogs[sk] || {};
             if (log.actual || log.done) {
-              const weight = log.actual || (sets[si] && !sets[si].isRpe ? String(sets[si].weight) : '');
+              const weight = log.actual || (sets[si] && sets[si].weight && !sets[si].isRpe ? String(sets[si].weight) : '');
               const repsRaw = sets[si] ? sets[si].reps : fallbackReps;
               const reps = repsRaw === 'open' ? '?' : (repsRaw || '?');
               let part = weight ? `${weight}x${reps}` : `${reps} reps`;
@@ -11853,7 +11906,7 @@ function _buildCSVContent() {
             if (!sl.done && !sl.actual) continue;
             hasAnyLogged = true;
 
-            const weight = sl.actual || (pSets[si] && !pSets[si].isRpe ? String(pSets[si].weight) : '');
+            const weight = sl.actual || (pSets[si] && pSets[si].weight && !pSets[si].isRpe ? String(pSets[si].weight) : '');
             const repsRaw = sl.reps || (pSets[si] ? pSets[si].reps : fallbackReps);
             const reps = repsRaw === 'open' ? '' : (repsRaw || '');
             const rpe = sl.rpe || '';
@@ -13550,15 +13603,18 @@ function _builderUpdateRxPreview(rx) {
   if (sets.length > 0) {
     const allSame = sets.every(s => s.reps === sets[0].reps && s.weight === sets[0].weight);
     let desc;
+    function _bldSetDesc(s) {
+      if (s.weight && !s.isRpe) return `${s.reps} reps @ ${s.weight}`;
+      if (s.isRpe) return `${s.reps} reps @ RPE ${s.weight}`;
+      if (s.rpe != null) return `${s.reps} reps @RPE${s.rpe}`;
+      if (s.percentage != null) return `${s.reps} reps @${Math.round(s.percentage*100)}%`;
+      if (s.dropPercent != null) return `${s.reps} reps @${Math.round(s.dropPercent*100)}%`;
+      return `${s.reps} reps`;
+    }
     if (allSame) {
-      desc = sets[0].isRpe
-        ? `${sets.length} sets × ${sets[0].reps} reps @ RPE ${sets[0].weight}`
-        : `${sets.length} sets × ${sets[0].reps} reps @ ${sets[0].weight}`;
+      desc = `${sets.length} sets × ${_bldSetDesc(sets[0])}`;
     } else {
-      desc = sets.map((s, i) => s.isRpe
-        ? `Set ${i+1}: ${s.reps} reps @ RPE ${s.weight}`
-        : `Set ${i+1}: ${s.reps} reps @ ${s.weight}`
-      ).join(' · ');
+      desc = sets.map((s, i) => `Set ${i+1}: ${_bldSetDesc(s)}`).join(' · ');
     }
     el.innerHTML = `<span class="rx-preview-ok">✓ ${desc}</span>`;
     return;
