@@ -95,8 +95,8 @@ const EXERCISE_ALIASES = {
 };
 
 function isCompLift(name){
-  // Strip dedup bracket suffix: "Barbell Deadlift [1x1(352)]" → "barbell deadlift"
-  const n = name.toLowerCase().trim().replace(/\s*\[.*\]$/, '');
+  // Strip dedup bracket suffix + set-type qualifiers (backdowns = same lift, lighter sets)
+  const n = name.toLowerCase().trim().replace(/\s*\[.*\]$/, '').replace(/\s+backdowns?\s*$/, '');
   if (VARIATION_MODIFIERS.some(v => n.includes(v))) return false;
   for (const keywords of Object.values(COMP_KEYWORDS)) {
     if (keywords.includes(n)) return true;
@@ -105,8 +105,14 @@ function isCompLift(name){
 }
 // Helper: extract base name from potentially deduplicated exercise name
 function _getBaseName(exName) {
-  const m = exName.match(/^(.+?)\s*\[.*\]$/);
-  return m ? m[1] : exName;
+  let name = exName;
+  // Strip bracket-based dedup suffixes, e.g. "Barbell Deadlift [1x1(352)]"
+  const m = name.match(/^(.+?)\s*\[.*\]$/);
+  if (m) name = m[1];
+  // Strip set-type qualifiers that describe the same lift for metrics purposes
+  // e.g. "Comp Bench Backdowns" → "Comp Bench" (tracks under same lift)
+  name = name.replace(/\s+backdowns?\s*$/i, '');
+  return name;
 }
 
 // Keywords that disqualify a LIFT_GROUPS match — exercise is an accessory, not a variation
