@@ -568,7 +568,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-input-group { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1; min-width: 0; }
 .set-inputs-wrap > .set-input-group:first-child { flex: 1.4; }
 .set-input-group.reps-range-group { flex: 1; }
-.set-input-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding-left: 1px; min-height: 28px; display: flex; align-items: flex-end; }
+.set-input-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; min-height: 28px; display: flex; align-items: flex-end; justify-content: center; text-align: center; }
 .set-input { background: var(--surface-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); padding: var(--sp-4) var(--sp-3); min-height: 40px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
 .set-input:focus { border-color: var(--gold); background: var(--input-focus-bg); color: var(--text-primary); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
@@ -638,6 +638,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .add-day-modal-cancel { background: var(--surface-3); color: var(--text-sub); }
 .add-day-modal-add { background: var(--gold); color: #000; }
 .coach-note { padding: var(--sp-4) var(--sp-6); background: var(--coach-note-bg); border-top: 1px solid var(--coach-note-bdr); font-size: var(--fs-base); color: var(--coach-note-text); font-style: italic; }
+.coach-note-banner { padding: var(--sp-3) var(--sp-6); background: linear-gradient(90deg, rgba(200,169,81,0.12), rgba(200,169,81,0.03)); border-left: 3px solid var(--gold); font-size: var(--fs-base); color: var(--coach-note-text); margin: 0; }
+.calc-spacer { width: 44px; flex: 0 0 44px; }
 .notes-section { border-top: 1px solid var(--surface-3); }
 .notes-label { font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; padding: var(--sp-4) var(--sp-6) var(--sp-2); display: flex; align-items: center; gap: var(--sp-3); }
 .notes-label svg { width: 12px; height: 12px; flex-shrink: 0; }
@@ -2532,8 +2534,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.22.4';
-const APP_BUILD   = '3/14/26c';
+const APP_VERSION = 'v0.22.5';
+const APP_BUILD   = '3/15/26a';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -6525,8 +6527,18 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   const _unitToggleHtml = exUnitToggleHtml(ex.name);
   const _inlineControls = (_restBtnHtml || _unitToggleHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}</div>` : '';
 
+  // Coach notes banner — render above sets (Option A: gold left-border banner)
+  const _allCoachNotes = [...(ex.coachNotes||[])];
+  if (ex.note && !_allCoachNotes.includes(ex.note)) _allCoachNotes.unshift(ex.note);
+  const _coachBannerHtml = _allCoachNotes.length > 0
+    ? _allCoachNotes.map(n=>`<div class="coach-note-banner">${escH(n)}</div>`).join('')
+    : '';
+
   if (hasSets) {
     h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
+    h += _coachBannerHtml;
+    // Pre-scan: does any set in this exercise have a calc button?
+    const _anySetHasCalc = _isBarbell && sets.some(s => s.weight && !s.isRpe && !isNaN(parseFloat(s.weight)) && parseFloat(s.weight) > 0);
     h += `<div class="sets-grid">`;
     sets.forEach((s, si) => {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
@@ -6536,8 +6548,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       const _prescLabel = _setLabel(s);
       const _displayLabel = _hasActualReps ? _setLabel(s, sl.actualReps) : _prescLabel;
       const _inputPl = _numWeight > 0 ? s.weight+unitLabel(true) : getDisplayUnit();
+      const _calcOrSpacer = _isBarbell && _numWeight > 0 ? _exCalcBtnHtml(_numWeight, getExUnit(ex.name)) : (_anySetHasCalc ? '<div class="calc-spacer"></div>' : '');
       h += `${_setRowOpen(sk)}
-          ${_isBarbell && _numWeight > 0 ? _exCalcBtnHtml(_numWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs}>${_displayLabel}</span></div>
+          ${_calcOrSpacer}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs}>${_displayLabel}</span></div>
           ${_exSetInputsHtml(sk, sl, _inputPl, si, s.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6554,8 +6567,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const _extraDisplayLabel = _extraHasActual ? _setLabel(_lastS, _sl.actualReps) : _extraPrescLabel;
         const _extraPrescHtml = `<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs}>${_extraDisplayLabel}</span>`;
         const _extraInputPl = _extraNw > 0 ? _lastS.weight+unitLabel(true) : getDisplayUnit();
+        const _extraCalcOrSpacer = _isBarbell && _extraNw > 0 ? _exCalcBtnHtml(_extraNw, getExUnit(ex.name)) : (_anySetHasCalc ? '<div class="calc-spacer"></div>' : '');
         h += `${_setRowOpen(_sk)}
-            ${_isBarbell && _extraNw > 0 ? _exCalcBtnHtml(_extraNw, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
+            ${_extraCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
             ${_exSetInputsHtml(_sk, _sl, _extraInputPl, _si, _lastS.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -6568,15 +6582,19 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     const _simpleWeight = _simpleWm ? _simpleWm[1] : '';
     const _simpleNumWeight = _simpleWeight ? parseFloat(_simpleWeight) : 0;
     const _simpleWeightAttrs = _simpleNumWeight > 0 ? ` data-weight="${_simpleNumWeight}" data-unit="${getExUnit(ex.name)}"` : '';
-    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
+    const _simpleAnyCalc = _isBarbell && _simpleNumWeight > 0;
+    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div>`;
+    h += _coachBannerHtml;
+    h += `<div class="sets-grid">`;
     for (let si = 0; si < simple.sets; si++) {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
       const _hasActualReps = sl.actualReps && sl.actualReps !== String(simple.reps);
       const _simplePrescLabel = _simpleNumWeight > 0
         ? _simpleWeight+' '+unitLabel(true)+' × '+(_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span>' : simple.reps)
         : (_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span> reps' : simple.reps+' reps');
+      const _simpleCalcOrSpacer = _isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : (_simpleAnyCalc ? '<div class="calc-spacer"></div>' : '');
       h += `${_setRowOpen(sk)}
-          ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_simpleWeightAttrs}>${_simplePrescLabel}</span></div>
+          ${_simpleCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_simpleWeightAttrs}>${_simplePrescLabel}</span></div>
           ${_exSetInputsHtml(sk, sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), si, simple.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6589,8 +6607,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const _extraPrescLabel = _simpleNumWeight > 0
           ? _simpleWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : simple.reps)
           : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : simple.reps+' reps');
+        const _extraSimpleCalcOrSpacer = _isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : (_simpleAnyCalc ? '<div class="calc-spacer"></div>' : '');
         h += `${_setRowOpen(_sk)}
-            ${_isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_simpleWeightAttrs}>${_extraPrescLabel}</span></div>
+            ${_extraSimpleCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_simpleWeightAttrs}>${_extraPrescLabel}</span></div>
             ${_exSetInputsHtml(_sk, _sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), _si, simple.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -6602,7 +6621,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     const _rangedWeight = ranged.weight || '';
     const _rangedNumWeight = _rangedWeight && !ranged.isRpe ? parseFloat(_rangedWeight) : 0;
     const _rangedWeightAttrs = _rangedNumWeight > 0 ? ` data-weight="${_rangedNumWeight}" data-unit="${getExUnit(ex.name)}"` : '';
+    const _rangedAnyCalc = _isBarbell && _rangedNumWeight > 0;
     h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
+    h += _coachBannerHtml;
     h += `<div class="sets-grid">`;
     for (let si = 0; si < ranged.sets; si++) {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
@@ -6611,8 +6632,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       const _rangedPrescLabel = isOpen ? '' : (_rangedNumWeight > 0
         ? _rangedWeight+' '+unitLabel(true)+' × '+(_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span>' : ranged.reps)
         : (_hasActualReps ? '<span style="color:var(--gold)">'+sl.actualReps+'</span> reps' : ranged.reps+' reps'));
+      const _rangedCalcOrSpacer = !isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : (_rangedAnyCalc && !isOpen ? '<div class="calc-spacer"></div>' : '');
       h += `${_setRowOpen(sk)}
-          ${!isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':`<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_rangedWeightAttrs}>${_rangedPrescLabel}</span>`}</div>
+          ${_rangedCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':`<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_rangedWeightAttrs}>${_rangedPrescLabel}</span>`}</div>
           ${_exSetInputsHtml(sk, sl, isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), si, ranged.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
         </div>${_exPrevHintHtml(si, prevPerf)}`;
@@ -6626,8 +6648,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const _extraRangedLabel = _isOpen ? '' : (_rangedNumWeight > 0
           ? _rangedWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : ranged.reps)
           : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : ranged.reps+' reps'));
+        const _extraRangedCalcOrSpacer = !_isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : (_rangedAnyCalc && !_isOpen ? '<div class="calc-spacer"></div>' : '');
         h += `${_setRowOpen(_sk)}
-            ${!_isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : ''}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':`<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_rangedWeightAttrs}>${_extraRangedLabel}</span>`}</div>
+            ${_extraRangedCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':`<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_rangedWeightAttrs}>${_extraRangedLabel}</span>`}</div>
             ${_exSetInputsHtml(_sk, _sl, _isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), _si, ranged.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
@@ -6636,6 +6659,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     h += `</div>`;
   } else if (bareWithRounds) {
     h += _inlineControls ? `<div class="pres-row">${_inlineControls}</div>` : '';
+    h += _coachBannerHtml;
     h += `<div class="sets-grid">`;
     for (let si = 0; si < bareWithRounds.sets; si++) {
       const sk = key+`||s${si}`; const sl = state.logs[sk]||{};
@@ -6659,7 +6683,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     h += `</div>`;
   } else if (pres) {
     const sk = key+`||s0`; const sl = state.logs[sk]||{};
-    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div><div class="sets-grid">`;
+    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div>`;
+    h += _coachBannerHtml;
+    h += `<div class="sets-grid">`;
     h += `${_setRowOpen(sk)}
         <div class="set-presc-col">${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div></div>
         ${_exSetInputsHtml(sk, sl, getDisplayUnit(), 0, undefined, ex.name, inputMode, '')}
@@ -6673,15 +6699,6 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       ? `vs ${escH(prevPerf.source)} — ${escH(prevPerf.label)}`
       : `vs ${escH(prevPerf.label)}`;
     h += `<div class="prev-performance-src">${srcLabel}</div>`;
-  }
-
-  const allCoachNotes = [...(ex.coachNotes||[])];
-  if (ex.note && !allCoachNotes.includes(ex.note)) allCoachNotes.unshift(ex.note);
-  if (allCoachNotes.length > 0) {
-    h += `<div class="notes-section">
-        <div class="notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Coach Notes</div>
-        ${allCoachNotes.map(n=>`<div class="coach-note">${escH(n)}</div>`).join('')}
-      </div>`;
   }
 
   const log = state.logs[key]||{};
