@@ -2534,8 +2534,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.22.5';
-const APP_BUILD   = '3/15/26a';
+const APP_VERSION = 'v0.22.6';
+const APP_BUILD   = '3/15/26b';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -5631,7 +5631,8 @@ function _renderUpNextHero(block, nwInfo) {
   const showCount = Math.min(3, exs.length);
   const more      = exs.length - showCount;
   const exRows    = exs.slice(0, showCount).map(ex => {
-    const pres = (ex.prescription || '').slice(0, 20) + (ex.prescription?.length > 20 ? '…' : '');
+    const rawPres = _fmtPres(ex.prescription);
+    const pres = rawPres.slice(0, 22) + (rawPres.length > 22 ? '…' : '');
     return `<div class="home-hero-ex">
       <div class="home-hero-ex-dot"></div>
       <div class="home-hero-ex-name">${escH(_displayExName(ex.name))}</div>
@@ -6309,6 +6310,11 @@ function _displayExName(name) {
   return name.replace(/^circuit[\s\-:]+/i, '').trim();
 }
 
+// Normalize "@RPE8" → "@RPE 8" in baked-in prescription strings for display
+function _fmtPres(p) {
+  return (p || '').replace(/@RPE(\d)/g, '@RPE $1');
+}
+
 // ── EXERCISE CARD SUB-FUNCTIONS ───────────────────────────────────────────────
 const _calcIconSvg = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg>`;
 
@@ -6401,7 +6407,7 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
       function _sl(s) {
         if (s.weight && !s.isRpe) return `@ ${s.weight}${unitLabel(true)}`;
         if (s.isRpe) return `@ ${s.weight}`; // old isRpe format
-        if (s.rpe != null) return `@RPE${s.rpe}`;
+        if (s.rpe != null) return `@RPE ${s.rpe}`;
         if (s.percentage != null) return `@${Math.round(s.percentage*100)}%`;
         if (s.dropPercent != null) return `@${Math.round(s.dropPercent*100)}%`;
         return '';
@@ -6409,7 +6415,15 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
       const _rStr = s => s.reps === 'AMRAP' ? 'AMRAP' : String(s.reps);
       const allSame = sets.every(s=>s.reps===sets[0].reps&&s.weight===sets[0].weight&&s.rpe===sets[0].rpe&&s.percentage===sets[0].percentage&&s.dropPercent===sets[0].dropPercent);
       if (allSame) return `${sets.length}×${_rStr(sets[0])} ${_sl(sets[0])}`.trim();
-      return sets.map(s=>`${_rStr(s)} ${_sl(s)}`.trim()).join(' · ');
+      // Group consecutive identical sets: [A,B,B,B] → [{s:A,n:1},{s:B,n:3}]
+      const groups = [];
+      for (const s of sets) {
+        const key = _rStr(s) + _sl(s);
+        const last = groups[groups.length - 1];
+        if (last && last.key === key) { last.n++; }
+        else { groups.push({ s, key, n: 1 }); }
+      }
+      return groups.map(g => `${g.n}×${_rStr(g.s)} ${_sl(g.s)}`.trim()).join('; ');
     }
     if (simple) return `${simple.sets}×${simple.reps}`;
     if (ranged) {
@@ -6418,7 +6432,7 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
       return `${setsLabel}×${ranged.reps}${weightLabel}`;
     }
     if (bareWithRounds) return `${bareWithRounds.sets>1?bareWithRounds.sets+'×':''}${bareWithRounds.reps}`;
-    if (pres) return pres;
+    if (pres) return _fmtPres(pres);
     return '';
   }
   const presSum = _presShortSummary();
@@ -6473,7 +6487,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       : (s.reps === 'AMRAP' ? 'AMRAP' : String(s.reps));
     if (s.weight && !s.isRpe) return s.weight+unitLabel(true)+' × '+rStr;
     if (s.isRpe) return rStr+' '+s.weight; // old isRpe format
-    if (s.rpe != null) return rStr+' @RPE'+s.rpe;
+    if (s.rpe != null) return rStr+' @RPE '+s.rpe;
     if (s.percentage != null) return rStr+' @'+Math.round(s.percentage*100)+'%';
     if (s.dropPercent != null) return rStr+' @'+Math.round(Math.abs(s.dropPercent)*100)+'% drop';
     return rStr+' reps';
@@ -7001,7 +7015,7 @@ function renderPreviewList(block, week, day) {
       </div>`;
     } else {
       // ── Not done / skipped / day not complete: show prescription ──
-      const presShort = ex.prescription || '';
+      const presShort = _fmtPres(ex.prescription);
       const noteHtml = ex.note ? `<div class="preview-ex-note">${escH(ex.note)}</div>` : '';
       h += `<div class="preview-exercise${completedClass}">
         <div style="flex:1">
@@ -13623,7 +13637,7 @@ function _builderUpdateRxPreview(rx) {
     function _bldSetDesc(s) {
       if (s.weight && !s.isRpe) return `${s.reps} reps @ ${s.weight}`;
       if (s.isRpe) return `${s.reps} reps @ RPE ${s.weight}`;
-      if (s.rpe != null) return `${s.reps} reps @RPE${s.rpe}`;
+      if (s.rpe != null) return `${s.reps} reps @RPE ${s.rpe}`;
       if (s.percentage != null) return `${s.reps} reps @${Math.round(s.percentage*100)}%`;
       if (s.dropPercent != null) return `${s.reps} reps @${Math.round(s.dropPercent*100)}%`;
       return `${s.reps} reps`;

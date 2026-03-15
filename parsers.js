@@ -1535,6 +1535,87 @@ function scoreW(wb) {
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
+// ── FORMAT X SCORE (GZCLP / GZCL family — tiered week-tab structure) ─────────
+function scoreX(wb) {
+  const id = 'X';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  try {
+    const sheetNames = wb.SheetNames;
+
+    // Signal 1: Has a 'Start' tab (GZCLP/GZCL-specific setup tab name)
+    const hasStartTab = sheetNames.some(n => /^start$/i.test(n.trim()));
+    if (hasStartTab) {
+      score += 0.10; matched.push('Start tab found');
+    } else {
+      missing.push('Start tab');
+    }
+
+    // Signal 2: Has 3+ tabs named 'Week N' (e.g. "Week 1", "Week 12")
+    const weekTabs = sheetNames.filter(n => /^Week\s+\d+$/i.test(n.trim()));
+    if (weekTabs.length >= 3) {
+      score += 0.25; matched.push(weekTabs.length + ' Week N tabs found');
+    } else if (weekTabs.length >= 1) {
+      score += 0.10; matched.push(weekTabs.length + ' Week N tab(s) found');
+    } else {
+      missing.push('Week N tabs (e.g. "Week 1")');
+    }
+
+    // Signals 3-6: Inspect the first week tab for GZCL-specific column structure
+    const firstWeekSheet = weekTabs.length > 0 ? wb.Sheets[weekTabs[0]] : null;
+    if (firstWeekSheet) {
+      const rows = XLSX.utils.sheet_to_json(firstWeekSheet, { header: 1, defval: null });
+      const headerRow = rows[0] || [];
+      const headerStrs = headerRow.map(c => String(c || '').toLowerCase().trim());
+
+      // Signal 3: 'Tier' column header (highly specific to GZCL)
+      if (headerStrs.some(h => h === 'tier')) {
+        score += 0.25; matched.push('"Tier" column header in week tab');
+      } else {
+        missing.push('"Tier" column header');
+      }
+
+      // Signal 4: 'AMRAP' column header
+      if (headerStrs.some(h => h.includes('amrap'))) {
+        score += 0.10; matched.push('AMRAP column in week tab');
+      } else {
+        missing.push('AMRAP column header');
+      }
+
+      // Signal 5: Workout labels (A1/B1/A2/B2 for GZCLP, A/B/C/D/E for J&T)
+      const workoutLabels = new Set();
+      let hasTierValues = false;
+      for (let i = 1; i < Math.min(25, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        const cell0 = String(row[0] || '').trim();
+        const cell1 = String(row[1] || '').trim();
+        if (/^[AB][12]$/.test(cell0) || /^[A-E]$/.test(cell0)) workoutLabels.add(cell0);
+        if (/^T[123]$/.test(cell1)) hasTierValues = true;
+      }
+      if (workoutLabels.size >= 2) {
+        score += 0.20; matched.push('Workout labels [' + [...workoutLabels].join('/') + '] in week tab');
+      } else {
+        missing.push('Workout labels (A1/B1/A2/B2 or A/B/C/D/E)');
+      }
+
+      // Signal 6: T1/T2/T3 values in tier column (secondary confirmation)
+      if (hasTierValues) {
+        score += 0.10; matched.push('T1/T2/T3 values in Tier column');
+      } else {
+        missing.push('T1/T2/T3 values in Tier column');
+      }
+    } else {
+      missing.push('Week tab data for structure checks');
+    }
+
+    return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+  } catch (e) {
+    console.error('[liftlog] scoreX error:', e);
+    return { id, score: 0, signals: { matched, missing, negative: ['error: ' + e.message] } };
+  }
+}
+
 // ── FAMILY B PARSER (Bodybuilding Week-Tab Format) ───────────────────────────
 // Handles PHAT, PHUL, GVT, Arnold Split and similar bodybuilding templates.
 // Format signature: Setup tab → Week/Phase tabs, each with day-section blocks:
@@ -1627,7 +1708,7 @@ function _fb_buildPrescription(colMap, row) {
   // Append RPE
   if (colMap.rpe >= 0) {
     var rpe = getVal(colMap.rpe);
-    if (rpe && !isNaN(parseFloat(rpe))) pres += '@RPE' + rpe;
+    if (rpe && !isNaN(parseFloat(rpe))) pres += '@RPE ' + rpe;
   }
 
   return pres;
@@ -2123,6 +2204,7 @@ function _tryParse(wb, formatId) {
       case 'U': return parseU(wb);
       case 'V': return parseV(wb);
       case 'W': return parseW(wb);
+      case 'X': return parseX(wb);
       case 'FAMILYB': return parseFamilyB(wb);
       case 'FAMILYC': return parseFamilyC(wb);
       case 'ADAPTIVE': return parseAdaptive(wb);
@@ -2159,7 +2241,7 @@ function detectFormat(wb){
       scoreG(wb), scoreH(wb), scoreI(wb), scoreJ(wb), scoreK(wb),
       scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
       scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
-      scoreV(wb), scoreW(wb),
+      scoreV(wb), scoreW(wb), scoreX(wb),
       scoreFamilyC(wb),
       scoreFamilyB(wb),
       scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
@@ -2725,6 +2807,7 @@ function parseWorkbook(wb){
   else if (fmt === 'U') blocks = parseU(wb);
   else if (fmt === 'V') blocks = parseV(wb);
   else if (fmt === 'W') blocks = parseW(wb);
+  else if (fmt === 'X') blocks = parseX(wb);
   else if (fmt === 'FAMILYB') blocks = parseFamilyB(wb);
   else if (fmt === 'FAMILYC') blocks = parseFamilyC(wb);
   else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
@@ -4487,7 +4570,7 @@ function parseF_stride3(wb) {
             const presParts = [];
             for (const s of groupSets) {
               const sc = s.setsNum > 0 ? s.setsNum : 1;
-              const rpeSuffix = (s.rpe && /^\d+(\.\d+)?$/.test(s.rpe)) ? ' @RPE' + s.rpe : '';
+              const rpeSuffix = (s.rpe && /^\d+(\.\d+)?$/.test(s.rpe)) ? ' @RPE ' + s.rpe : '';
               if (s.weight != null && s.weight > 0 && s.reps) {
                 presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')' + rpeSuffix);
               } else if (s.reps) {
@@ -4678,7 +4761,7 @@ function parseF_stride6(wb) {
           const wt = typeof wv === 'number' && wv > 0 ? Math.round(wv) : null;
           // Read RPE from separate column
           const rpeRaw = rpeOff >= 0 && row[gb + rpeOff] != null ? String(row[gb + rpeOff]).trim() : '';
-          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE' + rpeRaw : '';
+          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
           // Read notes column
           let exNote = '';
           if (noteOff >= 0 && row[gb + noteOff] != null) {
@@ -4791,7 +4874,7 @@ function parseF_pctLoad(wb) {
           const wt = typeof load === 'number' && load > 0 ? Math.round(load) : null;
           // Read RPE from separate column if available
           const rpeRaw = (sec.rpeCols && sec.rpeCols[w] != null && row[sec.rpeCols[w]] != null) ? String(row[sec.rpeCols[w]]).trim() : '';
-          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE' + rpeRaw : '';
+          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
           let pres = '';
           if (sets > 0 && reps && wt) pres = sets + 'x' + reps + '(' + wt + ')' + rpeSuffix;
           else if (sets > 0 && reps) pres = sets + 'x' + reps + rpeSuffix;
@@ -12603,7 +12686,7 @@ function _w_buildPrescription(sets, reps, loadStr) {
       loadPart = ' @' + ld;
     } else if (/^\d+$/.test(ld) && parseInt(ld) >= 1 && parseInt(ld) <= 10) {
       // Integer 1-10 → RPE
-      loadPart = ' @RPE' + ld;
+      loadPart = ' @RPE ' + ld;
     } else if (ld) {
       loadPart = ' @' + ld;
     }
@@ -13566,7 +13649,7 @@ function _buildPrescription(sets, reps, loadStr, rpeVal, pctVal) {
 
   if (rpeVal != null) {
     const r = Number(rpeVal);
-    if (Number.isFinite(r) && r >= 5 && r <= 10) loadPart = ' @RPE' + r;
+    if (Number.isFinite(r) && r >= 5 && r <= 10) loadPart = ' @RPE ' + r;
   }
 
   if (!loadPart && pctVal != null) {
@@ -13590,7 +13673,7 @@ function _buildPrescription(sets, reps, loadStr, rpeVal, pctVal) {
           // Negative decimal → percentage drop (e.g. -0.15 → @-15%)
           loadPart = ' @' + Math.round(n * 100) + '%';
         } else if (n >= 5 && n <= 10) {
-          loadPart = ' @RPE' + n;                               // integer 5-10 → RPE
+          loadPart = ' @RPE ' + n;                              // integer 5-10 → RPE
         } else if (n >= 50 && n <= 105) {
           loadPart = ' @' + n + '%';                            // 50-105 → percentage
         } else if (n > 20) {
@@ -14312,6 +14395,151 @@ function parseAdaptive(wb) {
   }
 }
 
+// ── FORMAT X PARSER (GZCLP / GZCL Family — Tiered Week-Tab Structure) ────────
+// Handles GZCLP and GZCL variants (Jacked & Tan, Rippler, UHF) where:
+//   - A 'Start' setup tab holds starting weights and exercise selections
+//   - 'Week N' tabs each contain workouts grouped by label (A1/B1/A2/B2 or A/B/C/D/E)
+//   - Each row has: Workout | Tier | Exercise | Sets×Reps | Weight | AMRAP Achieved | Status
+//   - Tier system: T1 = main compound, T2 = secondary compound, T3 = accessories
+
+function _x_mapColumns(headerRow) {
+  const map = { workout: 0, tier: 1, exercise: 2, setsReps: 3, weight: 4, amrap: 5, notes: 6 };
+  headerRow.forEach(function(cell, i) {
+    const c = String(cell || '').toLowerCase().trim();
+    if (c === 'workout') map.workout = i;
+    else if (c === 'tier') map.tier = i;
+    else if (c === 'exercise') map.exercise = i;
+    else if (c.includes('sets') && (c.includes('rep') || c.includes('x'))) map.setsReps = i;
+    else if (c === 'weight' || c === 'wt' || c === 'load') map.weight = i;
+    else if (c.includes('amrap') || c.includes('max rep')) map.amrap = i;
+    else if (c === 'status' || c === 'notes' || c === 'note' || c.includes('comment')) map.notes = i;
+  });
+  return map;
+}
+
+function _x_tierLabel(tier) {
+  const t = String(tier || '').trim().toUpperCase();
+  if (t === 'T1') return 'T1 \u2014 Main compound';
+  if (t === 'T2') return 'T2 \u2014 Secondary compound';
+  if (t === 'T3') return 'T3 \u2014 Accessory';
+  return tier ? String(tier).trim() : '';
+}
+
+function parseX(wb) {
+  try {
+    // ── Program name from filename or Start tab header ──────────────────────
+    let programName = wb._plFilename
+      ? wb._plFilename.replace(/\.xlsx?$/i, '').trim()
+      : 'GZCLP';
+
+    const startSheetName = wb.SheetNames.find(n => /^start$/i.test(n.trim()));
+    if (startSheetName) {
+      const startRows = XLSX.utils.sheet_to_json(wb.Sheets[startSheetName], { header: 1, defval: null });
+      const firstCell = String(((startRows[0] || [])[0]) || '').trim();
+      if (firstCell && firstCell.length > 2 && firstCell.length < 80) {
+        programName = firstCell;
+      }
+    }
+
+    // ── Collect week tabs in sheet order ────────────────────────────────────
+    const weekSheetNames = wb.SheetNames.filter(n => /^Week\s+\d+$/i.test(n.trim()));
+    if (weekSheetNames.length === 0) return [];
+
+    const weeks = [];
+
+    for (const sheetName of weekSheetNames) {
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      const weekLabel = sheetName.trim();
+
+      // Detect column positions from first header row found
+      let colMap = { workout: 0, tier: 1, exercise: 2, setsReps: 3, weight: 4, amrap: 5, notes: 6 };
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        if (row.some(c => /^(workout|tier|exercise)$/i.test(String(c || '').trim()))) {
+          colMap = _x_mapColumns(row);
+          break;
+        }
+      }
+
+      // Group exercise rows by workout label, preserving label order
+      const workoutGroups = new Map(); // label → row[]
+      const workoutOrder = [];
+
+      for (const row of rows) {
+        if (!row) continue;
+        const cell0 = String(row[colMap.workout] || '').trim();
+        // Skip header rows (contain text like "Workout", "Tier", "Exercise")
+        if (!cell0 || /^(workout|tier|exercise)$/i.test(cell0)) continue;
+        // Valid workout label: A1/B1/A2/B2 (GZCLP) or A/B/C/D/E (J&T variants)
+        if (!/^[AB][12]$|^[A-E]$/.test(cell0)) continue;
+        if (!workoutGroups.has(cell0)) {
+          workoutGroups.set(cell0, []);
+          workoutOrder.push(cell0);
+        }
+        workoutGroups.get(cell0).push(row);
+      }
+
+      // Build days from workout groups
+      const days = [];
+      for (const label of workoutOrder) {
+        const exRows = workoutGroups.get(label);
+        const exercises = [];
+
+        for (const row of exRows) {
+          const exName = String(row[colMap.exercise] || '').trim();
+          if (!exName || !/[a-zA-Z]{2,}/.test(exName)) continue;
+
+          const tierVal = String(row[colMap.tier] || '').trim();
+          const setsRepsRaw = String(row[colMap.setsReps] || '').trim();
+
+          // Prescription: use raw cell value (e.g. "5x3+", "3x10", "3x15+")
+          // parseSets() downstream handles NxM+ AMRAP notation per L182
+          const prescription = setsRepsRaw;
+
+          // Tier note for coachNotes
+          const tierNote = tierVal ? _x_tierLabel(tierVal) : '';
+          const coachNotes = tierNote ? [tierNote] : [];
+
+          exercises.push({
+            name: exName,
+            prescription,
+            sets: [],
+            coachNotes,
+            note: null,
+            lifterNote: null,
+            supersetGroup: null,
+          });
+        }
+
+        if (exercises.length > 0) {
+          days.push({ name: label, exercises });
+        }
+      }
+
+      if (days.length > 0) {
+        weeks.push({ label: weekLabel, days });
+      }
+    }
+
+    if (weeks.length === 0) return [];
+
+    const bId = programName + '_' + Date.now();
+    return [{
+      id: bId,
+      name: programName,
+      format: 'X',
+      athleteName: 'Athlete',
+      dateRange: '',
+      maxes: {},
+      weeks,
+    }];
+  } catch (e) {
+    console.error('[liftlog] parseX error:', e);
+    return [];
+  }
+}
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -14370,6 +14598,8 @@ if (typeof module !== 'undefined' && module.exports) {
     // Family C Parser (Single-Sheet PPL / Weekly Column Format)
     scoreFamilyC, parseFamilyC,
     _fc_parseMeta, _fc_findHeaderRow, _fc_countWeeks, _fc_buildPrescription,
+    // Parser X (GZCLP / GZCL Family — Tiered Week-Tab Structure)
+    scoreX, parseX, _x_mapColumns, _x_tierLabel,
   };
 }
 
