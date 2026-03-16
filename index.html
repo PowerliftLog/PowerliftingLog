@@ -2539,8 +2539,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.23.3';
-const APP_BUILD   = '3/16/26c';
+const APP_VERSION = 'v0.23.5';
+const APP_BUILD   = '3/16/26e';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3309,12 +3309,12 @@ function renderMetrics(){
     h+=`<div class="chart-wrap" style="position:relative"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160" aria-label="Estimated 1RM progression for ${escH(groupKey)}"></canvas><canvas class="rm-chart chart-overlay" id="chart-${escH(groupKey)}-overlay" width="400" height="160" style="position:absolute;top:0;left:0;pointer-events:auto" aria-hidden="true"></canvas></div>`;
 
     // ── Trend footer for comp lifts (cross-block from activePts) ──
-    if(hasData && ['squat','bench','deadlift'].includes(groupKey) && activePts.length >= 2){
+    if(hasData && ['squat','bench','deadlift'].includes(groupKey) && activePts.length >= 3){
       const current = Math.round(activePts[activePts.length - 1].e1rm);
-      // Status: 3-point lookback across all data (cross-block)
-      const recent = activePts.slice(-3);
+      // Status: 5-point lookback across all data (cross-block, ~1 training block)
+      const recent = activePts.slice(-5);
       const tDiff = Math.round(recent[recent.length - 1].e1rm) - Math.round(recent[0].e1rm);
-      const tStatus = tDiff > 2 ? 'adapting' : tDiff < -2 ? 'fatigue' : 'maintaining';
+      const tStatus = tDiff > 5 ? 'adapting' : tDiff < -5 ? 'fatigue' : 'maintaining';
       // Delta: scoped to current block when ≥2 points, else week-over-week across boundary
       const activeBlockId = (state.activeBlock || state.blocks[state.blocks.length - 1])?.id;
       const currentBlockPts = activePts.filter(p => p.blockId === activeBlockId);
@@ -3351,6 +3351,7 @@ function renderMetrics(){
         </div>
         <div style="text-align:right">
           <div class="trend-footer-val">${current}<span class="unit-label">${unitLabel(true)}</span></div>
+          <div style="font-size:9px;color:var(--text-faint);letter-spacing:0.03em">CURRENT</div>
           ${tDeltaHtml}
         </div>
       </div>`;

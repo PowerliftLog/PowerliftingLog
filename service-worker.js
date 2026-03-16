@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v120';
+const CACHE_NAME = 'liftlog-v123';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -40,7 +40,7 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch — cache-first for assets, with background refresh
+// Fetch — network-first for index.html, cache-first for everything else
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
@@ -49,7 +49,22 @@ self.addEventListener('fetch', event => {
   // Google API scripts (GIS, GAPI) — network only, not needed offline
   if (url.hostname === 'accounts.google.com' || url.hostname === 'apis.google.com') return;
 
-  // Cache-first strategy: serve from cache instantly, update in background
+  // Network-first for index.html and root — always get fresh version, fall back to cache offline
+  const isNavigation = url.pathname.endsWith('/index.html') || url.pathname.endsWith('/PowerliftingLog/') || url.pathname === '/PowerliftingLog';
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || new Response('Offline', { status: 503 })))
+    );
+    return;
+  }
+
+  // Cache-first strategy for all other assets: serve from cache instantly, update in background
   event.respondWith(
     caches.match(event.request).then(cached => {
       // Background refresh — fetch new version and update cache
