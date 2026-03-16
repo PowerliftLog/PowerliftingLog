@@ -2539,8 +2539,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.22.6';
-const APP_BUILD   = '3/15/26g';
+const APP_VERSION = 'v0.23.0';
+const APP_BUILD   = '3/16/26a';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2726,6 +2726,8 @@ function cssEsc(s){ return CSS.escape ? CSS.escape(s) : s.replace(/([[\](){}|\\^
 // ── SCREEN NAV ────────────────────────────────────────────────────────────────
 let _workoutScrollY = 0;
 function setScreen(s){
+  // Auto-restore __complete__ if leaving workout tab with reopened workout and no changes
+  if(state.screen==='workout' && s!=='workout' && state._reopenedWorkout) _checkReopenAutoRestore();
   // Save workout scroll position when leaving workout tab
   if(state.screen==='workout') _workoutScrollY = window.scrollY;
   state.screen=s;
@@ -6859,7 +6861,7 @@ function renderExerciseList(block, week, day) {
   // Live workout — user explicitly tapped Finish Workout
   if (isLiveComplete) {
     h+=_buildWorkoutSummaryCard(block, week, day);
-    h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3.3-6.9"/><polyline points="3 2 3 7 8 7"/></svg> Reset Workout</button></div>`;
+    h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="openEditWorkoutSheet()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg> Edit Workout</button></div>`;
     return h;
   }
 
@@ -7139,7 +7141,7 @@ function renderWorkout(){
       h += renderPreviewList(block, week, day);
       h += _buildWorkoutSummaryCard(block, week, day);
       if (!isHistorical && !forceLog?.importedComplete) {
-        h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="clearWorkout()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3.3-6.9"/><polyline points="3 2 3 7 8 7"/></svg> Reset Workout</button></div>`;
+        h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="openEditWorkoutSheet()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg> Edit Workout</button></div>`;
       }
     } else {
       // Not started or partial — show banner + preview list
@@ -7327,6 +7329,7 @@ function completeWorkout(){
   const week=block.weeks[state.activeWeek];
   const day=week?.days[state.activeDay];
   if(!day) return;
+  const _isReopened = !!(state.workoutActive && state.workoutActive.reopened);
   state.workoutActive = null;
   // Kill rest timer if running
   stopRestTimer();
@@ -7358,15 +7361,31 @@ function completeWorkout(){
   });
   // Set force-complete flag so isDayComplete() returns true (include today's date for expiry)
   const forceKey=lk(block.id,week.label,day.name,'__complete__');
-  const _today = new Date(); 
+  const _today = new Date();
   const _dateStr = `${_today.getFullYear()}-${_today.getMonth()+1}-${_today.getDate()}`;
   const _existingForce = state.logs[forceKey] || {};
-  state.logs[forceKey]={..._existingForce, done:true, completedDate: _dateStr, completedAt: Date.now()};
+  if(_isReopened){
+    // Re-completing after edit — preserve original completedAt, stamp lastEditedAt
+    const _origAt = _existingForce._originalCompletedAt || _existingForce.completedAt;
+    state.logs[forceKey]={..._existingForce, done:true, completedDate: _existingForce.completedDate || _dateStr, completedAt: _origAt || Date.now(), lastEditedAt: Date.now()};
+    delete state.logs[forceKey]._originalCompletedAt;
+    // Clean up reopened state
+    state._reopenedWorkout=null;
+  } else {
+    state.logs[forceKey]={..._existingForce, done:true, completedDate: _dateStr, completedAt: Date.now()};
+  }
   saveLogs();
   // Fire-and-forget auto-backup to Drive (non-blocking)
   _silentAutoBackup();
   // Check storage quota after workout save
   _checkStorageQuota();
+  // Skip celebration + 1RM check on reopened workouts — just render the summary
+  if(_isReopened){
+    render();
+    const main = document.getElementById('main-content');
+    if (main) main.scrollTop = 0;
+    return;
+  }
   // Capture celebration data — do NOT render() yet (would flash summary card under celebration)
   const _dayName = day.name;
   const _weekNum = block.weeks.findIndex(w => w.label === week.label);
@@ -7550,6 +7569,120 @@ function confirmClearWorkout(){
   delete state.logs[lk(block.id,week.label,day.name,'__complete__')];
   saveLogs();
   render();
+}
+
+// ── Edit Completed Workout (H14) ─────────────────────────────────────────────
+function openEditWorkoutSheet(){
+  const existing=document.getElementById('edit-workout-overlay');
+  if(existing) existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='edit-workout-overlay';
+  overlay.className='delete-ex-overlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Edit Workout');
+  overlay.onclick=(e)=>{if(e.target===overlay)overlay.remove();};
+  overlay.innerHTML=`
+  <div class="delete-ex-sheet">
+    <div class="delete-ex-title">Edit Workout</div>
+    <div class="delete-ex-desc" style="margin-bottom:var(--sp-6)">What would you like to do with this completed workout?</div>
+    <button class="delete-ex-btn single" onclick="reopenWorkout()">Modify Logged Sets</button>
+    <button class="delete-ex-btn danger" onclick="document.getElementById('edit-workout-overlay').remove();clearWorkout()">Clear All Data</button>
+    <button class="delete-ex-btn single" style="color:var(--text-faint);border-color:var(--border)" onclick="document.getElementById('edit-workout-overlay').remove()">Cancel</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function reopenWorkout(){
+  // Close the sheet
+  const overlay=document.getElementById('edit-workout-overlay');
+  if(overlay) overlay.remove();
+
+  const block=state.activeBlock;
+  const weekIdx=state.activeWeek;
+  const dayIdx=state.activeDay;
+  const week=block.weeks[weekIdx];
+  const day=week?.days[dayIdx];
+  if(!day) return;
+
+  const forceKey=lk(block.id,week.label,day.name,'__complete__');
+  const forceLog=state.logs[forceKey]||{};
+
+  // Snapshot the original completion state for auto-restore on navigate away
+  state._reopenedWorkout = {
+    weekIdx,
+    dayIdx,
+    originalCompleteLog: JSON.parse(JSON.stringify(forceLog)),
+    logSnapshot: _snapshotDayLogs(block, week, day),
+    unitOverridesSnapshot: JSON.stringify(loadUnitOverrides())
+  };
+
+  // Remove the __complete__ flag but preserve startedAt and other metadata
+  delete state.logs[forceKey].done;
+  delete state.logs[forceKey].completedDate;
+  // Keep completedAt for later — we'll use it as originalCompletedAt
+  state.logs[forceKey]._originalCompletedAt = forceLog.completedAt;
+
+  // Activate the workout in reopened mode
+  state.workoutActive = { weekIdx, dayIdx, reopened: true };
+  state.expandedEx = new Set();
+  saveLogs();
+  saveNav();
+  render();
+}
+
+// Snapshot all log keys for a day — used for detecting changes on navigate-away
+function _snapshotDayLogs(block, week, day){
+  const snap={};
+  day.exercises.forEach(ex=>{
+    const key=lk(block.id,week.label,day.name,ex.name);
+    if(state.logs[key]) snap[key]=JSON.stringify(state.logs[key]);
+    for(let si=0;si<20;si++){
+      const sk=key+`||s${si}`;
+      if(state.logs[sk]) snap[sk]=JSON.stringify(state.logs[sk]);
+    }
+  });
+  return snap;
+}
+
+// Check if any logged data or unit overrides changed since the reopen snapshot
+function _hasReopenedChanges(){
+  const rs=state._reopenedWorkout;
+  if(!rs) return false;
+  // Check unit overrides changed
+  if(JSON.stringify(loadUnitOverrides()) !== rs.unitOverridesSnapshot) return true;
+  const block=state.activeBlock;
+  const week=block.weeks[rs.weekIdx];
+  const day=week?.days[rs.dayIdx];
+  if(!day) return false;
+  const currentSnap=_snapshotDayLogs(block, week, day);
+  const origSnap=rs.logSnapshot;
+  // Compare all keys in both snapshots
+  const allKeys=new Set([...Object.keys(origSnap),...Object.keys(currentSnap)]);
+  for(const k of allKeys){
+    if(origSnap[k]!==currentSnap[k]) return true;
+  }
+  return false;
+}
+
+// Auto-restore __complete__ if user navigates away without making changes
+function _checkReopenAutoRestore(){
+  const rs=state._reopenedWorkout;
+  if(!rs) return;
+  if(!_hasReopenedChanges()){
+    // No changes — silently re-complete with original data
+    const block=state.activeBlock;
+    const week=block.weeks[rs.weekIdx];
+    const day=week?.days[rs.dayIdx];
+    if(day){
+      const forceKey=lk(block.id,week.label,day.name,'__complete__');
+      state.logs[forceKey]=rs.originalCompleteLog;
+      saveLogs();
+    }
+  }
+  state.workoutActive=null;
+  state._reopenedWorkout=null;
+  saveNav();
 }
 
 function toggleSkip(key){
@@ -10045,8 +10178,8 @@ function checkWeekProgression(block) {
     saveBlocks();
   }
 }
-function setWeek(wi){ if(state.editingDay){_cancelDayEdits();} state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
-function setDay(di){ if(state.editingDay && di!==state.activeDay){_cancelDayEdits();} state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function setWeek(wi){ if(state._reopenedWorkout){_checkReopenAutoRestore();} if(state.editingDay){_cancelDayEdits();} state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function setDay(di){ if(state._reopenedWorkout && di!==state.activeDay){_checkReopenAutoRestore();} if(state.editingDay && di!==state.activeDay){_cancelDayEdits();} state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
 function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); } }
 
 
