@@ -2206,6 +2206,7 @@ function _tryParse(wb, formatId) {
       case 'W': return parseW(wb);
       case 'X': return parseX(wb);
       case 'FAMILYE': return parseFamilyE(wb);
+      case 'FAMILYF': return parseFamilyF(wb);
       case 'FAMILYB': return parseFamilyB(wb);
       case 'FAMILYC': return parseFamilyC(wb);
       case 'ADAPTIVE': return parseAdaptive(wb);
@@ -2243,6 +2244,7 @@ function detectFormat(wb){
       scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
       scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
       scoreV(wb), scoreW(wb), scoreX(wb), scoreFamilyE(wb),
+      scoreFamilyF(wb),
       scoreFamilyC(wb),
       scoreFamilyB(wb),
       scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
@@ -2810,6 +2812,7 @@ function parseWorkbook(wb){
   else if (fmt === 'W') blocks = parseW(wb);
   else if (fmt === 'X') blocks = parseX(wb);
   else if (fmt === 'FAMILYE') blocks = parseFamilyE(wb);
+  else if (fmt === 'FAMILYF') blocks = parseFamilyF(wb);
   else if (fmt === 'FAMILYB') blocks = parseFamilyB(wb);
   else if (fmt === 'FAMILYC') blocks = parseFamilyC(wb);
   else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
@@ -14922,6 +14925,550 @@ function parseFamilyE(wb) {
   }
 }
 
+// ── Family F — Generic PT / Trainer Template Format ───────────────────────────
+// Covers two layouts:
+//   Variant 1 (week-tab):    "Exercise Library" + "Week 1"–"Week 4" sheets
+//   Variant 2 (portrait-grid): single data sheet, "Sets x Reps" col + week weight cols
+
+// Non-workout tabs to ignore when finding the primary data sheet
+var _FF_NON_WORKOUT_TABS = new Set([
+  'exercise library',
+  'diet plan',
+  'weight & measurement log',
+  'body fat calculator',
+]);
+
+function _ff_isNonWorkoutTab(name) {
+  return _FF_NON_WORKOUT_TABS.has(String(name || '').toLowerCase().trim());
+}
+
+// Scan first 15 rows for a row that contains "exercise" as a standalone cell value
+function _ff_findHeaderRow(rows) {
+  for (var i = 0; i < Math.min(15, rows.length); i++) {
+    var row = rows[i];
+    if (!row) continue;
+    var cells = row.map(function(c) { return _normalizeCell(c); });
+    if (cells.some(function(c) { return c === 'exercise'; })) return i;
+  }
+  return -1;
+}
+
+// Map column indices from a header row
+function _ff_mapColumns(headerRow) {
+  var colMap = {
+    exercise:   -1,
+    muscleGroup:-1,
+    sets:       -1,
+    reps:       -1,
+    setsReps:   -1,
+    weight:     -1,
+    notes:      -1,
+    weekCols:   [],   // [{label, idx}] for portrait-grid week weight columns
+  };
+  if (!headerRow) return colMap;
+  headerRow.forEach(function(cell, idx) {
+    var c = _normalizeCell(cell);
+    if      (c === 'exercise')                                            colMap.exercise    = idx;
+    else if (c === 'muscle group' || c === 'muscle')                      colMap.muscleGroup = idx;
+    else if (/^sets?\s*[x×]\s*reps?$/.test(c) || c === 'sets x reps' ||
+             c === 'setsxreps')                                           colMap.setsReps    = idx;
+    else if (c === 'sets')                                                colMap.sets        = idx;
+    else if (c === 'reps')                                                colMap.reps        = idx;
+    else if (c === 'weight')                                              colMap.weight      = idx;
+    else if (c === 'notes')                                               colMap.notes       = idx;
+    else if (/^week\s+\d+/i.test(c)) {
+      // Portrait-grid: "Week 1\nWeight" → normalised to "week 1\nweight"
+      var wm = c.match(/^week\s+(\d+)/i);
+      if (wm) colMap.weekCols.push({ label: 'Week ' + wm[1], idx: idx });
+    }
+  });
+  return colMap;
+}
+
+// Build prescription string from mapped columns and row values
+function _ff_buildPrescription(colMap, row, weightOverride) {
+  var weight = '';
+  if (weightOverride != null) {
+    weight = String(weightOverride).trim();
+  } else if (colMap.weight >= 0 && row[colMap.weight] != null) {
+    weight = String(row[colMap.weight]).trim();
+  }
+
+  if (colMap.setsReps >= 0 && row[colMap.setsReps] != null) {
+    var raw = String(row[colMap.setsReps]).trim();
+    if (raw) {
+      // Normalise whitespace around the × operator: "4 x 8" → "4x8"
+      var norm = raw.replace(/\s*[x×]\s*/gi, 'x').trim();
+      if (weight) return norm + ' @' + weight + (weight.toLowerCase().includes('kg') ? '' : 'lbs');
+      return norm;
+    }
+  }
+
+  // Separate Sets + Reps columns
+  var sets = colMap.sets >= 0 && row[colMap.sets] != null ? String(row[colMap.sets]).trim() : '';
+  var reps = colMap.reps >= 0 && row[colMap.reps] != null ? String(row[colMap.reps]).trim() : '';
+  if (sets && reps) {
+    var pres = sets + 'x' + reps;
+    if (weight) return pres + ' @' + weight + (weight.toLowerCase().includes('kg') ? '' : 'lbs');
+    return pres;
+  }
+  if (sets) return sets + 'x?';
+  return '';
+}
+
+// True if every cell in the row is null/empty
+function _ff_isBlankRow(row) {
+  if (!row) return true;
+  return row.every(function(c) { return c == null || String(c).trim() === ''; });
+}
+
+// True if col 0 has text and all other columns are blank (day/section header row)
+function _ff_isDayHeader(row) {
+  if (!row) return false;
+  var colA = String(row[0] || '').trim();
+  if (!colA) return false;
+  return row.slice(1).every(function(c) { return c == null || String(c).trim() === ''; });
+}
+
+// ── scoreFamilyF ──────────────────────────────────────────────────────────────
+function scoreFamilyF(wb) {
+  var id = 'FAMILYF';
+  var matched = [], missing = [], negative = [];
+  var score = 0;
+
+  try {
+    var sheetNames = wb.SheetNames;
+
+    // ── Negative signals ──────────────────────────────────────────────────────
+
+    // "Setup" tab → Family B (bodybuilding week-tab format)
+    if (sheetNames.some(function(n) { return /^setup$/i.test(n.trim()); })) {
+      score -= 0.40;
+      negative.push('"Setup" tab — likely Family B');
+    }
+
+    // Tab names containing PHAT / PHUL / GVT / Arnold → Family B program identifiers
+    if (sheetNames.some(function(n) { return /\b(phat|phul|gvt|arnold)\b/i.test(n); })) {
+      score -= 0.30;
+      negative.push('Tab matches PHAT/PHUL/GVT/Arnold — likely Family B');
+    }
+
+    // "Sets Per Week Summary" / volume-tracking meta tab → Family G or Mike Israetel template
+    if (sheetNames.some(function(n) { return /sets\s+per\s+week/i.test(n) || /^sets\s+summary$/i.test(n.trim()); })) {
+      score -= 0.30;
+      negative.push('"Sets Per Week Summary" tab — likely Family G/volume-tracker');
+    }
+
+    // ── Determine primary workout sheet ───────────────────────────────────────
+
+    var weekTabs = sheetNames.filter(function(n) { return /^Week\s+\d+$/i.test(n.trim()); });
+    var primarySheetName = null;
+    if (weekTabs.length >= 2) {
+      primarySheetName = weekTabs[0];
+    } else {
+      // Portrait-grid or single sheet: first non-non-workout tab
+      var workoutSheets = sheetNames.filter(function(n) { return !_ff_isNonWorkoutTab(n); });
+      if (workoutSheets.length > 0) primarySheetName = workoutSheets[0];
+    }
+
+    if (!primarySheetName || !wb.Sheets[primarySheetName]) {
+      return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[primarySheetName], { header: 1, defval: null });
+    if (!rows || rows.length < 3) {
+      return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    // ── Column-header signals ─────────────────────────────────────────────────
+
+    var headerRowIdx = _ff_findHeaderRow(rows);
+    if (headerRowIdx >= 0) {
+      var hCells = rows[headerRowIdx].map(function(c) { return _normalizeCell(c); });
+
+      var hasExercise    = hCells.some(function(c) { return c === 'exercise'; });
+      var hasSets        = hCells.some(function(c) { return c === 'sets'; });
+      var hasSetsXReps   = hCells.some(function(c) { return /^sets?\s*[x×]\s*reps?$/.test(c) || c === 'sets x reps' || c === 'setsxreps'; });
+      var hasReps        = hCells.some(function(c) { return c === 'reps'; });
+      var hasMuscle      = hCells.some(function(c) { return c === 'muscle' || c === 'muscle group'; });
+      var hasWeight      = hCells.some(function(c) { return c === 'weight'; });
+      var hasWeekWeight  = hCells.some(function(c) { return /^week\s+\d+/.test(c) && c.includes('weight'); });
+      var has1RM         = hCells.some(function(c) { return c.includes('%1rm') || c.includes('% 1rm') || /\b1rm\b/.test(c); });
+      var hasWorkingSets = hCells.some(function(c) { return c.includes('working') && c.includes('set'); });
+      var hasRIR         = hCells.some(function(c) { return c === 'rir' || c === 'rpe/rir' || (c.includes('rir') && !c.includes('week')); });
+      var hasRPEcol      = hCells.some(function(c) { return c === 'rpe'; });
+      var hasTempo       = hCells.some(function(c) { return c === 'tempo'; });
+
+      // Signal 1: Exercise + Sets (or Sets×Reps)
+      if (hasExercise && (hasSets || hasSetsXReps)) {
+        score += 0.25;
+        matched.push('column header: Exercise + ' + (hasSetsXReps ? 'Sets x Reps (combined)' : 'Sets'));
+      } else {
+        missing.push('column header with Exercise + Sets');
+      }
+
+      // Signal 2: Reps column (separate) OR combined Sets×Reps
+      if (hasReps || hasSetsXReps) {
+        score += 0.15;
+        matched.push(hasSetsXReps ? 'Sets x Reps combined (contains Reps)' : 'Reps column');
+      } else {
+        missing.push('Reps column');
+      }
+
+      // Signal 3: Muscle / Muscle Group column — key PT-template differentiator
+      if (hasMuscle) {
+        score += 0.15;
+        matched.push('Muscle Group column');
+      } else {
+        missing.push('Muscle Group column');
+      }
+
+      // Signal 4: Weight column present but NOT %1RM
+      if ((hasWeight || hasWeekWeight) && !has1RM) {
+        score += 0.10;
+        matched.push('Weight column (no %1RM)');
+      } else if (!hasWeight && !hasWeekWeight) {
+        missing.push('Weight column');
+      }
+
+      // Negative: %1RM → Family E
+      if (has1RM) {
+        score -= 0.40;
+        negative.push('%1RM column — likely Family E');
+      }
+      // Negative: Working Sets → Family E
+      if (hasWorkingSets) {
+        score -= 0.30;
+        negative.push('"Working Sets" column — likely Family E');
+      }
+      // Negative: RIR / RPE column → more advanced template
+      if (hasRIR || hasRPEcol) {
+        score -= 0.25;
+        negative.push('RIR/RPE column — more advanced template');
+      }
+      // Negative: Tempo column
+      if (hasTempo) {
+        score -= 0.15;
+        negative.push('Tempo column — suggests advanced template');
+      }
+
+      // Negative: multiple "Exercise | Sets | Reps" header rows in the same sheet
+      // (volume-tracker pattern: one header per muscle group section)
+      var exHeaderCount = 0;
+      for (var ri = 0; ri < rows.length; ri++) {
+        var r = rows[ri];
+        if (!r) continue;
+        var rc = r.map(function(c) { return _normalizeCell(c); });
+        if (rc.some(function(c) { return c === 'exercise'; }) &&
+            rc.some(function(c) { return c === 'sets' || c === 'reps'; })) {
+          exHeaderCount++;
+        }
+      }
+      if (exHeaderCount >= 2) {
+        score -= 0.25;
+        negative.push(exHeaderCount + ' Exercise header rows in sheet — likely volume-tracker');
+      }
+
+    } else {
+      missing.push('column header row with Exercise + Sets/Reps');
+    }
+
+    // ── Week-structure signals ────────────────────────────────────────────────
+
+    if (weekTabs.length >= 2) {
+      // Signal 5: Week tabs — check for T1/T2 content (GZCL) before crediting
+      var hasT1T2 = false;
+      var checkRows = XLSX.utils.sheet_to_json(wb.Sheets[weekTabs[0]], { header: 1, defval: null }) || [];
+      for (var ci = 0; ci < Math.min(20, checkRows.length); ci++) {
+        var cr = checkRows[ci];
+        if (!cr) continue;
+        if (cr.some(function(c) { return /^T[123]$/i.test(String(c || '').trim()); })) { hasT1T2 = true; break; }
+      }
+      if (hasT1T2) {
+        score -= 0.30;
+        negative.push('T1/T2/T3 content in week tab — likely GZCL');
+      } else {
+        score += 0.10;
+        matched.push(weekTabs.length + ' Week tabs');
+      }
+    } else {
+      // Signal 6: Portrait-grid — look for "Week N" pattern in the COLUMN HEADER ROW only
+      // (not in data rows, which might contain "Week 6 Day 1" style section labels)
+      var hasWeekCols = headerRowIdx >= 0 &&
+        rows[headerRowIdx].some(function(c) { return /^week\s+\d+/i.test(_normalizeCell(c)); });
+      if (hasWeekCols) {
+        score += 0.10;
+        matched.push('Week N column headers (portrait-grid variant)');
+      } else {
+        score -= 0.10;
+        negative.push('no week structure detected');
+      }
+    }
+
+    // ── Layout / metadata signals ─────────────────────────────────────────────
+
+    // Signal 7: Em-dash day headers in col A (e.g. "Monday — Upper", "DAY A — Chest")
+    var dataStart = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+    var emDashCount = 0;
+    for (var ei = dataStart; ei < rows.length; ei++) {
+      var eRow = rows[ei];
+      if (!eRow) continue;
+      var eColA = String(eRow[0] || '').trim();
+      if (!eColA) continue;
+      if ((eColA.indexOf('\u2014') >= 0 || eColA.indexOf('\u2013') >= 0 || eColA.indexOf('--') >= 0) &&
+           _ff_isDayHeader(eRow)) {
+        emDashCount++;
+      }
+    }
+    if (emDashCount >= 1) {
+      score += 0.05;
+      matched.push(emDashCount + ' em-dash day headers');
+    } else {
+      missing.push('em-dash day headers (e.g. "Monday \u2014 Upper")');
+    }
+
+    // Signal 8: Client Name / Trainer metadata in header section
+    var metaEnd   = headerRowIdx >= 0 ? headerRowIdx : Math.min(5, rows.length);
+    var metaText  = rows.slice(0, metaEnd).map(function(r) {
+      return r ? r.map(function(c) { return _normalizeCell(c); }).join(' ') : '';
+    }).join(' ');
+    if (metaText.includes('client name') || metaText.includes('trainer') || metaText.includes('start date')) {
+      score += 0.05;
+      matched.push('Client/Trainer metadata in header rows');
+    } else {
+      missing.push('Client/Trainer metadata');
+    }
+
+    return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
+
+  } catch (e) {
+    console.error('[liftlog] scoreFamilyF error:', e);
+    return { id: id, score: 0, signals: { matched: [], missing: [], negative: ['error: ' + e.message] } };
+  }
+}
+
+// ── parseFamilyF — internal helpers ──────────────────────────────────────────
+
+// Parse a single Week-tab worksheet into { label, days }
+function _ff_parseWeekTab(ws, weekLabel) {
+  var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  if (!rows || rows.length < 4) return null;
+
+  var headerRowIdx = _ff_findHeaderRow(rows);
+  if (headerRowIdx < 0) return null;
+
+  var colMap = _ff_mapColumns(rows[headerRowIdx]);
+  if (colMap.exercise < 0) return null;
+
+  var days = [];
+  var currentDay = null;
+
+  for (var i = headerRowIdx + 1; i < rows.length; i++) {
+    var row = rows[i];
+    if (_ff_isBlankRow(row)) continue;
+
+    // Day header: text in col 0, all other cells blank
+    if (_ff_isDayHeader(row)) {
+      if (currentDay && currentDay.exercises.length > 0) days.push(currentDay);
+      currentDay = { name: String(row[0] || '').trim(), exercises: [] };
+      continue;
+    }
+
+    // Exercise row: must have text in exercise col and data in sets or setsReps col
+    var exName = String(row[colMap.exercise] || '').trim();
+    if (!exName || !/[a-zA-Z]{2,}/.test(exName)) continue;
+
+    var setsVal    = colMap.sets    >= 0 ? row[colMap.sets]    : null;
+    var setsRpsVal = colMap.setsReps >= 0 ? row[colMap.setsReps] : null;
+    var hasData    = (setsVal != null && String(setsVal).trim() !== '') ||
+                     (setsRpsVal != null && String(setsRpsVal).trim() !== '');
+    if (!hasData) continue;
+
+    var prescription = _ff_buildPrescription(colMap, row, null);
+    var noteRaw      = colMap.notes      >= 0 ? String(row[colMap.notes]      || '').trim() : '';
+    var muscleGroup  = colMap.muscleGroup >= 0 ? String(row[colMap.muscleGroup] || '').trim() : '';
+
+    if (!currentDay) currentDay = { name: 'Day 1', exercises: [] };
+
+    currentDay.exercises.push({
+      name:         exName,
+      prescription: prescription,
+      sets:         [],
+      coachNotes:   muscleGroup ? ['Muscle: ' + muscleGroup] : [],
+      note:         noteRaw || null,
+      lifterNote:   null,
+      supersetGroup: null,
+    });
+  }
+
+  if (currentDay && currentDay.exercises.length > 0) days.push(currentDay);
+  if (days.length === 0) return null;
+  return { label: weekLabel, days: days };
+}
+
+// Parse a portrait-grid worksheet into an array of weeks
+function _ff_parsePortraitGrid(ws) {
+  var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  if (!rows || rows.length < 5) return [];
+
+  var headerRowIdx = _ff_findHeaderRow(rows);
+  if (headerRowIdx < 0) return [];
+
+  var colMap = _ff_mapColumns(rows[headerRowIdx]);
+  if (colMap.exercise < 0 || colMap.weekCols.length === 0) return [];
+
+  // First pass: collect day/exercise structure (store week weights temporarily)
+  var days = [];
+  var currentDay = null;
+  var rawExercises = [];   // flat list tied to day index
+
+  for (var i = headerRowIdx + 1; i < rows.length; i++) {
+    var row = rows[i];
+    if (_ff_isBlankRow(row)) continue;
+
+    if (_ff_isDayHeader(row)) {
+      if (currentDay && currentDay.exercises.length > 0) days.push(currentDay);
+      currentDay = { name: String(row[0] || '').trim(), exercises: [], dayIdx: days.length };
+      continue;
+    }
+
+    var exName = String(row[colMap.exercise] || '').trim();
+    if (!exName || !/[a-zA-Z]{2,}/.test(exName)) continue;
+
+    var setsRepsRaw = colMap.setsReps >= 0 && row[colMap.setsReps] != null
+      ? String(row[colMap.setsReps]).trim() : '';
+    var setsVal = colMap.sets >= 0 && row[colMap.sets] != null ? String(row[colMap.sets]).trim() : '';
+    if (!setsRepsRaw && !setsVal) continue;
+
+    var noteRaw     = colMap.notes      >= 0 ? String(row[colMap.notes]      || '').trim() : '';
+    var muscleGroup = colMap.muscleGroup >= 0 ? String(row[colMap.muscleGroup] || '').trim() : '';
+
+    // Collect weight for each week column
+    var weekWeights = colMap.weekCols.map(function(wc) {
+      return row[wc.idx] != null ? String(row[wc.idx]).trim() : '';
+    });
+
+    if (!currentDay) currentDay = { name: 'Day 1', exercises: [], dayIdx: days.length };
+
+    currentDay.exercises.push({
+      _exName:       exName,
+      _setsRepsRaw:  setsRepsRaw,
+      _setsVal:      setsVal,
+      _weekWeights:  weekWeights,
+      _noteRaw:      noteRaw,
+      _muscleGroup:  muscleGroup,
+    });
+  }
+  if (currentDay && currentDay.exercises.length > 0) days.push(currentDay);
+  if (days.length === 0) return [];
+
+  // Build one week per week-weight column
+  return colMap.weekCols.map(function(wc, wi) {
+    return {
+      label: wc.label,
+      days: days.map(function(day) {
+        return {
+          name: day.name,
+          exercises: day.exercises.map(function(ex) {
+            var weight = ex._weekWeights[wi] || '';
+            var pres;
+            if (ex._setsRepsRaw) {
+              var norm = ex._setsRepsRaw.replace(/\s*[x×]\s*/gi, 'x').trim();
+              pres = weight ? norm + ' @' + weight + (weight.toLowerCase().includes('kg') ? '' : 'lbs') : norm;
+            } else {
+              pres = ex._setsVal ? ex._setsVal + 'x?' : '';
+            }
+            return {
+              name:         ex._exName,
+              prescription: pres,
+              sets:         [],
+              coachNotes:   ex._muscleGroup ? ['Muscle: ' + ex._muscleGroup] : [],
+              note:         ex._noteRaw || null,
+              lifterNote:   null,
+              supersetGroup: null,
+            };
+          }),
+        };
+      }),
+    };
+  });
+}
+
+// ── parseFamilyF — main entry point ──────────────────────────────────────────
+function parseFamilyF(wb) {
+  try {
+    var sheetNames = wb.SheetNames;
+    var weekTabs   = sheetNames.filter(function(n) { return /^Week\s+\d+$/i.test(n.trim()); });
+
+    // ── Extract program title and athlete name ────────────────────────────────
+    var programTitle = 'Workout Plan';
+    var athleteName  = null;
+
+    var metaSheetName = weekTabs.length >= 2
+      ? weekTabs[0]
+      : sheetNames.find(function(n) { return !_ff_isNonWorkoutTab(n); });
+
+    if (metaSheetName && wb.Sheets[metaSheetName]) {
+      var metaRows = XLSX.utils.sheet_to_json(wb.Sheets[metaSheetName], { header: 1, defval: null });
+      var metaHeaderIdx = _ff_findHeaderRow(metaRows);
+      var scanEnd = metaHeaderIdx >= 0 ? metaHeaderIdx : Math.min(6, metaRows.length);
+
+      // Row 0: possible program title
+      if (metaRows[0]) {
+        var titleCand = String(metaRows[0][0] || '').trim();
+        if (titleCand.length > 2 && titleCand.length < 100 &&
+            !/^(client|date|sleep|bodyweight|muscle|exercise)/i.test(titleCand)) {
+          programTitle = titleCand;
+        }
+      }
+
+      // Scan header rows for Client Name and Trainer fields
+      for (var mi = 0; mi < scanEnd; mi++) {
+        var mRow = metaRows[mi];
+        if (!mRow) continue;
+        var colA = _normalizeCell(mRow[0]);
+        var colB = mRow[1] != null ? String(mRow[1]).trim() : '';
+        if (colA === 'client name' && colB) { athleteName = colB; }
+        // Also handle "Client" or "Trainer" → but "Trainer" is the trainer, not the athlete
+      }
+    }
+
+    // ── Parse weeks ───────────────────────────────────────────────────────────
+    var weeks = [];
+
+    if (weekTabs.length >= 2) {
+      // Variant 1: week-tab format
+      for (var wi = 0; wi < weekTabs.length; wi++) {
+        var tabName  = weekTabs[wi];
+        var ws       = wb.Sheets[tabName];
+        if (!ws) continue;
+        var weekData = _ff_parseWeekTab(ws, tabName.trim());
+        if (weekData) weeks.push(weekData);
+      }
+    } else {
+      // Variant 2: portrait-grid format
+      var dataSheetName = sheetNames.find(function(n) { return !_ff_isNonWorkoutTab(n); });
+      if (dataSheetName && wb.Sheets[dataSheetName]) {
+        weeks = _ff_parsePortraitGrid(wb.Sheets[dataSheetName]);
+      }
+    }
+
+    if (weeks.length === 0) return [];
+
+    return [{
+      id:          'familyf_' + Date.now(),
+      name:         programTitle,
+      format:       'FAMILYF',
+      athleteName:  athleteName,
+      weeks:        weeks,
+    }];
+
+  } catch (e) {
+    console.error('[liftlog] parseFamilyF error:', e);
+    return [];
+  }
+}
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -14984,6 +15531,10 @@ if (typeof module !== 'undefined' && module.exports) {
     scoreX, parseX, _x_mapColumns, _x_tierLabel,
     // Family E Parser (Jeff Nippard / Powerbuilding — Single-Sheet 11-col)
     scoreFamilyE, parseFamilyE, _fe_findHeaderRow, _fe_mapColumns, _fe_buildPrescription, _fe_buildNote,
+    // Family F Parser (Generic PT / Trainer Template — Week-Tab or Portrait-Grid)
+    scoreFamilyF, parseFamilyF,
+    _ff_isNonWorkoutTab, _ff_findHeaderRow, _ff_mapColumns, _ff_buildPrescription,
+    _ff_isBlankRow, _ff_isDayHeader, _ff_parseWeekTab, _ff_parsePortraitGrid,
   };
 }
 

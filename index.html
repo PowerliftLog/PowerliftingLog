@@ -663,6 +663,10 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* ── Rest Timer Banner ────────────────────────────────────────────── */
 .rest-timer-banner { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; z-index: 190; border-radius: 14px; overflow: hidden; transition: transform 0.3s ease, opacity 0.3s ease; }
 .rest-timer-banner.hidden { transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; }
+/* Hide nav + rest timer when mobile keyboard is open */
+body.keyboard-open .bottom-nav,
+body.keyboard-open .bottom-nav-fade,
+body.keyboard-open .rest-timer-banner { display: none !important; }
 .rest-timer-inner { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-5) var(--sp-6); background: var(--surface-5); border: 1px solid var(--gold-dim, rgba(201,168,76,0.3)); border-radius: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
 .rest-timer-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
 .rest-timer-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); }
@@ -2535,7 +2539,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.22.6';
-const APP_BUILD   = '3/15/26c';
+const APP_BUILD   = '3/15/26e';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2612,6 +2616,23 @@ let _saveLogsTimer=null;
 function _saveLogsImmediate(){ _metricsCache = null; _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
+
+// ── Keyboard-open detection — hide nav + rest timer when input focused ────────
+(function(){
+  let _kbTimer=null;
+  document.addEventListener('focusin', e => {
+    if(e.target.matches&&e.target.matches('.set-input, .note-input, textarea')) {
+      clearTimeout(_kbTimer);
+      document.body.classList.add('keyboard-open');
+    }
+  });
+  document.addEventListener('focusout', e => {
+    if(e.target.matches&&e.target.matches('.set-input, .note-input, textarea')) {
+      // Small delay — prevents flicker when tapping between inputs
+      _kbTimer=setTimeout(()=>document.body.classList.remove('keyboard-open'), 150);
+    }
+  });
+})();
 
 // Global Escape key handler — dismiss topmost open modal
 document.addEventListener('keydown', (e) => {
@@ -3292,10 +3313,11 @@ function renderMetrics(){
       const tColor = t.status === 'adapting' ? 'var(--green)' : t.status === 'fatigue' ? 'var(--amber)' : 'var(--text-dim)';
       const tLabel = t.status === 'adapting' ? 'Adapting' : t.status === 'fatigue' ? 'Fatiguing' : 'Maintaining';
       const tDelta = t.delta !== 0 ? `<span class="trend-footer-delta" style="color:${tColor}">${t.delta > 0 ? '+' : ''}${t.delta}${unitLabel(true)}</span>` : '';
-      // Sparkline SVG
-      const sparkPts = t.dataPoints.map(d => d.value);
+      // Sparkline SVG (densified for organic look)
+      const sparkRaw = t.dataPoints.map(d => d.value);
       let sparkSvg = '';
-      if(sparkPts.length >= 2){
+      if(sparkRaw.length >= 2){
+        const sparkPts = _sparkDensify(sparkRaw, 10);
         const sW = 64, sH = 20, sPad = 2;
         const sMin = Math.min(...sparkPts), sMax = Math.max(...sparkPts), sRange = sMax - sMin || 1;
         const polyPts = sparkPts.map((v, i) => {
@@ -3304,7 +3326,7 @@ function renderMetrics(){
           return `${x.toFixed(1)},${y.toFixed(1)}`;
         }).join(' ');
         const endX = sW, endY = sPad + ((sMax - sparkPts[sparkPts.length-1]) / sRange) * (sH - sPad * 2);
-        sparkSvg = `<svg class="trend-footer-spark" viewBox="0 0 ${sW} ${sH}" preserveAspectRatio="none"><polyline points="${polyPts}" fill="none" stroke="${tColor}" stroke-width="1.5" stroke-linecap="round"/><circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="2" fill="${tColor}"/></svg>`;
+        sparkSvg = `<svg class="trend-footer-spark" viewBox="0 0 ${sW} ${sH}" preserveAspectRatio="none"><polyline points="${polyPts}" fill="none" stroke="${tColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="2" fill="${tColor}"/></svg>`;
       }
       const cycleName = trendBlock ? (displayBlockName ? displayBlockName(trendBlock.name) : trendBlock.name) : '';
       h+=`<div class="trend-footer">
@@ -5910,9 +5932,6 @@ function renderHome() {
 function renderE5Components(block, isBlockComplete) {
   if (!block) return '';
   if (isBlockComplete) return ''; // block complete hero handles everything
-  const unit = getDisplayUnit();
-  const trends = getE1RMTrends(block);
-  const exec = getExecutionScore(block);
   const banners = getHomeBanners(block);
   const nwInfo = getNextWorkoutInfo();
   const currentWeekIdx = nwInfo ? nwInfo.weekIdx : (block._currentWeekIdx || 0);
@@ -5922,27 +5941,6 @@ function renderE5Components(block, isBlockComplete) {
   let headerHtml = `<div class="e6-prog-header">
     <div class="e6-prog-name">${escH(blockName)}</div>
   </div>`;
-
-  // ── Chip: Est. Total (hidden until all 3 comp lifts have data) ──
-  let chipsHtml = '';
-  if (exec.completedSessions > 0 && trends) {
-    const sQ = trends.squat?.current || 0;
-    const sB = trends.bench?.current || 0;
-    const sD = trends.deadlift?.current || 0;
-    const allThreeLogged = sQ > 0 && sB > 0 && sD > 0;
-    if (allThreeLogged) {
-      const totalE1rm = sQ + sB + sD;
-      const totalDelta = (trends.squat?.delta || 0) + (trends.bench?.delta || 0) + (trends.deadlift?.delta || 0);
-      const deltaHtml = totalDelta > 0 ? ` <span style="color:var(--green);font-size:var(--fs-xs);font-weight:600">↑${totalDelta}</span>` : totalDelta < 0 ? ` <span style="color:var(--amber);font-size:var(--fs-xs);font-weight:600">↓${Math.abs(totalDelta)}</span>` : '';
-
-      chipsHtml = `<div class="e6-chips">
-        <div class="e6-chip">
-          <div class="e6-chip-icon" style="background:rgba(var(--gold-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="14" height="14"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
-          <div><div class="e6-chip-val">${totalE1rm.toLocaleString()}<span class="unit">${unit}</span></div><div class="e6-chip-label">Est. Total${deltaHtml}</div></div>
-        </div>
-      </div>`;
-    }
-  }
 
   // ── Weeks: pills (≤4 weeks) or progress bar (>4 weeks) ──
   const totalWeeks = block.weeks.length;
@@ -6030,7 +6028,6 @@ function renderE5Components(block, isBlockComplete) {
 
   return `<div class="e6-prog-card">
     ${headerHtml}
-    ${chipsHtml}
     ${weeksHtml}
     ${splitHtml}
     ${bannerHtml}
@@ -6038,11 +6035,38 @@ function renderE5Components(block, isBlockComplete) {
 }
 
 /**
+ * _sparkDensify(vals, targetPts) — Interpolate sparse data points into a denser
+ * array with subtle variance so sparklines look organic, not ruler-straight.
+ * Endpoints are preserved exactly; interior points get small deterministic jitter.
+ */
+function _sparkDensify(vals, targetPts) {
+  if (vals.length >= targetPts) return vals;
+  const out = [];
+  const segments = vals.length - 1;
+  const ptsPerSeg = Math.max(2, Math.floor((targetPts - 1) / segments));
+  for (let s = 0; s < segments; s++) {
+    const a = vals[s], b = vals[s + 1];
+    for (let j = 0; j < ptsPerSeg; j++) {
+      const t = j / ptsPerSeg;
+      const base = a + (b - a) * t;
+      // Deterministic jitter: sine-based wobble seeded by position, zero at endpoints
+      const edgeDamp = Math.sin(t * Math.PI); // 0 at t=0 and t=1, peak at t=0.5
+      const wobble = Math.sin((s * 7 + j * 13) * 0.7) * edgeDamp;
+      const range = Math.abs(b - a) || Math.abs(a) * 0.02 || 1;
+      out.push(base + wobble * range * 0.15);
+    }
+  }
+  out.push(vals[vals.length - 1]); // exact endpoint
+  return out;
+}
+
+/**
  * renderE5Sparkline(dataPoints, status) — SVG sparkline for e1RM trend
  */
 function renderE5Sparkline(dataPoints, status) {
   if (!dataPoints || dataPoints.length < 2) return '';
-  const vals = dataPoints.map(d => d.value);
+  const raw = dataPoints.map(d => d.value);
+  const vals = _sparkDensify(raw, 10);
   const min = Math.min(...vals);
   const max = Math.max(...vals);
   const range = max - min || 1;
@@ -6055,7 +6079,7 @@ function renderE5Sparkline(dataPoints, status) {
   const lastX = vals.length === 1 ? w / 2 : w;
   const lastY = pad + ((max - vals[vals.length - 1]) / range) * (h - pad * 2);
   const color = status === 'fatigue' ? 'var(--amber)' : status === 'adapting' ? 'var(--green)' : 'var(--text-dim)';
-  return `<div class="e5-e1rm-spark"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/><circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="${color}"/></svg></div>`;
+  return `<div class="e5-e1rm-spark"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="${color}"/></svg></div>`;
 }
 
 function getGreeting() {
