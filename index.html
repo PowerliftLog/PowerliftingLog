@@ -1217,8 +1217,6 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .e5-e1rm-delta.up { color: var(--green); }
 .e5-e1rm-delta.down { color: var(--amber); }
 .e5-e1rm-delta.flat { color: var(--text-dim); }
-.e5-e1rm-spark { margin-top: var(--sp-3); height: 22px; }
-.e5-e1rm-spark svg { width: 100%; height: 22px; }
 .e5-e1rm-status { font-family: 'Barlow', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-top: var(--sp-2); }
 .e5-e1rm-status.adapting { color: var(--green); opacity: 0.8; }
 .e5-e1rm-status.fatigue { color: var(--amber); opacity: 0.8; }
@@ -1544,14 +1542,6 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 /* Cycle dropdown */
 .metrics-cycle-select { flex:1;padding:var(--sp-4) var(--sp-5);border-radius:100px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:var(--fs-lg);letter-spacing:0.04em;border:1px solid rgba(255,255,255,0.1);background:var(--bg);color:var(--text-sub);cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236b6560' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:32px;max-width:200px;overflow:hidden;text-overflow:ellipsis; }
 .metrics-cycle-select:focus { outline:none;border-color:var(--gold);color:var(--gold); }
-/* Trend footer */
-.trend-footer { display:flex;align-items:center;justify-content:space-between;padding:8px 8px 4px;margin-top:2px; }
-.trend-footer-left { display:flex;align-items:center;gap:10px; }
-.trend-footer-spark { width:64px;height:20px; }
-.trend-footer-label { font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.06em; }
-.trend-footer-sub { font-size:var(--fs-micro);color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em; }
-.trend-footer-val { font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright); }
-.trend-footer-delta { font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-sm);font-weight:700; }
 .pm-add-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); margin-bottom: var(--sp-7); }
 .pm-add-card { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); padding: var(--sp-6) var(--sp-4); background: var(--surface-2); border: 1px solid var(--border-2, rgba(255,255,255,0.06)); border-radius: 12px; cursor: pointer; transition: border-color 0.15s; }
 .pm-add-card:active { border-color: var(--gold); }
@@ -1612,7 +1602,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .variation-tabs::-webkit-scrollbar { display: none; }
 .variation-tab { flex-shrink: 0; padding: var(--sp-4) var(--sp-6); font-size: var(--fs-base); color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: 'Barlow', sans-serif; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; }
 .variation-tab.active { color: var(--accent-data); border-bottom-color: var(--accent-data); }
-.chart-wrap { padding: var(--sp-6); }
+.chart-wrap { padding: 0; }
 .chart-empty { padding: var(--sp-7) var(--sp-6); text-align: center; font-size: var(--fs-md); color: var(--text-dimmer); font-style: italic; }
 canvas.rm-chart { width: 100%; height: 140px; display: block; pointer-events: none; }
 canvas.chart-overlay { pointer-events: auto; }
@@ -2540,7 +2530,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.23.5';
-const APP_BUILD   = '3/16/26e';
+const APP_BUILD   = '3/16/26f';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3308,54 +3298,7 @@ function renderMetrics(){
 
     h+=`<div class="chart-wrap" style="position:relative"><canvas class="rm-chart" id="chart-${escH(groupKey)}" width="400" height="160" aria-label="Estimated 1RM progression for ${escH(groupKey)}"></canvas><canvas class="rm-chart chart-overlay" id="chart-${escH(groupKey)}-overlay" width="400" height="160" style="position:absolute;top:0;left:0;pointer-events:auto" aria-hidden="true"></canvas></div>`;
 
-    // ── Trend footer for comp lifts (cross-block from activePts) ──
-    if(hasData && ['squat','bench','deadlift'].includes(groupKey) && activePts.length >= 3){
-      const current = Math.round(activePts[activePts.length - 1].e1rm);
-      // Status: 5-point lookback across all data (cross-block, ~1 training block)
-      const recent = activePts.slice(-5);
-      const tDiff = Math.round(recent[recent.length - 1].e1rm) - Math.round(recent[0].e1rm);
-      const tStatus = tDiff > 5 ? 'adapting' : tDiff < -5 ? 'fatigue' : 'maintaining';
-      // Delta: scoped to current block when ≥2 points, else week-over-week across boundary
-      const activeBlockId = (state.activeBlock || state.blocks[state.blocks.length - 1])?.id;
-      const currentBlockPts = activePts.filter(p => p.blockId === activeBlockId);
-      const tDeltaVal = currentBlockPts.length >= 2
-        ? Math.round(currentBlockPts[currentBlockPts.length - 1].e1rm) - Math.round(currentBlockPts[0].e1rm)
-        : Math.round(activePts[activePts.length - 1].e1rm) - Math.round(activePts[activePts.length - 2].e1rm);
-      const tColor = tStatus === 'adapting' ? 'var(--green)' : tStatus === 'fatigue' ? 'var(--amber)' : 'var(--text-dim)';
-      const tLabel = tStatus === 'adapting' ? 'Adapting' : tStatus === 'fatigue' ? 'Fatiguing' : 'Maintaining';
-      const tDeltaHtml = tDeltaVal !== 0 ? `<span class="trend-footer-delta" style="color:${tColor}">${tDeltaVal > 0 ? '+' : ''}${tDeltaVal}${unitLabel(true)}</span>` : '';
-      // Sparkline SVG from all data points (cross-block, densified for organic look)
-      const sparkRaw = activePts.map(p => Math.round(p.e1rm));
-      let sparkSvg = '';
-      if(sparkRaw.length >= 2){
-        const sparkPts = _sparkDensify(sparkRaw, 10);
-        const sW = 64, sH = 20, sPad = 2;
-        const sMin = Math.min(...sparkPts), sMax = Math.max(...sparkPts), sRange = sMax - sMin || 1;
-        const polyPts = sparkPts.map((v, i) => {
-          const x = (i / (sparkPts.length - 1)) * sW;
-          const y = sPad + ((sMax - v) / sRange) * (sH - sPad * 2);
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(' ');
-        const endX = sW, endY = sPad + ((sMax - sparkPts[sparkPts.length-1]) / sRange) * (sH - sPad * 2);
-        sparkSvg = `<svg class="trend-footer-spark" viewBox="0 0 ${sW} ${sH}" preserveAspectRatio="none"><polyline points="${polyPts}" fill="none" stroke="${tColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="2" fill="${tColor}"/></svg>`;
-      }
-      const activeBlock = state.activeBlock || state.blocks[state.blocks.length - 1];
-      const cycleName = activeBlock ? (displayBlockName ? displayBlockName(activeBlock.name) : activeBlock.name) : '';
-      h+=`<div class="trend-footer">
-        <div class="trend-footer-left">
-          ${sparkSvg}
-          <div>
-            <div class="trend-footer-label" style="color:${tColor}">${tLabel}</div>
-            <div class="trend-footer-sub">${escH(cycleName)}</div>
-          </div>
-        </div>
-        <div style="text-align:right">
-          <div class="trend-footer-val">${current}<span class="unit-label">${unitLabel(true)}</span></div>
-          <div style="font-size:9px;color:var(--text-faint);letter-spacing:0.03em">CURRENT</div>
-          ${tDeltaHtml}
-        </div>
-      </div>`;
-    }
+    // Trend footer removed (Session 35) — sparklines + Adapting/Fatiguing/Maintaining stripped
 
     if(hasData){
       const rowsExpanded = state.metricsRowsExpanded && state.metricsRowsExpanded[groupKey];
@@ -3564,9 +3507,10 @@ function drawEmptyChart(canvasId){
 const _chartCoords={};
 const _chartSelectedPt={};
 function _handleChartTap(canvasId, event){
-  const canvas=document.getElementById(canvasId);
-  if(!canvas||!_chartCoords[canvasId]) return;
-  const rect=canvas.getBoundingClientRect();
+  const overlay=document.getElementById(canvasId+'-overlay');
+  if(!overlay||!_chartCoords[canvasId]) return;
+  // Use overlay's own rect since it receives the click event
+  const rect=overlay.getBoundingClientRect();
   // Coords are stored in logical (CSS) pixels, so map tap to logical space
   const tapX=event.clientX-rect.left;
   const tapY=event.clientY-rect.top;
@@ -3690,31 +3634,10 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   const lastBlockId=uniqueBlocks[uniqueBlocks.length-1];
   const hasCycleBoundaries=boundaries.length>0;
 
-  // ── Weighted X positioning ──
-  // When many cycles: compress old data, give current cycle more room
+  // ── Equal X spacing — always fills full chart width ──
   function getX(idx){
     if(pts.length===1) return pad.left+chartW/2;
-    if(!hasCycleBoundaries || numCycles<=2){
-      // Standard equal spacing
-      return pad.left+(idx/(pts.length-1))*chartW;
-    }
-    // Weighted: current cycle gets 30%, recent cycle 15%, rest 55%
-    const lastBoundary=boundaries[boundaries.length-1];
-    const prevBoundary=boundaries.length>=2?boundaries[boundaries.length-2]:0;
-    const oldEnd=prevBoundary;
-    const recentEnd=lastBoundary;
-    const oldW=chartW*0.55, recentW=chartW*0.15, currentW=chartW*0.30;
-    if(idx<oldEnd){
-      const t=oldEnd>0?idx/oldEnd:0;
-      return pad.left+t*oldW;
-    } else if(idx<recentEnd){
-      const t=(recentEnd-oldEnd)>0?(idx-oldEnd)/(recentEnd-oldEnd):0;
-      return pad.left+oldW+t*recentW;
-    } else {
-      const total=pts.length-1-recentEnd;
-      const t=total>0?(idx-recentEnd)/total:0;
-      return pad.left+oldW+recentW+t*currentW;
-    }
+    return pad.left+(idx/(pts.length-1))*chartW;
   }
 
   // Grid lines + y labels
@@ -3875,12 +3798,16 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   // Store coords for tap-to-inspect
   _chartCoords[canvasId]=coords;
   const overlay=document.getElementById(canvasId+'-overlay');
-  if(overlay && !overlay._chartTapBound){
-    // Size overlay to match base canvas
+  if(overlay){
+    // Re-size overlay every render to stay in sync with base canvas DPR dimensions
     overlay.width=canvas.width; overlay.height=canvas.height;
     overlay.style.width=canvas.style.width; overlay.style.height=canvas.style.height;
-    overlay.addEventListener('click',(e)=>_handleChartTap(canvasId,e));
-    overlay._chartTapBound=true;
+    if(!overlay._chartTapBound){
+      overlay.addEventListener('click',(e)=>_handleChartTap(canvasId,e));
+      overlay._chartTapBound=true;
+    }
+    // Clear stale tooltip — coords just changed
+    _chartSelectedPt[canvasId]=null;
   }
 }
 
@@ -6063,54 +5990,6 @@ function renderE5Components(block, isBlockComplete) {
     ${splitHtml}
     ${bannerHtml}
   </div>`;
-}
-
-/**
- * _sparkDensify(vals, targetPts) — Interpolate sparse data points into a denser
- * array with subtle variance so sparklines look organic, not ruler-straight.
- * Endpoints are preserved exactly; interior points get small deterministic jitter.
- */
-function _sparkDensify(vals, targetPts) {
-  if (vals.length >= targetPts) return vals;
-  const out = [];
-  const segments = vals.length - 1;
-  const ptsPerSeg = Math.max(2, Math.floor((targetPts - 1) / segments));
-  for (let s = 0; s < segments; s++) {
-    const a = vals[s], b = vals[s + 1];
-    for (let j = 0; j < ptsPerSeg; j++) {
-      const t = j / ptsPerSeg;
-      const base = a + (b - a) * t;
-      // Deterministic jitter: sine-based wobble seeded by position, zero at endpoints
-      const edgeDamp = Math.sin(t * Math.PI); // 0 at t=0 and t=1, peak at t=0.5
-      const wobble = Math.sin((s * 7 + j * 13) * 0.7) * edgeDamp;
-      const range = Math.abs(b - a) || Math.abs(a) * 0.02 || 1;
-      out.push(base + wobble * range * 0.15);
-    }
-  }
-  out.push(vals[vals.length - 1]); // exact endpoint
-  return out;
-}
-
-/**
- * renderE5Sparkline(dataPoints, status) — SVG sparkline for e1RM trend
- */
-function renderE5Sparkline(dataPoints, status) {
-  if (!dataPoints || dataPoints.length < 2) return '';
-  const raw = dataPoints.map(d => d.value);
-  const vals = _sparkDensify(raw, 10);
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const range = max - min || 1;
-  const w = 80, h = 22, pad = 2;
-  const points = vals.map((v, i) => {
-    const x = vals.length === 1 ? w / 2 : (i / (vals.length - 1)) * w;
-    const y = pad + ((max - v) / range) * (h - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-  const lastX = vals.length === 1 ? w / 2 : w;
-  const lastY = pad + ((max - vals[vals.length - 1]) / range) * (h - pad * 2);
-  const color = status === 'fatigue' ? 'var(--amber)' : status === 'adapting' ? 'var(--green)' : 'var(--text-dim)';
-  return `<div class="e5-e1rm-spark"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="${color}"/></svg></div>`;
 }
 
 function getGreeting() {
