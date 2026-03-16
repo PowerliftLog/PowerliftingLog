@@ -1,14 +1,15 @@
-const CACHE_NAME = 'liftlog-v113';
+const CACHE_NAME = 'liftlog-v116';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
   '/PowerliftingLog/parsers.js',
+  '/PowerliftingLog/reportWorker.js',
   '/PowerliftingLog/manifest.json',
   '/PowerliftingLog/icons/icon-192.png',
   '/PowerliftingLog/icons/icon-512.png',
   '/PowerliftingLog/icons/icon-180.png',
-  // CDN dependencies — required for offline use
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  // SheetJS bundled locally — no CDN dependency for offline import
+  '/PowerliftingLog/libs/xlsx.full.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
 ];
 
