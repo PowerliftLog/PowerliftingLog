@@ -551,7 +551,170 @@ function _sheetRows(wb, si) {
     .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
 }
 
-function scoreA(wb) {
+// ── RP HYPERTROPHY PARSER — SCORING ──────────────────────────────────────────
+// Detects the RP horizontal mesocycle layout: single sheet, weeks extend
+// rightward as repeating 6-column groups (Exercise/Sets/Weight/RepGoal/Results/Rating).
+function scoreRP(wb, negSignals = null) {
+  const id = 'RP';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+  try {
+    const sheetNames = wb.SheetNames;
+
+    // Negative: Tab names matching Week/Phase/Block → week-per-tab format
+    if (sheetNames.some(n => /^(week|phase|block)\s*\d/i.test(n.trim()))) {
+      score -= 0.20; negative.push('Week/Phase/Block tab names (→ week-per-tab format)');
+    }
+
+    // Negative: Multiple tabs with data (≥3 tabs with >5 rows) → not single-sheet RP
+    let sheetsWithData = 0;
+    for (const sn of sheetNames) {
+      const r = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
+      if (r.length > 5) sheetsWithData++;
+    }
+    if (sheetsWithData >= 3) {
+      score -= 0.30; negative.push('3+ data sheets (RP is single-sheet)');
+    }
+
+    const ws = wb.Sheets[sheetNames[0]];
+    if (!ws) return { id, score: 0, signals: { matched, missing, negative } };
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null})
+      .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+    // Signal 1 (+0.30): "Week N" labels in rows 0-4 at different columns spaced ≥4 apart
+    // This is the strongest signal: horizontal week layout, NOT week-per-tab.
+    let weekLabelCols = [];
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const cols = [];
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] && /^week\s*\d/i.test(String(row[c]).trim())) cols.push(c);
+      }
+      // First week label must be at col ≥ 1 (setup columns occupy col 0+)
+      if (cols.length >= 2 && cols[0] >= 1) {
+        let allSpaced = true;
+        for (let k = 1; k < cols.length; k++) {
+          if (cols[k] - cols[k-1] < 4) { allSpaced = false; break; }
+        }
+        if (allSpaced) {
+          weekLabelCols = cols;
+          score += 0.30; matched.push('Week N labels at regular horizontal intervals (' + cols.length + ' weeks)');
+          break;
+        }
+      }
+    }
+    if (weekLabelCols.length === 0) missing.push('Week N labels horizontally spaced ≥4 cols apart');
+
+    // Signal 2 (+0.25): Repeating "Exercise"/"Sets" column headers in same row
+    let hasRepeatingHeaders = false;
+    for (let i = 0; i < Math.min(6, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      let exerciseCount = 0, setsCount = 0;
+      for (let c = 0; c < row.length; c++) {
+        const n = _normalizeCell(row[c]);
+        if (n === 'exercise') exerciseCount++;
+        if (n === 'sets' || n === 'set') setsCount++;
+      }
+      if (exerciseCount >= 2 && setsCount >= 2) {
+        hasRepeatingHeaders = true;
+        score += 0.25; matched.push('Repeating Exercise/Sets headers (' + exerciseCount + 'x in row ' + i + ')');
+        break;
+      }
+    }
+    if (!hasRepeatingHeaders) missing.push('Repeating Exercise/Sets column headers (2+)');
+
+    // Signal 3 (+0.10): Setup columns A-C with exercise selection + RM estimate metadata
+    let hasSetupCols = false;
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      const n0 = _normalizeCell(row[0]);
+      if (row.length > 2) {
+        const n2 = _normalizeCell(row[2]);
+        if ((n0.includes('exercise') || n0.includes('1.)')) &&
+            (n2.includes('10rm') || n2.includes('1rm') || n2.includes('max') || n2.includes('3.)'))) {
+          hasSetupCols = true;
+          score += 0.10; matched.push('Setup columns A-C (exercise selection + RM estimate)');
+          break;
+        }
+      }
+    }
+    if (!hasSetupCols) missing.push('Setup columns A-C with exercise/RM metadata');
+
+    // Signal 4 (+0.10): Day header rows ("Day N:" in col A)
+    let dayHeaderCount = 0;
+    for (let i = 0; i < Math.min(30, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      if (row[0] && /^day\s*\d/i.test(String(row[0]).trim())) dayHeaderCount++;
+    }
+    if (dayHeaderCount >= 2) {
+      score += 0.10; matched.push(dayHeaderCount + ' Day N: header rows in col A');
+    } else {
+      missing.push('Day N: header rows in col A (≥2)');
+    }
+
+    // Signal 5 (+0.05): RIR /fail notation (RP-specific)
+    let hasFailNotation = false;
+    for (let i = 0; i < Math.min(25, rows.length) && !hasFailNotation; i++) {
+      const row = rows[i]; if (!row) continue;
+      for (const cell of row) {
+        if (cell && /\d\/fail/i.test(String(cell))) { hasFailNotation = true; break; }
+      }
+    }
+    if (hasFailNotation) {
+      score += 0.05; matched.push('RIR /fail notation found');
+    } else {
+      missing.push('RIR /fail notation');
+    }
+
+    // Negative: "Sets x Reps" combined header (→ Family F portrait grid)
+    let foundSxR = false;
+    for (let i = 0; i < Math.min(10, rows.length) && !foundSxR; i++) {
+      const row = rows[i]; if (!row) continue;
+      for (const cell of row) {
+        if (cell && /sets?\s*[x×]\s*reps?/i.test(String(cell))) {
+          score -= 0.25; negative.push('Sets×Reps combined header (→ Family F)');
+          foundSxR = true; break;
+        }
+      }
+    }
+
+    // Negative: %1RM percentage columns (→ Family E powerbuilding)
+    let foundPct = false;
+    for (let i = 0; i < Math.min(10, rows.length) && !foundPct; i++) {
+      const row = rows[i]; if (!row) continue;
+      for (const cell of row) {
+        if (cell && /%\s*1\s*rm/i.test(String(cell))) {
+          score -= 0.15; negative.push('%1RM column (→ Family E powerbuilding)');
+          foundPct = true; break;
+        }
+      }
+    }
+
+    // Negative: T1/T2/T3 tier markers (→ GZCL / Format X)
+    for (let i = 0; i < Math.min(20, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      if (row.some(c => c != null && /^T[123]$/i.test(String(c).trim()))) {
+        score -= 0.20; negative.push('T1/T2/T3 tier markers (→ Format X)'); break;
+      }
+    }
+
+    // Negative signals (pre-scanned) — RP is exempt from hasMRVMEV and hasRPLayout
+    if (negSignals) {
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+      if (negSignals.hasPreCalcWeightTable) { score -= 0.2; negative.push('pre-calc weight table (→H)'); }
+    }
+
+    return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
+  } catch (e) {
+    console.error('[liftlog] scoreRP error:', e);
+    return { id, score: 0, signals: { matched, missing, negative: ['error: ' + e.message] } };
+  }
+}
+
+function scoreA(wb, negSignals = null) {
   const id = 'A';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -588,6 +751,18 @@ function scoreA(wb) {
     score -= 0.3; negative.push('Power/Pump Phase sheets (→J)');
   }
 
+  // Negative signals (pre-scanned) — A is not exempt from any
+  if (negSignals) {
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    if (negSignals.hasPreCalcWeightTable) { score -= 0.2; negative.push('pre-calc weight table (→H)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
@@ -596,7 +771,7 @@ function scoreB(wb) {
   return { id: 'B', score: 0.0, signals: { matched: ['fallback'], missing: [], negative: [] } };
 }
 
-function scoreC(wb) {
+function scoreC(wb, negSignals = null) {
   const id = 'C';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -628,10 +803,23 @@ function scoreC(wb) {
     if (hits.length >= 2) { score -= 0.3; negative.push('2+ day columns (→A)'); break; }
   }
 
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    if (negSignals.hasPreCalcWeightTable) { score -= 0.2; negative.push('pre-calc weight table (→H)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreD(wb) {
+function scoreD(wb, negSignals = null) {
   const id = 'D';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -670,10 +858,22 @@ function scoreD(wb) {
     if (score > 0) break; // found signals in this sheet
   }
 
+  // Negative signals (pre-scanned) — D is exempt from hasTierLabels (GZCL uses tiers)
+  if (negSignals) {
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    if (negSignals.hasPreCalcWeightTable) { score -= 0.2; negative.push('pre-calc weight table (→H)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreE(wb) {
+function scoreE(wb, negSignals = null) {
   const id = 'E';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -771,17 +971,30 @@ function scoreE(wb) {
 
   if (score === 0) missing.push('day labels or Week+SxR or tabular Week/Exercise/Sets headers');
 
-  // Negative signals
+  // Negative signals (inline)
   const sheetNamesLo = wb.SheetNames.map(s => s.toLowerCase());
   if (sheetNamesLo.some(n => /1rm\s*input/i.test(n))) { score -= 0.3; negative.push('1RM Input sheet (→J)'); }
   if (sheetNamesLo.some(n => n.includes('maxes')) && wb.SheetNames.some(s => /^(bench|squat|dl)\s+\dx/i.test(s))) {
     score -= 0.3; negative.push('Maxes+training sheets (→M)');
   }
 
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.4; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.4; negative.push('Candito phase tabs (→L)'); }
+    if (negSignals.hasPreCalcWeightTable) { score -= 0.3; negative.push('pre-calc weight table (→H)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreF(wb) {
+function scoreF(wb, negSignals = null) {
   const id = 'F';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -837,10 +1050,23 @@ function scoreF(wb) {
   }
 
   if (score === 0) missing.push('2+ horizontal Week N columns with F sub-headers');
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    if (negSignals.hasPreCalcWeightTable) { score -= 0.2; negative.push('pre-calc weight table (→H)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreG(wb) {
+function scoreG(wb, negSignals = null) {
   const id = 'G';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -873,10 +1099,22 @@ function scoreG(wb) {
     break;
   }
 
+  // Negative signals (pre-scanned) — G is exempt from hasSheikoExPrefix
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    if (negSignals.hasPreCalcWeightTable) { score -= 0.2; negative.push('pre-calc weight table (→H)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreH(wb) {
+function scoreH(wb, negSignals = null) {
   const id = 'H';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -941,10 +1179,23 @@ function scoreH(wb) {
   }
 
   if (score === 0) missing.push('none of H sub-format patterns (DeathBench/Hatfield/EdCoan/Hatch/Coan-Phillipi)');
+
+  // Negative signals (pre-scanned) — H is exempt from hasPreCalcWeightTable
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreI(wb) {
+function scoreI(wb, negSignals = null) {
   const id = 'I';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -964,10 +1215,22 @@ function scoreI(wb) {
     else { score = 0.5; missing.push('Mon/Wed/Fri columns in same row'); }
   }
   if (score === 0) missing.push('Texas Method standalone cell');
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
-function scoreJ(wb) {
+function scoreJ(wb, negSignals = null) {
   const id = 'J';
   const matched = [], missing = [], negative = [];
   const names = wb.SheetNames.map(s => s.toLowerCase());
@@ -978,11 +1241,20 @@ function scoreJ(wb) {
   if (has1RM) matched.push('1RM Input sheet'); else missing.push('1RM Input sheet');
   if (hasPhase) matched.push('Power Phase / Pump Phase sheet'); else missing.push('Power/Pump Phase sheet');
 
-  const score = (has1RM && hasPhase) ? 0.95 : (has1RM || hasPhase) ? 0.35 : 0;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = (has1RM && hasPhase) ? 0.95 : (has1RM || hasPhase) ? 0.35 : 0;
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreK(wb) {
+function scoreK(wb, negSignals = null) {
   const id = 'K';
   const matched = [], missing = [], negative = [];
   const names = wb.SheetNames.map(s => s.toLowerCase());
@@ -1008,11 +1280,20 @@ function scoreK(wb) {
   if (hasGroupMarker) { matched.push('(A)/(B)/(C) group markers in col A'); }
   else missing.push('(A)-(E) group markers in col A of training sheets');
 
-  const score = (hasGroupMarker) ? 0.9 : 0.3;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = (hasGroupMarker) ? 0.9 : 0.3;
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreL(wb) {
+function scoreL(wb, negSignals = null) {
   const id = 'L';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -1040,10 +1321,21 @@ function scoreL(wb) {
   }
 
   if (score === 0) missing.push('Candito name or Strength Hypertrophy/Control/Power sheet names');
-  return { id, score, signals: { matched, missing, negative } };
+
+  // Negative signals (pre-scanned) — L is exempt from hasCandidoPhases
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreM(wb) {
+function scoreM(wb, negSignals = null) {
   const id = 'M';
   const matched = [], missing = [], negative = [];
 
@@ -1070,11 +1362,20 @@ function scoreM(wb) {
   if (hasWeek1) matched.push('Week 1 label in training sheet col A');
   else missing.push('Week 1 in training sheet col A');
 
-  const score = (hasMaxes && hasTraining && hasWeek1) ? 0.95 : 0.4;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = (hasMaxes && hasTraining && hasWeek1) ? 0.95 : 0.4;
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreN(wb) {
+function scoreN(wb, negSignals = null) {
   const id = 'N';
   const matched = [], missing = [], negative = [];
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
@@ -1115,7 +1416,7 @@ function scoreN(wb) {
   return { id, score: 0, signals: { matched, missing, negative } };
 }
 
-function scoreO(wb) {
+function scoreO(wb, negSignals = null) {
   const id = 'O';
   const matched = [], missing = [], negative = [];
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
@@ -1154,11 +1455,21 @@ function scoreO(wb) {
   }
   if (hasSQ && hasBN) matched.push('SQ/BN exercise prefix labels'); else missing.push('SQ/BN prefix labels');
 
-  const score = (hasExactHeaders && hasDayCol && hasSQ && hasBN) ? 0.95 : (hasExactHeaders || hasDayCol) ? 0.35 : 0.1;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = (hasExactHeaders && hasDayCol && hasSQ && hasBN) ? 0.95 : (hasExactHeaders || hasDayCol) ? 0.35 : 0.1;
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreP(wb) {
+function scoreP(wb, negSignals = null) {
   const id = 'P';
   const matched = [], missing = [], negative = [];
 
@@ -1191,11 +1502,22 @@ function scoreP(wb) {
   }
   if (foundWeek1) matched.push('Week 1 marker'); else missing.push('Week 1 in col 1');
 
-  const score = (hasFatigue && foundWeek1) ? 0.9 : (hasFatigue || foundWeek1) ? 0.4 : 0.2;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = (hasFatigue && foundWeek1) ? 0.9 : (hasFatigue || foundWeek1) ? 0.4 : 0.2;
+
+  // Negative signals (pre-scanned) — P is exempt from hasFatiguePercents and hasRPETargetColumn
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreQ(wb) {
+function scoreQ(wb, negSignals = null) {
   const id = 'Q';
   const matched = [], missing = [], negative = [];
 
@@ -1230,7 +1552,7 @@ function scoreQ(wb) {
   return { id, score: 0, signals: { matched, missing, negative } };
 }
 
-function scoreR(wb) {
+function scoreR(wb, negSignals = null) {
   const id = 'R';
   const matched = [], missing = [], negative = [];
   const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -1261,11 +1583,20 @@ function scoreR(wb) {
   for (let r = 0; r < 4; r++) { if (_rGetCell(sheet, r, 0) === 'Exercise') { hasExerciseInTop4 = true; break; } }
   if (hasExerciseInTop4) { score -= 0.2; negative.push('Exercise in rows 0-3 col A (not PHUL)'); }
 
-  const score = (hasTarget && hasSetLabel && hasRepLabel && !hasExerciseInTop4) ? 0.9 : 0.3;
+  let score = (hasTarget && hasSetLabel && hasRepLabel && !hasExerciseInTop4) ? 0.9 : 0.3;
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+  }
+
   return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreS(wb) {
+function scoreS(wb, negSignals = null) {
   const id = 'S';
   const matched = [], missing = [], negative = [];
 
@@ -1293,11 +1624,20 @@ function scoreS(wb) {
   }
   if (hasSectionHeader) matched.push('section headers (digit: ...Power/HT)'); else missing.push('section headers in col A');
 
-  const score = (hasSetScheme && hasSectionHeader) ? 0.9 : (hasSetScheme || hasSectionHeader) ? 0.4 : 0.15;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = (hasSetScheme && hasSectionHeader) ? 0.9 : (hasSetScheme || hasSectionHeader) ? 0.4 : 0.15;
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreT(wb) {
+function scoreT(wb, negSignals = null) {
   const id = 'T';
   const matched = [], missing = [], negative = [];
   const sheets = wb.SheetNames;
@@ -1330,11 +1670,22 @@ function scoreT(wb) {
   if (headersMatch) { matched.push('Day/Muscle Group/Exercise/Sets/Reps headers'); }
   else { missing.push('exact headers: Day, Muscle Group, Exercise, Sets, Reps'); }
 
-  const score = headersMatch ? 0.95 : 0.3;
-  return { id, score, signals: { matched, missing, negative } };
+  let score = headersMatch ? 0.95 : 0.3;
+
+  // Negative signals (pre-scanned) — T is exempt from hasMRVMEV
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreU(wb) {
+function scoreU(wb, negSignals = null) {
   const id = 'U';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -1391,10 +1742,21 @@ function scoreU(wb) {
   }
 
   if (score === 0) missing.push('T1/T2/T3 tier markers + Sets/Reps/Weight columns (or T1:/T2:/T3: prefixes + Week cols)');
-  return { id, score, signals: { matched, missing, negative } };
+
+  // Negative signals (pre-scanned) — U is exempt from hasTierLabels
+  if (negSignals) {
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
+  return { id, score: Math.max(0, score), signals: { matched, missing, negative } };
 }
 
-function scoreV(wb) {
+function scoreV(wb, negSignals = null) {
   const id = 'V';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -1440,11 +1802,23 @@ function scoreV(wb) {
   }
 
   if (score < 0.8) missing.push('RIR/RPE or % load + Day N + Exercise header in week sheets');
-  return { id, score: Math.min(1.0, score), signals: { matched, missing, negative } };
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
+  return { id, score: Math.min(1.0, Math.max(0, score)), signals: { matched, missing, negative } };
 }
 
 // ── FORMAT W SCORE (Simple Specific Scientific coaching template) ─────────────
-function scoreW(wb) {
+function scoreW(wb, negSignals = null) {
   const id = 'W';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -1532,11 +1906,23 @@ function scoreW(wb) {
   }
 
   if (score === 0) missing.push('"SIMPLE SPECIFIC SCIENTIFIC" title, WEEK N horizontal headers');
+
+  // Negative signals (pre-scanned)
+  if (negSignals) {
+    if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+    if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+    if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+    if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+    if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+    if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+  }
+
   return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
 }
 
 // ── FORMAT X SCORE (GZCLP / GZCL family — tiered week-tab structure) ─────────
-function scoreX(wb) {
+function scoreX(wb, negSignals = null) {
   const id = 'X';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -1607,6 +1993,16 @@ function scoreX(wb) {
       }
     } else {
       missing.push('Week tab data for structure checks');
+    }
+
+    // Negative signals (pre-scanned) — X is exempt from hasTierLabels
+    if (negSignals) {
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
     }
 
     return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
@@ -1856,7 +2252,7 @@ function _fc_buildPrescription(sets, reps) {
   return sStr + 'x' + rStr;
 }
 
-function scoreFamilyC(wb) {
+function scoreFamilyC(wb, negSignals = null) {
   var id = 'FAMILYC';
   var matched = [], missing = [], negative = [];
   var score = 0;
@@ -1932,6 +2328,17 @@ function scoreFamilyC(wb) {
         score -= 0.3;
         negative.push('2+ weekday columns in header (→A)');
       }
+    }
+
+    // Negative signals (pre-scanned)
+    if (negSignals) {
+      if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
     }
 
     return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
@@ -2047,7 +2454,7 @@ function parseFamilyC(wb) {
   }];
 }
 
-function scoreFamilyB(wb) {
+function scoreFamilyB(wb, negSignals = null) {
   var id = 'FAMILYB';
   var matched = [], missing = [], negative = [];
   var score = 0;
@@ -2085,6 +2492,17 @@ function scoreFamilyB(wb) {
       matched.push('Family B day-section pattern (day name → Exercise/Sets/Reps header)');
     } else {
       missing.push('day-section pattern: text-only row in col A followed by Exercise/Sets/Reps header');
+    }
+
+    // Negative signals (pre-scanned)
+    if (negSignals) {
+      if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
     }
 
     return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
@@ -2209,6 +2627,7 @@ function _tryParse(wb, formatId) {
       case 'FAMILYF': return parseFamilyF(wb);
       case 'FAMILYB': return parseFamilyB(wb);
       case 'FAMILYC': return parseFamilyC(wb);
+      case 'RP': return parseRP(wb);
       case 'ADAPTIVE': return parseAdaptive(wb);
       default: return null;
     }
@@ -2235,18 +2654,142 @@ function _scoreOutputQuality(blocks) {
   return score;
 }
 
+// ── NEGATIVE SIGNAL PRE-SCAN ─────────────────────────────────────────────────
+// Scans the workbook ONCE for structural anti-patterns that suppress wrong parsers.
+// Called by detectFormat() before running score functions, passed as second arg.
+function _detectNegativeSignals(wb) {
+  const signals = {
+    hasTierLabels: false,         // T1/T2/T3 in column A-B (GZCL signature)
+    hasSheikoExPrefix: false,     // "Ex." prefix on exercise rows (Sheiko signature)
+    hasFatiguePercents: false,    // "Fatigue %" or "Fatigue Percents" header (RTS signature)
+    hasRPETargetColumn: false,    // "RPE Target" as column header (BBM signature)
+    hasMRVMEV: false,             // MRV/MEV/MAV text in cells (RP volume landmark)
+    hasRPLayout: false,           // RP horizontal layout: Est 10RM + repeating week groups
+    hasAttemptColumns: false,     // Meet day "Opener"/"2nd"/"3rd" attempt columns
+    hasCandidoPhases: false,      // Candito phase sheet tabs (Hypertrophy/Strength/Peaking Phase)
+    hasPreCalcWeightTable: false, // Hatfield-style number grids (entire row is numbers, no prescriptions)
+  };
+
+  try {
+    const sheetNames = wb.SheetNames;
+    const sheetNamesLo = sheetNames.map(s => s.toLowerCase().trim());
+
+    // --- Sheet-tab-level signals ---
+
+    // Candito phase names as sheet tabs
+    // Specific patterns: "Hypertrophy Phase", "Strength Phase" etc. OR Candito-specific names
+    // Also match: phase names as standalone tab groups (≥2 distinct phases with 2-4 sheets each, ≤12 total)
+    const candidoExactRe = /\b(hypertrophy\s*phase|strength\s*phase|peaking\s*phase|strength\s*hypertrophy|strength\s*control|strength\s*power)\b/i;
+    if (sheetNamesLo.filter(n => candidoExactRe.test(n)).length >= 2) {
+      signals.hasCandidoPhases = true;
+    }
+    // Also check: compact multi-phase structure (3 phases, ≤12 sheets total — Candito-like)
+    if (!signals.hasCandidoPhases) {
+      const phaseRe = /\b(hypertrophy|strength|peaking)\b/i;
+      const distinctPhases = new Set();
+      for (const n of sheetNamesLo) {
+        const m = n.match(phaseRe);
+        if (m) distinctPhases.add(m[1].toLowerCase());
+      }
+      // Must have all 3 Candito phases and ≤12 total sheets (block-overview has 17)
+      if (distinctPhases.size >= 3 && distinctPhases.has('hypertrophy') && distinctPhases.has('strength') && distinctPhases.has('peaking') && sheetNames.length <= 12) {
+        signals.hasCandidoPhases = true;
+      }
+    }
+
+    // --- Cell-level signals (scan all sheets, with row limit for efficiency) ---
+    const maxSheets = sheetNames.length;
+    for (let si = 0; si < maxSheets; si++) {
+      const rows = _sheetRows(wb, si);
+      if (!rows || rows.length < 3) continue;
+      // Scan first 50 rows for early sheets, first 15 for later sheets
+      const maxRows = si < 6 ? 50 : 15;
+
+      for (let i = 0; i < Math.min(maxRows, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+
+        for (let c = 0; c < Math.min(row.length, 30); c++) {
+          const val = row[c]; if (val == null) continue;
+          const str = String(val).trim();
+          const lo = str.toLowerCase();
+
+          // T1/T2/T3 tier labels (columns A-B)
+          if (c <= 1 && /^T[123]$/i.test(str)) {
+            signals.hasTierLabels = true;
+          }
+
+          // Sheiko "Ex." prefix (e.g. "Ex. 1", "Ex. 2")
+          if (c <= 1 && /^Ex\.\s*\d/i.test(str)) {
+            signals.hasSheikoExPrefix = true;
+          }
+
+          // Fatigue Percents / Fatigue % header
+          if (/fatigue\s*(%|percents?)/i.test(str)) {
+            signals.hasFatiguePercents = true;
+          }
+
+          // RPE Target column header
+          if (/^rpe\s*target$/i.test(str)) {
+            signals.hasRPETargetColumn = true;
+          }
+
+          // MRV/MEV/MAV cells
+          if (/\b(MRV|MEV|MAV)\b/.test(str)) {
+            signals.hasMRVMEV = true;
+          }
+
+          // Attempt columns (meet day)
+          if (/^(opener|2nd\s*attempt|3rd\s*attempt|2nd|3rd)$/i.test(str)) {
+            signals.hasAttemptColumns = true;
+          }
+        }
+
+        // RP layout: check for "Est 10RM" or "Est. 10RM" + repeating week headers in header rows
+        if (i < 6) {
+          const rowStrs = row.map(v => v == null ? '' : String(v).trim());
+          const hasEst10RM = rowStrs.some(s => /est\.?\s*10\s*rm/i.test(s));
+          const weekCount = rowStrs.filter(s => /^week\s*\d/i.test(s)).length;
+          if (hasEst10RM && weekCount >= 2) {
+            signals.hasRPLayout = true;
+          }
+        }
+
+        // Pre-calculated weight table: row of 6+ numbers with header row above containing % labels
+        if (i >= 2 && !signals.hasPreCalcWeightTable) {
+          const numericCells = row.filter(v => typeof v === 'number');
+          const textCells = row.filter(v => v != null && typeof v === 'string' && /[a-zA-Z]{2,}/.test(v));
+          if (numericCells.length >= 6 && textCells.length <= 1) {
+            // Verify: header row within 2 rows above should contain percentage labels
+            for (let hi = Math.max(0, i - 2); hi < i; hi++) {
+              const hrow = rows[hi]; if (!hrow) continue;
+              const pctCount = hrow.filter(v => v != null && /\d+\s*%/.test(String(v))).length;
+              if (pctCount >= 3) { signals.hasPreCalcWeightTable = true; break; }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[liftlog] _detectNegativeSignals error:', e);
+  }
+
+  return signals;
+}
+
 // ── FORMAT DETECTION ──────────────────────────────────────────────────────────
 function detectFormat(wb){
   try {
+    const negSignals = _detectNegativeSignals(wb);
     const scores = [
-      scoreA(wb), scoreC(wb), scoreD(wb), scoreE(wb), scoreF(wb),
-      scoreG(wb), scoreH(wb), scoreI(wb), scoreJ(wb), scoreK(wb),
-      scoreL(wb), scoreM(wb), scoreN(wb), scoreO(wb), scoreP(wb),
-      scoreQ(wb), scoreR(wb), scoreS(wb), scoreT(wb), scoreU(wb),
-      scoreV(wb), scoreW(wb), scoreX(wb), scoreFamilyE(wb),
-      scoreFamilyF(wb),
-      scoreFamilyC(wb),
-      scoreFamilyB(wb),
+      scoreRP(wb, negSignals),
+      scoreA(wb, negSignals), scoreC(wb, negSignals), scoreD(wb, negSignals), scoreE(wb, negSignals), scoreF(wb, negSignals),
+      scoreG(wb, negSignals), scoreH(wb, negSignals), scoreI(wb, negSignals), scoreJ(wb, negSignals), scoreK(wb, negSignals),
+      scoreL(wb, negSignals), scoreM(wb, negSignals), scoreN(wb, negSignals), scoreO(wb, negSignals), scoreP(wb, negSignals),
+      scoreQ(wb, negSignals), scoreR(wb, negSignals), scoreS(wb, negSignals), scoreT(wb, negSignals), scoreU(wb, negSignals),
+      scoreV(wb, negSignals), scoreW(wb, negSignals), scoreX(wb, negSignals), scoreFamilyE(wb, negSignals),
+      scoreFamilyF(wb, negSignals),
+      scoreFamilyC(wb, negSignals),
+      scoreFamilyB(wb, negSignals),
       scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
     ].sort((a, b) => b.score - a.score);
 
@@ -2786,11 +3329,219 @@ function _validateParseOutput(blocks, formatId) {
   return { valid: true, reason: null, score };
 }
 
+// ── RP HYPERTROPHY PARSER — HELPERS ──────────────────────────────────────────
+
+// Find the row containing 2+ "Week N" / "Deload" labels in different columns.
+function _rp_findWeekLabelRow(rows) {
+  for (let i = 0; i < Math.min(6, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const weekStarts = [];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] && /^(week\s*\d+|deload)/i.test(String(row[c]).trim())) {
+        weekStarts.push({ col: c, label: String(row[c]).trim() });
+      }
+    }
+    if (weekStarts.length >= 2) return { weekLabelRow: i, weekStarts };
+  }
+  return null;
+}
+
+// Find the column header row (contains "Exercise" AND "Sets") after the week label row.
+function _rp_findColHeaderRow(rows, weekLabelRow) {
+  for (let i = weekLabelRow + 1; i < Math.min(weekLabelRow + 4, rows.length); i++) {
+    const row = rows[i]; if (!row) continue;
+    const strs = row.map(c => _normalizeCell(c));
+    if (strs.includes('exercise') && (strs.includes('sets') || strs.includes('set'))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// Map column offsets within a single week group starting at baseCol.
+function _rp_mapOffsets(headerRow, baseCol) {
+  const offsets = { exercise: 0, sets: 1, weight: 2, repGoal: 3 };
+  if (!headerRow) return offsets;
+  for (let o = 0; o <= 5; o++) {
+    const n = _normalizeCell(headerRow[baseCol + o]);
+    if (n === 'exercise') offsets.exercise = o;
+    else if (n === 'sets' || n === 'set') offsets.sets = o;
+    else if (n === 'weight') offsets.weight = o;
+    else if (n === 'rep goal' || n === 'rep target' || n === 'reps') offsets.repGoal = o;
+  }
+  return offsets;
+}
+
+// Find day section boundaries (rows where col A matches "Day N:" or split name).
+function _rp_findDayBounds(rows, colHeaderRow) {
+  const bounds = [];
+  let current = null;
+  for (let i = colHeaderRow + 1; i < rows.length; i++) {
+    const row = rows[i]; if (!row) continue;
+    const cell0 = row[0] != null ? String(row[0]).trim() : '';
+    if (/^day\s*\d/i.test(cell0) || /^(push|pull|upper|lower|full\s*body)/i.test(cell0)) {
+      if (current) { current.endRow = i - 1; bounds.push(current); }
+      current = { label: cell0.replace(/:$/, '').trim(), startRow: i + 1, endRow: rows.length - 1 };
+    }
+  }
+  if (current) bounds.push(current);
+  return bounds;
+}
+
+// Build prescription string from sets/repGoal/weight values.
+function _rp_buildPrescription(setsVal, repGoalVal, weightVal) {
+  const setsStr = String(setsVal || '').trim();
+  const repStr = String(repGoalVal || '').trim();
+  if (!setsStr || !repStr) return null;
+  let pres = setsStr + 'x' + repStr;
+  if (weightVal && String(weightVal).trim()) {
+    pres += ' @' + String(weightVal).trim() + 'lbs';
+  }
+  return pres;
+}
+
+// ── RP HYPERTROPHY PARSER ─────────────────────────────────────────────────────
+// Parses the horizontal mesocycle layout: single sheet, weeks extend rightward.
+// Setup cols 0-2: exercise name (master list), video link, Est. 10RM.
+// Week groups (6 cols each): Exercise / Sets / Weight / Rep Goal / Results / Rating.
+function parseRP(wb) {
+  const blocks = [];
+  for (const sn of wb.SheetNames) {
+    try {
+      const sheet = wb.Sheets[sn];
+      if (!sheet) continue;
+      const rawRows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null});
+      const rows = rawRows.map(r => r ? r.map(c =>
+        (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
+
+      // Step 1: Find week label row
+      const weekInfo = _rp_findWeekLabelRow(rows);
+      if (!weekInfo) continue;
+      const { weekLabelRow, weekStarts } = weekInfo;
+
+      // Step 2: Find column header row
+      const colHeaderRow = _rp_findColHeaderRow(rows, weekLabelRow);
+      if (colHeaderRow < 0) continue;
+      const headerRow = rows[colHeaderRow];
+
+      // Step 3: Detect setup 10RM column (cols before first week group start)
+      let setup10RMCol = -1;
+      for (let c = 0; c < weekStarts[0].col; c++) {
+        const n = _normalizeCell(headerRow ? headerRow[c] : null);
+        if (n.includes('10rm') || n.includes('1rm') || n.includes('max')) {
+          setup10RMCol = c; break;
+        }
+      }
+
+      // Step 4: Find day section boundaries
+      const dayBounds = _rp_findDayBounds(rows, colHeaderRow);
+      if (dayBounds.length === 0) continue;
+
+      // Step 5: Extract maxes from setup 10RM column using comp lift classification
+      const maxes = {};
+      if (setup10RMCol >= 0) {
+        for (const db of dayBounds) {
+          for (let r = db.startRow; r <= db.endRow; r++) {
+            const row = rows[r]; if (!row) continue;
+            const exName = row[0] != null ? String(row[0]).trim() : '';
+            const rmVal = row[setup10RMCol];
+            if (!exName || typeof rmVal !== 'number') continue;
+            const group = _classifyLiftBase(exName);
+            if (group && !maxes[group]) maxes[group] = rmVal;
+          }
+        }
+      }
+
+      // Step 6: Build weeks — iterate each week group, extract exercises per day
+      const weeks = [];
+      for (const weekStart of weekStarts) {
+        const baseCol = weekStart.col;
+        const weekLabel = weekStart.label;
+        const offsets = _rp_mapOffsets(headerRow, baseCol);
+        const days = [];
+
+        for (const db of dayBounds) {
+          const exercises = [];
+          for (let r = db.startRow; r <= db.endRow; r++) {
+            const row = rows[r]; if (!row) continue;
+
+            // Prefer setup col A (master exercise list), fall back to week group col
+            const setupName = row[0] != null ? String(row[0]).trim() : '';
+            const weekColName = row[baseCol + offsets.exercise] != null
+              ? String(row[baseCol + offsets.exercise]).trim() : '';
+            const rawName = setupName || weekColName;
+            if (!rawName) continue;
+
+            // Skip day header rows and column header terms
+            if (/^day\s*\d/i.test(rawName)) continue;
+            const normName = _normalizeCell(rawName);
+            if (normName === 'exercise' || normName.includes('exercise selection')) continue;
+
+            const setsVal = row[baseCol + offsets.sets];
+            const weightVal = row[baseCol + offsets.weight];
+            const repGoalVal = row[baseCol + offsets.repGoal];
+            const setsNum = (setsVal != null && String(setsVal).trim())
+              ? parseInt(String(setsVal), 10) : null;
+            const repGoalStr = repGoalVal != null ? String(repGoalVal).trim() : '';
+            const weightStr = (weightVal != null && String(weightVal).trim())
+              ? String(weightVal).trim() : null;
+
+            if (!setsNum && !repGoalStr) continue;
+
+            let prescription = null;
+            let note = null;
+            if (setsNum && repGoalStr) {
+              const pres = _rp_buildPrescription(setsNum, repGoalStr, weightStr);
+              // Long deload text: truncate prescription, store full text in note
+              if (pres && pres.length > 30) {
+                prescription = setsNum + 'x(deload)';
+                note = repGoalStr;
+              } else {
+                prescription = pres;
+              }
+            }
+
+            exercises.push({
+              name: rawName,
+              prescription: prescription || '',
+              note,
+              supersetGroup: null,
+              sets: [],
+              coachNotes: []
+            });
+          }
+          if (exercises.length > 0) {
+            days.push({ name: db.label, exercises });
+          }
+        }
+        if (days.length > 0) weeks.push({ label: weekLabel, days });
+      }
+
+      if (weeks.length === 0) continue;
+
+      const id = sn + '_' + Date.now();
+      blocks.push({
+        id,
+        name: sn,
+        format: 'RP',
+        athleteName: null,
+        dateRange: null,
+        maxes,
+        weeks
+      });
+    } catch (e) {
+      console.error('[parseRP] Error parsing sheet "' + sn + '":', e);
+    }
+  }
+  return blocks;
+}
+
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
 function parseWorkbook(wb){
   const fmt = detectFormat(wb);
   let blocks;
-  if (fmt === 'A') blocks = parseA(wb);
+  if (fmt === 'RP') blocks = parseRP(wb);
+  else if (fmt === 'A') blocks = parseA(wb);
   else if (fmt === 'I') blocks = parseTexasMethod(wb);
   else if (fmt === 'J') blocks = parseHepburn(wb);
   else if (fmt === 'K') blocks = parseBulgarianMethod(wb);
@@ -5759,11 +6510,14 @@ function _parseSingleSetGroup(seg){
   // NxM @weight lbs/kg  e.g. "3x6 @330lbs"
   r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\s*$/i);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight=parseFloat(r[3]),unit=r[4].toLowerCase(); return Array.from({length:n},()=>({reps,weight,unit})); }
+  // NxM @BW[+N[unit]] — bodyweight  e.g. "3x8 @BW+45", "3x10 @BW", "4x5 @BW+90lbs"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*BW(\+(\d+(?:\.\d+)?))?\s*(lbs?|kg)?\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight='BW'+(r[3]||''),unit=r[5]?r[5].toLowerCase():undefined; const obj={reps,weight,isRpe:true}; if(unit)obj.unit=unit; return Array.from({length:n},()=>({...obj})); }
   // NxM @-drop%  e.g. "2x7 @-15%"
-  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)%\s*$/);
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),dropPercent=parseFloat(r[3])/100; return Array.from({length:n},()=>({reps,dropPercent})); }
   // NxM @%  e.g. "5x8 @75%"
-  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)%\s*$/);
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100; return Array.from({length:n},()=>({reps,percentage})); }
   // NxM @0.decimal  e.g. "3x5 @0.80"
   r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(0\.\d+)\s*$/);
@@ -5789,6 +6543,11 @@ function _parseSingleSetGroup(seg){
   // NxM plain (for comma-split context only)  e.g. "3x5"  — n≤20 guard prevents warmup "135x8" producing 135 sets
   r=seg.match(/^(\d+)\s*x\s*(\d+)\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); if(n>20) return null; return Array.from({length:n},()=>({reps})); }
+  // Cluster sets (for comma-split context)  e.g. "4x(3+2+1)", "3x(2+2+2) @85%"
+  r=seg.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=r[2].trim(),percentage=parseFloat(r[3])/100; return Array.from({length:n},()=>({reps,percentage})); }
+  r=seg.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=r[2].trim(); return Array.from({length:n},()=>({reps})); }
   // Bare number (for comma-split context)  e.g. "5"
   r=seg.match(/^(\d+)\s*$/);
   if(r){ return [{reps:parseInt(r[1])}]; }
@@ -5797,12 +6556,56 @@ function _parseSingleSetGroup(seg){
 
 function parseSets(pres){
   if(!pres) return [];
-  pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
+  pres = pres.replace(/×/g, 'x').trim(); /* normalize unicode multiply + trim whitespace */
   const cached = _parseSetsCache.get(pres);
   if(cached !== undefined) return cached;
+  // Strip EMOM / E\dMOM prefix or suffix  e.g. "EMOM 10x1 @85%", "E2MOM 5x3", "10x1 EMOM"
+  {
+    const emomStripped = pres.replace(/^E\d*MOM\s+/i,'').replace(/\s+E\d*MOM$/i,'').trim();
+    if(emomStripped !== pres && emomStripped.length > 0){
+      const sets = parseSets(emomStripped);
+      _parseSetsCache.set(pres,sets); return sets;
+    }
+  }
   // Bail out if prescription is a set range like "3-5x1 (405)" — let parseRangeSet handle it
-  if(/^\d+[\-–]\d+\s*x/i.test(pres.trim())) { _parseSetsCache.set(pres,[]); return []; }
+  if(/^\d+[\-–]\d+\s*x/i.test(pres)) { _parseSetsCache.set(pres,[]); return []; }
 
+  // RSR-style "NxM or NxM" alternative notation: "110x1 or 105x1" → 2 sets
+  {
+    const orMatch = pres.match(/^(\d+)\s*x\s*(\d+)\s+or\s+(\d+)\s*x\s*(\d+)$/i);
+    if(orMatch){
+      const sets=[{reps:parseInt(orMatch[2]),weight:orMatch[1]},{reps:parseInt(orMatch[4]),weight:orMatch[3]}];
+      _parseSetsCache.set(pres,sets); return sets;
+    }
+  }
+  // RSR-style trailing set count: "80x2 x6" → 6 sets of {reps:2, weight:'80'}
+  {
+    const rsrMatch = pres.match(/^(\d+)\s*x\s*(\d+)\s+x\s*(\d+)$/i);
+    if(rsrMatch){
+      const weight=rsrMatch[1],reps=parseInt(rsrMatch[2]),n=parseInt(rsrMatch[3]);
+      const sets=Array.from({length:n},()=>({reps,weight}));
+      _parseSetsCache.set(pres,sets); return sets;
+    }
+  }
+  // RSR-style bare high-intensity: "110x1" where first number > 20 → single set
+  {
+    const highMatch = pres.match(/^(\d+)\s*x\s*(\d+)$/);
+    if(highMatch && parseInt(highMatch[1]) > 20){
+      const sets=[{reps:parseInt(highMatch[2]),weight:highMatch[1]}];
+      _parseSetsCache.set(pres,sets); return sets;
+    }
+  }
+
+  // Wave loading: "135/155/175 x 5" — slash-separated weights, fixed reps
+  {
+    const waveM = pres.match(/^(\d+(?:\/\d+)+)\s*x\s*(\d+)\s*$/i);
+    if(waveM){ const weights=waveM[1].split('/'),reps=parseInt(waveM[2]); const sets=weights.map(w=>({reps,weight:w.trim()})); _parseSetsCache.set(pres,sets); return sets; }
+  }
+  // Descending reps: "5/4/3/2/1" — slash-separated rep counts, no weight
+  {
+    const descM = pres.match(/^(\d+(?:\/\d+)+)\s*$/);
+    if(descM){ const sets=descM[1].split('/').map(n=>({reps:parseInt(n)})); _parseSetsCache.set(pres,sets); return sets; }
+  }
   // Semicolon split: "1x5 @RPE5; 2x7 @-15%" → parse each segment and concat
   if(pres.includes(';')){
     const segs=pres.split(';').map(s=>s.trim()).filter(Boolean);
@@ -5826,6 +6629,11 @@ function parseSets(pres){
     if(sets.length>0){ _parseSetsCache.set(pres,sets); return sets; }
   }
 
+  // Per-set RPE: "3x5 @7,8,9" — must precede comma-split to avoid mis-segmentation
+  {
+    const rpeListM = pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*([\d.]+(?:,[\d.]+)+)\s*$/);
+    if(rpeListM){ const n=parseInt(rpeListM[1]),reps=parseInt(rpeListM[2]); const rpes=rpeListM[3].split(',').map(Number); if(rpes.length===n && rpes.every(v=>!isNaN(v))){ const sets=rpes.map(rpe=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; } }
+  }
   // Comma split: "5@6, 5@7, 2x5@8" or "3x5, 5x3, 1x1+" — each segment parsed via helper
   if(pres.includes(',')){
     const segs=pres.split(',').map(s=>s.trim()).filter(Boolean);
@@ -5852,11 +6660,17 @@ function parseSets(pres){
   // NxM @weight lbs/kg  e.g. "3x6 @330lbs"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\s*$/i);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight=parseFloat(r[3]),unit=r[4].toLowerCase(); const sets=Array.from({length:n},()=>({reps,weight,unit})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @BW[+N[unit]] — bodyweight  e.g. "3x8 @BW+45", "3x10 @BW", "4x5 @BW+90lbs"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*BW(\+(\d+(?:\.\d+)?))?\s*(lbs?|kg)?\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight='BW'+(r[3]||''),unit=r[5]?r[5].toLowerCase():undefined; const obj={reps,weight,isRpe:true}; if(unit)obj.unit=unit; const sets=Array.from({length:n},()=>({...obj})); _parseSetsCache.set(pres,sets); return sets; }
   // NxM @-drop%  e.g. "2x7 @-15%"
-  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)%\s*$/);
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),dropPercent=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,dropPercent})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @N% RPE N / @N% @RPE N / @N% @N — dual modifier (before single @%)
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*@?\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100,rpe=parseFloat(r[4]); const sets=Array.from({length:n},()=>({reps,percentage,rpe})); _parseSetsCache.set(pres,sets); return sets; }
   // NxM @%  e.g. "5x8 @75%"
-  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)%\s*$/);
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
   // NxM @0.decimal  e.g. "3x5 @0.80"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(0\.\d+)\s*$/);
@@ -5876,6 +6690,11 @@ function parseSets(pres){
   // +Nunit xR xS (relative weight offset)  e.g. "+5kg x6 x2"
   r=pres.match(/^\+(\d+(?:\.\d+)?)\s*(kg|lbs?)\s*x\s*(\d+)\s*x\s*(\d+)\s*$/i);
   if(r){ const weight='+'+r[1],unit=r[2].toLowerCase(),reps=parseInt(r[3]),n=parseInt(r[4]); const sets=Array.from({length:n},()=>({reps,weight,unit})); _parseSetsCache.set(pres,sets); return sets; }
+  // Cluster sets: "4x(3+2+1)" or "3x(2+2+2) @85%"
+  r=pres.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=r[2].trim(),percentage=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
+  r=pres.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=r[2].trim(); const sets=Array.from({length:n},()=>({reps})); _parseSetsCache.set(pres,sets); return sets; }
 
   _parseSetsCache.set(pres,[]);
   return [];
@@ -12749,6 +13568,16 @@ function _w_computeDateRange(rows, weekHeaderRow, weekPositions) {
 
 // ── ADAPTIVE PARSER — SESSION 1: OCCUPANCY MATRIX + REGION DETECTION ─────────
 // Pure utility functions — no side effects on existing parsers or pipeline.
+//
+// Node.js compatibility: XLSX is a browser global (loaded via <script>).
+// In Node test contexts the test runner sets global.XLSX = require('xlsx').
+// As an additional guard, resolve XLSX here so the adaptive functions work
+// even when the caller hasn't pre-set the global.
+/* eslint-disable no-var */
+if (typeof XLSX === 'undefined' && typeof require === 'function') {
+  try { var XLSX = require('xlsx'); } catch (_e) { /* browser / bundled env — ignore */ }
+}
+/* eslint-enable no-var */
 
 /**
  * _resolveMergedCells(ws)
@@ -13654,7 +14483,7 @@ function _buildPrescription(sets, reps, loadStr, rpeVal, pctVal) {
 
   if (rpeVal != null) {
     const r = Number(rpeVal);
-    if (Number.isFinite(r) && r >= 5 && r <= 10) loadPart = ' @RPE ' + r;
+    if (Number.isFinite(r) && r >= 5 && r <= 10) loadPart = ' @RPE' + r;
   }
 
   if (!loadPart && pctVal != null) {
@@ -13678,7 +14507,7 @@ function _buildPrescription(sets, reps, loadStr, rpeVal, pctVal) {
           // Negative decimal → percentage drop (e.g. -0.15 → @-15%)
           loadPart = ' @' + Math.round(n * 100) + '%';
         } else if (n >= 5 && n <= 10) {
-          loadPart = ' @RPE ' + n;                              // integer 5-10 → RPE
+          loadPart = ' @RPE' + n;                              // integer 5-10 → RPE
         } else if (n >= 50 && n <= 105) {
           loadPart = ' @' + n + '%';                            // 50-105 → percentage
         } else if (n > 20) {
@@ -14649,7 +15478,7 @@ function _fe_buildNote(colMap, row) {
 }
 
 // Score function: returns { id, score, signals }
-function scoreFamilyE(wb) {
+function scoreFamilyE(wb, negSignals = null) {
   const id = 'FAMILYE';
   const matched = [], missing = [], negative = [];
   let score = 0;
@@ -14768,6 +15597,17 @@ function scoreFamilyE(wb) {
       matched.push('1 ALL-CAPS day header row found');
     } else {
       missing.push('ALL-CAPS day header rows in col A');
+    }
+
+    // Negative signals (pre-scanned)
+    if (negSignals) {
+      if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
     }
 
     return { id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched, missing, negative } };
@@ -15031,7 +15871,7 @@ function _ff_isDayHeader(row) {
 }
 
 // ── scoreFamilyF ──────────────────────────────────────────────────────────────
-function scoreFamilyF(wb) {
+function scoreFamilyF(wb, negSignals = null) {
   var id = 'FAMILYF';
   var matched = [], missing = [], negative = [];
   var score = 0;
@@ -15237,6 +16077,17 @@ function scoreFamilyF(wb) {
       matched.push('Client/Trainer metadata in header rows');
     } else {
       missing.push('Client/Trainer metadata');
+    }
+
+    // Negative signals (pre-scanned)
+    if (negSignals) {
+      if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
     }
 
     return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
@@ -15476,7 +16327,7 @@ if (typeof module !== 'undefined' && module.exports) {
     isCompLift, _classifyLiftBase, classifyLift: _classifyLiftBase, canonicalizeLift, _getBaseName,
     _smartExerciseMatch, _extractPrimaryKeyword,
     EXERCISE_DICT, editDistance, spellCorrectWord, spellCorrectExerciseName,
-    DAYS, detectFormat, detectF, detectG,
+    DAYS, _detectNegativeSignals, detectFormat, detectF, detectG,
     parseA, parseASheet, parseB, parseBSheet,
     parseWorkbook,
     parseE, parseE_nSuns, parseE_tabular, parseE_phaseGrid, parseE_weekText, parseE_cycleWeek, parseE_parallel531,
@@ -15535,6 +16386,9 @@ if (typeof module !== 'undefined' && module.exports) {
     scoreFamilyF, parseFamilyF,
     _ff_isNonWorkoutTab, _ff_findHeaderRow, _ff_mapColumns, _ff_buildPrescription,
     _ff_isBlankRow, _ff_isDayHeader, _ff_parseWeekTab, _ff_parsePortraitGrid,
+    // RP Hypertrophy Parser (Horizontal Mesocycle Format)
+    scoreRP, parseRP,
+    _rp_findWeekLabelRow, _rp_findColHeaderRow, _rp_mapOffsets, _rp_findDayBounds, _rp_buildPrescription,
   };
 }
 
