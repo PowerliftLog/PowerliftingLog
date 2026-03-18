@@ -2852,7 +2852,7 @@ const ISOMETRIC_KEYWORDS = ['plank','wall sit','iso hold','isometric','dead hang
 const WEIGHTED_OVERRIDES = ['db ','db\t','dumbbell','bb ','bb\t','barbell','cable','machine','kettlebell','kb ','band','weighted','smith','ez ','ez-'];
 const NON_BARBELL_PREFIXES = ['db ','db\t','dumbbell','cable','machine','kettlebell','kb ','band','smith','ez ','ez-'];
 // isBarbellMovement() removed — zero callers since Session 16. _isBarbellExercise() is the live replacement.
-const TIMED_PATTERN=/\d+\s*(min|sec|s|m)\b/i;
+const TIMED_PATTERN=/\d+\s*(min|sec|s|m)\b|max\s*time|\btime\s*\(/i;
 function getExerciseInputMode(name,pres){
   const n=name.toLowerCase().trim();
   // Explicit weighted overrides — DB, BB, cable, machine, kettlebell etc.
@@ -6872,8 +6872,24 @@ function _buildWorkoutSummaryCard(block, week, day) {
     }
   });
   const forceLog = state.logs[lk(block.id, week.label, day.name, '__complete__')] || {};
-  const startTs = forceLog.startedAt || 0;
-  const endTs = forceLog.completedAt || forceLog.ts || 0;
+  let startTs = forceLog.startedAt || 0;
+  let endTs = forceLog.completedAt || forceLog.ts || 0;
+  // Fallback: if timestamps missing (old build), estimate from set timestamps
+  if (!startTs || !endTs) {
+    let earliest = Infinity, latest = 0;
+    day.exercises.forEach(ex => {
+      const baseKey = lk(block.id, week.label, day.name, ex.name);
+      for (let si = 0; si < 30; si++) {
+        const sl = state.logs[baseKey + `||s${si}`];
+        if (sl && sl.ts) {
+          if (sl.ts < earliest) earliest = sl.ts;
+          if (sl.ts > latest) latest = sl.ts;
+        }
+      }
+    });
+    if (!startTs && earliest < Infinity) startTs = earliest;
+    if (!endTs && latest > 0) endTs = latest;
+  }
   let durStr = '\u2014';
   if (startTs && endTs) {
     const mins = Math.round((endTs - startTs) / 60000);
