@@ -540,6 +540,58 @@ function fixDateSerials(ws, rows) {
   return rows;
 }
 
+/**
+ * Detects when Excel stored a comma-separated weight list as a single number
+ * (thousands-separator interpretation). e.g., "455,495" → val=455495, cell.w="455,495".
+ * Returns array of individual weights, or null if the value is a normal single weight.
+ * @param {number} val - raw numeric value from sheet_to_json
+ * @param {object} ws  - worksheet object (for cell.w access)
+ * @param {number} row - 0-indexed row
+ * @param {number} col - 0-indexed column
+ * @returns {number[]|null}
+ */
+function _detectMultiWeight(val, ws, row, col) {
+  if (typeof val !== 'number' || val <= 1500) return null;
+  const addr = XLSX.utils.encode_cell({r: row, c: col});
+  const cell = ws[addr];
+  if (!cell || !cell.w) return null;
+  const formatted = cell.w;
+  if (!formatted.includes(',')) return null;
+  const weights = formatted.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+  if (weights.length < 2) return null;
+  if (weights.some(w => w < 20 || w > 1500)) return null;
+  const minW = Math.min(...weights);
+  const maxW = Math.max(...weights);
+  if (maxW > minW * 3) return null;
+  return weights;
+}
+
+/**
+ * Builds a prescription string from an explicit set count, rep count, and multiple weights.
+ * Distributes sets across weights; groups consecutive identical weights.
+ * e.g., sets=3, reps='1', weights=[455,495] → '2x1(455); 1x1(495)'
+ */
+function _buildMultiWeightPrescription(sets, reps, weights) {
+  const assignments = [];
+  if (weights.length >= sets) {
+    for (let k = 0; k < sets; k++) assignments.push(weights[k]);
+  } else {
+    const firstCount = sets - weights.length + 1;
+    for (let k = 0; k < firstCount; k++) assignments.push(weights[0]);
+    for (let k = 1; k < weights.length; k++) assignments.push(weights[k]);
+  }
+  const groups = [];
+  for (const w of assignments) {
+    if (groups.length > 0 && groups[groups.length - 1].weight === w) {
+      groups[groups.length - 1].count++;
+    } else {
+      groups.push({ weight: w, count: 1 });
+    }
+  }
+  const repsStr = reps != null ? String(reps) : '1';
+  return groups.map(g => `${g.count}x${repsStr}(${g.weight})`).join('; ');
+}
+
 // ── CONFIDENCE SCORE FUNCTIONS ────────────────────────────────────────────────
 // Each returns { id, score (0.0–1.0), signals: { matched[], missing[], negative[] } }
 // Pure functions — no side effects. Read wb directly.
@@ -2964,7 +3016,7 @@ function parseB(wb){
   for(const sn of wb.SheetNames){
     try{
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
-      const week=parseBSheet(sn,rows);
+      const week=parseBSheet(sn,rows,wb.Sheets[sn]);
       if(week) weeks.push(week);
     }catch(e){ console.error(`[parseB] Error parsing sheet "${sn}":`,e); }
   }
@@ -2975,7 +3027,7 @@ function parseB(wb){
   return blocks;
 }
 
-function parseBSheet(sn,rows){
+function parseBSheet(sn,rows,ws){
   if(!rows||rows.length===0) return null;
   const days=[]; let curDay=null;
   let colPres=1, colLogged=2;
@@ -3137,7 +3189,12 @@ function parseBSheet(sn,rows){
           const reps = vs.replace(/^x\s*/i, '');
           const wt = row[c-1];
           if(typeof wt === 'number' && wt > 0){
-            parts.push(`1x${reps}(${Math.round(wt)})`);
+            const mw = (ws && wt > 1500) ? _detectMultiWeight(wt, ws, i, c-1) : null;
+            if (mw) {
+              for (const w of mw) parts.push(`1x${reps}(${w})`);
+            } else {
+              parts.push(`1x${reps}(${Math.round(wt)})`);
+            }
           } else {
             parts.push(`1x${reps}`);
           }
@@ -4883,7 +4940,7 @@ function parseCAutoFormat(wb) {
       const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
       fixDateSerials(wb.Sheets[sn], rawRows);
       const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
-      const week = parseCAutoSheet(sn, rows);
+      const week = parseCAutoSheet(sn, rows, wb.Sheets[sn]);
       if (week) blocks.push(week);
     } catch(e) { console.error(`[parseCAutoFormat] Error parsing sheet "${sn}":`, e); }
   }
@@ -4929,7 +4986,7 @@ function extractCAutoMeta(rows) {
   return meta;
 }
 
-function parseCAutoSheet(sn, rows) {
+function parseCAutoSheet(sn, rows, ws) {
   if (!rows || rows.length === 0) return null;
 
   let setsIdx = -1, repsIdx = -1, loadIdx = -1, exIdx = -1;
@@ -5007,7 +5064,11 @@ function parseCAutoSheet(sn, rows) {
 
     const setsRaw = row[setsIdx] != null ? String(row[setsIdx]).trim() : '';
     const repsRaw = row[repsIdx] != null ? String(row[repsIdx]).trim() : '';
-    const loadVal = loadIdx >= 0 && row[loadIdx] != null ? String(row[loadIdx]).trim() : '';
+    const loadRaw = loadIdx >= 0 ? row[loadIdx] : null;
+    const loadVal = loadRaw != null ? String(loadRaw).trim() : '';
+    const multiWeights = (ws && loadRaw != null && typeof loadRaw === 'number')
+      ? _detectMultiWeight(loadRaw, ws, i, loadIdx)
+      : null;
 
     const isSimpleNum = (v) => /^\d+\.?\d*$/.test(v);
     const isFullPrescription = (v) => !isSimpleNum(v) && v.length > 0 && (
@@ -5031,13 +5092,18 @@ function parseCAutoSheet(sn, rows) {
     }
 
     if (loadVal && !isFullPrescription(setsRaw)) {
-      const cleanLoad = loadVal.replace(/\.0$/, '');
-      if (/^\d+/.test(cleanLoad)) {
-        pres += '(' + cleanLoad + ')';
-      } else if (/rpe/i.test(cleanLoad)) {
-        pres += ' ' + cleanLoad;
-      } else if (cleanLoad) {
-        pres += ' ' + cleanLoad;
+      if (multiWeights) {
+        const setsNum = parseInt(setsVal) || 1;
+        pres = _buildMultiWeightPrescription(setsNum, repsVal || '1', multiWeights);
+      } else {
+        const cleanLoad = loadVal.replace(/\.0$/, '');
+        if (/^\d+/.test(cleanLoad)) {
+          pres += '(' + cleanLoad + ')';
+        } else if (/rpe/i.test(cleanLoad)) {
+          pres += ' ' + cleanLoad;
+        } else if (cleanLoad) {
+          pres += ' ' + cleanLoad;
+        }
       }
     }
 
@@ -5422,8 +5488,12 @@ function parseF_stride15(wb) {
           const rr = repsVal != null ? String(repsVal) : '';
           const wt = typeof weight === 'number' && weight > 0 ? weight : null;
           if (rr || wt) {
-            if (wt) sets.push(s + 'x' + rr + '(' + (Math.round(wt * 10) / 10) + ')');
-            else if (rr) sets.push(s + 'x' + rr);
+            if (wt) {
+              const mw = wt > 1500 ? _detectMultiWeight(weight, ws, r, exCol + 1) : null;
+              sets.push(mw
+                ? _buildMultiWeightPrescription(s, rr || '1', mw)
+                : s + 'x' + rr + '(' + (Math.round(wt * 10) / 10) + ')');
+            } else if (rr) sets.push(s + 'x' + rr);
           }
         }
 
@@ -5515,6 +5585,7 @@ function parseF_stride6(wb) {
           const wv = weightOff >= 0 ? row[gb + weightOff] : null;
           const rr = rv != null ? String(rv) : '';
           const wt = typeof wv === 'number' && wv > 0 ? Math.round(wv) : null;
+          const mw = (typeof wv === 'number' && wv > 1500) ? _detectMultiWeight(wv, ws, r, gb + weightOff) : null;
           // Read RPE from separate column
           const rpeRaw = rpeOff >= 0 && row[gb + rpeOff] != null ? String(row[gb + rpeOff]).trim() : '';
           const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
@@ -5526,8 +5597,11 @@ function parseF_stride6(wb) {
           }
 
           let pres = '';
-          if (sv > 0 && rr && wt) pres = sv + 'x' + rr + '(' + wt + ')' + rpeSuffix;
-          else if (sv > 0 && rr) pres = sv + 'x' + rr + rpeSuffix;
+          if (sv > 0 && rr && wt) {
+            pres = mw
+              ? _buildMultiWeightPrescription(sv, rr, mw) + rpeSuffix
+              : sv + 'x' + rr + '(' + wt + ')' + rpeSuffix;
+          } else if (sv > 0 && rr) pres = sv + 'x' + rr + rpeSuffix;
 
           const wk = pos.week, dy = pos.day;
           if (!weekMap[wk]) weekMap[wk] = {};
@@ -5757,7 +5831,12 @@ function parseF_stride1(wb) {
               if (rv != null && rv !== '') reps = String(rv);
             }
             if (typeof weight === 'number' && weight > 0) {
-              sets.push(reps ? '1x' + reps + '(' + Math.round(weight) + ')' : String(Math.round(weight)));
+              const mw = weight > 1500 ? _detectMultiWeight(weight, ws, ri, wc.col) : null;
+              if (mw) {
+                for (const w of mw) sets.push(reps ? '1x' + reps + '(' + w + ')' : String(w));
+              } else {
+                sets.push(reps ? '1x' + reps + '(' + Math.round(weight) + ')' : String(Math.round(weight)));
+              }
             }
           }
           weekSets.push(sets);
@@ -7208,7 +7287,13 @@ function parseTexasMethod(wb) {
           } else if (typeof val === 'number' || /^[\d.]+$/.test(valStr)) {
             // Numeric weight — combine with day's SxR scheme
             const wt = typeof val === 'number' ? Math.round(val * 10) / 10 : valStr;
-            if (/^\d+x\d/.test(daySxr)) {
+            const mw = typeof val === 'number' ? _detectMultiWeight(val, ws, i, colIdx) : null;
+            if (mw && /^\d+x\d/.test(daySxr)) {
+              const sxrMatch = daySxr.match(/^(\d+)x(\d+)/);
+              prescription = sxrMatch
+                ? _buildMultiWeightPrescription(parseInt(sxrMatch[1]), sxrMatch[2], mw)
+                : mw.map(w => `1x1(${w})`).join('; ');
+            } else if (/^\d+x\d/.test(daySxr)) {
               prescription = `${daySxr}(${wt})`;
             } else {
               prescription = String(wt);
@@ -16337,6 +16422,7 @@ if (typeof module !== 'undefined' && module.exports) {
     parseD, parseDSheet, buildDPrescription,
     deduplicateExerciseNames,
     parseSets, parseSimple, parseRangeSet, parseBarePres, parseWarmupSets,
+    _detectMultiWeight, _buildMultiWeightPrescription,
     parseCSVRows, detectCSVFormat, parseCSVImport,
     detectTexasMethodFmt, parseTexasMethod,
     detectHepburnFmt, parseHepburn,
