@@ -2559,8 +2559,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.25.1';
-const APP_BUILD   = '3/18/26b';
+const APP_VERSION = 'v0.25.2';
+const APP_BUILD   = '3/18/26c';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2639,20 +2639,32 @@ function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_sa
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
 
 // ── Keyboard-open detection — hide nav + rest timer when input focused ────────
+// Blur-on-scroll: dismiss keyboard when user scrolls >50px (matches iOS native behavior)
 (function(){
   let _kbTimer=null;
+  let _scrollY0=null;
   document.addEventListener('focusin', e => {
     if(e.target.matches&&e.target.matches('.set-input, .note-input, textarea')) {
       clearTimeout(_kbTimer);
       document.body.classList.add('keyboard-open');
+      _scrollY0=window.scrollY;
     }
   });
   document.addEventListener('focusout', e => {
     if(e.target.matches&&e.target.matches('.set-input, .note-input, textarea')) {
       // Small delay — prevents flicker when tapping between inputs
-      _kbTimer=setTimeout(()=>document.body.classList.remove('keyboard-open'), 150);
+      _kbTimer=setTimeout(()=>{ document.body.classList.remove('keyboard-open'); _scrollY0=null; }, 150);
     }
   });
+  // Dismiss keyboard when user scrolls >60px from where they focused
+  document.addEventListener('scroll', () => {
+    if(_scrollY0!=null && document.body.classList.contains('keyboard-open')) {
+      if(Math.abs(window.scrollY-_scrollY0)>60) {
+        const el=document.activeElement;
+        if(el&&el.matches('.set-input, .note-input, textarea')) el.blur();
+      }
+    }
+  }, {passive:true});
 })();
 
 // Global Escape key handler — dismiss topmost open modal
