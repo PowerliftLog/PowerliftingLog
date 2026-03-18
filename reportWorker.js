@@ -43,9 +43,9 @@ const LIFT_GROUPS = {
 };
 
 const COMP_KEYWORDS = {
-  squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat','barbell back squat','barbell low bar squat','barbell comp squat','barbell competition squat'],
-  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift'],
+  squat:    ['squat','squats','back squat','back squats','low bar squat','low bar squats','barbell squat','barbell squats','comp squat','competition squat','barbell back squat','barbell low bar squat','barbell comp squat','barbell competition squat'],
+  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press','1 sec bench press','1 sec bench','1 sec pause bench','1 sec paused bench','1 sec paused bench press','1ct bench','1ct bench press','1 count bench','1 count bench press','barbell pause bench','barbell paused bench','barbell paused bench press'],
+  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift','sumo deadlift','sumo pull','sumo','barbell sumo deadlift','barbell sumo'],
 };
 
 const VARIATION_MODIFIERS = [
@@ -69,8 +69,8 @@ const VARIATION_MODIFIERS = [
   'hatfield','cyclist','overhead squat','ohs','zombie','walkout','jefferson',
   // Effort/touch modifiers
   'dead stop','speed','dynamic effort','eccentric','isometric','floating','1.5 rep',
-  // Stance/position
-  'wide stance','narrow stance','sumo stance','sumo deadlift','sumo pull','sumo dead','heel elevated','beltless',
+  // Stance/position (sumo deadlift/pull removed — sumo IS a competition deadlift)
+  'wide stance','narrow stance','sumo stance','heel elevated','beltless',
   // High bar squat — variation, not comp (some lifters use as comp but default to variation)
   'high bar',
 ];
@@ -120,7 +120,26 @@ const SYNONYM_MAP = {
   'paused bench press':   'Bench Press',
   'pause bench':          'Bench Press',
   'pause bench press':    'Bench Press',
+  '1 sec bench press':    'Bench Press',
+  '1 sec bench':          'Bench Press',
+  '1 sec pause bench':    'Bench Press',
+  '1 sec paused bench':   'Bench Press',
+  '1 sec paused bench press': 'Bench Press',
+  '1ct bench':            'Bench Press',
+  '1ct bench press':      'Bench Press',
+  '1 count bench':        'Bench Press',
+  '1 count bench press':  'Bench Press',
+  'barbell pause bench':  'Bench Press',
+  'barbell paused bench': 'Bench Press',
+  'barbell paused bench press': 'Bench Press',
   'raw bench':            'Bench Press',
+
+  // ── Sumo Deadlift (comp variant — distinct from conventional) ──
+  'sumo deadlift':        'Sumo Deadlift',
+  'sumo pull':            'Sumo Deadlift',
+  'sumo':                 'Sumo Deadlift',
+  'barbell sumo deadlift':'Sumo Deadlift',
+  'barbell sumo':         'Sumo Deadlift',
 
   // ── Comp Deadlift synonyms ──
   'deadlift':             'Deadlift',
@@ -323,6 +342,41 @@ const SYNONYM_MAP = {
   'chest fly':             'Chest Fly',
   'pec fly':               'Chest Fly',
   'pec dec':               'Pec Dec',
+
+  // ── High Bar Squat additions ──
+  'high bar back squat':   'High Bar Squat',
+  'hb back squat':         'High Bar Squat',
+  'barbell high bar squat':'High Bar Squat',
+
+  // ── Nordic Curl synonyms ──
+  'nordic curl':           'Nordic Curl',
+  'nordic hamstring curl': 'Nordic Curl',
+
+  // ── Chest Supported Row synonyms ──
+  'chest supported row':   'Chest Supported Row',
+  'chest-supported row':   'Chest Supported Row',
+
+  // ── Cable Fly synonyms ──
+  'cable fly':             'Cable Fly',
+  'cable flye':            'Cable Fly',
+  'cable crossover':       'Cable Fly',
+
+  // ── Incline Dumbbell Press synonyms ──
+  'incline dumbbell press':'Incline Dumbbell Press',
+  'dumbbell incline press':'Incline Dumbbell Press',
+  'incline db press':      'Incline Dumbbell Press',
+
+  // ── Tricep Extension synonyms ──
+  'tricep extension':      'Tricep Extension',
+  'triceps extension':     'Tricep Extension',
+
+  // ── Calf Raise variations ──
+  'standing calf raise':   'Standing Calf Raise',
+  'seated calf raise':     'Seated Calf Raise',
+
+  // ── Hip Abduction / Adduction ──
+  'hip abduction':         'Hip Abduction',
+  'hip adduction':         'Hip Adduction',
 };
 
 // RTS RPE chart: maps reps @ RPE to % of 1RM
@@ -1031,6 +1085,22 @@ function _getReportDataWorker(snapshot) {
     };
     const prevData = _getReportDataWorker(prevSnapshot);
     if (prevData) {
+      // Count completed sessions per lift family in previous block.
+      // A "completed session" = a unique weekLabel||dayName with at least one
+      // logged set carrying actual weight data for that lift family.
+      const _prevSessions = { squat: new Set(), bench: new Set(), deadlift: new Set() };
+      for (const [key, val] of Object.entries(prevData.blockLogs)) {
+        const pts = key.split('||');
+        if (pts.length < 5 || !pts[4].startsWith('s')) continue;
+        if (!val.done) continue;
+        const exName = pts[3];
+        const grp = classifyLift(canonicalizeLift(exName)) || classifyLift(exName);
+        if (!grp || !_prevSessions[grp]) continue;
+        // Require actual weight data: either user-entered weight or a done set
+        // (done implies prescribed weight was used)
+        const hasWeight = (val.actual && parseFloat(val.actual) > 0) || val.done;
+        if (hasWeight) _prevSessions[grp].add(pts[1] + '||' + pts[2]);
+      }
       blockDeltas = {};
       for (const gk of ['squat', 'bench', 'deadlift']) {
         const currE1rm = compLifts[gk]?.bestE1rm || 0;
@@ -1038,7 +1108,8 @@ function _getReportDataWorker(snapshot) {
         blockDeltas[gk] = {
           current: currE1rm, previous: prevE1rm,
           delta: currE1rm && prevE1rm ? currE1rm - prevE1rm : null,
-          prevBlockName: displayBlockName(prevData.block.name)
+          prevBlockName: displayBlockName(prevData.block.name),
+          prevCompletedSessions: _prevSessions[gk].size
         };
       }
     }

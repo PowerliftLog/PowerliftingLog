@@ -14,9 +14,9 @@ const LIFT_GROUPS = {
 };
 
 const COMP_KEYWORDS = {
-  squat:    ['squat','back squat','low bar squat','barbell squat','comp squat','competition squat','barbell back squat','barbell low bar squat','barbell comp squat','barbell competition squat'],
-  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift'],
+  squat:    ['squat','squats','back squat','back squats','low bar squat','low bar squats','barbell squat','barbell squats','comp squat','competition squat','barbell back squat','barbell low bar squat','barbell comp squat','barbell competition squat'],
+  bench:    ['bench','bench press','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press','1 sec bench press','1 sec bench','1 sec pause bench','1 sec paused bench','1 sec paused bench press','1ct bench','1ct bench press','1 count bench','1 count bench press','barbell pause bench','barbell paused bench','barbell paused bench press'],
+  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift','sumo deadlift','sumo pull','sumo','barbell sumo deadlift','barbell sumo'],
 };
 
 const VARIATION_MODIFIERS = [
@@ -40,8 +40,8 @@ const VARIATION_MODIFIERS = [
   'hatfield','cyclist','overhead squat','ohs','zombie','walkout','jefferson',
   // Effort/touch modifiers
   'dead stop','speed','dynamic effort','eccentric','isometric','floating','1.5 rep',
-  // Stance/position
-  'wide stance','narrow stance','sumo stance','sumo deadlift','sumo pull','sumo dead','heel elevated','beltless',
+  // Stance/position (sumo deadlift/pull removed — sumo IS a competition deadlift)
+  'wide stance','narrow stance','sumo stance','heel elevated','beltless',
   // High bar squat — variation, not comp (some lifters use as comp but default to variation)
   'high bar',
 ];
@@ -173,7 +173,26 @@ const SYNONYM_MAP = {
   'paused bench press':   'Bench Press',
   'pause bench':          'Bench Press',
   'pause bench press':    'Bench Press',
+  '1 sec bench press':    'Bench Press',
+  '1 sec bench':          'Bench Press',
+  '1 sec pause bench':    'Bench Press',
+  '1 sec paused bench':   'Bench Press',
+  '1 sec paused bench press': 'Bench Press',
+  '1ct bench':            'Bench Press',
+  '1ct bench press':      'Bench Press',
+  '1 count bench':        'Bench Press',
+  '1 count bench press':  'Bench Press',
+  'barbell pause bench':  'Bench Press',
+  'barbell paused bench': 'Bench Press',
+  'barbell paused bench press': 'Bench Press',
   'raw bench':            'Bench Press',
+
+  // ── Sumo Deadlift (comp variant — distinct from conventional) ──
+  'sumo deadlift':        'Sumo Deadlift',
+  'sumo pull':            'Sumo Deadlift',
+  'sumo':                 'Sumo Deadlift',
+  'barbell sumo deadlift':'Sumo Deadlift',
+  'barbell sumo':         'Sumo Deadlift',
 
   // ── Comp Deadlift synonyms ──
   'deadlift':             'Deadlift',
@@ -376,6 +395,41 @@ const SYNONYM_MAP = {
   'chest fly':             'Chest Fly',
   'pec fly':               'Chest Fly',
   'pec dec':               'Pec Dec',
+
+  // ── High Bar Squat additions ──
+  'high bar back squat':   'High Bar Squat',
+  'hb back squat':         'High Bar Squat',
+  'barbell high bar squat':'High Bar Squat',
+
+  // ── Nordic Curl synonyms ──
+  'nordic curl':           'Nordic Curl',
+  'nordic hamstring curl': 'Nordic Curl',
+
+  // ── Chest Supported Row synonyms ──
+  'chest supported row':   'Chest Supported Row',
+  'chest-supported row':   'Chest Supported Row',
+
+  // ── Cable Fly synonyms ──
+  'cable fly':             'Cable Fly',
+  'cable flye':            'Cable Fly',
+  'cable crossover':       'Cable Fly',
+
+  // ── Incline Dumbbell Press synonyms ──
+  'incline dumbbell press':'Incline Dumbbell Press',
+  'dumbbell incline press':'Incline Dumbbell Press',
+  'incline db press':      'Incline Dumbbell Press',
+
+  // ── Tricep Extension synonyms ──
+  'tricep extension':      'Tricep Extension',
+  'triceps extension':     'Tricep Extension',
+
+  // ── Calf Raise variations ──
+  'standing calf raise':   'Standing Calf Raise',
+  'seated calf raise':     'Seated Calf Raise',
+
+  // ── Hip Abduction / Adduction ──
+  'hip abduction':         'Hip Abduction',
+  'hip adduction':         'Hip Adduction',
 };
 
 /**
@@ -1633,9 +1687,9 @@ function scoreR(wb, negSignals = null) {
 
   let hasExerciseInTop4 = false;
   for (let r = 0; r < 4; r++) { if (_rGetCell(sheet, r, 0) === 'Exercise') { hasExerciseInTop4 = true; break; } }
-  if (hasExerciseInTop4) { score -= 0.2; negative.push('Exercise in rows 0-3 col A (not PHUL)'); }
 
   let score = (hasTarget && hasSetLabel && hasRepLabel && !hasExerciseInTop4) ? 0.9 : 0.3;
+  if (hasExerciseInTop4) { score -= 0.2; negative.push('Exercise in rows 0-3 col A (not PHUL)'); }
 
   // Negative signals (pre-scanned)
   if (negSignals) {
@@ -5392,7 +5446,7 @@ function parseF_stride3(wb) {
             const presParts = [];
             for (const s of groupSets) {
               const sc = s.setsNum > 0 ? s.setsNum : 1;
-              const rpeSuffix = (s.rpe && /^\d+(\.\d+)?$/.test(s.rpe)) ? ' @RPE ' + s.rpe : '';
+              const rpeSuffix = (s.rpe && /^\d+(\.\d+)?(-\d+(\.\d+)?)?$/.test(s.rpe)) ? ' @RPE ' + s.rpe : '';
               if (s.weight != null && s.weight > 0 && s.reps) {
                 presParts.push(sc + 'x' + s.reps + '(' + (Math.round(s.weight * 10) / 10) + ')' + rpeSuffix);
               } else if (s.reps) {
@@ -5588,7 +5642,7 @@ function parseF_stride6(wb) {
           const mw = (typeof wv === 'number' && wv > 1500) ? _detectMultiWeight(wv, ws, r, gb + weightOff) : null;
           // Read RPE from separate column
           const rpeRaw = rpeOff >= 0 && row[gb + rpeOff] != null ? String(row[gb + rpeOff]).trim() : '';
-          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
+          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?(-\d+(\.\d+)?)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
           // Read notes column
           let exNote = '';
           if (noteOff >= 0 && row[gb + noteOff] != null) {
@@ -5704,7 +5758,7 @@ function parseF_pctLoad(wb) {
           const wt = typeof load === 'number' && load > 0 ? Math.round(load) : null;
           // Read RPE from separate column if available
           const rpeRaw = (sec.rpeCols && sec.rpeCols[w] != null && row[sec.rpeCols[w]] != null) ? String(row[sec.rpeCols[w]]).trim() : '';
-          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
+          const rpeSuffix = (rpeRaw && /^\d+(\.\d+)?(-\d+(\.\d+)?)?$/.test(rpeRaw)) ? ' @RPE ' + rpeRaw : '';
           let pres = '';
           if (sets > 0 && reps && wt) pres = sets + 'x' + reps + '(' + wt + ')' + rpeSuffix;
           else if (sets > 0 && reps) pres = sets + 'x' + reps + rpeSuffix;
@@ -6578,14 +6632,14 @@ function _parseSingleSetGroup(seg){
   }
   let r;
   // NxAMRAP @RPE — aliases: AMRAP, AMAP, MR, F
-  r=seg.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
-  if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[3]); return Array.from({length:n},()=>({reps:'AMRAP',rpe,amrap:true})); }
+  r=seg.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*@\s*RPE\s*(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),rpeRaw=r[3].replace(/\s+/g,''),rpe=/^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$/.test(rpeRaw)?(rpeRaw.includes('-')?rpeRaw:parseFloat(rpeRaw)):undefined; if(rpe!==undefined) return Array.from({length:n},()=>({reps:'AMRAP',rpe,amrap:true})); }
   // NxAMRAP bare — aliases: AMRAP, AMAP, MR, F
   r=seg.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*$/i);
   if(r){ const n=parseInt(r[1]); return Array.from({length:n},()=>({reps:'AMRAP',amrap:true})); }
-  // NxM @RPE (with keyword)  e.g. "3x5 @RPE8"
-  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
-  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); return Array.from({length:n},()=>({reps,rpe})); }
+  // NxM @RPE (with keyword)  e.g. "3x5 @RPE8" or "3x5 @RPE 7-8"
+  r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*RPE\s*(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpeRaw=r[3].replace(/\s+/g,''),rpe=/^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$/.test(rpeRaw)?(rpeRaw.includes('-')?rpeRaw:parseFloat(rpeRaw)):undefined; if(rpe!==undefined) return Array.from({length:n},()=>({reps,rpe})); }
   // NxM @weight lbs/kg  e.g. "3x6 @330lbs"
   r=seg.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\s*$/i);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight=parseFloat(r[3]),unit=r[4].toLowerCase(); return Array.from({length:n},()=>({reps,weight,unit})); }
@@ -6614,8 +6668,8 @@ function _parseSingleSetGroup(seg){
   r=seg.match(/^(\d+)\s*x\s*\?\s*$/);
   if(r){ const n=parseInt(r[1]); if(n>20) return null; return Array.from({length:n},()=>({reps:'?'})); }
   // Range-set with @RPE (for comma-split context)  e.g. "2-3x3@9"
-  r=seg.match(/^(\d+)[\-–](\d+)\s*x\s*(\d+)\s*@\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
-  if(r){ const n=parseInt(r[1]),reps=parseInt(r[3]),rpe=parseFloat(r[4]); return Array.from({length:n},()=>({reps,rpe})); }
+  r=seg.match(/^(\d+)[\-–](\d+)\s*x\s*(\d+)\s*@\s*(?:RPE\s*)?(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[3]),rpeRaw=r[4].replace(/\s+/g,''),rpe=/^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$/.test(rpeRaw)?(rpeRaw.includes('-')?rpeRaw:parseFloat(rpeRaw)):undefined; if(rpe!==undefined) return Array.from({length:n},()=>({reps,rpe})); }
   // +Nunit xR xS (relative weight, from-zero offset)  e.g. "+5kg x6 x2"
   r=seg.match(/^\+(\d+(?:\.\d+)?)\s*(kg|lbs?)\s*x\s*(\d+)\s*x\s*(\d+)\s*$/i);
   if(r){ const weight='+'+r[1],unit=r[2].toLowerCase(),reps=parseInt(r[3]),n=parseInt(r[4]); return Array.from({length:n},()=>({reps,weight,unit})); }
@@ -6728,14 +6782,14 @@ function parseSets(pres){
   // New single-group @ patterns (no plain NxM — parseSets("3x5") still returns [])
   let r;
   // NxAMRAP @RPE — aliases: AMRAP, AMAP, MR, F  e.g. "3xAMRAP @RPE8"
-  r=pres.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
-  if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps:'AMRAP',rpe,amrap:true})); _parseSetsCache.set(pres,sets); return sets; }
+  r=pres.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*@\s*RPE\s*(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),rpeRaw=r[3].replace(/\s+/g,''),rpe=/^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$/.test(rpeRaw)?(rpeRaw.includes('-')?rpeRaw:parseFloat(rpeRaw)):undefined; if(rpe!==undefined){ const sets=Array.from({length:n},()=>({reps:'AMRAP',rpe,amrap:true})); _parseSetsCache.set(pres,sets); return sets; } }
   // NxAMRAP bare — aliases: AMRAP, AMAP, MR, F  e.g. "3xAMRAP" or "4xAMAP"
   r=pres.match(/^(\d+)\s*x\s*(AMRAP|AMAP|MR|F)\s*$/i);
   if(r){ const n=parseInt(r[1]); const sets=Array.from({length:n},()=>({reps:'AMRAP',amrap:true})); _parseSetsCache.set(pres,sets); return sets; }
-  // NxM @RPE (with keyword)  e.g. "3x5 @RPE8"
-  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*RPE\s*(\d+(?:\.\d+)?)\s*$/i);
-  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM @RPE (with keyword)  e.g. "3x5 @RPE8" or "3x5 @RPE 7-8"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*RPE\s*(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpeRaw=r[3].replace(/\s+/g,''),rpe=/^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$/.test(rpeRaw)?(rpeRaw.includes('-')?rpeRaw:parseFloat(rpeRaw)):undefined; if(rpe!==undefined){ const sets=Array.from({length:n},()=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; } }
   // NxM @weight lbs/kg  e.g. "3x6 @330lbs"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(lbs?|kg)\s*$/i);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),weight=parseFloat(r[3]),unit=r[4].toLowerCase(); const sets=Array.from({length:n},()=>({reps,weight,unit})); _parseSetsCache.set(pres,sets); return sets; }
@@ -6746,8 +6800,8 @@ function parseSets(pres){
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(-\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),dropPercent=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,dropPercent})); _parseSetsCache.set(pres,sets); return sets; }
   // NxM @N% RPE N / @N% @RPE N / @N% @N — dual modifier (before single @%)
-  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*@?\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
-  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100,rpe=parseFloat(r[4]); const sets=Array.from({length:n},()=>({reps,percentage,rpe})); _parseSetsCache.set(pres,sets); return sets; }
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*@?\s*(?:RPE\s*)?(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100,rpeRaw=r[4].replace(/\s+/g,''),rpe=/^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$/.test(rpeRaw)?(rpeRaw.includes('-')?rpeRaw:parseFloat(rpeRaw)):undefined; if(rpe!==undefined){ const sets=Array.from({length:n},()=>({reps,percentage,rpe})); _parseSetsCache.set(pres,sets); return sets; } }
   // NxM @%  e.g. "5x8 @75%"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }

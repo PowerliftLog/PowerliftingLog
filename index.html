@@ -45,6 +45,7 @@
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (window._swReloading) return;
       window._swReloading = true;
+      if (typeof _saveLogsImmediate === 'function') _saveLogsImmediate();
       location.reload();
     });
   }
@@ -2304,6 +2305,13 @@ canvas.chart-overlay { pointer-events: auto; }
       </div>
       <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
+    <button class="settings-row-btn" onclick="promptClearAllData()" style="margin-top:var(--sp-3)">
+      <div class="settings-row-left" style="color:var(--red)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Clear All Data
+      </div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
 
     <h3 class="settings-section-label settings-section-label--theme">Theme</h3>
     <div class="settings-theme-pills" id="settings-theme-pills">
@@ -2551,8 +2559,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.24.1';
-const APP_BUILD   = '3/17/26c';
+const APP_VERSION = 'v0.25.1';
+const APP_BUILD   = '3/18/26b';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2654,7 +2662,7 @@ document.addEventListener('keydown', (e) => {
   const checks=[
     {id:'plate-popover-overlay', close:()=>closePlatePopover&&closePlatePopover()},
     {id:'reps-modal', close:()=>closeRepsModal&&closeRepsModal()},
-    {id:'parse-error-modal', close:()=>{const el=document.getElementById('parse-error-modal');if(el)el.style.display='none';}},
+    {id:'parse-error-modal', close:()=>closeParseError()},
     {id:'format-example-modal', close:()=>{const el=document.getElementById('format-example-modal');if(el)el.style.display='none';}},
     {id:'builder-detail-overlay', close:()=>typeof _pickerGoBack==='function'&&_pickerGoBack()},
     {id:'builder-overlay', close:()=>{const el=document.getElementById('builder-overlay');if(el)el.style.display='none';}},
@@ -3203,9 +3211,11 @@ function renderMetrics(){
 
   // ── Est. 1RM from logged comp lifts ──────────────────────────────────────
   const e1rmByGroup = { squat: null, bench: null, deadlift: null };
+  const _activeBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    if (!_activeBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
     const exName = parts[3];
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
@@ -3221,19 +3231,19 @@ function renderMetrics(){
     if (!result) continue;
     if (!e1rmByGroup[group] || result.value > e1rmByGroup[group]) e1rmByGroup[group] = Math.round(result.value);
   }
-  if (e1rmByGroup.squat || e1rmByGroup.bench || e1rmByGroup.deadlift) {
+  // Always show all 3 S/B/D chips — "—" when no data
+  {
     const _ath = loadAthlete() || {};
     const tested = { squat: _ath.tested1rm_squat || 0, bench: _ath.tested1rm_bench || 0, deadlift: _ath.tested1rm_deadlift || 0 };
     h += `<div class="maxes-bar">`;
     for (const [gk, label] of [['squat','Squat'],['bench','Bench'],['deadlift','Dead']]) {
       const e = e1rmByGroup[gk];
-      if (!e) continue;
       const t = tested[gk];
-      const delta = t ? e - t : 0;
-      const hasTested = t > 0;
+      const delta = (e && t) ? e - t : 0;
+      const hasTested = t > 0 && e;
       const badgeHtml = hasTested ? `<div class="max-delta-badge ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div>` : '';
       const drawerHtml = hasTested ? `<div class="max-tested-drawer"><hr class="max-tested-divider"><div class="max-tested-row"><div class="max-tested-val">${t}</div><div class="max-tested-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</div></div><div class="max-tested-label">Current 1RM</div></div>` : '';
-      h += `<div class="max-item" onclick="toggleMaxCard(this)" style="cursor:pointer">${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
+      h += `<div class="max-item"${e?' onclick="toggleMaxCard(this)" style="cursor:pointer"':' style="opacity:0.5"'}>${badgeHtml}<div class="max-lift">${label}</div><div class="max-weight">${e||'—'}</div><div class="max-label">Est. 1RM</div>${drawerHtml}</div>`;
     }
     h += `</div>`;
   }
@@ -3283,9 +3293,33 @@ function renderMetrics(){
     });
     const varsWithData=allVars.filter(([,pts])=>pts.length>0);
     const varsEmpty=allVars.filter(([,pts])=>pts.length===0);
-    if(allVars.length===0) continue; // no tracked lifts in this group at all
+    // S/B/D cards always render (even with no tracked data) so the scaffold is always visible
+    const isCompGroup = groupKey === 'squat' || groupKey === 'bench' || groupKey === 'deadlift';
+    if(allVars.length===0 && !isCompGroup) continue; // 'other' group: skip if nothing tracked
 
     if(varsWithData.length > 0) hasAnyData=true;
+
+    // S/B/D group with zero tracked lifts — render empty scaffold card
+    if(allVars.length===0 && isCompGroup){
+      h+=`<div class="metrics-lift-group">
+        <div class="metrics-lift-header">
+          <h2 class="metrics-lift-title">${escH(group.label)}</h2>
+          <div style="text-align:right">
+            <div class="metrics-best">—</div>
+            <div class="metrics-best-label">Best Est. 1RM</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="position:relative">
+          <canvas class="rm-chart" width="400" height="120" style="opacity:0.15" aria-label="Estimated 1RM chart for ${escH(group.label)} — no data yet"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+            <div style="font-size:13px;color:var(--text-sub)">No data yet</div>
+            <div style="display:flex;align-items:center;gap:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div style="font-size:11px;color:var(--text-dim)">Log training data to see trends</div>
+          </div>
+        </div>
+      </div>`;
+      continue;
+    }
 
     // Variation pill selector — default to first var with data (comp lift preferred), preserve selection across re-renders
     const vars = varsWithData.length > 0 ? varsWithData : allVars;
@@ -3299,8 +3333,8 @@ function renderMetrics(){
     const hasData = activePts.length > 0;
 
     h+=`<div class="metrics-lift-group">`;
-    // When only one variation, show specific exercise name; when multiple, show group label
-    const displayTitle = varsWithData.length === 1 ? varsWithData[0][0] : group.label;
+    // Always use group label (Squat/Bench/Deadlift) — individual lift names show as pills
+    const displayTitle = group.label;
     h+=`<div class="metrics-lift-header">
       <h2 class="metrics-lift-title">${escH(displayTitle)}</h2>
       <div style="text-align:right">
@@ -3309,7 +3343,7 @@ function renderMetrics(){
       </div>
     </div>`;
 
-    if(varsWithData.length > 1){
+    if(varsWithData.length >= 1){
       h+=`<div class="var-pill-row">`;
       varsWithData.forEach(([vname])=>{
         const isActive = vname === activeVar;
@@ -3348,7 +3382,7 @@ function renderMetrics(){
           })();
         h+=`<div class="rm-row">
           <div style="display:flex;flex-direction:column;gap:1px">
-            <div class="rm-session">${pt.session}</div>
+            <div class="rm-session">${escH(pt.session)}</div>
             ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}<span class="unit-label">${unitLabel(true)}</span></div></div>
@@ -3410,7 +3444,7 @@ function renderMetrics(){
             })();
             h+=`<div class="rm-row">
               <div style="display:flex;flex-direction:column;gap:1px">
-                <div class="rm-session">${pt.session}</div>
+                <div class="rm-session">${escH(pt.session)}</div>
                 ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
               </div>
               <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}<span class="unit-label">${unitLabel(true)}</span></div></div>
@@ -3496,6 +3530,7 @@ function drawEmptyChart(canvasId){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
+  if(!ctx) return;
   const dpr=window.devicePixelRatio||1;
   const W=canvas.offsetWidth||400;
   const H=160;
@@ -3556,6 +3591,7 @@ function _drawChartTooltip(canvasId){
     const overlay=document.getElementById(canvasId+'-overlay');
     if(!overlay||!_chartCoords[canvasId]) return;
     const ctx=overlay.getContext('2d');
+    if(!ctx) return;
     const dpr=window.devicePixelRatio||1;
 
     // Clear the entire overlay
@@ -3619,6 +3655,7 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
+  if(!ctx) return;
   const dpr=window.devicePixelRatio||1;
   const W=canvas.offsetWidth||400;
   const H=160;
@@ -4827,9 +4864,11 @@ function getScores() {
 
   // Use ALL-TIME e1RM peaks for squat/bench/deadlift (not scoped to current block)
   const _e1rm = { squat: 0, bench: 0, deadlift: 0 };
+  const _scoreBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
     const parts = key.split('||');
     if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    if (!_scoreBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
     const exName = parts[3];
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
@@ -5292,12 +5331,14 @@ function getSessionSummary(block, week, day) {
     if (tm > 0) allTimePeaks[g] = { e1rm: tm };
   }
 
-  // Scan ALL logs across ALL blocks (not just current)
+  // Scan ALL logs across ALL blocks (not just current) — skip orphaned logs
+  const _ssBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
     if (!val.done || !val.actual) continue;
     const parts = key.split('||');
     if (parts.length < 5) continue;
     if (!parts[4].startsWith('s')) continue;
+    if (!_ssBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
     const exName = parts[3];
     const group  = classifyLift(exName);
     if (!group || group === 'other') continue;
@@ -6390,7 +6431,7 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
       return `${setsLabel}×${ranged.reps}${weightLabel}`;
     }
     if (bareWithRounds) return `${bareWithRounds.sets>1?bareWithRounds.sets+'×':''}${bareWithRounds.reps}`;
-    if (pres) return _fmtPres(pres);
+    if (pres) return escH(_fmtPres(pres));
     return '';
   }
   const presSum = _presShortSummary();
@@ -7458,8 +7499,8 @@ function clearWorkout(){
     }
   });
   const msg=loggedSets>0
-    ? `This will erase all logged data for ${day.name} (${loggedSets} completed set${loggedSets===1?'':'s'}). This cannot be undone.`
-    : `This will clear all data for ${day.name}. This cannot be undone.`;
+    ? `This will erase all logged data for ${escH(day.name)} (${loggedSets} completed set${loggedSets===1?'':'s'}). This cannot be undone.`
+    : `This will clear all data for ${escH(day.name)}. This cannot be undone.`;
   // Show confirmation overlay
   const existing=document.getElementById('clear-workout-overlay');
   if(existing) existing.remove();
@@ -7600,14 +7641,21 @@ function _hasReopenedChanges(){
 function _checkReopenAutoRestore(){
   const rs=state._reopenedWorkout;
   if(!rs) return;
+  const block=state.activeBlock;
+  const week=block.weeks[rs.weekIdx];
+  const day=week?.days[rs.dayIdx];
   if(!_hasReopenedChanges()){
     // No changes — silently re-complete with original data
-    const block=state.activeBlock;
-    const week=block.weeks[rs.weekIdx];
-    const day=week?.days[rs.dayIdx];
-    if(day){
+    if(day && rs.originalCompleteLog){
       const forceKey=lk(block.id,week.label,day.name,'__complete__');
       state.logs[forceKey]=rs.originalCompleteLog;
+      saveLogs();
+    }
+  } else {
+    // Changes exist — preserve user's set edits AND restore completion status
+    if(day && rs.originalCompleteLog){
+      const forceKey=lk(block.id,week.label,day.name,'__complete__');
+      state.logs[forceKey]={...rs.originalCompleteLog, done:true, completedDate:rs.originalCompleteLog.completedDate};
       saveLogs();
     }
   }
@@ -7784,10 +7832,12 @@ function _getCompLiftMaxE1RMs() {
   if (ath.tested1rm_squat)    out.squat    = convertWeight(Number(ath.tested1rm_squat), rmUnit, du);
   if (ath.tested1rm_bench)    out.bench    = convertWeight(Number(ath.tested1rm_bench), rmUnit, du);
   if (ath.tested1rm_deadlift) out.deadlift = convertWeight(Number(ath.tested1rm_deadlift), rmUnit, du);
+  const _prBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
     if (!val.done || !val.actual) continue;
     const parts = key.split('||');
     if (parts.length < 5) continue;
+    if (!_prBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
     const exName = parts[3];
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
@@ -10153,7 +10203,6 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
       const isHevy = testHeaders.includes('exercise_title') && testHeaders.includes('set_index');
       if (!isStrong && !isHevy) {
         showParseError('error', 'This CSV doesn\'t appear to be a Strong or Hevy export. Expected columns like "Workout Name" (Strong) or "exercise_title" (Hevy).');
-        if (wasOnboarding) showOnboardingStep(2);
         e.target.value = '';
         return;
       }
@@ -10161,7 +10210,6 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
       showCSVUnitPicker(text, isStrong ? 'Strong' : 'Hevy');
     } catch (err) {
       showParseError('error', err.message); console.error(err);
-      if (wasOnboarding) showOnboardingStep(2);
     }
     e.target.value = '';
     return;
@@ -10181,7 +10229,6 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     openImportIntent(blocks);
   }catch(err){
     showParseError('error', err.message); console.error(err);
-    if (wasOnboarding) { showOnboardingStep(2); }
   }
   e.target.value='';
 });
@@ -10373,6 +10420,7 @@ function confirmDeleteBlock(){
   if(state.activeBlock?.id===blockId){
     state.activeBlock=state.blocks[state.blocks.length-1]||null;
     state.activeWeek=0; state.activeDay=0;
+    state.workoutActive=null;
   }
   saveBlocks();
   // Prune trackedLifts — remove entries that no longer exist in any remaining block
@@ -10456,6 +10504,47 @@ function closeSettings() {
   if (arrow) arrow.style.transform = '';
   setTimeout(() => { modal.style.display = 'none'; }, 200);
 }
+
+// ── Clear All Data ────────────────────────────────────────────────────────────
+function promptClearAllData() {
+  closeSettings();
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.id = 'clear-all-data-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="confirm-sheet">
+      <div class="confirm-title" style="color:var(--red)">Clear All Data?</div>
+      <div class="confirm-desc">This will permanently delete <strong style="color:var(--text-primary)">ALL</strong> your training data, programs, and settings. This cannot be undone.<br><br>Google Drive backups will <strong style="color:var(--text-primary)">NOT</strong> be deleted.</div>
+      <div class="confirm-btns">
+        <button class="confirm-cancel" onclick="document.getElementById('clear-all-data-overlay').remove()">Cancel</button>
+        <button class="confirm-go" style="background:var(--red);color:#fff" onclick="executeClearAllData()">Delete Everything</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function executeClearAllData() {
+  const overlay = document.getElementById('clear-all-data-overlay');
+  if (overlay) overlay.remove();
+
+  // 1. Clear localStorage
+  try { localStorage.clear(); } catch (e) { console.error('[ClearAll] localStorage.clear error:', e); }
+
+  // 2. Clear IndexedDB — delete entire database for a clean slate
+  try {
+    if (_idbDB) { _idbDB.close(); _idbDB = null; }
+    _idbReady = false;
+    // Clear the in-memory cache
+    for (const k in _idbCache) delete _idbCache[k];
+    indexedDB.deleteDatabase(_IDB_NAME);
+  } catch (e) { console.error('[ClearAll] IndexedDB clear error:', e); }
+
+  // 3. Reload — triggers fresh onboarding since no data exists
+  location.reload();
+}
+
 function updateSettingsThemePills() {
   const cur = loadTheme();
   document.querySelectorAll('.settings-theme-pill').forEach(btn => {
@@ -11470,6 +11559,22 @@ function _getReportData(blockId) {
     const prevBlockId = state.blocks[blockIdx - 1].id;
     const prevData = _getReportData(prevBlockId);
     if (prevData) {
+      // Count completed sessions per lift family in previous block.
+      // A "completed session" = a unique weekLabel||dayName with at least one
+      // logged set carrying actual weight data for that lift family.
+      const _prevSessions = { squat: new Set(), bench: new Set(), deadlift: new Set() };
+      for (const [key, val] of Object.entries(prevData.blockLogs)) {
+        const pts = key.split('||');
+        if (pts.length < 5 || !pts[4].startsWith('s')) continue;
+        if (!val.done) continue;
+        const exName = pts[3];
+        const grp = classifyLift(canonicalizeLift(exName)) || classifyLift(exName);
+        if (!grp || !_prevSessions[grp]) continue;
+        // Require actual weight data: either user-entered weight or a done set
+        // (done implies prescribed weight was used)
+        const hasWeight = (val.actual && parseFloat(val.actual) > 0) || val.done;
+        if (hasWeight) _prevSessions[grp].add(pts[1] + '||' + pts[2]);
+      }
       blockDeltas = {};
       for (const gk of ['squat', 'bench', 'deadlift']) {
         const currE1rm = compLifts[gk]?.bestE1rm || 0;
@@ -11477,7 +11582,8 @@ function _getReportData(blockId) {
         blockDeltas[gk] = {
           current: currE1rm, previous: prevE1rm,
           delta: currE1rm && prevE1rm ? currE1rm - prevE1rm : null,
-          prevBlockName: displayBlockName(prevData.block.name)
+          prevBlockName: displayBlockName(prevData.block.name),
+          prevCompletedSessions: _prevSessions[gk].size
         };
       }
     }
@@ -11701,6 +11807,14 @@ function _buildReportShell(data, weeklyTable, insights) {
       const bd = blockDeltas[gk];
       const color = liftCardColors[gk];
       const label = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' }[gk];
+      // Guard: need >= 3 completed sessions in previous block for this lift family
+      if ((bd.prevCompletedSessions || 0) < 3) {
+        blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;text-align:center">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
+          <div style="font-size:12px;color:${tv('--text-dim')||'#666'}">Insufficient prior data</div>
+        </div>`;
+        continue;
+      }
       if (!bd.delta) {
         blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;text-align:center">
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
@@ -12014,30 +12128,7 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   <!-- 4. Block-over-Block Deltas -->
   ${blockDeltasHtml}
 
-  <!-- 5. Competition Lift Cards (no sparklines) -->
-  <div class="section-title" style="margin-bottom:8px">Competition Lifts</div>
-  <div class="comp-cards">${compCardsHtml}</div>
-
-  <!-- 6. e1RM Trend Chart (Chart.js line) -->
-  <div class="section-card">
-    <div class="section-title">e1RM Trend</div>
-    <div style="height:220px"><canvas id="e1rmChart" aria-label="e1RM trend over weeks"></canvas></div>
-  </div>
-
-  <!-- 7. Volume & RPE Trend -->
-  <div class="section-card">
-    <div class="section-title">Volume &amp; RPE Trend</div>
-    <div class="vol-legend">${volLegendHtml}</div>
-    <div class="vol-chart-wrap"><canvas id="volRpeChart" aria-label="Volume and RPE trend over time"></canvas></div>
-  </div>
-
-  <!-- 8. Planned vs Actual Deviation (placeholder) -->
-  <div class="section-card">
-    <div class="section-title">Planned vs Actual Deviation</div>
-    <div style="text-align:center;padding:20px 0;color:${tv('--text-dim')||'#666'};font-size:12px">No deviation data available</div>
-  </div>
-
-  <!-- 9. Weekly Top Sets -->
+  <!-- 5. Weekly Top Sets -->
   <div class="section-card">
     <div class="section-title">Weekly Top Sets</div>
     <table class="weekly-table">
@@ -12045,6 +12136,29 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
       <thead><tr style="border:none"><th></th><th colspan="3" style="font-size:7px;font-weight:500;letter-spacing:.06em;color:${tv('--text-dim')||'#444'};padding:0 6px 4px;border:none">WEIGHT × REPS @ RPE</th></tr></thead>
       <tbody>${weeklyTable}</tbody>
     </table>
+  </div>
+
+  <!-- 6. Competition Lift Cards (no sparklines) -->
+  <div class="section-title" style="margin-bottom:8px">Competition Lifts</div>
+  <div class="comp-cards">${compCardsHtml}</div>
+
+  <!-- 7. e1RM Trend Chart (Chart.js line) -->
+  <div class="section-card">
+    <div class="section-title">e1RM Trend</div>
+    <div style="height:220px"><canvas id="e1rmChart" aria-label="e1RM trend over weeks"></canvas></div>
+  </div>
+
+  <!-- 8. Volume & RPE Trend -->
+  <div class="section-card">
+    <div class="section-title">Volume &amp; RPE Trend</div>
+    <div class="vol-legend">${volLegendHtml}</div>
+    <div class="vol-chart-wrap"><canvas id="volRpeChart" aria-label="Volume and RPE trend over time"></canvas></div>
+  </div>
+
+  <!-- 9. Planned vs Actual Deviation (placeholder) -->
+  <div class="section-card">
+    <div class="section-title">Planned vs Actual Deviation</div>
+    <div style="text-align:center;padding:20px 0;color:${tv('--text-dim')||'#666'};font-size:12px">No deviation data available</div>
   </div>
 
   <!-- 10. Estimated Total & DOTS/Wilks -->
@@ -12365,6 +12479,14 @@ function executeRestore() {
   const backup = overlay._backupData;
   overlay.remove();
 
+  // Snapshot current localStorage + IDB cache for rollback on partial failure
+  const lsSnapshot = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    lsSnapshot[k] = localStorage.getItem(k);
+  }
+  const idbSnapshot = _idbReady ? Object.assign({}, _idbCache) : null;
+
   try {
     // Write each key to both IndexedDB and localStorage
     for (const [key, val] of Object.entries(backup.data)) {
@@ -12377,7 +12499,16 @@ function executeRestore() {
     setTimeout(() => location.reload(), 800);
   } catch (err) {
     console.error('[Restore] Error:', err);
-    _showWarningToast('Restore failed. Your current data is unchanged.');
+    // Attempt to restore previous state from snapshot
+    try {
+      localStorage.clear();
+      for (const [k, v] of Object.entries(lsSnapshot)) localStorage.setItem(k, v);
+      if (idbSnapshot) { for (const [k, v] of Object.entries(idbSnapshot)) _idbPut(k, v); }
+      _showWarningToast('Restore failed — your previous data has been preserved. Try freeing storage and retrying.');
+    } catch (rollbackErr) {
+      console.error('[Restore] Rollback also failed:', rollbackErr);
+      _showWarningToast('Restore failed. Your data may be inconsistent. Please export a backup and reload the app.');
+    }
   }
 }
 
@@ -12572,6 +12703,9 @@ function showParseError(errorType, details) {
 
 function closeParseError() {
   document.getElementById('parse-error-modal').style.display = 'none';
+  if (!isOnboarded()) {
+    showOnboardingStep(2);
+  }
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────────

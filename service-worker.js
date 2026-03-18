@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v127';
+const CACHE_NAME = 'liftlog-v129';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -57,8 +57,10 @@ self.addEventListener('fetch', event => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
         }
-        return response;
+        // Non-OK response (500, 403, etc.) — fall back to cache
+        return caches.match(event.request).then(cached => cached || response);
       }).catch(() => caches.match(event.request).then(cached => cached || new Response('Offline', { status: 503 })))
     );
     return;
