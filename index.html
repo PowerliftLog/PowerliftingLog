@@ -2639,19 +2639,24 @@ function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_sa
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
 
 // ── Keyboard-open detection — hide nav + rest timer when input focused ────────
-// Blur-on-scroll: dismiss keyboard when user scrolls >50px (matches iOS native behavior)
+// Blur-on-scroll: dismiss keyboard when user scrolls >60px (matches iOS native behavior)
+// _scrollY0 is captured after a 400ms delay to let the keyboard-open auto-scroll settle
 (function(){
   let _kbTimer=null;
   let _scrollY0=null;
+  let _scrollArmTimer=null;
   document.addEventListener('focusin', e => {
     if(e.target.matches&&e.target.matches('.set-input, .note-input, textarea')) {
       clearTimeout(_kbTimer);
+      clearTimeout(_scrollArmTimer);
       document.body.classList.add('keyboard-open');
-      _scrollY0=window.scrollY;
+      _scrollY0=null; // disarm during keyboard open animation
+      _scrollArmTimer=setTimeout(()=>{ _scrollY0=window.scrollY; }, 400);
     }
   });
   document.addEventListener('focusout', e => {
     if(e.target.matches&&e.target.matches('.set-input, .note-input, textarea')) {
+      clearTimeout(_scrollArmTimer);
       // Small delay — prevents flicker when tapping between inputs
       _kbTimer=setTimeout(()=>{ document.body.classList.remove('keyboard-open'); _scrollY0=null; }, 150);
     }
