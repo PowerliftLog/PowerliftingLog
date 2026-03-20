@@ -1826,6 +1826,7 @@ canvas.chart-overlay { pointer-events: auto; }
 [data-theme="light"] .nav-btn { color: #777; }
 [data-theme="light"] .nav-btn.active .nav-icon { color: var(--text-primary); }
 [data-theme="light"] .add-lift-btn { color: var(--text-dim); border-color: var(--border); }
+[data-theme="light"] .rest-timer-btn { border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.05); }
 [data-theme="light"] .group-pill.active { color: var(--gold); border-color: var(--gold); }
 [data-theme="light"] .settings-row-btn { border-color: var(--glass-border); }
 [data-theme="light"] .calc-total-box { background: #FFFFFF; border-color: var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -2602,7 +2603,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/20/26k';
+const APP_BUILD   = '3/20/26l';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -6709,8 +6710,11 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const rm1 = group ? Number(ath['tested1rm_'+group])||0 : 0;
         if (rm1 > 0) return String(Math.round(rm1*s.percentage));
       }
-      // RPE-only or drop percent — no ghost weight, don't fall through to prevPerf
-      if (s.rpe != null || s.dropPercent != null || s.isRpe) return '';
+      // RPE-only or drop percent — no absolute prescription, but use prev week's actual if available
+      if (s.rpe != null || s.dropPercent != null || s.isRpe) {
+        if (prevPerf?.sets[si]?.actual && prevPerf.sets[si].actual !== '—') return prevPerf.sets[si].actual;
+        return '';
+      }
     }
     if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
     /* Extract weight from simple prescriptions like "3x5 @ 315" */
