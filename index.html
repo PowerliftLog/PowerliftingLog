@@ -70,7 +70,9 @@
   // Shared update check — used by header button and settings version tap
   function _checkForUpdate(el) {
     if (!el) return;
+    const origHtml = el.dataset.originalHtml || el.innerHTML;
     const orig = el.dataset.original || el.textContent;
+    el.dataset.originalHtml = origHtml;
     el.dataset.original = orig;
     el.textContent = 'Checking…';
     el.style.opacity = '1';
@@ -87,7 +89,7 @@
                 reg.waiting.postMessage({ type: 'SKIP_WAITING' });
               } else {
                 el.textContent = 'Up to date ✓';
-                setTimeout(() => { el.style.opacity = el.id === 'hdr-update-btn' ? '1' : '0.6'; el.textContent = orig; }, 1500);
+                setTimeout(() => { el.style.opacity = el.id === 'hdr-update-btn' ? '1' : '0.6'; el.innerHTML = el.dataset.originalHtml; }, 1500);
               }
             }, 1000);
           }).catch(() => { location.reload(); });
@@ -366,9 +368,10 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .rest-dur-value { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--text-primary); min-width: 44px; text-align: center; }
 .rest-trigger-btn { display: flex; align-items: center; gap: var(--sp-3); font-family: 'Barlow', sans-serif; font-size: var(--fs-base); font-weight: 600; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: var(--sp-2) var(--sp-5); cursor: pointer; }
 .rest-trigger-btn:active { background: rgba(201,168,76,0.2); }
-.ex-unit-toggle { display: inline-flex; gap: var(--sp-1); margin-left: auto; flex-shrink: 0; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 6px; padding: var(--sp-1); }
-.ex-unit-toggle-btn { padding: var(--sp-2) var(--sp-4); border-radius: 4px; border: none; background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: all 0.15s; line-height: 1; }
-.ex-unit-toggle-btn.active { background: var(--gold); color: #1a1a1a; }
+.ex-unit-toggle { display: inline-flex; gap: var(--sp-1); margin-left: auto; flex-shrink: 0; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 6px; padding: var(--sp-1); position: relative; }
+.ex-unit-pill { position: absolute; top: var(--sp-1); bottom: var(--sp-1); width: 50%; border-radius: 4px; background: var(--gold); transition: left 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); pointer-events: none; z-index: 0; }
+.ex-unit-toggle-btn { position: relative; z-index: 1; width: 50%; text-align: center; padding: var(--sp-2) var(--sp-4); border-radius: 4px; border: none; background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: all 0.15s; line-height: 1; }
+.ex-unit-toggle-btn.active { background: transparent; color: #1a1a1a; }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 18px 0 var(--sp-4); }
 .settings-section-label:first-of-type { margin-top: 0; }
 .settings-athlete-form { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: var(--sp-6); margin-bottom: var(--sp-3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; flex-direction: column; gap: var(--sp-5); }
@@ -429,10 +432,11 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-divider span { font-size: var(--fs-base); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid #333; padding: 13px var(--sp-7); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--sp-5); }
 .drive-btn:active { opacity: 0.75; }
-.block-bar { padding: var(--sp-6) var(--sp-6); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); }
-.block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.03em; color: var(--text-bright); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block-bar { padding: var(--sp-3) var(--sp-5); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); gap: var(--sp-4); }
+.block-bar-left { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; }
+.block-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.03em; color: var(--text-bright); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .block-dates { font-size: var(--fs-sm); color: var(--text-muted); margin-top: var(--sp-2); letter-spacing: 0.03em; }
-.cycle-select { background: rgba(255,255,255,0.05); color: var(--text-sub); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: var(--sp-3) var(--sp-5); font-size: var(--fs-base); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.04em; outline: none; max-width: 160px; cursor: pointer; }
+.cycle-select { flex: 0 0 auto; background: rgba(255,255,255,0.05); color: var(--text-sub); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: var(--sp-3) var(--sp-5); font-size: var(--fs-base); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.04em; outline: none; max-width: 160px; cursor: pointer; }
 .maxes-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-4); padding: var(--sp-5) var(--sp-6) var(--sp-2); }
 .max-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: var(--sp-5) var(--sp-4) var(--sp-5); text-align: center; box-shadow: var(--card-shadow); position: relative; overflow: hidden; }
 .max-item::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 60%); pointer-events: none; }
@@ -470,12 +474,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .week-pill.active { background: rgba(201,168,76,0.1); color: var(--gold); border-color: rgba(201,168,76,0.6); border-width: 1.5px; box-shadow: 0 2px 8px rgba(201,168,76,0.12); }
 .week-pill.done { background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.25); color: rgba(74,222,128,0.55); }
 .week-pill.done.active { background: rgba(74,222,128,0.08); border-color: rgba(201,168,76,0.6); border-width: 1.5px; color: var(--green); box-shadow: 0 2px 8px rgba(201,168,76,0.12); }
-.day-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none; background: rgba(255,255,255,0.01); }
+.day-tabs { display: flex; position: relative; border-bottom: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none; background: rgba(255,255,255,0.01); }
 .day-tabs::-webkit-scrollbar { display: none; }
+.day-tab-pill { position: absolute; bottom: 0; height: 2px; background: var(--gold); border-radius: 1px; transition: left 0.4s cubic-bezier(0.34, 1.2, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); pointer-events: none; z-index: 1; }
 .day-tab { flex-shrink: 0; padding: var(--sp-5) var(--sp-6); text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-base); letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; position: relative; white-space: nowrap; transition: all 0.15s; line-height: 1.3; min-width: 44px; }
-.day-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(201,168,76,0.06) 0%, transparent 100%); }
+.day-tab.active { color: var(--gold); border-bottom-color: transparent; background: linear-gradient(180deg, rgba(201,168,76,0.06) 0%, transparent 100%); }
 .day-tab.done { color: rgba(74,222,128,0.45); border-bottom: 2px solid rgba(74,222,128,0.3); }
-.day-tab.done.active { color: var(--green); border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(74,222,128,0.05) 0%, transparent 100%); }
+.day-tab.done.active { color: var(--green); border-bottom-color: transparent; background: linear-gradient(180deg, rgba(74,222,128,0.05) 0%, transparent 100%); }
 .exercises { padding: var(--sp-5) var(--sp-6) 120px; }
 .exercise-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; margin-bottom: var(--sp-5); overflow: hidden; transition: border-color 0.2s; box-shadow: var(--card-shadow); }
 .superset-group { border: 1px solid var(--superset-bdr); border-radius: 12px; margin-bottom: var(--sp-5); overflow: hidden; background: var(--superset-bg); }
@@ -518,7 +523,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .block-name-edit { background: var(--surface-5); border: 1px solid var(--gold); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); padding: var(--sp-2) var(--sp-4); outline: none; width: 100%; letter-spacing: 0.04em; }
 .exercise-header { padding: var(--sp-6) var(--sp-6) var(--sp-5); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
 .exercise-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); letter-spacing: 0.02em; line-height: 1.15; flex: 1; }
-.exercise-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: var(--sp-1); transition: all 0.15s; position: relative; }
+.exercise-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: var(--sp-1); transition: all 0.15s; position: relative; -webkit-tap-highlight-color: transparent; }
+.exercise-check:active { transform: scale(0.88); }
 .exercise-check::before { content: ''; position: absolute; inset: -9px; }
 .exercise-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: var(--green); }
 .exercise-check.inferred { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2); color: rgba(74,222,128,0.5); }
@@ -578,7 +584,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-input.rpe-input:focus { border-color: var(--gold); background: var(--input-focus-bg); box-shadow: 0 0 0 3px rgba(200,169,81,0.1); }
 .set-input::placeholder { color: var(--text-muted); font-size: var(--fs-sm); font-weight: 400; font-style: italic; opacity: 0.6; }
 .prescribed-label { width: 80px; text-align: center; font-size: var(--fs-base); color: var(--text-dimmer); }
-.set-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; margin-bottom: 7px; position: relative; }
+.set-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.08); background: transparent; color: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; align-self: flex-end; margin-bottom: 7px; position: relative; -webkit-tap-highlight-color: transparent; }
+.set-check:active { transform: scale(0.88); }
 .set-check::before { content: ''; position: absolute; inset: -9px; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
 .set-check svg { width: 12px; height: 12px; }
@@ -587,6 +594,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* ── Micro-animations ─────────────────────────────────────────────────── */
 @keyframes checkPop { 0% { transform: scale(0.8); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 .anim-check-pop { animation: checkPop 0.25s ease-out; }
+@keyframes splashFadeOut { to { opacity: 0; pointer-events: none; } }
 @keyframes completeBorder {
   0% { border-color: var(--green); box-shadow: 0 0 12px rgba(74,222,128,0.2); }
   100% { border-color: rgba(74,222,128,0.25); box-shadow: var(--card-shadow); }
@@ -832,7 +840,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 
 /* Hero card */
 .home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: var(--sp-5); cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.home-hero:active { transform: scale(0.98); }
+.home-hero:active { transform: scale(0.95); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
 .home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
 .home-hero-inner { position: relative; z-index: 1; padding: var(--sp-6) var(--sp-7); }
@@ -1545,8 +1553,11 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 /* Bottom nav */
 .bottom-nav-fade { position: fixed; bottom: 0; left: 0; right: 0; height: 85px; background: linear-gradient(to bottom, rgba(10,10,10,0) 0%, rgba(10,10,10,0.6) 35%, rgba(10,10,10,0.95) 100%); pointer-events: none; z-index: 199; }
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(18,18,18,0.92); border-top: 1px solid rgba(255,255,255,0.08); display: flex; z-index: 200; padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
-.nav-btn { flex: 1; padding: var(--sp-4) 0 7px; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); background: none; border: 1.5px solid transparent; border-radius: 12px; cursor: pointer; color: #777; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s; }
-.nav-btn.active { color: var(--gold); background: rgba(200,169,81,0.06); border-color: rgba(200,169,81,0.35); }
+.nav-btn { flex: 1; padding: var(--sp-4) 0 7px; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); background: none; border: 1.5px solid transparent; border-radius: 12px; cursor: pointer; color: #777; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s, transform 0.1s; position: relative; z-index: 1; }
+.nav-btn:active { transform: scale(0.92); }
+.nav-btn.active { color: var(--gold); background: transparent; border-color: transparent; }
+/* Sliding active pill behind nav buttons */
+.nav-pill { position: absolute; top: 4px; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); border-radius: 12px; background: rgba(200,169,81,0.06); border: 1.5px solid rgba(200,169,81,0.35); transition: left 0.5s cubic-bezier(0.34, 1.2, 0.64, 1), width 0.5s cubic-bezier(0.34, 1.2, 0.64, 1); pointer-events: none; z-index: 0; }
 .nav-btn.active .nav-icon { color: #ffffff; }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 22px; height: 22px; fill: currentColor; }
@@ -1629,6 +1640,8 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .chart-empty { padding: var(--sp-7) var(--sp-6); text-align: center; font-size: var(--fs-md); color: var(--text-dimmer); font-style: italic; }
 canvas.rm-chart { width: 100%; height: 140px; display: block; pointer-events: none; }
 canvas.chart-overlay { pointer-events: auto; }
+.sessions-toggle { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); border: 1.5px solid rgba(200,169,81,0.3); border-radius: 6px; background: rgba(200,169,81,0.06); color: var(--gold); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; transition: background 0.15s; text-transform: uppercase; letter-spacing: 0.06em; }
+.sessions-toggle:active { background: rgba(200,169,81,0.12); }
 .rm-datapoints { padding: 0 var(--sp-6) var(--sp-5); display: flex; flex-direction: column; gap: 0; }
 .rm-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .rm-session { font-size: var(--fs-base); color: var(--text-muted); }
@@ -1695,9 +1708,11 @@ canvas.chart-overlay { pointer-events: auto; }
 
 /* Legend */
 .var-pill-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-5) var(--sp-6) var(--sp-5); border-bottom: 1px solid rgba(255,255,255,0.05); }
-.var-pill { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-base); letter-spacing: 0.05em; text-transform: uppercase; padding: var(--sp-2) var(--sp-5); border-radius: 20px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.var-pill { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-base); letter-spacing: 0.05em; text-transform: uppercase; padding: var(--sp-2) var(--sp-5); border-radius: 20px; cursor: pointer; transition: all 0.15s, transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); white-space: nowrap; }
 .var-pill.active { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.5); color: var(--gold); }
 .var-pill:active { opacity: 0.75; }
+.var-pill.pop { animation: pillPop 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); }
+@keyframes pillPop { 0% { transform: scale(0.9); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 .legend-item { display: flex; align-items: center; gap: var(--sp-3); }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legend-label { font-size: var(--fs-base); color: var(--text-sub); }
@@ -1716,9 +1731,10 @@ canvas.chart-overlay { pointer-events: auto; }
 
 /* ── CALCULATOR SCREEN ─────────────────────────────────────────────────────── */
 .calc-screen { padding: var(--sp-6) var(--sp-6) 100px; }
-.calc-mode-toggle { display: flex; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: var(--sp-2); margin-bottom: var(--sp-6); box-shadow: var(--card-shadow); }
-.calc-mode-btn { flex: 1; padding: var(--sp-5) var(--sp-4); border: none; border-radius: 8px; background: transparent; color: var(--text-sub, #888); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
-.calc-mode-btn.active { background: rgba(var(--gold-rgb, 201,168,76), 0.15); color: var(--gold, #C9A84C); box-shadow: inset 0 0 0 1px rgba(var(--gold-rgb, 201,168,76), 0.3); }
+.calc-mode-toggle { display: flex; position: relative; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: var(--sp-2); margin-bottom: var(--sp-6); box-shadow: var(--card-shadow); }
+.calc-mode-pill { position: absolute; top: var(--sp-2); bottom: var(--sp-2); border-radius: 8px; background: rgba(var(--gold-rgb, 201,168,76), 0.15); box-shadow: inset 0 0 0 1px rgba(var(--gold-rgb, 201,168,76), 0.3); transition: left 0.5s cubic-bezier(0.34, 1.2, 0.64, 1), width 0.5s cubic-bezier(0.34, 1.2, 0.64, 1); pointer-events: none; z-index: 0; }
+.calc-mode-btn { flex: 1; position: relative; z-index: 1; padding: var(--sp-5) var(--sp-4); border: none; border-radius: 8px; background: transparent; color: var(--text-sub, #888); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.calc-mode-btn.active { background: transparent; color: var(--gold, #C9A84C); box-shadow: none; }
 .calc-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: var(--sp-6); margin-bottom: var(--sp-6); box-shadow: var(--card-shadow); }
 .calc-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-base); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-6); }
 .calc-input-row { display: flex; align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-6); overflow: hidden; }
@@ -1787,9 +1803,9 @@ canvas.chart-overlay { pointer-events: auto; }
 [data-theme="light"] .week-pill.done { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.35); color: rgba(74,222,128,0.7); }
 [data-theme="light"] .week-pill.done.active { border-color: var(--gold); color: var(--green); background: rgba(74,222,128,0.08); }
 [data-theme="light"] .day-tab { color: var(--text-sub); border-bottom-color: transparent; }
-[data-theme="light"] .day-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(184,146,42,0.06) 0%, transparent 100%); }
+[data-theme="light"] .day-tab.active { color: var(--gold); border-bottom-color: transparent; background: linear-gradient(180deg, rgba(184,146,42,0.06) 0%, transparent 100%); }
 [data-theme="light"] .day-tab.done { color: rgba(74,222,128,0.6); border-bottom-color: rgba(74,222,128,0.4); }
-[data-theme="light"] .day-tab.done.active { color: var(--green); border-bottom-color: var(--gold); background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 100%); }
+[data-theme="light"] .day-tab.done.active { color: var(--green); border-bottom-color: transparent; background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 100%); }
 [data-theme="light"] .rep-tip-tooltip { background: #fffbe8; border-color: rgba(184,146,42,0.4); color: #8a6a1a; }
 [data-theme="light"] .skip-btn { color: var(--text-sub); border-color: var(--border); }
 [data-theme="light"] .skip-btn.active { color: var(--text-mid); background: var(--surface-3); }
@@ -1800,6 +1816,8 @@ canvas.chart-overlay { pointer-events: auto; }
 [data-theme="navy"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0.6) 35%, rgba(10,14,26,0.95) 100%); }
 [data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.92); border-color: rgba(0,0,0,0.08); }
 [data-theme="light"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(242,237,228,0) 0%, rgba(242,237,228,0.6) 35%, rgba(242,237,228,0.95) 100%); }
+[data-theme="navy"] .nav-pill { background: rgba(200,169,81,0.08); border-color: rgba(200,169,81,0.35); }
+[data-theme="light"] .nav-pill { background: rgba(184,146,42,0.08); border-color: rgba(184,146,42,0.35); }
 [data-theme="light"] .nav-btn { color: #777; }
 [data-theme="light"] .nav-btn.active .nav-icon { color: var(--text-primary); }
 [data-theme="light"] .add-lift-btn { color: var(--text-dim); border-color: var(--border); }
@@ -2043,6 +2061,7 @@ canvas.chart-overlay { pointer-events: auto; }
 
   <div class="bottom-nav-fade"></div>
   <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-pill" id="nav-pill"></div>
     <button class="nav-btn" id="nav-home" onclick="setScreen('home')" aria-label="Home">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home
     </button>
@@ -2261,13 +2280,19 @@ canvas.chart-overlay { pointer-events: auto; }
             <input class="settings-athlete-input settings-athlete-input--centered" id="ap-max-d" type="number" inputmode="numeric" placeholder="—" aria-label="Deadlift 1RM">
           </div>
         </div>
+        <div style="color:var(--text-dim);font-size:var(--fs-sm);padding:var(--sp-2) 0 var(--sp-2);text-align:center;line-height:1.4;">
+          Optional — enter your best recent lift. Used to pre-fill weights in % and RPE programs.
+        </div>
       </div>
       <button class="settings-athlete-save" onclick="saveAthleteProfile()">Save</button>
     </div>
     <button id="scores-settings-row" class="settings-row-btn" onclick="toggleScoresSetting()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-        DOTS / Wilks Scores
+        <div>
+          DOTS / Wilks Scores
+          <div style="color:var(--text-dim);font-size:var(--fs-xs);font-weight:400;margin-top:2px;line-height:1.4;">Powerlifting scoring — normalizes strength by bodyweight. Requires gender + bodyweight in your profile.</div>
+        </div>
       </div>
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
@@ -2277,6 +2302,7 @@ canvas.chart-overlay { pointer-events: auto; }
         Rest Timer
       </div>
       <div class="settings-rest-label" id="rest-timer-mode-label">Auto</div>
+      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
     <div class="settings-row-btn settings-row-btn--static" id="calc-display-unit-row">
       <div class="settings-row-left">
@@ -2320,7 +2346,7 @@ canvas.chart-overlay { pointer-events: auto; }
       <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
     </div>
 
-    <div class="settings-version" id="settings-version-tap" style="text-align:center;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates"></div>
+    <div class="settings-version" id="settings-version-tap" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates"></div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2401,7 +2427,18 @@ const _idbCache = {};        // in-memory mirror: { lsKey: parsedValue }
 function _idbPut(key, value) {
   _idbCache[key] = value;
   if (!_idbDB) return;
-  try { const tx = _idbDB.transaction('kv', 'readwrite'); tx.objectStore('kv').put({ key, value }); } catch (e) { console.error('[IDB] put error:', key, e); }
+  try {
+    const tx = _idbDB.transaction('kv', 'readwrite');
+    tx.objectStore('kv').put({ key, value });
+    tx.onerror = () => { console.error('[IDB] tx error:', key, tx.error); };
+    tx.onabort = () => {
+      console.error('[IDB] tx aborted:', key, tx.error);
+      if (!window._idbWarningShown) {
+        window._idbWarningShown = true;
+        _showWarningToast('Storage issue detected — your data is saved locally but may not persist across sessions.');
+      }
+    };
+  } catch (e) { console.error('[IDB] put error:', key, e); }
 }
 function _idbDelete(key) {
   delete _idbCache[key];
@@ -2493,7 +2530,7 @@ function _idbMigrateFromLS() {
       'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
       'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
       'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides',
-      LAST_BACKUP_KEY, REP_TIP_KEY, 'liftlog_calcDisplayUnit'
+      LAST_BACKUP_KEY, REP_TIP_KEY, 'liftlog_calcDisplayUnit', DRIVE_AUTHED_KEY
     ];
     const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
     const store = tx.objectStore(_IDB_STORE);
@@ -2559,13 +2596,16 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.25.2';
-const APP_BUILD   = '3/18/26c';
+const APP_VERSION = 'v0.25.8';
+const APP_BUILD   = '3/20/26i';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
 // Populated inside _bootApp() once data is loaded.
 let state;
+
+// Dirty flag for completion-stamp scan in renderHome() — starts true so first render runs the scan.
+let _completionDirty = true;
 
 async function _bootApp() {
   // 1. Try to open IndexedDB
@@ -2620,7 +2660,7 @@ async function _bootApp() {
   // 5. Stamp version strings from constants (single source of truth)
   const _hv=document.getElementById('hdr-ver');if(_hv)_hv.textContent=APP_VERSION;
   const _hb=document.getElementById('hdr-build');if(_hb)_hb.textContent=APP_BUILD;
-  const _sv=document.getElementById('settings-version-tap');if(_sv)_sv.textContent=APP_VERSION+' \u00B7 Build '+APP_BUILD;
+  const _sv=document.getElementById('settings-version-tap');if(_sv)_sv.innerHTML='<span>'+APP_VERSION+' \u00B7 Build '+APP_BUILD+'</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>';
 
   // 6. Boot the UI (onboarding check → render) — always runs
   checkOnboarding();
@@ -2634,7 +2674,7 @@ function _announce(msg){const el=document.getElementById('sr-announce');if(el){e
 function _showWarningToast(msg,type){const t=document.createElement('div');t.className='save-error-toast'+(type==='success'?' toast-success':type==='warn'?' toast-warn':'');t.textContent=msg;document.body.appendChild(t);_announce(msg);setTimeout(()=>t.remove(),type==='success'?4000:8000);}
 function loadLogs(){ try{ if(_idbReady && _idbCache['liftlog_v4']!==undefined) return _idbCache['liftlog_v4']; return JSON.parse(localStorage.getItem('liftlog_v4')||'{}'); }catch(e){ console.error('[liftlog] loadLogs error:',e); setTimeout(()=>_showWarningToast('Warning: Your workout log data could not be loaded. It may be corrupted. Your programs are unaffected.'),500); return {}; } }
 let _saveLogsTimer=null;
-function _saveLogsImmediate(){ _metricsCache = null; _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
+function _saveLogsImmediate(){ _metricsCache = null; _e1rmChipCache = null; _idbPut('liftlog_v4', state.logs); try{ localStorage.setItem('liftlog_v4', JSON.stringify(state.logs)); }catch(e){ console.error('[liftlog] saveLogs error:',e); showSaveError(); } }
 function saveLogs(){ clearTimeout(_saveLogsTimer); _saveLogsTimer=setTimeout(_saveLogsImmediate,300); }
 window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_saveLogsTimer); _saveLogsImmediate(); } _driveAccessToken=null; });
 
@@ -2748,7 +2788,7 @@ function rePopulateSets(blocks){
 }
 // Old top-level rePopulateSets call removed — now inside _bootApp()
 function loadBlocks(){ try{ if(_idbReady && _idbCache['liftlog_blocks']!==undefined) return _idbCache['liftlog_blocks']; const d=localStorage.getItem('liftlog_blocks'); return d?JSON.parse(d):null; }catch(e){ console.error('[liftlog] loadBlocks error:',e); setTimeout(()=>_showWarningToast('Warning: Your program data could not be loaded. It may be corrupted. Try re-uploading your Excel file.'),500); return null; } }
-function saveBlocks(){ _metricsCache = null; _prCache = null; _idbPut('liftlog_blocks', state.blocks); try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
+function saveBlocks(){ _metricsCache = null; _e1rmChipCache = null; _prCache = null; _idbPut('liftlog_blocks', state.blocks); try{ localStorage.setItem('liftlog_blocks',JSON.stringify(state.blocks)); }catch(e){ console.error('[liftlog] saveBlocks error:',e); showSaveError(); } }
 function loadCustomLifts(){ try{ if(_idbReady && _idbCache['liftlog_custom']!==undefined) return _idbCache['liftlog_custom']; return JSON.parse(localStorage.getItem('liftlog_custom')||'[]'); }catch(e){ console.error('[liftlog] loadCustomLifts error:',e); return []; } }
 function saveCustomLifts(){ _idbPut('liftlog_custom', state.customLifts); try{ localStorage.setItem('liftlog_custom', JSON.stringify(state.customLifts)); }catch(e){ console.error('[liftlog] saveCustomLifts error:',e); showSaveError(); } }
 function loadTrackedLifts(){ try{ if(_idbReady && _idbCache['liftlog_tracked']!==undefined) return _idbCache['liftlog_tracked']; return JSON.parse(localStorage.getItem('liftlog_tracked')||'{}'); }catch(e){ console.error('[liftlog] loadTrackedLifts error:',e); return {}; } }
@@ -2756,11 +2796,82 @@ function saveTrackedLifts(){ _idbPut('liftlog_tracked', state.trackedLifts); try
 function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) return _idbCache['liftlog_nav']; return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch(e){ console.error('[liftlog] loadNav error:',e); return {}; } }
 function saveNav(){ const navObj={blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay}; _idbPut('liftlog_nav', navObj); try{ localStorage.setItem('liftlog_nav', JSON.stringify(navObj)); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
+function _parseLogKey(key) {
+  const p = key.split('||');
+  if (p.length < 5 || !p[4].startsWith('s')) return null;
+  return { blockId: p[0], weekLabel: p[1], dayName: p[2], exName: p[3], setIdx: p[4], setNum: parseInt(p[4].slice(1)) };
+}
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function escH(s){ const d=document.createElement('div');d.textContent=String(s);return d.innerHTML.replace(/"/g,'&quot;'); }
 function cssEsc(s){ return CSS.escape ? CSS.escape(s) : s.replace(/([[\](){}|\\^$*.+?])/g,'\\$1'); }
 
 // ── SCREEN NAV ────────────────────────────────────────────────────────────────
+function positionNavPill(animate) {
+  const pill = document.getElementById('nav-pill');
+  const activeBtn = document.querySelector('.nav-btn.active');
+  const nav = document.querySelector('.bottom-nav');
+  if (!pill || !activeBtn || !nav) return;
+  const navRect = nav.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  if (!animate) pill.style.transition = 'none';
+  pill.style.left = (btnRect.left - navRect.left) + 'px';
+  pill.style.width = btnRect.width + 'px';
+  if (!animate) {
+    void pill.offsetWidth; // force reflow
+    pill.style.transition = '';
+  }
+}
+window.addEventListener('resize', () => { positionNavPill(false); positionDayTabPill(false); });
+
+// ── CALC MODE PILL ────────────────────────────────────────────────────────────
+function positionCalcPill(animate) {
+  const pill = document.getElementById('calc-mode-pill');
+  const toggle = document.getElementById('calc-mode-toggle');
+  if (!pill || !toggle) return;
+  const activeBtn = toggle.querySelector('.calc-mode-btn.active');
+  if (!activeBtn) return;
+  const toggleRect = toggle.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  if (!animate) pill.style.transition = 'none';
+  pill.style.left = (btnRect.left - toggleRect.left) + 'px';
+  pill.style.width = btnRect.width + 'px';
+  if (!animate) {
+    void pill.offsetWidth;
+    pill.style.transition = '';
+  }
+}
+
+// ── EXERCISE UNIT PILLS ──────────────────────────────────────────────────────
+function positionUnitPills() {
+  document.querySelectorAll('.ex-unit-toggle').forEach(toggle => {
+    const pill = toggle.querySelector('.ex-unit-pill');
+    const activeBtn = toggle.querySelector('.ex-unit-toggle-btn.active');
+    if (!pill || !activeBtn) return;
+    const isSecond = activeBtn.nextElementSibling === null;
+    pill.style.left = isSecond ? '50%' : '0';
+    pill.style.width = '50%';
+  });
+}
+
+// ── DAY TAB PILL ─────────────────────────────────────────────────────────────
+function positionDayTabPill(animate) {
+  const pill = document.getElementById('day-tab-pill');
+  const bar = document.getElementById('day-tabs-bar');
+  if (!pill || !bar) return;
+  const activeTab = bar.querySelector('.day-tab.active');
+  if (!activeTab) { pill.style.width = '0'; return; }
+  const barRect = bar.getBoundingClientRect();
+  const tabRect = activeTab.getBoundingClientRect();
+  const scrollLeft = bar.scrollLeft;
+  if (!animate) pill.style.transition = 'none';
+  pill.style.left = (tabRect.left - barRect.left + scrollLeft) + 'px';
+  pill.style.width = tabRect.width + 'px';
+  if (!animate) {
+    void pill.offsetWidth;
+    pill.style.transition = '';
+  }
+}
+
 let _workoutScrollY = 0;
 function setScreen(s){
   // Auto-restore __complete__ if leaving workout tab with reopened workout and no changes
@@ -2774,6 +2885,7 @@ function setScreen(s){
   if(nw) nw.classList.toggle('active',s==='workout');
   if(nm) nm.classList.toggle('active',s==='metrics');
   if(nc) nc.classList.toggle('active',s==='calc');
+  positionNavPill(true);
   render();
   // Restore workout scroll; all other tabs start at top
   if(s==='workout'){ requestAnimationFrame(()=>window.scrollTo(0, _workoutScrollY)); }
@@ -2930,6 +3042,7 @@ function calc1rm(weight, reps, rpe){
 // ── BUILD METRICS DATA ────────────────────────────────────────────────────────
 let _metricsCache = null;
 let _metricsCacheKey = null;
+let _e1rmChipCache = null; // cached cross-block best e1RM by group for metrics chips
 
 function buildMetrics(drillBlockId){
   const cacheKey = drillBlockId || 'all';
@@ -2958,23 +3071,20 @@ function buildMetrics(drillBlockId){
   const rawPointsMap=new Map(); // key: blockId||weekLabel||exName -> index in rawPoints
 
   for(const [key,val] of Object.entries(state.logs)){
-    const parts=key.split('||');
-    if(parts.length<5) continue;
-    const blockId=parts[0];
-    const exName=canonicalizeLift(parts[3]); // normalize — strip bracket suffixes + synonym merge
-    const weekLabel=parts[1];
-    const setIdx=parts[4];
-    if(!setIdx.startsWith('s')) continue;
+    const pk=_parseLogKey(key);
+    if(!pk) continue;
+    const blockId=pk.blockId;
+    const exName=canonicalizeLift(pk.exName); // normalize — strip bracket suffixes + synonym merge
+    const weekLabel=pk.weekLabel;
 
-    const setIdxNum=parseInt(setIdx.slice(1));
     let weight=null, weightUnit=getDisplayUnit();
     if(val.actual){ weight=parseFloat(val.actual); weightUnit=getEntryUnit(val); }
-    else if(val.done){ weight=getPrescribedWeight(parts[0],parts[1],parts[2],parts[3],setIdxNum); }
+    else if(val.done){ weight=getPrescribedWeight(pk.blockId,pk.weekLabel,pk.dayName,pk.exName,pk.setNum); }
     if(!weight||isNaN(weight)||weight<=0) continue;
     // Convert to display unit so all e1rm values are comparable
     const dispWeight=convertWeight(weight,weightUnit,getDisplayUnit());
 
-    const reps=val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0],parts[1],parts[2],parts[3],setIdxNum);
+    const reps=val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId,pk.weekLabel,pk.dayName,pk.exName,pk.setNum);
     if(!reps) continue;
 
     const rpe=val.rpe?parseFloat(val.rpe):null;
@@ -2998,10 +3108,10 @@ function buildMetrics(drillBlockId){
       const existing=rawPoints[existingIdx];
       const newIsRpe=result.method==='rpe', oldIsRpe=existing.method==='rpe';
       if((newIsRpe&&!oldIsRpe)||(newIsRpe===oldIsRpe&&result.value>existing.e1rm)){
-        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=dispWeight; existing.topReps=reps; existing.dayName=parts[2];
+        existing.e1rm=result.value; existing.method=result.method; existing.topWeight=dispWeight; existing.topReps=reps; existing.dayName=pk.dayName;
       }
     }
-    else{ rawPointsMap.set(rpKey,rawPoints.length); rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:parts[2],exName,group,e1rm:result.value,method:result.method,topWeight:dispWeight,topReps:reps}); }
+    else{ rawPointsMap.set(rpKey,rawPoints.length); rawPoints.push({blockId,blockName:block.name,weekLabel,dayName:pk.dayName,exName,group,e1rm:result.value,method:result.method,topWeight:dispWeight,topReps:reps}); }
   }
 
   if(drillBlockId){
@@ -3045,6 +3155,34 @@ function buildMetrics(drillBlockId){
   _metricsCacheKey = cacheKey;
   _metricsCache = groups;
   return _metricsCache;
+}
+
+// Cross-block best e1RM by comp lift group — used for metrics chips.
+// Separate from buildMetrics() because chips always show ALL logs, never scoped to a drill block.
+function _getBestE1RMByGroup() {
+  if (_e1rmChipCache) return _e1rmChipCache;
+  const e1rmByGroup = { squat: null, bench: null, deadlift: null };
+  const _activeBlockIds = new Set(state.blocks.map(b => b.id));
+  for (const [key, val] of Object.entries(state.logs)) {
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    if (!_activeBlockIds.has(pk.blockId)) continue;
+    const exName = pk.exName;
+    if (!isCompLift(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group || group === 'other') continue;
+    let weight = val.actual ? parseFloat(val.actual) : null;
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    weight = convertWeight(weight, getEntryUnit(val), getDisplayUnit());
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
+    if (!reps) continue;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (!result) continue;
+    if (!e1rmByGroup[group] || result.value > e1rmByGroup[group]) e1rmByGroup[group] = Math.round(result.value);
+  }
+  _e1rmChipCache = e1rmByGroup;
+  return _e1rmChipCache;
 }
 
 function sessionOrder(label){
@@ -3226,28 +3364,8 @@ function renderMetrics(){
     </div>`;
   }
 
-  // ── Est. 1RM from logged comp lifts ──────────────────────────────────────
-  const e1rmByGroup = { squat: null, bench: null, deadlift: null };
-  const _activeBlockIds = new Set(state.blocks.map(b => b.id));
-  for (const [key, val] of Object.entries(state.logs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    if (!_activeBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
-    const exName = parts[3];
-    if (!isCompLift(exName)) continue;
-    const group = classifyLift(exName);
-    if (!group || group === 'other') continue;
-    const si = parseInt(parts[4].slice(1));
-    let weight = val.actual ? parseFloat(val.actual) : null;
-    if (!weight || isNaN(weight) || weight <= 0) continue;
-    weight = convertWeight(weight, getEntryUnit(val), getDisplayUnit());
-    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
-    if (!reps) continue;
-    const rpe = val.rpe ? parseFloat(val.rpe) : null;
-    const result = calc1rm(weight, reps, rpe);
-    if (!result) continue;
-    if (!e1rmByGroup[group] || result.value > e1rmByGroup[group]) e1rmByGroup[group] = Math.round(result.value);
-  }
+  // ── Est. 1RM from logged comp lifts (cached, cross-block) ───────────────
+  const e1rmByGroup = _getBestE1RMByGroup();
   // Always show all 3 S/B/D chips — "—" when no data
   {
     const _ath = loadAthlete() || {};
@@ -3375,9 +3493,8 @@ function renderMetrics(){
 
     if(hasData){
       const rowsExpanded = state.metricsRowsExpanded && state.metricsRowsExpanded[groupKey];
-      h+=`<div class="rm-datapoints-toggle" onclick="toggleMetricsRows('${esc(groupKey)}')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0 2px;cursor:pointer">
-        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Sessions</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${rowsExpanded?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg>
+      h+=`<div class="rm-datapoints-toggle" onclick="toggleMetricsRows('${esc(groupKey)}')" style="display:flex;align-items:center;justify-content:center;padding:6px 0 2px">
+        <span class="sessions-toggle"><span>Sessions</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${rowsExpanded?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg></span>
       </div>`;
       if(rowsExpanded){
       h+=`<div class="rm-datapoints"><div class="var-section">`;
@@ -3490,30 +3607,30 @@ function renderMetrics(){
   for(const key in _chartSelectedPt){ delete _chartSelectedPt[key]; }
   main.innerHTML=h;
 
-  setTimeout(()=>{
-    for(const [groupKey,group] of Object.entries(metrics)){
-      if(groupKey==='other') continue; // drawn below for expanded items
-      const allVars=Object.entries(group.variations);
-      if(allVars.length===0) continue;
-      const varsWithData=allVars.filter(([,pts])=>pts.length>0);
-      if(varsWithData.length===0){
-        drawEmptyChart(`chart-${groupKey}`);
-        continue;
-      }
-      const activeVar=state.metricsActiveVar[groupKey]||varsWithData[0][0];
-      const activePts=varsWithData.find(([vn])=>vn===activeVar)?.[1]||[];
-      drawSingleVarChart(`chart-${groupKey}`, activePts, true);
+  // Draw charts synchronously — avoids blank-canvas flash that setTimeout(0) can cause
+  // when a paint frame sneaks in before the deferred callback fires.
+  for(const [groupKey,group] of Object.entries(metrics)){
+    if(groupKey==='other') continue; // drawn below for expanded items
+    const allVars=Object.entries(group.variations);
+    if(allVars.length===0) continue;
+    const varsWithData=allVars.filter(([,pts])=>pts.length>0);
+    if(varsWithData.length===0){
+      drawEmptyChart(`chart-${groupKey}`);
+      continue;
     }
-    // Draw charts for expanded 'other' tracked lifts
-    if(state.metricsOtherExpanded){
-      for(const [vname, expanded] of Object.entries(state.metricsOtherExpanded)){
-        if(!expanded) continue;
-        const pts = otherGroup.variations[vname];
-        if(!pts || pts.length===0){ drawEmptyChart(`chart-other-${vname}`); continue; }
-        drawSingleVarChart(`chart-other-${vname}`, pts, true);
-      }
+    const activeVar=state.metricsActiveVar[groupKey]||varsWithData[0][0];
+    const activePts=varsWithData.find(([vn])=>vn===activeVar)?.[1]||[];
+    drawSingleVarChart(`chart-${groupKey}`, activePts, true);
+  }
+  // Draw charts for expanded 'other' tracked lifts
+  if(state.metricsOtherExpanded){
+    for(const [vname, expanded] of Object.entries(state.metricsOtherExpanded)){
+      if(!expanded) continue;
+      const pts = otherGroup.variations[vname];
+      if(!pts || pts.length===0){ drawEmptyChart(`chart-other-${vname}`); continue; }
+      drawSingleVarChart(`chart-other-${vname}`, pts, true);
     }
-  },0);
+  }
 }
 
 function _rerenderMetricsPreservingScroll(){
@@ -3541,7 +3658,20 @@ function toggleMaxCard(el) {
   allCards.forEach(c => { if (wasExpanded) c.classList.remove('expanded'); else c.classList.add('expanded'); });
 }
 function setMetricsDrill(val){ state.metricsDrillBlock=val; renderMetrics(); }
-function setMetricsVar(groupKey, varName){ state.metricsActiveVar[groupKey]=varName; _rerenderMetricsPreservingScroll(); }
+function setMetricsVar(groupKey, varName){
+  state.metricsActiveVar[groupKey]=varName;
+  _rerenderMetricsPreservingScroll();
+  requestAnimationFrame(()=>{
+    const canvas=document.getElementById('chart-'+groupKey);
+    const card=canvas&&canvas.closest('.metrics-lift-group');
+    if(card){
+      card.querySelectorAll('.var-pill.active').forEach(p=>{
+        p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop');
+        p.addEventListener('animationend',()=>p.classList.remove('pop'),{once:true});
+      });
+    }
+  });
+}
 
 function drawEmptyChart(canvasId){
   const canvas=document.getElementById(canvasId);
@@ -3871,6 +4001,11 @@ function drawSingleVarChart(canvasId, pts, drillMode){
       ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1.5,0,Math.PI*2); ctx.fill();
     }
   }
+  // Store last dot position for draw-in animation
+  if(coords&&coords.length>0){
+    const last2=coords[coords.length-1];
+    canvas._lastDotX=last2.x; canvas._lastDotY=last2.y; canvas._lastDotColor=col; canvas._lastDotBgCol=bgCol;
+  }
   // Store coords for tap-to-inspect
   _chartCoords[canvasId]=coords;
   const overlay=document.getElementById(canvasId+'-overlay');
@@ -4084,7 +4219,24 @@ function mergeBlocks(incoming){
   const existing=state.blocks;
   for(const inc of incoming){
     const idx=existing.findIndex(b=>b.id===inc.id);
-    if(idx!==-1){ existing[idx]=inc; } // replace structure, logs survive (keyed separately)
+    if(idx!==-1){
+      // Preserve custom exercises the user added via "+ Add Exercise"
+      const oldBlock=existing[idx];
+      for(const oldWeek of oldBlock.weeks){
+        const incWeek=inc.weeks.find(w=>w.label===oldWeek.label);
+        if(!incWeek) continue;
+        for(const oldDay of oldWeek.days){
+          const incDay=incWeek.days.find(d=>d.name===oldDay.name);
+          if(!incDay) continue;
+          for(const oldEx of oldDay.exercises){
+            if(!oldEx.isCustom) continue;
+            const alreadyPresent=incDay.exercises.some(e=>e.name===oldEx.name);
+            if(!alreadyPresent) incDay.exercises.push(oldEx);
+          }
+        }
+      }
+      existing[idx]=inc; // replace structure, logs survive (keyed separately)
+    }
     else { existing.push(inc); }
   }
   state.blocks=existing;
@@ -4433,6 +4585,7 @@ const APP_SETTINGS_KEY     = 'liftlog_app_settings';   // { showScores: bool }
 const ONBOARDED_KEY        = 'liftlog_onboarded';      // '1' after onboarding complete
 const LAST_BACKUP_KEY      = 'liftlog_last_backup';    // timestamp string of last Drive backup
 const REP_TIP_KEY          = 'liftlog_rep_tip_seen';   // '1' after rep-tap tip dismissed
+const DRIVE_AUTHED_KEY     = 'liftlog_drive_authed';   // '1' after user grants Drive OAuth (enables silent refresh)
 
 function loadAppSettings()  { try { if(_idbReady && _idbCache[APP_SETTINGS_KEY]!==undefined) return _idbCache[APP_SETTINGS_KEY]; return JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)||'{}'); } catch(e) { console.error('[liftlog] loadAppSettings error:',e); return {}; } }
 function saveAppSettings(s) { _idbPut(APP_SETTINGS_KEY, s); try { localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(s)); } catch(e) { console.error(e); showSaveError(); } }
@@ -4578,7 +4731,9 @@ function toggleScoresSetting() {
 // ── EXERCISE UNIT OVERRIDES ──────────────────────────────────────────────────
 function exUnitToggleHtml(exName) {
   const cur = getExUnit(exName);
+  const isKg = cur === 'kg';
   return `<div class="ex-unit-toggle">
+    <div class="ex-unit-pill" style="left:${isKg ? '50%' : '0'};width:50%;"></div>
     <button class="ex-unit-toggle-btn${cur==='lbs'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${esc(exName)}','lbs')">LBS</button>
     <button class="ex-unit-toggle-btn${cur==='kg'?' active':''}" onclick="event.stopPropagation();setExUnitInline('${esc(exName)}','kg')">KG</button>
   </div>`;
@@ -4591,7 +4746,10 @@ function setExUnitInline(exName, unit) {
   if (overrides[key] === unit) { delete overrides[key]; } // toggle off
   else { overrides[key] = unit; }
   saveUnitOverrides(overrides);
+  state._skipWorkoutScroll = true;
+  const sy = window.scrollY;
   render();
+  window.scrollTo(0, sy);
 }
 // ── REST TIMER ─────────────────────────────────────────────────────────────────
 const COMPOUND_KEYWORDS = ['squat','bench press','deadlift','dead lift','overhead press','ohp','barbell row',
@@ -4747,7 +4905,14 @@ function updateRestTimerModalUI() {
   const mode = getRestTimerMode();
   // Update settings row label
   const label = document.getElementById('rest-timer-mode-label');
-  if (label) label.textContent = mode === 'auto' ? 'Auto' : mode === 'manual' ? 'Manual' : 'Off';
+  if (label) {
+    if (mode === 'off') { label.textContent = 'Off'; }
+    else {
+      const _d = getRestTimerDefaults();
+      const _modeStr = mode === 'auto' ? 'Auto' : 'Manual';
+      label.textContent = _modeStr + ' \u00B7 ' + _fmtDur(_d.compound);
+    }
+  }
   // Update mode pills
   document.querySelectorAll('.rest-mode-pill').forEach(pill => {
     pill.classList.toggle('active', pill.dataset.mode === mode);
@@ -4773,6 +4938,13 @@ function updateRestDurUI() {
   el('rest-dur-compound', _fmtDur(d.compound));
   el('rest-dur-accessory', _fmtDur(d.accessory));
   el('rest-dur-bodyweight', _fmtDur(d.bodyweight));
+  // Also refresh settings row label with updated compound duration
+  const mode = getRestTimerMode();
+  const rowLabel = document.getElementById('rest-timer-mode-label');
+  if (rowLabel && mode !== 'off') {
+    const _modeStr = mode === 'auto' ? 'Auto' : 'Manual';
+    rowLabel.textContent = _modeStr + ' \u00B7 ' + _fmtDur(d.compound);
+  }
 }
 function adjustRestDur(group, delta) {
   const s = loadAppSettings();
@@ -4883,18 +5055,17 @@ function getScores() {
   const _e1rm = { squat: 0, bench: 0, deadlift: 0 };
   const _scoreBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    if (!_scoreBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
-    const exName = parts[3];
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    if (!_scoreBlockIds.has(pk.blockId)) continue; // skip orphaned logs from deleted blocks
+    const exName = pk.exName;
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
     if (!group || group === 'other') continue;
-    const si = parseInt(parts[4].slice(1));
     let weight = val.actual ? parseFloat(val.actual) : null;
     if (!weight || isNaN(weight) || weight <= 0) continue;
     weight = convertWeight(weight, getEntryUnit(val), getDisplayUnit());
-    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -4934,19 +5105,17 @@ function getHomePRs() {
   if (!block) return [];
   const peaks = { squat: null, bench: null, deadlift: null };
   for (const [key, val] of Object.entries(state.logs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || parts[0] !== block.id) continue;
-    if (!parts[4].startsWith('s')) continue;
-    if (!isCompLift(parts[3])) continue;
-    const group = classifyLift(parts[3]);
+    const pk = _parseLogKey(key);
+    if (!pk || pk.blockId !== block.id) continue;
+    if (!isCompLift(pk.exName)) continue;
+    const group = classifyLift(pk.exName);
     if (!group || group === 'other') continue;
     const rawWeight = val.actual ? parseFloat(val.actual) : null;
     if (!rawWeight || isNaN(rawWeight) || rawWeight <= 0) continue;
     // Convert to display unit
     const wUnit = getEntryUnit(val);
     const weight = convertWeight(rawWeight, wUnit, getDisplayUnit());
-    const si = parseInt(parts[4].slice(1));
-    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], parts[3], si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -5352,25 +5521,23 @@ function getSessionSummary(block, week, day) {
   const _ssBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
     if (!val.done || !val.actual) continue;
-    const parts = key.split('||');
-    if (parts.length < 5) continue;
-    if (!parts[4].startsWith('s')) continue;
-    if (!_ssBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
-    const exName = parts[3];
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    if (!_ssBlockIds.has(pk.blockId)) continue; // skip orphaned logs from deleted blocks
+    const exName = pk.exName;
     const group  = classifyLift(exName);
     if (!group || group === 'other') continue;
     if (!isCompLift(exName)) continue;
     const rawWeight = val.actual ? parseFloat(val.actual) : null;
     if (!rawWeight || isNaN(rawWeight) || rawWeight <= 0) continue;
     const weight = convertWeight(rawWeight, getEntryUnit(val), getDisplayUnit());
-    const si   = parseInt(parts[4].slice(1));
-    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
     if (!reps) continue;
     const rpe    = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
     if (!result) continue;
     // Track all-time peaks (excluding today's session to avoid self-PR)
-    const isToday = parts[0] === bid && parts[1] === wl && parts[2] === dn;
+    const isToday = pk.blockId === bid && pk.weekLabel === wl && pk.dayName === dn;
     if (!isToday && (!allTimePeaks[group] || result.value > allTimePeaks[group].e1rm)) {
       allTimePeaks[group] = { e1rm: result.value };
     }
@@ -5878,21 +6045,24 @@ function renderHome() {
     return;
   }
 
-  // Lazy __complete__ stamp (L081)
-  let _lazyStamped = false;
-  block.weeks.forEach(w => {
-    (w.days || []).forEach(d => {
-      if (!d.exercises || d.exercises.length === 0) return;
-      const fk = lk(block.id, w.label, d.name, '__complete__');
-      if (state.logs[fk]?.done) return;
-      if (isDayComplete(block, w, d)) {
-        const _now = new Date();
-        state.logs[fk] = { done: true, completedDate: `${_now.getFullYear()}-${_now.getMonth()+1}-${_now.getDate()}` };
-        _lazyStamped = true;
-      }
+  // Lazy __complete__ stamp (L081) — skip if completion state hasn't changed
+  if (_completionDirty) {
+    let _lazyStamped = false;
+    block.weeks.forEach(w => {
+      (w.days || []).forEach(d => {
+        if (!d.exercises || d.exercises.length === 0) return;
+        const fk = lk(block.id, w.label, d.name, '__complete__');
+        if (state.logs[fk]?.done) return;
+        if (isDayComplete(block, w, d)) {
+          const _now = new Date();
+          state.logs[fk] = { done: true, completedDate: `${_now.getFullYear()}-${_now.getMonth()+1}-${_now.getDate()}` };
+          _lazyStamped = true;
+        }
+      });
     });
-  });
-  if (_lazyStamped) saveLogs();
+    if (_lazyStamped) saveLogs();
+    _completionDirty = false;
+  }
 
   const _athlete = loadAthlete();
   const athleteName = (_athlete && _athlete.name)
@@ -6224,9 +6394,9 @@ function renderBlockBar(block) {
       <div class="block-dates">${escH(block.dateRange || '')}</div>
     </div>`;
   }
-  let h=`<div class="block-bar"><div style="display:flex;align-items:center;gap:6px">
-    <div><div class="block-name">${escH(displayBlockName(block.name))}</div><div class="block-dates">${escH(block.dateRange || '')}</div></div>
-    <button class="edit-name-btn" style="opacity:0.3;font-size:11px" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+  let h=`<div class="block-bar"><div class="block-bar-left">
+    <div style="min-width:0;overflow:hidden"><div class="block-name">${escH(displayBlockName(block.name))}</div><div class="block-dates">${escH(block.dateRange || '')}</div></div>
+    <button class="edit-name-btn" style="opacity:0.3;font-size:11px;flex-shrink:0" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
   </div>`;
   if(state.blocks.length>1){
     h+=`<select class="cycle-select" onchange="switchBlock(this.value)" aria-label="Switch program">`;
@@ -6255,7 +6425,7 @@ function renderDayTabs(block, week) {
   const isActive = isWorkoutActive(state.activeWeek, state.activeDay);
   const isEditing = !!state.editingDay;
   let h=`<div class="day-tabs-wrap">`;
-  h+=`<div class="day-tabs-container"><div class="day-tabs" id="day-tabs-bar">`;
+  h+=`<div class="day-tabs-container"><div class="day-tabs" id="day-tabs-bar"><div class="day-tab-pill" id="day-tab-pill"></div>`;
   week.days.forEach((d,di)=>{
     const complete=isDayComplete(block,week,d);
     const label=formatDayTabLabel(d.name);
@@ -6545,6 +6715,33 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   }
 
   function _setRowOpen(sk) { const d=(state.logs[sk]||{}).done; return `<div class="set-row${d?' set-done':''}">`; }
+
+  // Shared extra-set row builder — called at the end of hasSets, simple, and ranged branches.
+  // Uses closures: key, ex, inputMode, _isBarbell, _ghostWeight, _setRowOpen from _buildSetRows scope.
+  function _buildExtraSetRows(startIdx, count, reps, numWeight, weightStr, weightAttrs, anyCalc, isOpen, labelFn) {
+    let out = '';
+    for (let _i = 0; _i < count; _i++) {
+      const _si = startIdx + _i;
+      const _sk = key + `||s${_si}`;
+      const _sl = state.logs[_sk] || {};
+      const _hasActual = _sl.actualReps && _sl.actualReps !== String(reps);
+      const _calcOrSpacer = (!isOpen && _isBarbell && numWeight > 0)
+        ? _exCalcBtnHtml(numWeight, getExUnit(ex.name))
+        : ((anyCalc && !isOpen) ? '<div class="calc-spacer"></div>' : '');
+      const _label = labelFn(_sl, _hasActual);
+      const _prescHtml = isOpen
+        ? ''
+        : `<span class="set-prescribed-btn ${_hasActual?'has-actual':''}"${weightAttrs}>${_label}</span>`;
+      const _inputPl = isOpen ? 'open' : (numWeight > 0 ? weightStr + unitLabel(true) : getDisplayUnit());
+      out += `${_setRowOpen(_sk)}
+            ${_calcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_prescHtml}</div>
+            ${_exSetInputsHtml(_sk, _sl, _inputPl, _si, reps, ex.name, inputMode, _ghostWeight(_si))}
+            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
+          </div>`;
+    }
+    return out;
+  }
+
   let h = `<div class="ex-detail">`;
   const editingThis = state.editingExKey === key;
   if (editingThis) {
@@ -6602,22 +6799,10 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
       const _lastS = sets[sets.length-1]||{};
-      for (let _i = 0; _i < _extra; _i++) {
-        const _si = sets.length+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
-        const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(_lastS.reps);
-        const _extraNw = _lastS.weight && !_lastS.isRpe && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
-        const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
-        const _extraPrescLabel = _setLabel(_lastS);
-        const _extraDisplayLabel = _extraHasActual ? _setLabel(_lastS, _sl.actualReps) : _extraPrescLabel;
-        const _extraPrescHtml = `<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_extraWeightAttrs}>${_extraDisplayLabel}</span>`;
-        const _extraInputPl = _extraNw > 0 ? _lastS.weight+unitLabel(true) : getDisplayUnit();
-        const _extraCalcOrSpacer = _isBarbell && _extraNw > 0 ? _exCalcBtnHtml(_extraNw, getExUnit(ex.name)) : (_anySetHasCalc ? '<div class="calc-spacer"></div>' : '');
-        h += `${_setRowOpen(_sk)}
-            ${_extraCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_extraPrescHtml}</div>
-            ${_exSetInputsHtml(_sk, _sl, _extraInputPl, _si, _lastS.reps, ex.name, inputMode, _ghostWeight(_si))}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
-          </div>`;
-      }
+      const _extraNw = _lastS.weight && !_lastS.isRpe && !isNaN(parseFloat(_lastS.weight)) ? parseFloat(_lastS.weight) : 0;
+      const _extraWeightAttrs = _extraNw > 0 ? ` data-weight="${_extraNw}" data-unit="${getExUnit(ex.name)}"` : '';
+      h += _buildExtraSetRows(sets.length, _extra, _lastS.reps, _extraNw, _lastS.weight, _extraWeightAttrs, _anySetHasCalc, false,
+        (_sl, _hasActual) => _hasActual ? _setLabel(_lastS, _sl.actualReps) : _setLabel(_lastS));
     }
     h += `</div>`;
   } else if (pres && simple) {
@@ -6646,19 +6831,11 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     }
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
-      for (let _i = 0; _i < _extra; _i++) {
-        const _si = simple.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
-        const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(simple.reps);
-        const _extraPrescLabel = _simpleNumWeight > 0
-          ? _simpleWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : simple.reps)
-          : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : simple.reps+' reps');
-        const _extraSimpleCalcOrSpacer = _isBarbell && _simpleNumWeight > 0 ? _exCalcBtnHtml(_simpleNumWeight, getExUnit(ex.name)) : (_simpleAnyCalc ? '<div class="calc-spacer"></div>' : '');
-        h += `${_setRowOpen(_sk)}
-            ${_extraSimpleCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_simpleWeightAttrs}>${_extraPrescLabel}</span></div>
-            ${_exSetInputsHtml(_sk, _sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), _si, simple.reps, ex.name, inputMode, _ghostWeight(_si))}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
-          </div>`;
-      }
+      h += _buildExtraSetRows(simple.sets, _extra, simple.reps, _simpleNumWeight, _simpleWeight, _simpleWeightAttrs, _simpleAnyCalc, false,
+        (_sl, _hasActual) => {
+          if (_simpleNumWeight > 0) return _simpleWeight+' '+unitLabel(true)+' × '+(_hasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : simple.reps);
+          return _hasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : simple.reps+' reps';
+        });
     }
     h += `</div>`;
   } else if (pres && ranged) {
@@ -6688,19 +6865,12 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
       const _isOpen = ranged.reps === 'open';
-      for (let _i = 0; _i < _extra; _i++) {
-        const _si = ranged.sets+_i; const _sk = key+`||s${_si}`; const _sl = state.logs[_sk]||{};
-        const _extraHasActual = _sl.actualReps && _sl.actualReps !== String(ranged.reps);
-        const _extraRangedLabel = _isOpen ? '' : (_rangedNumWeight > 0
-          ? _rangedWeight+' '+unitLabel(true)+' × '+(_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : ranged.reps)
-          : (_extraHasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : ranged.reps+' reps'));
-        const _extraRangedCalcOrSpacer = !_isOpen && _isBarbell && _rangedNumWeight > 0 ? _exCalcBtnHtml(_rangedNumWeight, getExUnit(ex.name)) : (_rangedAnyCalc && !_isOpen ? '<div class="calc-spacer"></div>' : '');
-        h += `${_setRowOpen(_sk)}
-            ${_extraRangedCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_isOpen?'':`<span class="set-prescribed-btn ${_extraHasActual?'has-actual':''}"${_rangedWeightAttrs}>${_extraRangedLabel}</span>`}</div>
-            ${_exSetInputsHtml(_sk, _sl, _isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), _si, ranged.reps, ex.name, inputMode, _ghostWeight(_si))}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
-          </div>`;
-      }
+      h += _buildExtraSetRows(ranged.sets, _extra, ranged.reps, _rangedNumWeight, _rangedWeight, _rangedWeightAttrs, _rangedAnyCalc, _isOpen,
+        (_sl, _hasActual) => {
+          if (_isOpen) return '';
+          if (_rangedNumWeight > 0) return _rangedWeight+' '+unitLabel(true)+' × '+(_hasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span>' : ranged.reps);
+          return _hasActual ? '<span style="color:var(--gold)">'+_sl.actualReps+'</span> reps' : ranged.reps+' reps';
+        });
     }
     h += `</div>`;
   } else if (bareWithRounds) {
@@ -6849,8 +7019,7 @@ function renderExerciseList(block, week, day) {
 
   // Live workout — user explicitly tapped Finish Workout
   if (isLiveComplete) {
-    h+=_buildWorkoutSummaryCard(block, week, day);
-    h+=`<div class="workout-reset-row"><button class="workout-reset-btn" onclick="openEditWorkoutSheet()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg> Edit Workout</button></div>`;
+    h+=_buildWorkoutSummaryCard(block, week, day, true);
     return h;
   }
 
@@ -6872,7 +7041,7 @@ function isWorkoutActive(weekIdx, dayIdx) {
   return state.workoutActive && state.workoutActive.weekIdx === weekIdx && state.workoutActive.dayIdx === dayIdx;
 }
 
-function _buildWorkoutSummaryCard(block, week, day) {
+function _buildWorkoutSummaryCard(block, week, day, showEditBtn) {
   const progress = getDayProgress(block, week, day);
   let totalSets = 0;
   day.exercises.forEach(ex => {
@@ -6931,6 +7100,11 @@ function _buildWorkoutSummaryCard(block, week, day) {
   if (prList.length > 0) {
     const prText = prList.map(p => `New ${escH(p.name)} PR`).join(' \u00b7 ');
     h += `<div class="summary-pr-banner"><div class="summary-pr-text">${prText}</div></div>`;
+  }
+  if (showEditBtn) {
+    h += `<div class="summary-edit-row" style="margin-top:var(--sp-4);padding-top:var(--sp-4);border-top:1px solid rgba(200,169,81,0.15);text-align:center">
+      <button onclick="openEditWorkoutSheet()" style="background:none;border:1px solid rgba(200,169,81,0.3);border-radius:8px;padding:var(--sp-3) var(--sp-6);color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-md);font-weight:600;letter-spacing:0.05em;cursor:pointer">\u270E MODIFY THIS SESSION</button>
+    </div>`;
   }
   h += `</div>`;
   return h;
@@ -7144,24 +7318,36 @@ function renderWorkout(){
     if (isComplete || isHistorical) {
       // Completed day — show preview list + complete message
       h += renderPreviewList(block, week, day);
-      h += _buildWorkoutSummaryCard(block, week, day);
-      if (!isHistorical && !forceLog?.importedComplete) {
-        h += `<div class="workout-reset-row"><button class="workout-reset-btn" onclick="openEditWorkoutSheet()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg> Edit Workout</button></div>`;
-      }
+      const _showEdit = !isHistorical && !forceLog?.importedComplete;
+      h += _buildWorkoutSummaryCard(block, week, day, _showEdit);
     } else {
-      // Not started or partial — show banner + preview list
+      // Not started or partial — show banner + info bar + preview list
       h += renderStartResumeBanner(block, week, day);
+      const _exCount = day.exercises ? day.exercises.length : 0;
+      if (_exCount > 0) {
+        h += `<div class="preview-info-bar" style="display:flex;justify-content:center;gap:var(--sp-6);padding:var(--sp-4) 0;color:var(--text-sub);font-size:var(--fs-sm);letter-spacing:0.05em;">
+          <span>${_exCount} EXERCISE${_exCount !== 1 ? 'S' : ''}</span>
+          <span>\u00B7</span>
+          <span>~${Math.round(_exCount * 11)} MIN</span>
+        </div>`;
+      }
       h += renderPreviewList(block, week, day);
     }
   }
 
   main.innerHTML=h;
-  // Scroll active day tab and week pill into view
+  // Scroll active day tab and week pill into view, position sliding pills
   requestAnimationFrame(()=>{
     const bar=document.getElementById('day-tabs-bar');
-    if(bar){const active=bar.querySelector('.day-tab.active');if(active) active.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
-    const wbar=document.querySelector('.week-bar');
-    if(wbar){const activeW=wbar.querySelector('.week-pill.active');if(activeW) activeW.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
+    if(!state._skipWorkoutScroll){
+      if(bar){const active=bar.querySelector('.day-tab.active');if(active) active.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
+      const wbar=document.querySelector('.week-bar');
+      if(wbar){const activeW=wbar.querySelector('.week-pill.active');if(activeW) activeW.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});}
+    }
+    delete state._skipWorkoutScroll;
+    positionDayTabPill(false);
+    positionUnitPills();
+    if(bar) bar.addEventListener('scroll', () => positionDayTabPill(false), {passive:true});
   });
 }
 
@@ -7227,6 +7413,7 @@ function saveExName(key, oldName){
 }
 
 function toggleEx(key){
+  _completionDirty = true;
   const l=state.logs[key]||{};
   const nowDone=!l.done;
   // When user manually interacts, clear inferredComplete — this is now a real action
@@ -7329,6 +7516,8 @@ function toggleEx(key){
 }
 
 function completeWorkout(){
+  if (!state.workoutActive) return; // already completed or not active
+  _completionDirty = true;
   const block=state.activeBlock;
   if(state.activeWeek>=block.weeks.length) state.activeWeek=Math.max(0,block.weeks.length-1);
   const week=block.weeks[state.activeWeek];
@@ -7556,6 +7745,7 @@ function clearWorkout(){
 function confirmClearWorkout(){
   const overlay=document.getElementById('clear-workout-overlay');
   if(overlay) overlay.remove();
+  _completionDirty = true;
   state.workoutActive = null;
   const block=state.activeBlock;
   const week=block.weeks[state.activeWeek];
@@ -7599,6 +7789,7 @@ function openEditWorkoutSheet(){
 }
 
 function reopenWorkout(){
+  _completionDirty = true;
   // Close the sheet
   const overlay=document.getElementById('edit-workout-overlay');
   if(overlay) overlay.remove();
@@ -7698,6 +7889,7 @@ function _checkReopenAutoRestore(){
 }
 
 function toggleSkip(key){
+  _completionDirty = true;
   const log=state.logs[key]||{};
   const isSkipped=log.skipped||false;
   const nowSkipped=!isSkipped;
@@ -7761,6 +7953,7 @@ function _maybeAdvanceWeek() {
 }
 
 function toggleSet(key){
+  _completionDirty = true;
   const l=state.logs[key]||{};
   const nowDone = !l.done;
   const exName = _resolveExNameFromKey(key);
@@ -7808,10 +8001,9 @@ function _resolveExNameFromKey(setKey) {
 // For non-circuit exercises, always true. For circuit exercises, only true when
 // all exercises in the same circuit have the same set number marked done.
 function _shouldFireRestTimer(setKey) {
-  const parts = setKey.split('||');
-  if (parts.length < 5) return true;
-  const [blockId, weekLabel, dayName, exName] = parts;
-  const setIdx = parts[4]; // e.g. "s0", "s1"
+  const pk = _parseLogKey(setKey);
+  if (!pk) return true;
+  const { blockId, weekLabel, dayName, exName, setIdx } = pk;
 
   // Find the exercise object to check supersetGroup
   const block = state.blocks.find(b => b.id === blockId);
@@ -7868,17 +8060,17 @@ function _getCompLiftMaxE1RMs() {
   const _prBlockIds = new Set(state.blocks.map(b => b.id));
   for (const [key, val] of Object.entries(state.logs)) {
     if (!val.done || !val.actual) continue;
-    const parts = key.split('||');
-    if (parts.length < 5) continue;
-    if (!_prBlockIds.has(parts[0])) continue; // skip orphaned logs from deleted blocks
-    const exName = parts[3];
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    if (!_prBlockIds.has(pk.blockId)) continue; // skip orphaned logs from deleted blocks
+    const exName = pk.exName;
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
     if (!group || group === 'other') continue;
     const rawWeight = parseFloat(val.actual);
     if (!rawWeight || rawWeight <= 0) continue;
     const weight = convertWeight(rawWeight, getEntryUnit(val), getDisplayUnit());
-    const reps = val.actualReps ? parseInt(val.actualReps) : _getPrescribedRepsForKey(parts[0], parts[1], parts[2], parts[3], parts[4]);
+    const reps = val.actualReps ? parseInt(val.actualReps) : _getPrescribedRepsForKey(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setIdx);
     if (!reps || reps <= 0) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -8019,9 +8211,9 @@ function setActual(key,v){
 }
 
 function _getPrescribedRepsFromContext(exName, setKey) {
-  const parts = setKey.split('||');
-  if (parts.length < 5) return null;
-  const si = parseInt(parts[4].replace('s',''));
+  const pk = _parseLogKey(setKey);
+  if (!pk) return null;
+  const si = pk.setNum;
   const ctx = getActiveContext();
   if (!ctx) return null;
   const ex = ctx.day.exercises.find(e => e.name === exName);
@@ -8234,6 +8426,9 @@ function _onDriveTokenResponse(resp) {
     if (_driveTokenReject) _driveTokenReject(new Error(resp.error));
   } else {
     _driveAccessToken = resp.access_token;
+    // Persist flag so silent refresh can be attempted after page reload
+    _idbPut(DRIVE_AUTHED_KEY, '1');
+    try { localStorage.setItem(DRIVE_AUTHED_KEY, '1'); } catch(e) {}
     if (_driveTokenResolve) _driveTokenResolve(resp.access_token);
   }
   _driveTokenResolve = null;
@@ -8572,9 +8767,51 @@ function updateAutoBackupToggleUI() {
   toggle.setAttribute('aria-checked', String(on));
 }
 
+// Attempt a silent (no-prompt) OAuth token refresh using GIS.
+// Returns true if a new token was obtained, false if the session is gone.
+// On failure, clears DRIVE_AUTHED_KEY so we don't keep retrying a dead session.
+function _silentDriveRefresh() {
+  return new Promise((resolve) => {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) { resolve(false); return; }
+    let settled = false;
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: DRIVE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      prompt: '',
+      callback: (resp) => {
+        if (settled) return;
+        settled = true;
+        if (resp.error || !resp.access_token) {
+          // Session expired or revoked — stop attempting until user re-auths
+          _idbPut(DRIVE_AUTHED_KEY, null);
+          try { localStorage.removeItem(DRIVE_AUTHED_KEY); } catch(e) {}
+          resolve(false);
+        } else {
+          _driveAccessToken = resp.access_token;
+          resolve(true);
+        }
+      },
+      error_callback: () => {
+        if (settled) return;
+        settled = true;
+        _idbPut(DRIVE_AUTHED_KEY, null);
+        try { localStorage.removeItem(DRIVE_AUTHED_KEY); } catch(e) {}
+        resolve(false);
+      },
+    });
+    client.requestAccessToken({ prompt: '' });
+  });
+}
+
 async function _silentAutoBackup() {
   if (!isAutoBackupEnabled()) return;
-  if (!_driveAccessToken) return; // don't prompt OAuth — skip silently
+  if (!_driveAccessToken) {
+    // No token — attempt silent refresh if user previously authorized
+    const prevAuthed = (_idbReady && _idbCache[DRIVE_AUTHED_KEY]) || localStorage.getItem(DRIVE_AUTHED_KEY);
+    if (!prevAuthed) return;
+    const ok = await _silentDriveRefresh();
+    if (!ok) return; // session gone — skip silently
+  }
   try {
     await _ensureDriveFolders();
     const payload = _buildBackupPayload();
@@ -9775,9 +10012,9 @@ function dismissCelebration() {
 
 function autoCompleteExercise(setKey){
   // Extract exercise key from set key: blockId||week||day||exercise||sN → blockId||week||day||exercise
-  const parts=setKey.split('||');
-  if(parts.length!==5) return; // Not a set key
-  const exKey=parts.slice(0,4).join('||');
+  const pk=_parseLogKey(setKey);
+  if(!pk) return; // Not a set key
+  const exKey=lk(pk.blockId,pk.weekLabel,pk.dayName,pk.exName);
   
   // Count sets for this exercise
   const block=state.activeBlock;
@@ -10208,7 +10445,7 @@ function checkWeekProgression(block) {
   }
 }
 function setWeek(wi){ if(state._reopenedWorkout){_checkReopenAutoRestore();} if(state.editingDay){_cancelDayEdits();} state.activeWeek=wi; state.activeDay=0; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
-function setDay(di){ if(state._reopenedWorkout && di!==state.activeDay){_checkReopenAutoRestore();} if(state.editingDay && di!==state.activeDay){_cancelDayEdits();} state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); }
+function setDay(di){ if(state._reopenedWorkout && di!==state.activeDay){_checkReopenAutoRestore();} if(state.editingDay && di!==state.activeDay){_cancelDayEdits();} state.activeDay=di; state.expandedEx=new Set(); _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); requestAnimationFrame(()=>positionDayTabPill(true)); }
 function switchBlock(id){ const b=state.blocks.find(b=>b.id===id); if(b){ const next=findNextWorkout(b); state.activeBlock=b; state.activeWeek=next.weekIdx; state.activeDay=next.dayIdx; state.editingBlockName=false; _workoutScrollY=0; saveNav(); render(); window.scrollTo(0,0); } }
 
 
@@ -11039,11 +11276,10 @@ function _buildReportSnapshot(blockId) {
   const setRepsMap = {};
   const prescribedWeightMap = {};
   for (const key of Object.keys(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const si = parseInt(parts[4].slice(1));
-    setRepsMap[key] = getSetReps(parts[0], parts[1], parts[2], parts[3], si);
-    prescribedWeightMap[key] = getPrescribedWeight(parts[0], parts[1], parts[2], parts[3], si);
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    setRepsMap[key] = getSetReps(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
+    prescribedWeightMap[key] = getPrescribedWeight(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
   }
 
   // Previous block (for block-over-block deltas)
@@ -11068,11 +11304,10 @@ function _buildReportSnapshot(blockId) {
     prevSetRepsMap = {};
     prevPrescribedWeightMap = {};
     for (const key of Object.keys(prevBlockLogs)) {
-      const parts = key.split('||');
-      if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-      const si = parseInt(parts[4].slice(1));
-      prevSetRepsMap[key] = getSetReps(parts[0], parts[1], parts[2], parts[3], si);
-      prevPrescribedWeightMap[key] = getPrescribedWeight(parts[0], parts[1], parts[2], parts[3], si);
+      const pk = _parseLogKey(key);
+      if (!pk) continue;
+      prevSetRepsMap[key] = getSetReps(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
+      prevPrescribedWeightMap[key] = getPrescribedWeight(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
     }
   }
 
@@ -11112,12 +11347,11 @@ function _getReportData(blockId) {
   // ── Pre-scan: identify comp lift names per group (mirrors metrics hero cards line 2878) ──
   const compLiftName = { squat: null, bench: null, deadlift: null };
   for (const [key] of Object.entries(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const rawName = parts[3];
-    if (!isCompLift(rawName)) continue;
-    const g = classifyLift(rawName);
-    if (g && !compLiftName[g]) compLiftName[g] = canonicalizeLift(rawName);
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    if (!isCompLift(pk.exName)) continue;
+    const g = classifyLift(pk.exName);
+    if (g && !compLiftName[g]) compLiftName[g] = canonicalizeLift(pk.exName);
   }
 
   // ── Gather e1RM data by family → exercise → week ─────────────────────────
@@ -11139,25 +11373,24 @@ function _getReportData(blockId) {
   }
 
   for (const [key, val] of Object.entries(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
-    const exName = canonicalizeLift(parts[3]);
-    const group = classifyLift(exName) || classifyLift(parts[3]);
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    const exName = canonicalizeLift(pk.exName);
+    const group = classifyLift(exName) || classifyLift(pk.exName);
     if (!group || !families[group]) continue;
 
-    const si = parseInt(parts[4].slice(1));
     let weight = null, wUnit = getDisplayUnit();
     if (val.actual) { weight = parseFloat(val.actual); wUnit = getEntryUnit(val); }
-    else if (val.done) { weight = getPrescribedWeight(parts[0], parts[1], parts[2], parts[3], si); }
+    else if (val.done) { weight = getPrescribedWeight(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum); }
     if (!weight || isNaN(weight) || weight <= 0) continue;
     weight = convertWeight(weight, wUnit, getDisplayUnit());
-    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], parts[3], si);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
     if (!result) continue;
 
-    const weekLabel = parts[1];
+    const weekLabel = pk.weekLabel;
     if (!families[group][exName]) families[group][exName] = {};
     if (!families[group][exName][weekLabel])
       families[group][exName][weekLabel] = { e1rm: 0, topWeight: 0, topReps: 0, topRpe: null, method: 'epley' };
@@ -11165,13 +11398,13 @@ function _getReportData(blockId) {
     if (result.value > w.e1rm) { w.e1rm = result.value; w.topWeight = weight; w.topReps = reps; w.topRpe = rpe; w.method = result.method; }
 
     // ── Track AMRAP sets ──────────────────────────────────────────────────
-    const presKey = parts[1] + '||' + parts[2] + '||' + parts[3];
+    const presKey = pk.weekLabel + '||' + pk.dayName + '||' + pk.exName;
     const pres = _presCache[presKey];
     if (pres && _isAmrapPrescription(pres) && val.actualReps) {
       const actualReps = parseInt(val.actualReps);
       if (actualReps > 0 && val.done) {
         // Get prescribed reps for this set to compare
-        const prescReps = getSetReps(parts[0], parts[1], parts[2], parts[3], si);
+        const prescReps = getSetReps(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
         const prescMin = prescReps ? parseInt(String(prescReps).replace(/\+.*/, '')) : 0;
         if (!amrapData[group][weekLabel] || result.value > amrapData[group][weekLabel].e1rm) {
           amrapData[group][weekLabel] = {
@@ -11193,9 +11426,9 @@ function _getReportData(blockId) {
   // Count days with ANY logged set as "attended" (not isDayComplete which requires ALL exercises)
   const daysWithSets = new Set();
   for (const key of Object.keys(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length >= 5 && parts[4].startsWith('s') && blockLogs[key].done) {
-      daysWithSets.add(parts[1] + '||' + parts[2]); // weekLabel||dayLabel
+    const pk = _parseLogKey(key);
+    if (pk && blockLogs[key].done) {
+      daysWithSets.add(pk.weekLabel + '||' + pk.dayName); // weekLabel||dayLabel
     }
   }
   for (const week of weeks) {
@@ -11206,13 +11439,12 @@ function _getReportData(blockId) {
   }
 
   for (const [key, val] of Object.entries(blockLogs)) {
-    const parts = key.split('||');
-    if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
     if (!val.done) continue;
-    const exName = parts[3];
-    const si = parseInt(parts[4].slice(1));
-    let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
-    const prescReps = getSetReps(parts[0], parts[1], parts[2], exName, si);
+    const exName = pk.exName;
+    let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
+    const prescReps = getSetReps(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
     const actualReps = val.actualReps ? parseInt(val.actualReps) : prescReps;
     if (weight && !isNaN(weight) && weight > 0 && actualReps) {
       const wUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
@@ -11222,7 +11454,7 @@ function _getReportData(blockId) {
       totalVolume += vol;
       const group = classifyLift(exName) || 'other';
       volumeByFamily[group] = (volumeByFamily[group] || 0) + vol;
-      const wl = parts[1];
+      const wl = pk.weekLabel;
       if (!volumeByWeekFamily[wl]) volumeByWeekFamily[wl] = { squat: 0, bench: 0, deadlift: 0, other: 0 };
       volumeByWeekFamily[wl][group] = (volumeByWeekFamily[wl][group] || 0) + vol;
     }
@@ -11231,7 +11463,7 @@ function _getReportData(blockId) {
       const r = parseFloat(val.rpe);
       if (!isNaN(r)) {
         totalRpe += r; rpeCount++;
-        const wl = parts[1];
+        const wl = pk.weekLabel;
         if (!rpeByWeek[wl]) rpeByWeek[wl] = { total: 0, count: 0 };
         rpeByWeek[wl].total += r;
         rpeByWeek[wl].count++;
@@ -11402,11 +11634,11 @@ function _getReportData(blockId) {
       let totalSets = 0, sessionCount = 0;
       const sessKeys = new Set();
       for (const [key, val] of Object.entries(blockLogs)) {
-        const parts = key.split('||');
-        if (parts.length < 5 || !parts[4].startsWith('s') || !val.done) continue;
-        if (classifyLift(parts[3]) !== groupKey) continue;
+        const pk = _parseLogKey(key);
+        if (!pk || !val.done) continue;
+        if (classifyLift(pk.exName) !== groupKey) continue;
         totalSets++;
-        sessKeys.add(parts[1] + '||' + parts[2]);
+        sessKeys.add(pk.weekLabel + '||' + pk.dayName);
       }
       sessionCount = sessKeys.size;
       const avg = sessionCount > 0 ? (totalSets / sessionCount).toFixed(1) : '0';
@@ -11430,25 +11662,24 @@ function _getReportData(blockId) {
     // Group sets by session (weekLabel + dayName + exName)
     const sessions = {};
     for (const [key, val] of Object.entries(blockLogs)) {
-      const parts = key.split('||');
-      if (parts.length < 5 || !parts[4].startsWith('s')) continue;
+      const pk = _parseLogKey(key);
+      if (!pk) continue;
       if (!val.done) continue;
-      const exName = parts[3];
+      const exName = pk.exName;
       const group = classifyLift(exName);
       if (group !== groupKey) continue;
-      const sessionKey = parts[1] + '||' + parts[2] + '||' + exName;
-      const si = parseInt(parts[4].slice(1));
-      let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(parts[0], parts[1], parts[2], exName, si);
+      const sessionKey = pk.weekLabel + '||' + pk.dayName + '||' + exName;
+      let weight = val.actual ? parseFloat(val.actual) : getPrescribedWeight(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
       if (!weight || isNaN(weight) || weight <= 0) continue;
       const fWUnit = val.actual ? getEntryUnit(val) : getDisplayUnit();
       weight = convertWeight(weight, fWUnit, getDisplayUnit());
-      const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(parts[0], parts[1], parts[2], exName, si);
+      const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
       if (!reps) continue;
       const rpe = val.rpe ? parseFloat(val.rpe) : null;
       const result = calc1rm(weight, reps, rpe);
       if (!result) continue;
       if (!sessions[sessionKey]) sessions[sessionKey] = [];
-      sessions[sessionKey].push({ si, e1rm: result.value });
+      sessions[sessionKey].push({ si: pk.setNum, e1rm: result.value });
     }
 
     const fatigues = [];
@@ -11597,16 +11828,16 @@ function _getReportData(blockId) {
       // logged set carrying actual weight data for that lift family.
       const _prevSessions = { squat: new Set(), bench: new Set(), deadlift: new Set() };
       for (const [key, val] of Object.entries(prevData.blockLogs)) {
-        const pts = key.split('||');
-        if (pts.length < 5 || !pts[4].startsWith('s')) continue;
+        const pk = _parseLogKey(key);
+        if (!pk) continue;
         if (!val.done) continue;
-        const exName = pts[3];
+        const exName = pk.exName;
         const grp = classifyLift(canonicalizeLift(exName)) || classifyLift(exName);
         if (!grp || !_prevSessions[grp]) continue;
         // Require actual weight data: either user-entered weight or a done set
         // (done implies prescribed weight was used)
         const hasWeight = (val.actual && parseFloat(val.actual) > 0) || val.done;
-        if (hasWeight) _prevSessions[grp].add(pts[1] + '||' + pts[2]);
+        if (hasWeight) _prevSessions[grp].add(pk.weekLabel + '||' + pk.dayName);
       }
       blockDeltas = {};
       for (const gk of ['squat', 'bench', 'deadlift']) {
@@ -12131,8 +12362,9 @@ body{background:${tv('--bg')||'#0a0a0a'};color:${tv('--text-primary')||'#f0f0f0'
   .report{padding:10px;max-width:100%}
   html,body{background:${tv('--bg')||'#0a0a0a'}}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .comp-card,.section-card,.flags-section{break-inside:avoid}
-  .vol-chart-wrap{break-inside:avoid}
+  .comp-card,.section-card,.flags-section{page-break-inside:avoid;break-inside:avoid}
+  .vol-chart-wrap{page-break-inside:avoid;break-inside:avoid;min-height:200px}
+  .weekly-table{page-break-inside:avoid;break-inside:avoid}
   @page{size:portrait;margin:8mm}
 }
 </style>
@@ -12545,12 +12777,20 @@ function executeRestore() {
   }
 }
 
+function _relativeTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
 function updateBackupTimestamp() {
   const el = document.getElementById('last-backup-time');
   if (!el) return;
   const ts = (_idbReady && _idbCache[LAST_BACKUP_KEY]!==undefined) ? _idbCache[LAST_BACKUP_KEY] : localStorage.getItem(LAST_BACKUP_KEY);
   if (ts) {
-    el.textContent = 'Last backup: ' + new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    el.textContent = 'Last backed up: ' + _relativeTime(Number(ts));
     el.style.display = 'block';
   } else {
     el.style.display = 'none';
@@ -12753,24 +12993,31 @@ const DEMO_PROGRAM = {
   format: 'demo',
   athleteName: 'Athlete',
   maxes: {},
-  weeks: [1,2,3,4].map(wn => ({
-    label: 'Week ' + wn,
+  weeks: [
+    { pct: '70', rpe: '6', sets: '4', reps: '6' },
+    { pct: '72', rpe: '7', sets: '4', reps: '5' },
+    { pct: '75', rpe: '7', sets: '4', reps: '5' },
+    { pct: '78', rpe: '7', sets: '4', reps: '4' },
+    { pct: '80', rpe: '8', sets: '3', reps: '4' },
+    { pct: '82', rpe: '8', sets: '3', reps: '3' }
+  ].map((w, i) => ({
+    label: 'Week ' + (i + 1),
     days: [
       { name: 'Squat Day', exercises: [
-        { name: 'Back Squat', prescription: '4x5 @ 75%', note: '', coachNotes: 'Focus on bracing and depth', supersetGroup: null },
-        { name: 'Pause Squat', prescription: '3x3 @ RPE 7', note: '', coachNotes: '', supersetGroup: null },
-        { name: 'Leg Press', prescription: '3x10', note: '', coachNotes: '', supersetGroup: null },
-        { name: 'Walking Lunges', prescription: '3x12 each', note: '', coachNotes: '', supersetGroup: null }
+        { name: 'Back Squat', prescription: `${w.sets}x${w.reps} @ ${w.pct}%`, note: '', coachNotes: 'Focus on bracing and depth', supersetGroup: null },
+        { name: 'Pause Squat', prescription: `3x3 @ RPE ${w.rpe}`, note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Leg Press', prescription: '3x10', note: '', coachNotes: '', supersetGroup: { label: 'accessory-circuit', rounds: 3 } },
+        { name: 'Walking Lunges', prescription: '3x12 each', note: '', coachNotes: '', supersetGroup: { label: 'accessory-circuit', rounds: 3 } }
       ]},
       { name: 'Bench Day', exercises: [
-        { name: 'Bench Press', prescription: '4x5 @ 75%', note: '', coachNotes: 'Pause on chest each rep', supersetGroup: null },
-        { name: 'Close Grip Bench Press', prescription: '3x8 @ RPE 7', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Bench Press', prescription: `${w.sets}x${w.reps} @ ${w.pct}%`, note: '', coachNotes: 'Pause on chest each rep', supersetGroup: null },
+        { name: 'Close Grip Bench Press', prescription: `3x6 @ RPE ${w.rpe}`, note: '', coachNotes: '', supersetGroup: null },
         { name: 'Dumbbell Row', prescription: '4x10', note: '', coachNotes: '', supersetGroup: null },
         { name: 'Lateral Raise', prescription: '3x15', note: '', coachNotes: '', supersetGroup: null }
       ]},
       { name: 'Deadlift Day', exercises: [
-        { name: 'Deadlift', prescription: '3x3 @ 80%', note: '', coachNotes: 'Reset each rep — no touch and go', supersetGroup: null },
-        { name: 'Romanian Deadlift', prescription: '3x8 @ RPE 7', note: '', coachNotes: '', supersetGroup: null },
+        { name: 'Deadlift', prescription: `${w.sets}x${w.reps} @ ${w.pct}%`, note: '', coachNotes: 'Reset each rep — no touch and go', supersetGroup: null },
+        { name: 'Romanian Deadlift', prescription: `3x6 @ RPE ${w.rpe}`, note: '', coachNotes: '', supersetGroup: null },
         { name: 'Barbell Row', prescription: '4x8', note: '', coachNotes: '', supersetGroup: null },
         { name: 'Plank', prescription: '3x45s', note: '', coachNotes: '', supersetGroup: null }
       ]}
@@ -12990,6 +13237,7 @@ function checkOnboarding() {
   if (isOnboarded() || state.blocks.length > 0) {
     markOnboarded(); // auto-mark existing users
     render();
+    positionNavPill(false);
     return;
   }
   showOnboardingStep(1);
@@ -13225,6 +13473,19 @@ function finishOnboarding() {
   document.querySelector('.bottom-nav').style.display = '';
   document.querySelector('.header').style.display = '';
   render();
+  // Brief "You're all set" splash over the home screen
+  const splash = document.createElement('div');
+  splash.id = 'onboarding-complete-splash';
+  splash.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);animation:splashFadeOut 0.4s ease 1.5s forwards;pointer-events:all';
+  splash.innerHTML = `
+    <div style="width:48px;height:48px;border-radius:50%;background:rgba(200,169,81,0.15);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;animation:checkPop 0.4s cubic-bezier(0.34,1.56,0.64,1)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <div style="margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:0.04em">YOU'RE ALL SET</div>
+    <div style="margin-top:8px;font-size:13px;color:var(--text-sub)">Let's lift.</div>
+  `;
+  document.body.appendChild(splash);
+  setTimeout(() => splash.remove(), 2000);
 }
 
 // ── BUILD PROGRAM WIZARD ──────────────────────────────────────────────────────
@@ -14331,6 +14592,29 @@ _bootApp().catch(e => {
 
 let _deferredInstallPrompt = null;
 const INSTALL_DISMISSED_KEY = 'liftlog_install_dismissed';
+
+// ── Cross-tab sync ─────────────────────────────────────────────────────────────
+// When another tab writes logs or blocks, reload them into memory and re-render.
+// The `storage` event only fires in OTHER tabs (not the writer), so no infinite loop risk.
+window.addEventListener('storage', (e) => {
+  if (!e.key || !e.key.startsWith('liftlog_')) return;
+  if (e.key === 'liftlog_v4' && e.newValue) {
+    try {
+      const remote = JSON.parse(e.newValue);
+      if (JSON.stringify(remote) !== JSON.stringify(state.logs)) {
+        state.logs = remote;
+        render();
+        _showWarningToast('Data updated from another tab');
+      }
+    } catch(err) { /* ignore parse errors */ }
+  }
+  if (e.key === 'liftlog_blocks' && e.newValue) {
+    try {
+      state.blocks = JSON.parse(e.newValue);
+      render();
+    } catch(err) {}
+  }
+});
 
 // Capture Chrome/Android beforeinstallprompt
 window.addEventListener('beforeinstallprompt', e => {
@@ -16217,6 +16501,8 @@ function renderCalcBarSVG(plates, showCollars, unit) {
   // viewBox anchored to left edge (collar), width fills container
   return `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" width="100%" height="${SVG_H}" style="display:block" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
 }
+
+
 function renderCalc() {
   const main = document.getElementById('main-content');
   const { mode, inputUnit, inputVal, manualCounts } = state.calc;
@@ -16439,7 +16725,8 @@ function renderCalc() {
 
     <!-- ── MODE TOGGLE ── -->
     <div class="calc-section" style="padding:12px;">
-      <div class="calc-mode-toggle">
+      <div class="calc-mode-toggle" id="calc-mode-toggle">
+        <div class="calc-mode-pill" id="calc-mode-pill"></div>
         <button class="calc-mode-btn${mode === 'target' ? ' active' : ''}" onclick="calcSetMode('target')">Target Weight</button>
         <button class="calc-mode-btn${mode === 'manual' ? ' active' : ''}" onclick="calcSetMode('manual')">Load Manually</button>
       </div>
@@ -16571,6 +16858,8 @@ function renderCalc() {
 
   </div>`;
   main.innerHTML = html;
+  positionCalcPill(false);
+
 }
 
 function calcSnapToNearest(targetKg) {
@@ -16592,7 +16881,32 @@ function calcSnapLbs(targetLbs) {
   renderCalc();
 }
 
-function calcSetMode(m) { state.calc.mode = m; renderCalc(); }
+function calcSetMode(m) {
+  // FLIP animation: snapshot old pill position before DOM rebuild
+  const oldPill = document.getElementById('calc-mode-pill');
+  let prevLeft = null, prevWidth = null;
+  if (oldPill && oldPill.style.left) {
+    prevLeft = oldPill.style.left;
+    prevWidth = oldPill.style.width;
+  }
+  state.calc.mode = m;
+  renderCalc(); // rebuilds DOM, pill positioned at new spot instantly
+  // Animate: set new pill to OLD position, then spring to NEW position
+  if (prevLeft !== null) {
+    const pill = document.getElementById('calc-mode-pill');
+    if (pill) {
+      const targetLeft = pill.style.left;
+      const targetWidth = pill.style.width;
+      pill.style.transition = 'none';
+      pill.style.left = prevLeft;
+      pill.style.width = prevWidth;
+      void pill.offsetWidth;
+      pill.style.transition = '';
+      pill.style.left = targetLeft;
+      pill.style.width = targetWidth;
+    }
+  }
+}
 function calcSetUnit(u) {
   // Only relevant in KG display mode — switches input unit between lbs/kg
   state.calc.inputUnit = u;

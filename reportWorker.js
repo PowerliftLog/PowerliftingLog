@@ -897,7 +897,7 @@ function _getReportDataWorker(snapshot) {
       const e1rmFlat = Math.abs(cl.delta) <= 5;
       const rpeRising = rpeVals[rpeVals.length - 1] - rpeVals[0] >= 0.8;
       if (e1rmFlat && rpeRising) {
-        flags.push({ color: 'red', text: 'e1RM flat despite rising effort \u2014 potential overreach' });
+        flags.push({ color: 'red', text: 'e1RM flat despite rising effort \u2014 potential overreach', rpeFlag: true });
       }
     }
 
@@ -1021,16 +1021,22 @@ function _getReportDataWorker(snapshot) {
 
   // ── Status badge computation ────────────────────────────────────────────
   const _liftLabels = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' };
-  const _liftLevel = (flags) => {
-    if (flags.some(f => f.color === 'red')) return 'red';
-    if (flags.some(f => f.color === 'amber')) return 'amber';
-    return 'green';
+  // Compliance-gated level: if compliance >= 80 and ALL red flags are RPE-related, cap at amber.
+  // High compliance + high RPE = intentional peak, not alarm-worthy.
+  const _liftLevel = (flags, compPct) => {
+    const redFlags = flags.filter(f => f.color === 'red');
+    if (redFlags.length === 0) {
+      if (flags.some(f => f.color === 'amber')) return 'amber';
+      return 'green';
+    }
+    if (compPct >= 80 && redFlags.every(f => f.rpeFlag)) return 'amber';
+    return 'red';
   };
   const liftStatuses = {};
   for (const gk of ['squat', 'bench', 'deadlift']) {
     const cl = compLifts[gk];
     const flags = allFlags[gk] || [];
-    const level = _liftLevel(flags);
+    const level = _liftLevel(flags, compliancePct);
     const d = cl?.delta || 0;
     const unitLabelShort = snapshot.displayUnit === 'kg' ? 'kg' : 'lb';
     const deltaStr = cl ? ((d >= 0 ? '+' : '') + d + ' ' + unitLabelShort) : '';

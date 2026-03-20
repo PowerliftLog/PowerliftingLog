@@ -3015,9 +3015,13 @@ function parseASheet(sn,rows){
 
         if(supersetMatch){
           const rounds=parseInt(supersetMatch[1])||1;
-          const label=rounds>1?rounds+' rounds':'superset';
-          curSupersetGroup={label,rounds,startIdx:exs.length};
+          const _isCirc=/circuit|giant/i.test(cs);
+          const label=rounds>1?rounds+' rounds':_isCirc?'circuit':'superset';
+          curSupersetGroup={label,rounds,startIdx:exs.length,_maxExercises:_isCirc?6:2,_count:0};
         }
+
+        // Auto-clear superset after consuming expected number of exercises
+        if(curSupersetGroup && curSupersetGroup._count>=curSupersetGroup._maxExercises) curSupersetGroup=null;
 
         if(!lp&&!lp2&&!ln&&!isSectionHeader&&!isCoachNoteLine){
           let normalizedCs=cs.replace(/\s+/g,' ').trim();
@@ -3028,6 +3032,7 @@ function parseASheet(sn,rows){
             normalizedCs=leadingRepsMatch[2];
           }
           const correctedName=_hCapitalizeName(normalizedCs);
+          if(curSupersetGroup) curSupersetGroup._count=(curSupersetGroup._count||0)+1;
           cur={name:correctedName,weeks:[],staticPrescription:embeddedPres||null,staticTrackingRaw:null,note:note?String(note).trim():null,coachNotes:[],supersetGroup:curSupersetGroup||null};
           exs.push(cur);
         } else if(cur&&(isCoachNoteLine||ln)){
@@ -3160,9 +3165,13 @@ function parseBSheet(sn,rows,ws){
 
       if(supersetMatch){
         const rounds=parseInt(supersetMatch[1])||1;
-        const label=rounds>1?rounds+' rounds':'superset';
-        curSupersetGroup={label,rounds,startIdx:curDay.exercises.length};
+        const _isCirc2=/circuit|giant/i.test(normName);
+        const label=rounds>1?rounds+' rounds':_isCirc2?'circuit':'superset';
+        curSupersetGroup={label,rounds,startIdx:curDay.exercises.length,_maxExercises:_isCirc2?6:2,_count:0};
       }
+
+      // Auto-clear superset after consuming 2 exercises (superset = exactly 2)
+      if(curSupersetGroup && curSupersetGroup._count>=curSupersetGroup._maxExercises) curSupersetGroup=null;
 
       const isCircuitRow = /^circuit[\s\-:]/i.test(normName) || (normName.match(/,/g)||[]).length >= 2;
       if(isCircuitRow){
@@ -3205,6 +3214,7 @@ function parseBSheet(sn,rows,ws){
         }
       }
 
+      if(curSupersetGroup) curSupersetGroup._count=(curSupersetGroup._count||0)+1;
       curDay.exercises.push({name:normName,prescription:pres,note,lifterNote,loggedWeight:cleanLogged,supersetGroup:curSupersetGroup||null});
     }
   }
@@ -5103,8 +5113,9 @@ function parseCAutoSheet(sn, rows, ws) {
       const matchText = _isSupersetLabel(colA) ? colA : exVal;
       const roundsMatch = matchText.match(/^(\d+)\s*rounds?$/i);
       const rounds = roundsMatch ? parseInt(roundsMatch[1]) : 1;
-      const label = rounds > 1 ? rounds + ' rounds' : 'superset';
-      curSupersetGroup = { label: label + '_' + curDay.exercises.length, rounds, startIdx: curDay.exercises.length };
+      const isCircuit = /circuit|giant/i.test(matchText);
+      const label = rounds > 1 ? rounds + ' rounds' : isCircuit ? 'circuit' : 'superset';
+      curSupersetGroup = { label: label + '_' + curDay.exercises.length, rounds, startIdx: curDay.exercises.length, _maxExercises: isCircuit ? 6 : 2, _count: 0 };
       continue;
     }
 
@@ -5115,6 +5126,11 @@ function parseCAutoSheet(sn, rows, ws) {
     }
 
     if (!exVal) { curSupersetGroup = null; continue; }
+
+    // Auto-clear superset after consuming expected number of exercises (default 2 for "Superset" labels)
+    if (curSupersetGroup && curSupersetGroup._count >= curSupersetGroup._maxExercises) {
+      curSupersetGroup = null;
+    }
 
     const setsRaw = row[setsIdx] != null ? String(row[setsIdx]).trim() : '';
     const repsRaw = row[repsIdx] != null ? String(row[repsIdx]).trim() : '';
@@ -5170,6 +5186,7 @@ function parseCAutoSheet(sn, rows, ws) {
     if (rpeLogged && logStr) logStr += ' @' + rpeLogged;
     else if (rpeLogged && !logStr) logStr = '@' + rpeLogged;
 
+    if (curSupersetGroup) curSupersetGroup._count = (curSupersetGroup._count || 0) + 1;
     curDay.exercises.push({
       name: exVal.replace(/\s+/g, ' '),
       prescription: pres.trim() || null,
@@ -6969,12 +6986,29 @@ function parseCSVRows(text) {
 
 function detectCSVFormat(headers) {
   const h = headers.map(c => c.toLowerCase().trim());
+  // Exact match — primary path
   if (h.includes('workout name') && h.includes('set order')) return 'strong';
   if (h.includes('exercise_title') && h.includes('set_index')) return 'hevy';
   // FitNotes: has both kg and lbs weight columns + Kind column
   if (h.includes('weight (kg)') && h.includes('weight (lbs)') && h.includes('kind')) return 'fitnotes';
   // Fitbod: has Weight(kg) (no space) + isWarmup boolean + multiplier
   if (h.includes('weight(kg)') && h.includes('iswarmup') && h.includes('multiplier')) return 'fitbod';
+  // Fuzzy fallback — fires only when exact match fails.
+  // Returns { format, fuzzy: true, missingHeaders } when ≥60% of expected headers match.
+  const CSV_EXPECTED_HEADERS = {
+    strong:   ['date', 'workout name', 'exercise name', 'set order', 'weight', 'reps'],
+    hevy:     ['title', 'exercise_title', 'set_index', 'weight_kg', 'reps'],
+    fitnotes: ['date', 'exercise', 'weight (kg)', 'weight (lbs)', 'reps', 'kind'],
+    fitbod:   ['date', 'exercise', 'weight(kg)', 'iswarmup', 'reps', 'multiplier'],
+  };
+  for (const [format, expected] of Object.entries(CSV_EXPECTED_HEADERS)) {
+    const missing = expected.filter(k => !h.includes(k));
+    const matchRatio = (expected.length - missing.length) / expected.length;
+    if (matchRatio >= 0.6) {
+      console.warn('[CSV] Fuzzy match for ' + format + ' — missing headers:', missing);
+      return { format, fuzzy: true, missingHeaders: missing };
+    }
+  }
   return null;
 }
 
@@ -6983,8 +7017,9 @@ function parseCSVImport(csvText, unitLabel) {
   if (rows.length < 2) return null;
 
   const headers = rows[0];
-  const fmt = detectCSVFormat(headers);
-  if (!fmt) return null;
+  const fmtResult = detectCSVFormat(headers);
+  if (!fmtResult) return null;
+  const fmt = typeof fmtResult === 'object' ? fmtResult.format : fmtResult;
 
   // Build column index map
   const col = {};
@@ -13273,9 +13308,13 @@ function parseV(wb) {
         const roundsMatch = matchText.match(/^(\d+)\s*rounds?$/i);
         const rounds = roundsMatch ? parseInt(roundsMatch[1]) : 1;
         const label = rounds > 1 ? rounds + ' rounds' : 'superset';
-        curSupersetGroup = { label: label + '_' + (currentDay ? currentDay.exercises.length : 0), rounds, startIdx: currentDay ? currentDay.exercises.length : 0 };
+        const _isCircuit = /circuit|giant/i.test(matchText);
+        curSupersetGroup = { label: label + '_' + (currentDay ? currentDay.exercises.length : 0), rounds, startIdx: currentDay ? currentDay.exercises.length : 0, _maxExercises: _isCircuit ? 6 : 2, _count: 0 };
         continue;
       }
+
+      // Auto-clear superset after consuming 2 exercises
+      if (curSupersetGroup && curSupersetGroup._count >= curSupersetGroup._maxExercises) curSupersetGroup = null;
 
       const sets = setsCol >= 0 && row[setsCol] != null ? row[setsCol] : null;
       const reps = repsCol >= 0 && row[repsCol] != null ? row[repsCol] : null;
@@ -13303,6 +13342,7 @@ function parseV(wb) {
         currentDay = { name: 'Day 1', exercises: [] };
       }
 
+      if (curSupersetGroup) curSupersetGroup._count = (curSupersetGroup._count || 0) + 1;
       currentDay.exercises.push({
         name: _hCapitalizeName(cleanName),
         prescription: prescription,
