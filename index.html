@@ -1645,6 +1645,8 @@ canvas.rm-chart { width: 100%; height: 140px; display: block; pointer-events: no
 canvas.chart-overlay { pointer-events: auto; }
 .sessions-toggle { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); border: 1.5px solid rgba(200,169,81,0.3); border-radius: 6px; background: rgba(200,169,81,0.06); color: var(--gold); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; transition: background 0.15s; text-transform: uppercase; letter-spacing: 0.06em; }
 .sessions-toggle:active { background: rgba(200,169,81,0.12); }
+.sessions-chevron-icon { display: inline-block; transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); }
+.sessions-chevron-icon.open { transform: rotate(180deg); }
 .rm-datapoints { padding: 0 var(--sp-6) var(--sp-5); display: flex; flex-direction: column; gap: 0; }
 .rm-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .rm-session { font-size: var(--fs-base); color: var(--text-muted); }
@@ -2603,7 +2605,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/20/26l';
+const APP_BUILD   = '3/20/26m';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3499,11 +3501,10 @@ function renderMetrics(){
 
     if(hasData){
       const rowsExpanded = state.metricsRowsExpanded && state.metricsRowsExpanded[groupKey];
-      h+=`<div class="rm-datapoints-toggle" onclick="toggleMetricsRows('${esc(groupKey)}')" style="display:flex;align-items:center;justify-content:center;padding:6px 0 2px">
-        <span class="sessions-toggle"><span>Sessions</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${rowsExpanded?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg></span>
+      h+=`<div class="rm-datapoints-toggle" data-group="${esc(groupKey)}" onclick="toggleMetricsRows('${esc(groupKey)}')" style="display:flex;align-items:center;justify-content:center;padding:6px 0 2px">
+        <span class="sessions-toggle"><span>Sessions</span><span class="sessions-chevron-icon${rowsExpanded?' open':''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></span>
       </div>`;
-      if(rowsExpanded){
-      h+=`<div class="rm-datapoints"><div class="var-section">`;
+      h+=`<div class="rm-datapoints" ${rowsExpanded?'':'style="display:none"'}><div class="var-section">`;
       activePts.forEach((pt,i)=>{
         const prev=activePts[i-1];
         const delta=prev?pt.e1rm-prev.e1rm:null;
@@ -3529,7 +3530,6 @@ function renderMetrics(){
         </div>`;
       });
       h+=`</div></div>`;
-      }
     } else {
       // Empty state for tracked lifts with no data
       const emptyNames = allVars.map(([vn])=>vn);
@@ -3647,8 +3647,17 @@ function _rerenderMetricsPreservingScroll(){
 
 function toggleMetricsRows(groupKey){
   if(!state.metricsRowsExpanded) state.metricsRowsExpanded={};
-  state.metricsRowsExpanded[groupKey]=!state.metricsRowsExpanded[groupKey];
-  _rerenderMetricsPreservingScroll();
+  const nowExpanded = !state.metricsRowsExpanded[groupKey];
+  state.metricsRowsExpanded[groupKey] = nowExpanded;
+  // Direct DOM toggle — no re-render needed
+  const toggleEl = document.querySelector(`.rm-datapoints-toggle[data-group="${groupKey.replace(/"/g,'&quot;')}"]`);
+  if(toggleEl){
+    const chevron = toggleEl.querySelector('.sessions-chevron-icon');
+    const datapoints = toggleEl.nextElementSibling;
+    if(chevron) chevron.classList.toggle('open', nowExpanded);
+    if(datapoints && datapoints.classList.contains('rm-datapoints'))
+      datapoints.style.display = nowExpanded ? '' : 'none';
+  }
 }
 
 function toggleOtherLift(name){
@@ -5863,9 +5872,11 @@ function renderLastWorkoutCard() {
 function _renderUpNextHero(block, nwInfo) {
   const { day, weekIdx, dayIdx, meta } = nwInfo;
   const exs       = day.exercises || [];
-  const showCount = Math.min(3, exs.length);
+  const weighted  = exs.filter(_isWeightedOrRpe);
+  const displayExs = weighted.length > 0 ? weighted : exs;
+  const showCount = Math.min(3, displayExs.length);
   const more      = exs.length - showCount;
-  const exRows    = exs.slice(0, showCount).map(ex => {
+  const exRows    = displayExs.slice(0, showCount).map(ex => {
     const rawPres = _fmtPres(ex.prescription);
     const pres = rawPres.slice(0, 22) + (rawPres.length > 22 ? '…' : '');
     return `<div class="home-hero-ex">
@@ -6205,8 +6216,9 @@ function renderE5Components(block, isBlockComplete) {
       const done = isDayComplete(block, currentWeek, day);
       const isNext = !done && nwInfo && !nwInfo.allDone && currentWeekIdx === nwInfo.weekIdx && di === nwInfo.dayIdx;
       const dayName = day.name || `Day ${di + 1}`;
-      // Primary lift = first exercise
-      const primaryLift = day.exercises[0] ? _displayExName(day.exercises[0].name) : '';
+      // Primary lift = first weighted/RPE exercise, fallback to first exercise
+      const _primaryEx = (day.exercises || []).find(_isWeightedOrRpe) || day.exercises[0];
+      const primaryLift = _primaryEx ? _displayExName(_primaryEx.name) : '';
       const dayCls = done ? 'done' : isNext ? 'next' : '';
       const rowCls = isNext ? ' highlight' : '';
       const rightEl = done
@@ -6507,6 +6519,22 @@ function _fmtPres(p) {
   return (p || '').replace(/@RPE(\d)/g, '@RPE $1');
 }
 
+// Returns true if an exercise has weight, RPE, or percentage-based prescription
+// Used to skip bodyweight/stretching exercises when picking "primary" exercises for display
+function _isWeightedOrRpe(ex) {
+  const p = ex.prescription;
+  if (!p) return false;
+  if (Array.isArray(p)) {
+    return p.some(s => s.weight != null || s.rpe != null || s.dropPercent != null || s.isRpe || s.percent != null);
+  }
+  if (typeof p === 'string') {
+    // Matches: "135x8", "BARx20", "3(465)", "2x1(455)", "75%", "@RPE 8", "RPE 8"
+    // Does NOT match: "1x100" (bodyweight reps), "5 mins", "1xMax Time(45)"
+    return /\d{2,}\s*[xX×]\s*\d|[a-zA-Z]{2,3}\s*[xX×]\s*\d|\d+\s*\(\s*\d{2,}|[\d.]+\s*%|@\s*rpe|\brpe\b/i.test(p);
+  }
+  return false;
+}
+
 // ── EXERCISE CARD SUB-FUNCTIONS ───────────────────────────────────────────────
 const _calcIconSvg = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg>`;
 
@@ -6638,7 +6666,7 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
     <div class="ex-summary-right">
       ${showTrackBtn && !tracked ? `<button class="track-btn ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="Track in metrics"><span class="track-hint-inline">Track</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>` : trackBtn}
       ${isSkipped ? `<span class="skipped-badge">SKIPPED</span>` : ''}
-      <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone?_checkSvg:''}</button>
+      <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" data-ex-key="${esc(key)}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone?_checkSvg:''}</button>
     </div>
   </div>`; /* expand pill intentionally removed — card header is the tap target */
 
@@ -6745,7 +6773,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
       out += `${_setRowOpen(_sk)}
             ${_calcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_prescHtml}</div>
             ${_exSetInputsHtml(_sk, _sl, _inputPl, _si, reps, ex.name, inputMode, _ghostWeight(_si))}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
+            <button class="set-check ${_sl.done?'done':''}" data-set-key="${esc(_sk)}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
     }
     return out;
@@ -6902,7 +6930,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         h += `${_setRowOpen(_sk)}
             <div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn">${bareWithRounds.reps} reps</span></div>
             ${_exSetInputsHtml(_sk, _sl, getDisplayUnit(), _si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(_si))}
-            <button class="set-check ${_sl.done?'done':''}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
+            <button class="set-check ${_sl.done?'done':''}" data-set-key="${esc(_sk)}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
           </div>`;
       }
     }
@@ -8268,8 +8296,9 @@ function _onWeightBlur(key) {
   }
 }
 function updateSetCheckmark(key,isDone){
-  const escaped=key.replace(/'/g,"\\'");
-  const btn=document.querySelector(`button.set-check[onclick*="${escaped}"]`);
+  // Use data-set-key for lookup — safer than onclick matching (handles " in exercise names)
+  const cssVal=key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const btn=document.querySelector(`button.set-check[data-set-key='${cssVal}']`);
   if(btn){
     btn.className=isDone?'set-check done':'set-check';
     btn.innerHTML=isDone?_checkSvg:'';
@@ -10105,8 +10134,8 @@ function checkAndActivateFinishButton(block, week, day) {
   }
 }
 function updateExerciseCheckmark(exKey,isDone){
-  const escaped=exKey.replace(/'/g,"\\'");
-  const btn=document.querySelector(`button.exercise-check[onclick*="toggleEx('${escaped}')"]`);
+  const cssVal=exKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const btn=document.querySelector(`button.exercise-check[data-ex-key='${cssVal}']`);
   if(btn){
     btn.className=isDone?'exercise-check done':'exercise-check';
     btn.innerHTML=isDone?_checkSvg:'';
@@ -11023,8 +11052,8 @@ function closeBackupModal() {
   if (overlay) overlay.remove();
 }
 
-function toggleAutoBackupFromModal() {
-  toggleAutoBackup();
+async function toggleAutoBackupFromModal() {
+  await toggleAutoBackup();
   const toggle = document.getElementById('auto-backup-modal-toggle');
   if (toggle) {
     const nowOn = isAutoBackupEnabled();
