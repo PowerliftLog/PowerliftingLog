@@ -482,7 +482,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .day-tab.done { color: rgba(74,222,128,0.45); border-bottom: 2px solid rgba(74,222,128,0.3); }
 .day-tab.done.active { color: var(--green); border-bottom-color: transparent; background: linear-gradient(180deg, rgba(74,222,128,0.05) 0%, transparent 100%); }
 .exercises { padding: var(--sp-5) var(--sp-6) 120px; }
-.exercise-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; margin-bottom: var(--sp-5); overflow: hidden; transition: border-color 0.2s; box-shadow: var(--card-shadow); }
+.exercise-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; margin-bottom: var(--sp-5); overflow: hidden; transition: border-color 0.2s; box-shadow: var(--card-shadow); position: relative; }
 .superset-group { border: 1px solid var(--superset-bdr); border-radius: 12px; margin-bottom: var(--sp-5); overflow: hidden; background: var(--superset-bg); }
 .superset-header { display: flex; align-items: center; gap: var(--sp-4); padding: 7px var(--sp-6); background: var(--superset-hdr); border-bottom: 1px solid var(--superset-bdr); }
 .superset-badge { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-sm); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2); border-radius: 4px; padding: var(--sp-1) var(--sp-4); }
@@ -592,8 +592,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .pr-badge { display: inline-flex; align-items: center; gap: var(--sp-1); background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; padding: var(--sp-1) var(--sp-3); border-radius: 4px; margin-left: var(--sp-3); animation: prFlash 0.6s ease-out; }
 @keyframes prFlash { 0% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 /* ── Micro-animations ─────────────────────────────────────────────────── */
-@keyframes checkPop { 0% { transform: scale(0.8); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
-.anim-check-pop { animation: checkPop 0.25s ease-out; }
+@keyframes checkPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.anim-check-pop, .set-check.anim-pop, .exercise-check.anim-pop { animation: checkPop 0.35s cubic-bezier(0.34, 1.2, 0.64, 1); }
 @keyframes splashFadeOut { to { opacity: 0; pointer-events: none; } }
 @keyframes completeBorder {
   0% { border-color: var(--green); box-shadow: 0 0 12px rgba(74,222,128,0.2); }
@@ -762,7 +762,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
   100% { opacity: 0.6; text-shadow: none; }
 }
 /* ── Workout Summary Card ── */
-.workout-summary-card { margin: var(--sp-6); padding: var(--sp-7); background: linear-gradient(135deg, rgba(74,222,128,0.08) 0%, rgba(74,222,128,0.03) 100%); border: 1px solid rgba(74,222,128,0.25); border-radius: 14px; }
+.workout-summary-card { margin: var(--sp-6); padding: var(--sp-7); background: linear-gradient(135deg, rgba(74,222,128,0.08) 0%, rgba(74,222,128,0.03) 100%); border: 1px solid rgba(74,222,128,0.25); border-radius: 14px; position: relative; overflow: hidden; }
 .summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-6); }
 .summary-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: var(--fs-2xl); letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
 .summary-check { width: 24px; height: 24px; border-radius: 50%; background: rgba(74,222,128,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -1179,8 +1179,10 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 [data-theme="light"] .workout-resume-banner { border-color: rgba(var(--gold-rgb),0.2); }
 
 /* e1RM + scores card */
-.home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: var(--sp-6) var(--sp-6); margin-bottom: var(--sp-6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; }
+.home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: var(--sp-6) var(--sp-6); margin-bottom: var(--sp-6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; position: relative; overflow: hidden; }
 .home-pr-card:active { transform: scale(0.98); }
+/* ── Specular highlight on glass cards ── */
+.exercise-card::before, .home-hero::before, .last-workout-card::before, .home-pr-card::before, .workout-summary-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; pointer-events: none; z-index: 1; }
 /* Weekly Summary card on home */
 .home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: var(--sp-5) var(--sp-6); margin-bottom: var(--sp-5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
@@ -1561,6 +1563,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .nav-btn.active .nav-icon { color: #ffffff; }
 .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 22px; height: 22px; fill: currentColor; }
+.nav-icon-stroke svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
 
 .metrics-export-btn { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: var(--sp-2) var(--sp-3); display: flex; align-items: center; margin-left: auto; transition: color 0.15s; }
 .metrics-export-btn:active { color: var(--gold); }
@@ -1812,6 +1815,8 @@ canvas.chart-overlay { pointer-events: auto; }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
 [data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
+[data-theme="navy"] .exercise-card::before, [data-theme="navy"] .home-hero::before, [data-theme="navy"] .last-workout-card::before, [data-theme="navy"] .home-pr-card::before, [data-theme="navy"] .workout-summary-card::before { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); }
+[data-theme="light"] .exercise-card::before, [data-theme="light"] .home-hero::before, [data-theme="light"] .last-workout-card::before, [data-theme="light"] .home-pr-card::before, [data-theme="light"] .workout-summary-card::before { background: linear-gradient(180deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.03) 40%, transparent 100%); }
 [data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.92); border-color: rgba(255,255,255,0.08); }
 [data-theme="navy"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0.6) 35%, rgba(10,14,26,0.95) 100%); }
 [data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.92); border-color: rgba(0,0,0,0.08); }
@@ -2069,7 +2074,7 @@ canvas.chart-overlay { pointer-events: auto; }
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg></span>Workout
     </button>
     <button class="nav-btn" id="nav-metrics" onclick="setScreen('metrics')" aria-label="Metrics">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 9v11H1V9h4zm4-5v16H5V4h4zm4 8v8h-4v-8h4zm4-4v12h-4V8h4zm4-6v18h-4V2h4z"/></svg></span>Metrics
+      <span class="nav-icon nav-icon-stroke"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Metrics
     </button>
     <button class="nav-btn" id="nav-calc" onclick="setScreen('calc')" aria-label="Calculator">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg></span>Calc
@@ -2597,7 +2602,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/20/26i';
+const APP_BUILD   = '3/20/26k';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
