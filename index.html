@@ -143,7 +143,7 @@
   --superset-bg:   #050505;
   --superset-hdr:  #161610;
   --superset-bdr:  #2a2a1a;
-  --superset-card: #111111;
+  --superset-card: rgba(255,255,255,0.03);
   --banner-grad-a: #1c1c14;
   --banner-grad-b: #161610;
   --banner-grad-active-a: #201e10;
@@ -232,7 +232,7 @@
   --superset-bg:   #050810;
   --superset-hdr:  #111827;
   --superset-bdr:  #1E2A3A;
-  --superset-card: #0f1520;
+  --superset-card: rgba(255,255,255,0.03);
   --banner-grad-a: #111827;
   --banner-grad-b: #111827;
   --banner-grad-active-a: #1a2535;
@@ -245,8 +245,8 @@
   --chart-bdr:     #1E2A3A;
   --sheet-bg:      rgba(5,8,18,0.85);
   --sheet-border:  rgba(255,255,255,0.1);
-  --glass-bg:      rgba(30,42,58,0.55);
-  --glass-border:  rgba(255,255,255,0.1);
+  --glass-bg:      rgba(255,255,255,0.03);
+  --glass-border:  rgba(255,255,255,0.06);
 }
 [data-theme="light"] {
   --bg:            #E0DBD2;
@@ -270,7 +270,7 @@
   --superset-bg:   #E0DBD2;
   --superset-hdr:  #FAF7F2;
   --superset-bdr:  #D6CEC4;
-  --superset-card: #EDE7DB;
+  --superset-card: rgba(255,255,255,0.5);
   --banner-grad-a: #FBF6E8;
   --banner-grad-b: #F7F0DC;
   --banner-grad-active-a: #FDF9F4;
@@ -2634,8 +2634,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/21/26i';
+const APP_VERSION = 'v0.25.9';
+const APP_BUILD   = '3/21/26j';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -7281,13 +7281,32 @@ function renderPreviewList(block, week, day) {
   // can be complete via all exercises individually checked off (L081)
   const dayComplete = isDayComplete(block, week, day) || !!block.historical;
 
+  // ── Build render items with superset clustering (mirrors renderExerciseList) ──
+  const renderItems = [];
+  let idx = 0;
+  while (idx < day.exercises.length) {
+    const ex = day.exercises[idx];
+    if (ex.supersetGroup) {
+      const groupLabel = ex.supersetGroup.label;
+      const cluster = [];
+      while (idx < day.exercises.length && day.exercises[idx].supersetGroup && day.exercises[idx].supersetGroup.label === groupLabel) {
+        cluster.push(day.exercises[idx]);
+        idx++;
+      }
+      renderItems.push({ type: 'superset', label: groupLabel, exercises: cluster });
+    } else {
+      renderItems.push({ type: 'single', ex });
+      idx++;
+    }
+  }
+
   let h = dayComplete ? '<div class="preview-exercise-list">' : '<div class="exercises">';
-  day.exercises.forEach(ex => {
+
+  function _renderPreviewCard(ex) {
     const key = lk(block.id, week.label, day.name, ex.name);
     const log = state.logs[key] || {};
     const isDone = log.done || false;
     const isSkipped = log.skipped || false;
-    const completedClass = (isDone || isSkipped) ? ' completed' : '';
 
     if (dayComplete && isDone && !isSkipped) {
       // ── Completed exercise: show actual performance data ──
@@ -7295,7 +7314,6 @@ function renderPreviewList(block, week, day) {
       let detailHtml = '';
 
       if (summary.hasActualData) {
-        // Top set line: "315 × 5" style
         const topLine = `${summary.topWeight} × ${summary.topReps}`;
         const setsLine = summary.setsCompleted > 1 ? `${summary.setsCompleted} sets` : '1 set';
         const rpeLine = summary.avgRpe != null ? `RPE ${summary.avgRpe}` : '';
@@ -7307,11 +7325,10 @@ function renderPreviewList(block, week, day) {
             <div class="completed-ex-meta">${escH(metaParts)}</div>
           </div>`;
       } else {
-        // No weight data (bodyweight exercise, or inferred complete from import)
         detailHtml = `<div class="preview-ex-pres" style="color:var(--text-dim)">✓ Done</div>`;
       }
 
-      h += `<div class="preview-exercise completed">
+      return `<div class="preview-exercise completed">
         <div style="flex:1">
           <div class="preview-ex-name">${escH(ex.displayName || ex.name)}</div>
         </div>
@@ -7324,7 +7341,6 @@ function renderPreviewList(block, week, day) {
       const isComp = isCompLift(canonicalizeLift(ex.displayName || ex.name));
       const compClass = isComp ? ' is-comp' : '';
       const doneClass = isDone ? ' completed' : (isSkipped ? ' skipped' : '');
-      // "Last:" from previous week performance
       const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
       let lastHtml = '';
       if (prevPerf && prevPerf.sets.length > 0) {
@@ -7337,7 +7353,7 @@ function renderPreviewList(block, week, day) {
         lastHtml = `<div class="preview-ex-last">Last${srcTag}: ${escH(top.actual)}${repsStr}</div>`;
       }
       const noteHtml = ex.note ? `<div class="preview-ex-note">${escH(ex.note)}</div>` : '';
-      h += `<div class="exercise-card${compClass}${doneClass}">
+      return `<div class="exercise-card${compClass}${doneClass}">
         <div class="preview-card-body">
           <div class="ex-summary-left">
             <div class="ex-summary-name">${escH(_displayExName(ex.displayName || ex.name))}</div>
@@ -7348,7 +7364,20 @@ function renderPreviewList(block, week, day) {
         </div>
       </div>`;
     }
+  }
+
+  renderItems.forEach(item => {
+    if (item.type === 'single') {
+      h += _renderPreviewCard(item.ex);
+    } else {
+      const _displayLabel = item.label.replace(/_\d+$/, '');
+      h += `<div class="superset-group">`;
+      h += `<div class="superset-header"><span class="superset-badge">${escH(_displayLabel)}</span><span class="superset-label">${item.exercises.map(e=>escH(_displayExName(e.name))).join(" · ")}</span></div>`;
+      item.exercises.forEach(ex => { h += _renderPreviewCard(ex); });
+      h += `</div>`;
+    }
   });
+
   h += '</div>';
   return h;
 }
