@@ -2633,7 +2633,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/21/26c';
+const APP_BUILD   = '3/21/26g';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3206,14 +3206,14 @@ function _getBestE1RMByGroup() {
     const pk = _parseLogKey(key);
     if (!pk) continue;
     if (!_activeBlockIds.has(pk.blockId)) continue;
-    const exName = pk.exName;
+    const exName = canonicalizeLift(pk.exName);
     if (!isCompLift(exName)) continue;
     const group = classifyLift(exName);
     if (!group || group === 'other') continue;
     let weight = val.actual ? parseFloat(val.actual) : null;
     if (!weight || isNaN(weight) || weight <= 0) continue;
     weight = convertWeight(weight, getEntryUnit(val), getDisplayUnit());
-    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, exName, pk.setNum);
+    const reps = val.actualReps ? parseInt(val.actualReps) : getSetReps(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setNum);
     if (!reps) continue;
     const rpe = val.rpe ? parseFloat(val.rpe) : null;
     const result = calc1rm(weight, reps, rpe);
@@ -3503,8 +3503,8 @@ function renderMetrics(){
     state.metricsActiveVar[groupKey] = activeVar;
     const activePts = vars.find(([vn])=>vn===activeVar)?.[1] || [];
 
-    // Best e1RM = best of selected variation only
-    const best = activePts.length > 0 ? Math.max(...activePts.map(p=>p.e1rm)) : null;
+    // Current e1RM = most recent session for selected variation
+    const currentE1rm = activePts.length > 0 ? activePts[activePts.length - 1].e1rm : null;
     const hasData = activePts.length > 0;
 
     h+=`<div class="metrics-lift-group">`;
@@ -3513,8 +3513,8 @@ function renderMetrics(){
     h+=`<div class="metrics-lift-header">
       <h2 class="metrics-lift-title">${escH(displayTitle)}</h2>
       <div style="text-align:right">
-        <div class="metrics-best">${best?best+'<span class="unit-label">'+unitLabel(true)+'</span>':'—'}</div>
-        <div class="metrics-best-label">Best Est. 1RM</div>
+        <div class="metrics-best">${currentE1rm?currentE1rm+'<span class="unit-label">'+unitLabel(true)+'</span>':'—'}</div>
+        <div class="metrics-best-label">Current Est. 1RM</div>
       </div>
     </div>`;
 
@@ -6620,7 +6620,7 @@ function _exSetInputsHtml(sk, sl, placeholder, si, prescReps, exName, inputMode,
               </div>`;
   return `<div class="set-inputs-wrap">
               <div class="set-input-group">
-                <input class="set-input" inputmode="decimal" placeholder="${_weightPlaceholder}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value)" onblur="_onWeightBlur('${esc(sk)}')" data-ghost="${ghostVal}" aria-label="Weight lifted">
+                <input class="set-input" inputmode="decimal" placeholder="${_weightPlaceholder}" style="${!sl.actual && ghostVal ? ghostStyle : ''}" value="${sl.actual||''}" oninput="setActual('${esc(sk)}',this.value);if(this.value)this.style.cssText=''" onblur="_onWeightBlur('${esc(sk)}')" data-ghost="${ghostVal}" aria-label="Weight lifted">
               </div>${_repsHtml}
               <div class="set-input-group">
                 <input class="set-input rpe-input" inputmode="decimal" placeholder="1-10" value="${sl.rpe||''}" oninput="setRpe('${esc(sk)}',this.value)" aria-label="RPE">
@@ -7573,8 +7573,12 @@ function toggleEx(key){
   saveLogs();
   
   // ── Targeted DOM updates instead of full render() — prevents scroll jump ──
-  
-  // 1. Update the exercise checkmark
+
+  // 1a. Update card completed class (must match render-time logic)
+  const _togCardEl = document.querySelector(`.exercise-card[data-ex-key="${cssEsc(key)}"]`);
+  if (_togCardEl) { _togCardEl.classList.toggle('completed', nowDone); if (nowDone) _togCardEl.classList.remove('skipped'); }
+
+  // 1b. Update the exercise checkmark
   updateExerciseCheckmark(key, nowDone);
   
   // 2. Update all set checkmarks within this exercise
@@ -10129,9 +10133,9 @@ function autoCompleteExercise(setKey){
     if (navigator.vibrate) navigator.vibrate(25);
     // Update main exercise checkmark without full render
     updateExerciseCheckmark(exKey,true);
-    // Flash the card border green on completion
+    // Flash the card border green on completion and persist completed class
     const _cardEl = document.querySelector(`.exercise-card[data-ex-key="${cssEsc(exKey)}"]`);
-    if(_cardEl){ _cardEl.classList.add('just-completed'); _cardEl.addEventListener('animationend',()=>_cardEl.classList.remove('just-completed'),{once:true}); }
+    if(_cardEl){ _cardEl.classList.add('completed','just-completed'); _cardEl.addEventListener('animationend',()=>_cardEl.classList.remove('just-completed'),{once:true}); }
     // No auto-collapse — user stays in the card to finish entering data.
     // They collapse manually or hit Finish Workout when ready.
     // Check if whole day is now resolved — activate finish button and scroll it into view
@@ -10143,6 +10147,8 @@ function autoCompleteExercise(setKey){
     if(_d){ const fk=lk(_b.id,_w.label,_d.name,'__complete__'); delete state.logs[fk]; }
     saveLogs();
     updateExerciseCheckmark(exKey,false);
+    const _unCardEl = document.querySelector(`.exercise-card[data-ex-key="${cssEsc(exKey)}"]`);
+    if(_unCardEl) _unCardEl.classList.remove('completed');
   }
 }
 function checkAndActivateFinishButton(block, week, day) {
