@@ -249,9 +249,9 @@
   --glass-border:  rgba(255,255,255,0.1);
 }
 [data-theme="light"] {
-  --bg:            #F2EDE4;
-  --bg-2:          #F2EDE4;
-  --surface-0:     #F2EDE4;
+  --bg:            #E0DBD2;
+  --bg-2:          #E0DBD2;
+  --surface-0:     #E0DBD2;
   --surface-1:     #EDE7DB;
   --surface-2:     #FAF7F2;
   --surface-3:     #EDE7DB;
@@ -265,9 +265,9 @@
   --grad-start:    #FAF7F2;
   --grad-mid:      #F5F0E8;
   --grad-end:      #EDE7DB;
-  --header-bg:     rgba(242,237,228,0.75);
+  --header-bg:     rgba(224,219,210,0.75);
   --header-border: rgba(255,255,255,0.6);
-  --superset-bg:   #F2EDE4;
+  --superset-bg:   #E0DBD2;
   --superset-hdr:  #FAF7F2;
   --superset-bdr:  #D6CEC4;
   --superset-card: #EDE7DB;
@@ -439,7 +439,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .cycle-select { flex: 0 0 auto; background: rgba(255,255,255,0.05); color: var(--text-sub); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: var(--sp-3) var(--sp-5); font-size: var(--fs-base); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.04em; outline: none; max-width: 160px; cursor: pointer; }
 .maxes-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-4); padding: var(--sp-5) var(--sp-6) var(--sp-2); }
 .max-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: var(--sp-5) var(--sp-4) var(--sp-5); text-align: center; box-shadow: var(--card-shadow); position: relative; overflow: hidden; }
-.max-item::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 60%); pointer-events: none; }
+.max-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; pointer-events: none; z-index: 1; }
 .max-lift { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--sp-2); }
 .max-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-display); color: var(--gold-data); line-height: 1; letter-spacing: 0.01em; }
 .max-label { font-size: var(--fs-micro); color: var(--text-dim); letter-spacing: 0.07em; text-transform: uppercase; margin-top: var(--sp-2); }
@@ -461,7 +461,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .metrics-scores-section { padding: var(--sp-2) var(--sp-6) var(--sp-5); }
 .metrics-scores-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); margin-bottom: var(--sp-4); }
 .metrics-scores-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
-.metrics-score-pill { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 9px var(--sp-5); display: flex; flex-direction: column; gap: 1px; }
+.metrics-score-pill { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 9px var(--sp-5); display: flex; flex-direction: column; gap: 1px; position: relative; overflow: hidden; }
 .metrics-score-pill-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-sub); }
 .metrics-score-pill-val { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
 .metrics-score-pill-level { font-family: 'Barlow', sans-serif; font-size: var(--fs-xs); color: var(--gold-data); }
@@ -1192,7 +1192,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: var(--sp-6) var(--sp-6); margin-bottom: var(--sp-6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; position: relative; overflow: hidden; }
 .home-pr-card:active { transform: scale(0.98); }
 /* ── Specular highlight on glass cards ── */
-.exercise-card::before, .home-hero::before, .last-workout-card::before, .home-pr-card::before, .workout-summary-card::before, .e6-prog-card::before, .home-week-summary::before, .metrics-lift-group::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; pointer-events: none; z-index: 1; }
+.exercise-card::before, .home-hero::before, .last-workout-card::before, .home-pr-card::before, .workout-summary-card::before, .e6-prog-card::before, .home-week-summary::before, .metrics-lift-group::before, .metrics-score-pill::before, .e5-e1rm-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; pointer-events: none; z-index: 1; }
 /* Weekly Summary card on home */
 .home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: var(--sp-5) var(--sp-6); margin-bottom: var(--sp-5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: relative; overflow: hidden; }
 .home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
@@ -1251,7 +1251,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 
 /* ── E5 Homepage Components ── */
 .e5-e1rm-row { display: flex; gap: var(--sp-4); margin-bottom: var(--sp-5); }
-.e5-e1rm-card { flex: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: var(--sp-4) var(--sp-4) var(--sp-3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.e5-e1rm-card { flex: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: var(--sp-4) var(--sp-4) var(--sp-3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: relative; overflow: hidden; }
 .e5-e1rm-card.status-green { border-color: rgba(var(--green-rgb), 0.25); }
 .e5-e1rm-card.status-amber { border-color: rgba(var(--amber-rgb), 0.25); }
 .e5-e1rm-lift { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 600; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
@@ -1835,8 +1835,11 @@ canvas.chart-overlay { pointer-events: auto; }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
 [data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
-[data-theme="navy"] .exercise-card::before, [data-theme="navy"] .home-hero::before, [data-theme="navy"] .last-workout-card::before, [data-theme="navy"] .home-pr-card::before, [data-theme="navy"] .workout-summary-card::before { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); }
-[data-theme="light"] .exercise-card::before, [data-theme="light"] .home-hero::before, [data-theme="light"] .last-workout-card::before, [data-theme="light"] .home-pr-card::before, [data-theme="light"] .workout-summary-card::before { background: linear-gradient(180deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.03) 40%, transparent 100%); }
+[data-theme="navy"] .exercise-card::before, [data-theme="navy"] .home-hero::before, [data-theme="navy"] .last-workout-card::before, [data-theme="navy"] .home-pr-card::before, [data-theme="navy"] .workout-summary-card::before, [data-theme="navy"] .e6-prog-card::before, [data-theme="navy"] .home-week-summary::before, [data-theme="navy"] .metrics-lift-group::before, [data-theme="navy"] .e5-e1rm-card::before { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); }
+[data-theme="navy"] .max-item::before, [data-theme="navy"] .metrics-score-pill::before { background: linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 40%, transparent 100%); }
+.max-item::before, .metrics-score-pill::before { background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 40%, transparent 100%); }
+[data-theme="light"] .exercise-card::before, [data-theme="light"] .home-hero::before, [data-theme="light"] .last-workout-card::before, [data-theme="light"] .home-pr-card::before, [data-theme="light"] .workout-summary-card::before, [data-theme="light"] .e6-prog-card::before, [data-theme="light"] .home-week-summary::before, [data-theme="light"] .metrics-lift-group::before, [data-theme="light"] .metrics-score-pill::before, [data-theme="light"] .e5-e1rm-card::before { background: linear-gradient(180deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.03) 40%, transparent 100%); }
+[data-theme="light"] .max-item::before, [data-theme="light"] .metrics-score-pill::before { background: linear-gradient(180deg, rgba(0,0,0,0.13) 0%, rgba(0,0,0,0.05) 40%, transparent 100%); }
 [data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.92); border-color: rgba(255,255,255,0.08); }
 [data-theme="navy"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0.6) 35%, rgba(10,14,26,0.95) 100%); }
 [data-theme="light"] .bottom-nav { background: rgba(242,237,228,0.92); border-color: rgba(0,0,0,0.08); }
@@ -2622,7 +2625,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/20/26w';
+const APP_BUILD   = '3/21/26a';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3214,9 +3217,10 @@ function _getBestE1RMByGroup() {
 }
 
 function sessionOrder(label){
-  // Try to extract week number: "W1", "W2", "10 Weeks Out", "9 weeks out"
-  const wm=label.match(/W(\d+)/i); if(wm) return parseInt(wm[1]);
-  const nm=label.match(/(\d+)/); if(nm) return 1000-parseInt(nm[1]); // "10 weeks out" -> earlier = higher number
+  // "W1", "W2", "Week 1", "Week 2" -> ascending by week number
+  const wm=label.match(/W(?:eek\s*)?(\d+)/i); if(wm) return parseInt(wm[1]);
+  // "10 Weeks Out", "9 weeks out" -> higher number = further out = earlier in program
+  const nm=label.match(/(\d+)/); if(nm) return 1000-parseInt(nm[1]);
   return 999;
 }
 
@@ -3883,9 +3887,9 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   }
 
   // Grid lines + y labels
+  const _isLight=document.documentElement.getAttribute('data-theme')==='light';
   ctx.save();
-  ctx.globalAlpha=0.6;
-  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--surface-5').trim()||'#1e1e1e'; ctx.lineWidth=1;
+  ctx.strokeStyle=_isLight?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.07)'; ctx.lineWidth=1;
   [0,0.5,1].forEach(t=>{
     const y=pad.top+chartH*(1-t);
     ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke();
