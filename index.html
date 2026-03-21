@@ -625,9 +625,19 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .edit-day-badge { display: inline-flex; align-items: center; gap: var(--sp-2); background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; padding: var(--sp-2) var(--sp-4); border-radius: 4px; margin: var(--sp-4) var(--sp-6) 0; }
 .edit-day-border { border: 2px solid var(--gold) !important; border-radius: 12px; margin: var(--sp-2) var(--sp-4); }
 .edit-day-ex { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-5) var(--sp-5); background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 8px; margin: var(--sp-3) var(--sp-5); }
-.edit-day-ex-info { flex: 1; min-width: 0; }
+.edit-day-ex--expanded { display: block; padding: var(--sp-5); border-color: var(--gold) !important; }
+.edit-day-ex-info { flex: 1; min-width: 0; cursor: pointer; }
 .edit-day-ex-name { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .edit-day-ex-pres { font-size: var(--fs-sm); color: var(--text-sub); margin-top: var(--sp-1); }
+.edit-day-ex-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+.edit-day-ex-form-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: var(--sp-1); }
+.edit-day-ex-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border-2); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 600; padding: var(--sp-4) var(--sp-5); outline: none; box-sizing: border-box; }
+.edit-day-ex-input:focus { border-color: var(--gold); }
+.edit-day-ex-textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border-2); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: var(--fs-base); padding: var(--sp-4) var(--sp-5); outline: none; resize: none; min-height: 72px; box-sizing: border-box; line-height: 1.5; }
+.edit-day-ex-textarea:focus { border-color: var(--gold); }
+.edit-day-ex-form-row { display: flex; gap: var(--sp-3); margin-top: var(--sp-4); }
+.edit-day-ex-done { flex: 1; padding: var(--sp-4); background: var(--gold); color: #000; border: none; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.edit-day-ex-discard { padding: var(--sp-4) var(--sp-5); background: var(--surface-3); color: var(--text-sub); border: none; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
 .edit-day-actions { display: flex; gap: var(--sp-1); flex-shrink: 0; }
 .edit-day-actions button { background: none; border: none; color: var(--text-faint); padding: var(--sp-3); cursor: pointer; border-radius: 4px; }
 .edit-day-actions button:active { background: var(--surface-3); color: var(--text-primary); }
@@ -1720,6 +1730,12 @@ canvas.chart-overlay { pointer-events: auto; }
 @keyframes pillPop { 0% { transform: scale(0.9); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes tabFadeIn { from { opacity: 0; } to { opacity: 1; } }
 .tab-fade-in { animation: tabFadeIn 0.18s ease-out forwards; }
+@keyframes slideDownOut { from { transform: translateY(0); } to { transform: translateY(100%); } }
+@keyframes exDetailIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes exDetailOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-6px); } }
+.ex-detail-enter { animation: exDetailIn 0.18s ease-out forwards; }
+.ex-detail-exit { animation: exDetailOut 0.14s ease-in forwards; }
+.sheet-exit { animation: slideDownOut 0.22s ease-in forwards; }
 .legend-item { display: flex; align-items: center; gap: var(--sp-3); }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legend-label { font-size: var(--fs-base); color: var(--text-sub); }
@@ -2299,10 +2315,7 @@ canvas.chart-overlay { pointer-events: auto; }
     <button id="scores-settings-row" class="settings-row-btn" onclick="toggleScoresSetting()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-        <div>
-          DOTS / Wilks Scores
-          <div style="color:var(--text-dim);font-size:var(--fs-xs);font-weight:400;margin-top:2px;line-height:1.4;">Powerlifting scoring — normalizes strength by bodyweight. Requires gender + bodyweight in your profile.</div>
-        </div>
+        DOTS / Wilks Scores
       </div>
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
@@ -2311,8 +2324,10 @@ canvas.chart-overlay { pointer-events: auto; }
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Rest Timer
       </div>
-      <div class="settings-rest-label" id="rest-timer-mode-label">Auto</div>
-      <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div class="settings-rest-label" id="rest-timer-mode-label">Auto</div>
+        <svg class="settings-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
     </button>
     <div class="settings-row-btn settings-row-btn--static" id="calc-display-unit-row">
       <div class="settings-row-left">
@@ -2607,7 +2622,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/20/26p';
+const APP_BUILD   = '3/20/26w';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3811,10 +3826,11 @@ function _drawChartTooltip(canvasId){
       ctx.fillStyle='#888'; ctx.font='10px Barlow,sans-serif';
       ctx.fillText(sub,bx+boxW/2,by+31);
     }
-    // Highlight dot
-    ctx.fillStyle='#C9A84C'; ctx.beginPath(); ctx.arc(c.x,c.y,4,0,Math.PI*2); ctx.fill();
+    // Highlight dot — outer halo + glow
+    ctx.save(); ctx.fillStyle='rgba(201,168,76,0.18)'; ctx.beginPath(); ctx.arc(c.x,c.y,8,0,Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.shadowColor='rgba(201,168,76,0.6)'; ctx.shadowBlur=10; ctx.fillStyle='#C9A84C'; ctx.beginPath(); ctx.arc(c.x,c.y,4.5,0,Math.PI*2); ctx.fill(); ctx.restore();
     ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a0a';
-    ctx.beginPath(); ctx.arc(c.x,c.y,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(c.x,c.y,2.2,0,Math.PI*2); ctx.fill();
   });
 }
 
@@ -3951,7 +3967,10 @@ function drawSingleVarChart(canvasId, pts, drillMode){
   }));
 
   if(coords.length===1){
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,3.5,0,Math.PI*2); ctx.fill();
+    // Single point — same treatment as endpoint
+    ctx.save(); ctx.fillStyle='rgba(201,168,76,0.14)'; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,7,0,Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.shadowColor='rgba(201,168,76,0.5)'; ctx.shadowBlur=8; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,4,0,Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[0].x,coords[0].y,1.8,0,Math.PI*2); ctx.fill();
   } else {
     // ── Draw segments per cycle with different opacities ──
     // Identify segments: groups of consecutive points with same blockId
@@ -4004,21 +4023,23 @@ function drawSingleVarChart(canvasId, pts, drillMode){
       ctx.restore();
     });
 
-    // "Now" endpoint dot on the last point only
+    // "Now" endpoint dot — outer halo + glow + ring center
     const last=coords[coords.length-1];
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(last.x,last.y,3.5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(last.x,last.y,1.5,0,Math.PI*2); ctx.fill();
+    ctx.save(); ctx.fillStyle='rgba(201,168,76,0.14)'; ctx.beginPath(); ctx.arc(last.x,last.y,7,0,Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.shadowColor='rgba(201,168,76,0.5)'; ctx.shadowBlur=8; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(last.x,last.y,4,0,Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(last.x,last.y,1.8,0,Math.PI*2); ctx.fill();
 
     // Intermediate dots on current cycle (always) + faded dots on previous cycles
     const lastBound=boundaries.length>0?boundaries[boundaries.length-1]:0;
     for(let i=lastBound;i<coords.length-1;i++){
-      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2.5,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(201,168,76,0.12)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,5,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=bgCol; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1.2,0,Math.PI*2); ctx.fill();
     }
     // Faded dots for previous cycles (limit to last 2 cycles to avoid clutter)
     const prevStart=boundaries.length>=2?boundaries[boundaries.length-2]:0;
     for(let i=prevStart;i<lastBound;i++){
-      ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,1.5,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(201,168,76,0.3)'; ctx.beginPath(); ctx.arc(coords[i].x,coords[i].y,2,0,Math.PI*2); ctx.fill();
     }
   }
   // Store last dot position for draw-in animation
@@ -4190,7 +4211,12 @@ function openAddLift(){
   _renderAvailableList();
   _updateTrackSaveBtn();
 }
-function closeAddLift(){ document.getElementById('add-lift-modal').style.display='none'; }
+function closeAddLift(){
+  const overlay = document.getElementById('add-lift-modal');
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.add-lift-sheet');
+  closeSheetAnimated(sheet, () => { overlay.style.display='none'; if(sheet) sheet._closing=false; });
+}
 
 function saveTrackChanges(){
   // Apply staged removes
@@ -4962,8 +4988,7 @@ function updateRestDurUI() {
   const mode = getRestTimerMode();
   const rowLabel = document.getElementById('rest-timer-mode-label');
   if (rowLabel && mode !== 'off') {
-    const _modeStr = mode === 'auto' ? 'Auto' : 'Manual';
-    rowLabel.textContent = _modeStr + ' \u00B7 ' + _fmtDur(d.compound);
+    rowLabel.textContent = mode === 'auto' ? 'Auto' : 'Manual';
   }
 }
 function adjustRestDur(group, delta) {
@@ -10313,10 +10338,9 @@ function _applyTargetedExpand(ek, nowExpanded) {
   const { ex, block, week, day } = ctx;
 
   if (nowExpanded) {
-    // Remove expand-handle if present
+    // Remove expand-handle and collapsed prev summary
     const handle = card.querySelector('.ex-expand-handle');
     if (handle) handle.remove();
-    // Remove old collapsed prev summary
     const collapsedPrev = card.querySelector('.collapsed-prev-summary');
     if (collapsedPrev) collapsedPrev.remove();
     // Insert expanded content
@@ -10326,24 +10350,43 @@ function _applyTargetedExpand(ek, nowExpanded) {
     const log = state.logs[lk(block.id, week.label, day.name, ex.name)]||{};
     if (log.done) card.classList.add('completed');
     else if (log.skipped) card.classList.add('skipped');
+    // Animate detail in
+    const newDetail = card.querySelector('.ex-detail');
+    if (newDetail) {
+      newDetail.classList.add('ex-detail-enter');
+      const _h = (e) => { if (e.animationName !== 'exDetailIn') return; newDetail.removeEventListener('animationend', _h); newDetail.classList.remove('ex-detail-enter'); };
+      newDetail.addEventListener('animationend', _h);
+    }
   } else {
-    // Remove expanded content (ex-detail + skip-row)
+    // Animate detail out, then do cleanup
     const detail = card.querySelector('.ex-detail');
-    if (detail) detail.remove();
-    const skipRow = card.querySelector('.skip-row');
-    if (skipRow) skipRow.remove();
-    /* expand pill intentionally removed — card header is the tap target */
-    // Re-add collapsed prev summary
-    const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
-    if (prevPerf && prevPerf.sets.length > 0) {
-      const top = prevPerf.sets.reduce((best, s) => {
-        const w = parseFloat(s.actual)||0; const bw = parseFloat(best.actual)||0;
-        return w > bw ? s : best;
-      }, prevPerf.sets[0]);
-      const repsStr = top.actualReps ? ' × ' + top.actualReps : '';
-      const summary2 = `${top.actual}${repsStr}${top.rpe ? ' @' + top.rpe : ''}`;
-      const srcTag = prevPerf.source ? ` (${escH(prevPerf.source)})` : '';
-      card.insertAdjacentHTML('beforeend', `<div class="collapsed-prev-summary">Last${srcTag}: ${summary2}</div>`);
+    if (detail && !detail._collapsing) {
+      detail._collapsing = true;
+      detail.classList.add('ex-detail-exit');
+      const _h = (e) => {
+        if (e.animationName !== 'exDetailOut') return;
+        detail.removeEventListener('animationend', _h);
+        detail.remove();
+        const skipRow = card.querySelector('.skip-row');
+        if (skipRow) skipRow.remove();
+        // Re-add collapsed prev summary
+        const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
+        if (prevPerf && prevPerf.sets.length > 0) {
+          const top = prevPerf.sets.reduce((best, s) => {
+            const w = parseFloat(s.actual)||0; const bw = parseFloat(best.actual)||0;
+            return w > bw ? s : best;
+          }, prevPerf.sets[0]);
+          const repsStr = top.actualReps ? ' × ' + top.actualReps : '';
+          const summary2 = `${top.actual}${repsStr}${top.rpe ? ' @' + top.rpe : ''}`;
+          const srcTag = prevPerf.source ? ` (${escH(prevPerf.source)})` : '';
+          card.insertAdjacentHTML('beforeend', `<div class="collapsed-prev-summary">Last${srcTag}: ${summary2}</div>`);
+        }
+      };
+      detail.addEventListener('animationend', _h);
+    } else if (!detail) {
+      // No detail present — nothing to animate
+      const skipRow = card.querySelector('.skip-row');
+      if (skipRow) skipRow.remove();
     }
   }
   return true;
@@ -10676,7 +10719,10 @@ function openProgramModal(){
   document.getElementById('program-modal').style.display='flex';
 }
 function closeProgramModal(){
-  document.getElementById('program-modal').style.display='none';
+  const overlay = document.getElementById('program-modal');
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.add-lift-sheet');
+  closeSheetAnimated(sheet, () => { overlay.style.display='none'; if(sheet) sheet._closing=false; });
 }
 function renderProgramList(){
   const list=document.getElementById('program-list');
@@ -10809,13 +10855,16 @@ function openSettings(scrollTo) {
 function closeSettings() {
   const modal = document.getElementById('settings-modal');
   if (!modal) return;
-  modal.classList.remove('open');
-  // Close athlete profile form if open
-  const form = document.getElementById('athlete-profile-form');
-  if (form) { form.classList.remove('open'); }
-  const arrow = document.getElementById('athlete-profile-arrow');
-  if (arrow) arrow.style.transform = '';
-  setTimeout(() => { modal.style.display = 'none'; }, 200);
+  const sheet = modal.querySelector('.add-lift-sheet');
+  closeSheetAnimated(sheet, () => {
+    modal.style.display = 'none';
+    if (sheet) sheet._closing = false;
+    // Close athlete profile form if open
+    const form = document.getElementById('athlete-profile-form');
+    if (form) { form.classList.remove('open'); }
+    const arrow = document.getElementById('athlete-profile-arrow');
+    if (arrow) arrow.style.transform = '';
+  });
 }
 
 // ── Clear All Data ────────────────────────────────────────────────────────────
@@ -10952,7 +11001,9 @@ function openExportModal(blockId) {
 
 function closeExportModal() {
   const overlay = document.getElementById('export-modal-overlay');
-  if (overlay) overlay.remove();
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.export-modal');
+  closeSheetAnimated(sheet, () => overlay.remove());
 }
 
 function _getReportBlockId() {
@@ -11052,9 +11103,27 @@ function openBackupModal() {
   }
 }
 
+// ── Sheet exit animation helper ───────────────────────────────────────────────
+// Animates the inner sheet el down, then calls cleanup on animationend.
+// Guards against double-tap with _closing flag.
+function closeSheetAnimated(sheetEl, cleanup) {
+  if (!sheetEl || sheetEl._closing) { cleanup(); return; }
+  sheetEl._closing = true;
+  sheetEl.classList.add('sheet-exit');
+  const _handler = (e) => {
+    if (e.animationName !== 'slideDownOut') return; // ignore bubbled child animations
+    sheetEl.removeEventListener('animationend', _handler);
+    sheetEl.classList.remove('sheet-exit');
+    cleanup();
+  };
+  sheetEl.addEventListener('animationend', _handler);
+}
+
 function closeBackupModal() {
   const overlay = document.getElementById('backup-modal-overlay');
-  if (overlay) overlay.remove();
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.export-modal');
+  closeSheetAnimated(sheet, () => overlay.remove());
 }
 
 async function toggleAutoBackupFromModal() {
@@ -14273,9 +14342,13 @@ function _filterExercisePicker(val) {
 
 function _closeExercisePicker() {
   const el = document.getElementById('builder-picker-overlay');
-  if (el) el.remove();
-  _pickerCallback = null;
-  _pickerActiveGroup = null;
+  if (!el) return;
+  const sheet = el.querySelector('.builder-picker-sheet');
+  closeSheetAnimated(sheet, () => {
+    el.remove();
+    _pickerCallback = null;
+    _pickerActiveGroup = null;
+  });
 }
 
 function _pickExercise(name) {
@@ -14923,17 +14996,39 @@ function _renderDayEditor(block, week, day) {
     day.exercises.forEach((ex, ei) => {
       const isFirst = ei === 0;
       const isLast = ei === day.exercises.length - 1;
-      h += `<div class="edit-day-ex">
-        <div class="edit-day-ex-info">
-          <div class="edit-day-ex-name">${escH(ex.displayName || ex.name)}</div>
-          <div class="edit-day-ex-pres">${escH(ex.prescription || 'No prescription')}</div>
-        </div>
-        <div class="edit-day-actions">
-          ${!isFirst ? `<button onclick="_moveExInDay(${ei},-1)" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>` : ''}
-          ${!isLast ? `<button onclick="_moveExInDay(${ei},1)" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>` : ''}
-          <button class="danger" onclick="_deleteExFromDay(${ei})" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-        </div>
-      </div>`;
+      const isExpanded = state._editingExInDay?.exIdx === ei;
+      if (isExpanded) {
+        const editName = state._editingExInDay.name;
+        const editPres = state._editingExInDay.prescription;
+        h += `<div class="edit-day-ex edit-day-ex--expanded">
+          <div class="edit-day-ex-form">
+            <div>
+              <div class="edit-day-ex-form-label">Exercise Name</div>
+              <input class="edit-day-ex-input" id="edit-ex-name-${ei}" type="text" value="${esc(editName)}" oninput="state._editingExInDay.name=this.value" autocomplete="off">
+            </div>
+            <div>
+              <div class="edit-day-ex-form-label">Prescription</div>
+              <textarea class="edit-day-ex-textarea" id="edit-ex-pres-${ei}" oninput="state._editingExInDay.prescription=this.value">${escH(editPres)}</textarea>
+            </div>
+            <div class="edit-day-ex-form-row">
+              <button class="edit-day-ex-discard" onclick="_editDayExCancel()">Cancel</button>
+              <button class="edit-day-ex-done" onclick="_editDayExSave(${ei})">Done</button>
+            </div>
+          </div>
+        </div>`;
+      } else {
+        h += `<div class="edit-day-ex">
+          <div class="edit-day-ex-info" onclick="_editDayExOpen(${ei})">
+            <div class="edit-day-ex-name">${escH(ex.displayName || ex.name)}</div>
+            <div class="edit-day-ex-pres">${escH(ex.prescription || 'No prescription')}</div>
+          </div>
+          <div class="edit-day-actions">
+            ${!isFirst ? `<button onclick="event.stopPropagation();_moveExInDay(${ei},-1)" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>` : ''}
+            ${!isLast ? `<button onclick="event.stopPropagation();_moveExInDay(${ei},1)" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>` : ''}
+            <button class="danger" onclick="event.stopPropagation();_deleteExFromDay(${ei})" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+          </div>
+        </div>`;
+      }
     });
   }
 
@@ -14959,7 +15054,7 @@ function _moveExInDay(exIdx, dir) {
   const newIdx = exIdx + dir;
   if (newIdx < 0 || newIdx >= exs.length) return;
   [exs[exIdx], exs[newIdx]] = [exs[newIdx], exs[exIdx]];
-  render();
+  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
 }
 
 // Delete exercise from current day (in edit mode)
@@ -14969,7 +15064,38 @@ function _deleteExFromDay(exIdx) {
   const ex = ctx.day.exercises[exIdx];
   if (!ex) return;
   ctx.day.exercises.splice(exIdx, 1);
-  render();
+  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+}
+
+// Inline exercise editor (expand row to edit name + prescription)
+function _editDayExOpen(exIdx) {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  const ex = ctx.day.exercises[exIdx];
+  if (!ex) return;
+  state._editingExInDay = { exIdx, name: ex.displayName || ex.name, prescription: ex.prescription || '' };
+  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+  // Focus name field after render
+  requestAnimationFrame(() => {
+    const pf = document.getElementById(`edit-ex-pres-${exIdx}`);
+    if (pf) pf.value = state._editingExInDay.prescription;
+  });
+}
+function _editDayExSave(exIdx) {
+  const ctx = getActiveContext();
+  if (!ctx || !state._editingExInDay) return;
+  const ex = ctx.day.exercises[exIdx];
+  if (!ex) return;
+  const newName = (state._editingExInDay.name || '').trim();
+  const newPres = (state._editingExInDay.prescription || '').trim();
+  if (newName) { ex.name = newName; delete ex.displayName; }
+  if (newPres !== undefined) ex.prescription = newPres;
+  state._editingExInDay = null;
+  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+}
+function _editDayExCancel() {
+  state._editingExInDay = null;
+  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
 }
 
 // Add exercise during edit mode — open picker, then custom-ex modal pre-filled
@@ -15063,6 +15189,7 @@ function _executeDeleteDay(allWeeks) {
 
 // Cancel edit mode — revert from snapshot
 function _cancelDayEdits() {
+  state._editingExInDay = null;
   const ctx = getActiveContext();
   if (ctx) {
     if (state._dayEditIsNew) {
@@ -15089,6 +15216,7 @@ function _cancelDayEdits() {
 
 // Save day edits — show propagation prompt
 function _saveDayEdits() {
+  state._editingExInDay = null;
   const ctx = getActiveContext();
   if (!ctx) return;
 
@@ -15314,8 +15442,10 @@ function _openCustomExModal(existingKey, existingEx) {
 }
 
 function closeCustomExModal() {
-  const el = document.getElementById('custom-ex-overlay');
-  if (el) el.remove();
+  const overlay = document.getElementById('custom-ex-overlay');
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.custom-ex-sheet');
+  closeSheetAnimated(sheet, () => overlay.remove());
 }
 
 function _saveCustomEx(existingKey) {
@@ -15393,8 +15523,10 @@ function openDeleteExerciseSheet(key, exName, evt) {
 }
 
 function closeDeleteExSheet() {
-  const el = document.getElementById('delete-ex-overlay');
-  if (el) el.remove();
+  const overlay = document.getElementById('delete-ex-overlay');
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.delete-ex-sheet');
+  closeSheetAnimated(sheet, () => overlay.remove());
 }
 
 function _confirmDeleteEx(exName, dayName, allWeeks) {
@@ -15433,8 +15565,10 @@ function openRepsEditor(sk, prescReps) {
 }
 
 function closeRepsModal() {
-  document.getElementById('reps-modal').style.display = 'none';
-  _repsModalKey = null;
+  const overlay = document.getElementById('reps-modal');
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.reps-modal-sheet');
+  closeSheetAnimated(sheet, () => { overlay.style.display='none'; if(sheet) sheet._closing=false; _repsModalKey=null; });
 }
 
 function adjustRepsModal(delta) {
