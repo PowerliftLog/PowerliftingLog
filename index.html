@@ -757,7 +757,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .delete-ex-btn.single { background: var(--surface-3); border: 1px solid var(--border); color: var(--text-sub); }
 .delete-ex-btn:active { opacity: 0.75; }
 
-.complete-workout-btn { display: block; width: calc(100% - 32px); margin: var(--sp-4) var(--sp-6) var(--sp-8); padding: var(--sp-6); background: var(--surface-3); border: 1px solid var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.08em; text-transform: uppercase; cursor: default; text-align: center; transition: all 0.2s; opacity: 0.45; }
+.complete-workout-btn { display: block; width: calc(100% - 32px); margin: var(--sp-4) var(--sp-6) var(--sp-8); padding: var(--sp-6); background: var(--surface-3); border: 1px solid var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.08em; text-transform: uppercase; cursor: default; text-align: center; transition: all 0.2s; opacity: 0.45; position: relative; overflow: hidden; }
 .complete-workout-btn:disabled { pointer-events: none; }
 .complete-workout-btn.ready { background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.35); color: var(--gold); opacity: 1; cursor: pointer; }
 .complete-workout-btn.ready:active { background: rgba(201,168,76,0.18); transform: scale(0.98); }
@@ -803,7 +803,9 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .preview-exercise:last-child { border-bottom: none; }
 .preview-ex-name { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--text-primary); flex: 1; letter-spacing: 0.02em; }
 .preview-ex-pres { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 600; color: var(--text-muted); text-align: right; flex-shrink: 0; margin-left: var(--sp-5); }
-.preview-ex-note { font-size: var(--fs-sm); color: rgba(var(--gold-rgb),0.5); margin-top: var(--sp-1); font-style: italic; }
+.preview-ex-note { font-size: var(--fs-xs); color: var(--text-faint); margin-top: 1px; font-style: italic; }
+.preview-ex-last { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); color: var(--hint-color); letter-spacing: 0.02em; opacity: 0.8; }
+.preview-card-body { display: flex; align-items: flex-start; padding: 13px var(--sp-6) 13px; gap: var(--sp-4); position: relative; z-index: 2; }
 .preview-exercise.completed .preview-ex-name { color: var(--text-dim); }
 .preview-exercise.completed .preview-ex-pres { color: var(--text-dimmer); }
 .preview-ex-check { margin-left: var(--sp-5); flex-shrink: 0; display: flex; align-items: center; }
@@ -821,10 +823,10 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
   0%, 100% { box-shadow: 0 0 20px rgba(var(--gold-rgb),0.08); border-color: rgba(var(--gold-rgb),0.5); }
   50% { box-shadow: 0 0 30px rgba(var(--gold-rgb),0.15); border-color: rgba(var(--gold-rgb),0.7); }
 }
-.workout-start-banner { display: flex; align-items: center; justify-content: center; padding: var(--sp-6); margin: var(--sp-6); background: linear-gradient(135deg, rgba(var(--gold-rgb),0.15) 0%, rgba(var(--gold-rgb),0.08) 100%); border: 1.5px solid rgba(var(--gold-rgb),0.5); border-radius: 14px; cursor: pointer; animation: startGlow 3s ease-in-out infinite; box-shadow: 0 0 20px rgba(var(--gold-rgb),0.08); }
+.workout-start-banner { display: flex; align-items: center; justify-content: center; padding: var(--sp-6); margin: var(--sp-6); background: linear-gradient(135deg, rgba(var(--gold-rgb),0.15) 0%, rgba(var(--gold-rgb),0.08) 100%); border: 1.5px solid rgba(var(--gold-rgb),0.5); border-radius: 14px; cursor: pointer; animation: startGlow 3s ease-in-out infinite; box-shadow: 0 0 20px rgba(var(--gold-rgb),0.08); position: relative; overflow: hidden; }
 .workout-start-banner:active { background: rgba(var(--gold-rgb),0.2); animation: none; }
 .workout-start-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
-.workout-resume-banner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--sp-6) var(--sp-7); border: 1px solid rgba(var(--gold-rgb),0.2); border-left: none; border-right: none; cursor: pointer; background: transparent; }
+.workout-resume-banner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--sp-6) var(--sp-7); border: 1px solid rgba(var(--gold-rgb),0.2); border-left: none; border-right: none; cursor: pointer; background: transparent; position: relative; overflow: hidden; }
 .workout-resume-banner:active { background: rgba(var(--gold-rgb),0.06); }
 .workout-resume-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
 .workout-resume-sub { font-size: var(--fs-sm); color: var(--text-faint); margin-top: var(--sp-1); }
@@ -1192,7 +1194,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .home-pr-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: var(--sp-6) var(--sp-6); margin-bottom: var(--sp-6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); cursor: pointer; transition: transform 0.15s; position: relative; overflow: hidden; }
 .home-pr-card:active { transform: scale(0.98); }
 /* ── Specular highlight on glass cards ── */
-.exercise-card::before, .home-hero::before, .last-workout-card::before, .home-pr-card::before, .workout-summary-card::before, .e6-prog-card::before, .home-week-summary::before, .metrics-lift-group::before, .metrics-score-pill::before, .e5-e1rm-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; pointer-events: none; z-index: 1; }
+.exercise-card::before, .home-hero::before, .last-workout-card::before, .home-pr-card::before, .workout-summary-card::before, .e6-prog-card::before, .home-week-summary::before, .metrics-lift-group::before, .metrics-score-pill::before, .e5-e1rm-card::before, .workout-start-banner::before, .workout-resume-banner::before, .complete-workout-btn.ready::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; pointer-events: none; z-index: 1; }
 /* Weekly Summary card on home */
 .home-week-summary { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: var(--sp-5) var(--sp-6); margin-bottom: var(--sp-5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: relative; overflow: hidden; }
 .home-week-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
@@ -1835,10 +1837,10 @@ canvas.chart-overlay { pointer-events: auto; }
 [data-theme="light"] .custom-ex-input { background: #FFFFFF; border-color: var(--border); color: var(--text-primary); }
 [data-theme="light"] .add-exercise-btn { border-color: #C8C0B8; color: var(--text-muted); }
 [data-theme="light"] .next-workout-banner { border-color: rgba(184,146,42,0.45); background: linear-gradient(135deg, var(--banner-grad-a) 0%, var(--banner-grad-b) 100%); }
-[data-theme="navy"] .exercise-card::before, [data-theme="navy"] .home-hero::before, [data-theme="navy"] .last-workout-card::before, [data-theme="navy"] .home-pr-card::before, [data-theme="navy"] .workout-summary-card::before, [data-theme="navy"] .e6-prog-card::before, [data-theme="navy"] .home-week-summary::before, [data-theme="navy"] .metrics-lift-group::before, [data-theme="navy"] .e5-e1rm-card::before { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); }
+[data-theme="navy"] .exercise-card::before, [data-theme="navy"] .home-hero::before, [data-theme="navy"] .last-workout-card::before, [data-theme="navy"] .home-pr-card::before, [data-theme="navy"] .workout-summary-card::before, [data-theme="navy"] .e6-prog-card::before, [data-theme="navy"] .home-week-summary::before, [data-theme="navy"] .metrics-lift-group::before, [data-theme="navy"] .e5-e1rm-card::before, [data-theme="navy"] .workout-start-banner::before, [data-theme="navy"] .workout-resume-banner::before, [data-theme="navy"] .complete-workout-btn.ready::before { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 40%, transparent 100%); }
 [data-theme="navy"] .max-item::before, [data-theme="navy"] .metrics-score-pill::before { background: linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 40%, transparent 100%); }
 .max-item::before, .metrics-score-pill::before { background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 40%, transparent 100%); }
-[data-theme="light"] .exercise-card::before, [data-theme="light"] .home-hero::before, [data-theme="light"] .last-workout-card::before, [data-theme="light"] .home-pr-card::before, [data-theme="light"] .workout-summary-card::before, [data-theme="light"] .e6-prog-card::before, [data-theme="light"] .home-week-summary::before, [data-theme="light"] .metrics-lift-group::before, [data-theme="light"] .metrics-score-pill::before, [data-theme="light"] .e5-e1rm-card::before { background: linear-gradient(180deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.03) 40%, transparent 100%); }
+[data-theme="light"] .exercise-card::before, [data-theme="light"] .home-hero::before, [data-theme="light"] .last-workout-card::before, [data-theme="light"] .home-pr-card::before, [data-theme="light"] .workout-summary-card::before, [data-theme="light"] .e6-prog-card::before, [data-theme="light"] .home-week-summary::before, [data-theme="light"] .metrics-lift-group::before, [data-theme="light"] .metrics-score-pill::before, [data-theme="light"] .e5-e1rm-card::before, [data-theme="light"] .workout-start-banner::before, [data-theme="light"] .workout-resume-banner::before, [data-theme="light"] .complete-workout-btn.ready::before { background: linear-gradient(180deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.03) 40%, transparent 100%); }
 [data-theme="light"] .max-item::before, [data-theme="light"] .metrics-score-pill::before { background: linear-gradient(180deg, rgba(0,0,0,0.13) 0%, rgba(0,0,0,0.05) 40%, transparent 100%); }
 [data-theme="navy"] .bottom-nav { background: rgba(10,14,26,0.92); border-color: rgba(255,255,255,0.08); }
 [data-theme="navy"] .bottom-nav-fade { background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0.6) 35%, rgba(10,14,26,0.95) 100%); }
@@ -2633,7 +2635,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/21/26g';
+const APP_BUILD   = '3/21/26i';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -7279,7 +7281,7 @@ function renderPreviewList(block, week, day) {
   // can be complete via all exercises individually checked off (L081)
   const dayComplete = isDayComplete(block, week, day) || !!block.historical;
 
-  let h = '<div class="preview-exercise-list">';
+  let h = dayComplete ? '<div class="preview-exercise-list">' : '<div class="exercises">';
   day.exercises.forEach(ex => {
     const key = lk(block.id, week.label, day.name, ex.name);
     const log = state.logs[key] || {};
@@ -7317,17 +7319,33 @@ function renderPreviewList(block, week, day) {
         <div class="preview-ex-check" style="color:var(--green)">${_checkSvg}</div>
       </div>`;
     } else {
-      // ── Not done / skipped / day not complete: show prescription ──
+      // ── Not done / skipped / day not complete: card-style preview ──
       const presShort = _fmtPres(ex.prescription);
+      const isComp = isCompLift(canonicalizeLift(ex.displayName || ex.name));
+      const compClass = isComp ? ' is-comp' : '';
+      const doneClass = isDone ? ' completed' : (isSkipped ? ' skipped' : '');
+      // "Last:" from previous week performance
+      const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
+      let lastHtml = '';
+      if (prevPerf && prevPerf.sets.length > 0) {
+        const top = prevPerf.sets.reduce((best, s) => {
+          const w = parseFloat(s.actual) || 0; const bw = parseFloat(best.actual) || 0;
+          return w > bw ? s : best;
+        }, prevPerf.sets[0]);
+        const repsStr = top.actualReps ? ' \u00D7 ' + top.actualReps : '';
+        const srcTag = prevPerf.source ? ` (${escH(prevPerf.source)})` : '';
+        lastHtml = `<div class="preview-ex-last">Last${srcTag}: ${escH(top.actual)}${repsStr}</div>`;
+      }
       const noteHtml = ex.note ? `<div class="preview-ex-note">${escH(ex.note)}</div>` : '';
-      h += `<div class="preview-exercise${completedClass}">
-        <div style="flex:1">
-          <div class="preview-ex-name">${escH(ex.displayName || ex.name)}</div>
-          ${noteHtml}
+      h += `<div class="exercise-card${compClass}${doneClass}">
+        <div class="preview-card-body">
+          <div class="ex-summary-left">
+            <div class="ex-summary-name">${escH(_displayExName(ex.displayName || ex.name))}</div>
+            <div class="ex-summary-pres">${escH(presShort)}</div>
+            ${lastHtml}
+            ${noteHtml}
+          </div>
         </div>
-        <div class="preview-ex-pres">${escH(presShort)}</div>
-        ${isDone ? `<div class="preview-ex-check" style="color:var(--green)">${_checkSvg}</div>` : ''}
-        ${isSkipped ? `<div class="preview-ex-check" style="color:var(--text-faint)"><span style="font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.06em">SKIP</span></div>` : ''}
       </div>`;
     }
   });
@@ -7404,10 +7422,25 @@ function renderWorkout(){
       h += renderStartResumeBanner(block, week, day);
       const _exCount = day.exercises ? day.exercises.length : 0;
       if (_exCount > 0) {
-        h += `<div class="preview-info-bar" style="display:flex;justify-content:center;gap:var(--sp-6);padding:var(--sp-4) 0;color:var(--text-sub);font-size:var(--fs-sm);letter-spacing:0.05em;">
-          <span>${_exCount} EXERCISE${_exCount !== 1 ? 'S' : ''}</span>
-          <span>\u00B7</span>
-          <span>~${Math.round(_exCount * 11)} MIN</span>
+        // Count real sets from prescriptions
+        let _totalSets = 0;
+        day.exercises.forEach(_ex => {
+          const _ps = parseSets(_ex.prescription);
+          if (_ps && _ps.length > 0) { _totalSets += _ps.length; return; }
+          const _si = parseSimple(_ex.prescription);
+          if (_si && _si.sets) { _totalSets += _si.sets; return; }
+          const _rng = parseRangeSet(_ex.prescription);
+          if (_rng && _rng.sets) { _totalSets += _rng.sets; return; }
+          _totalSets += 3; // fallback
+        });
+        const _estMin = Math.round(_totalSets * 2.5 / 5) * 5 || Math.round(_exCount * 11);
+        const _sep = `<span style="color:var(--border)">\u00B7</span>`;
+        h += `<div class="preview-info-bar" style="display:flex;justify-content:center;align-items:center;gap:var(--sp-4);padding:var(--sp-3) 0 var(--sp-5);color:var(--text-sub);font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-sm);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
+          <span>${_exCount} Exercise${_exCount !== 1 ? 's' : ''}</span>
+          ${_sep}
+          <span>${_totalSets} Sets</span>
+          ${_sep}
+          <span>~${_estMin} Min</span>
         </div>`;
       }
       h += renderPreviewList(block, week, day);
