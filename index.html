@@ -122,9 +122,9 @@
 <style>
 /* ── THEME TOKENS ────────────────────────────────────────────────────────── */
 :root {
-  --bg:            #0a0a0a;
-  --bg-2:          #0f0f0f;
-  --surface-0:     #0e0e0e;
+  --bg:            #000000;
+  --bg-2:          #050505;
+  --surface-0:     #050505;
   --surface-1:     #111111;
   --surface-2:     #141414;
   --surface-3:     #1a1a1a;
@@ -138,9 +138,9 @@
   --grad-start:    #1c1c1c;
   --grad-mid:      #141414;
   --grad-end:      #111111;
-  --header-bg:     rgba(10,10,10,0.95);
+  --header-bg:     rgba(0,0,0,0.95);
   --header-border: rgba(255,255,255,0.06);
-  --superset-bg:   #0e0e0e;
+  --superset-bg:   #050505;
   --superset-hdr:  #161610;
   --superset-bdr:  #2a2a1a;
   --superset-card: #111111;
@@ -184,7 +184,7 @@
   --card-shadow:   0 4px 16px rgba(0,0,0,0.3);
   --card-border:   rgba(255,255,255,0.06);
   --card-bg:       rgba(255,255,255,0.03);
-  --sheet-bg:      rgba(18,18,18,0.82);
+  --sheet-bg:      rgba(8,8,8,0.85);
   --sheet-border:  var(--border-2);
   --modal-bg:      var(--bg-2);
   --glass-bg:      rgba(255,255,255,0.03);
@@ -211,9 +211,9 @@
   --sp-8: 24px;
 }
 [data-theme="navy"] {
-  --bg:            #0A0E1A;
-  --bg-2:          #0A0E1A;
-  --surface-0:     #0A0E1A;
+  --bg:            #050810;
+  --bg-2:          #050810;
+  --surface-0:     #050810;
   --surface-1:     #0f1520;
   --surface-2:     #111827;
   --surface-3:     #1E2A3A;
@@ -227,9 +227,9 @@
   --grad-start:    #161e2e;
   --grad-mid:      #111827;
   --grad-end:      #0f1520;
-  --header-bg:     rgba(10,14,26,0.95);
+  --header-bg:     rgba(5,8,16,0.95);
   --header-border: rgba(255,255,255,0.06);
-  --superset-bg:   #0A0E1A;
+  --superset-bg:   #050810;
   --superset-hdr:  #111827;
   --superset-bdr:  #1E2A3A;
   --superset-card: #0f1520;
@@ -243,7 +243,7 @@
   --snap-chip-mid: #1a2535;
   --chart-bg:      #111827;
   --chart-bdr:     #1E2A3A;
-  --sheet-bg:      rgba(14,18,32,0.82);
+  --sheet-bg:      rgba(5,8,18,0.85);
   --sheet-border:  rgba(255,255,255,0.1);
   --glass-bg:      rgba(30,42,58,0.55);
   --glass-border:  rgba(255,255,255,0.1);
@@ -311,9 +311,9 @@
   --card-shadow:   0 2px 8px rgba(0,0,0,0.06);
   --card-border:   rgba(0,0,0,0.08);
   --card-bg:       rgba(255,255,255,0.5);
-  --sheet-bg:      rgba(250,247,242,0.75);
+  --sheet-bg:      rgba(224,218,210,0.80);
   --sheet-border:  rgba(180,168,155,0.5);
-  --modal-bg:      rgba(242,237,228,0.88);
+  --modal-bg:      rgba(218,212,204,0.90);
   --glass-bg:      rgba(255,255,255,0.5);
   --glass-border:  rgba(0,0,0,0.08);
 }
@@ -2499,6 +2499,8 @@ function applyTheme(t){
   if(statusBar) statusBar.content = t==='light' ? 'default' : 'black-translucent';
   saveTheme(t);
   _tcFlush();
+  // Re-render current screen so input elements (e.g. calc weight input) repaint immediately on theme change
+  try { if(typeof state !== 'undefined' && state && state.screen) render(); } catch(e) {}
 }
 
 
@@ -2625,7 +2627,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/21/26a';
+const APP_BUILD   = '3/21/26b';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
