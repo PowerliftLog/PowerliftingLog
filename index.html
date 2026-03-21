@@ -2501,6 +2501,12 @@ function applyTheme(t){
   _tcFlush();
   // Re-render current screen so input elements (e.g. calc weight input) repaint immediately on theme change
   try { if(typeof state !== 'undefined' && state && state.screen) render(); } catch(e) {}
+  // Force-repaint static always-in-DOM inputs — WebKit won't repaint these on CSS cascade-only changes (L224)
+  document.querySelectorAll('#settings-modal input, #add-lift-modal input, #reps-modal input').forEach(function(el){
+    el.style.backgroundColor = 'transparent';
+    void el.offsetHeight;
+    el.style.backgroundColor = '';
+  });
 }
 
 
@@ -2627,7 +2633,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.8';
-const APP_BUILD   = '3/21/26b';
+const APP_BUILD   = '3/21/26c';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
