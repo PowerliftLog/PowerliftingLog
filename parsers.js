@@ -1023,7 +1023,7 @@ function scoreE(wb, negSignals = null) {
 
     // E-weekText: Week N + SxR without Sets header
     if (score < 0.6) {
-      let hasWeekLabel = false, hasSxR = false, hasSetsColHeader = false, sxrCount = 0, hasBFormatMarker = false;
+      let hasWeekLabel = false, hasSxR = false, hasSetsColHeader = false, sxrCount = 0, hasBFormatMarker = false, hasAbsoluteWeightAt = false;
       for (let i = 0; i < Math.min(30, rows.length); i++) {
         const row = rows[i]; if (!row) continue;
         for (let c = 0; c < Math.min(row.length, 25); c++) {
@@ -1034,9 +1034,13 @@ function scoreE(wb, negSignals = null) {
           if (/^sets$/i.test(str) || /^sets\s*x/i.test(str)) hasSetsColHeader = true;
           const lo = str.toLowerCase();
           if (lo.includes('record') || lo.includes('coach') || (lo.includes('sets') && lo.includes('rpe'))) hasBFormatMarker = true;
+          // Detect NxM @weight flat-table format (e.g. "4x5 @325") — a 3+ digit number
+          // in NxM @weight layout means absolute weights pre-filled, not an autoregulated nSuns sheet.
+          // Requires the NxM prefix (rules out per-set "5 @185" entries from LP programs).
+          if (/^\d+\s*x\s*\d+\s*@\s*\d{3,}/.test(str)) hasAbsoluteWeightAt = true;
         }
       }
-      if ((hasWeekLabel && hasSxR && !hasSetsColHeader && !hasBFormatMarker) || (sxrCount >= 3 && !hasSetsColHeader && !hasBFormatMarker)) {
+      if ((hasWeekLabel && hasSxR && !hasSetsColHeader && !hasBFormatMarker && !hasAbsoluteWeightAt) || (sxrCount >= 3 && !hasSetsColHeader && !hasBFormatMarker && !hasAbsoluteWeightAt)) {
         score += 0.6;
         matched.push(hasWeekLabel ? 'Week N + SxR patterns' : 'many SxR patterns');
       }
@@ -2731,6 +2735,7 @@ function _tryParse(wb, formatId) {
       case 'X': return parseX(wb);
       case 'FAMILYE': return parseFamilyE(wb);
       case 'FAMILYF': return parseFamilyF(wb);
+      case 'KIMCOACH': return parseKimCoachFormat(wb);
       case 'FAMILYB': return parseFamilyB(wb);
       case 'FAMILYC': return parseFamilyC(wb);
       case 'RP': return parseRP(wb);
@@ -2894,6 +2899,7 @@ function detectFormat(wb){
       scoreQ(wb, negSignals), scoreR(wb, negSignals), scoreS(wb, negSignals), scoreT(wb, negSignals), scoreU(wb, negSignals),
       scoreV(wb, negSignals), scoreW(wb, negSignals), scoreX(wb, negSignals), scoreFamilyE(wb, negSignals),
       scoreFamilyF(wb, negSignals),
+      scoreKimCoachFormat(wb, negSignals),
       scoreFamilyC(wb, negSignals),
       scoreFamilyB(wb, negSignals),
       scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
@@ -3685,6 +3691,7 @@ function parseWorkbook(wb){
   else if (fmt === 'X') blocks = parseX(wb);
   else if (fmt === 'FAMILYE') blocks = parseFamilyE(wb);
   else if (fmt === 'FAMILYF') blocks = parseFamilyF(wb);
+  else if (fmt === 'KIMCOACH') blocks = parseKimCoachFormat(wb);
   else if (fmt === 'FAMILYB') blocks = parseFamilyB(wb);
   else if (fmt === 'FAMILYC') blocks = parseFamilyC(wb);
   else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
@@ -3797,8 +3804,11 @@ function parseWorkbook(wb){
           day.exercises = filtered;
 
           // Fix 6: Exercise name normalization (alias dictionary)
-          for (const ex of day.exercises) {
-            if (ex.name) ex.name = _normalizeExerciseName(ex.name);
+          // Skip for KIMCOACH — coach wrote these names intentionally, preserve as-is
+          if (fmt !== 'KIMCOACH') {
+            for (const ex of day.exercises) {
+              if (ex.name) ex.name = _normalizeExerciseName(ex.name);
+            }
           }
         }
       }
@@ -6635,15 +6645,16 @@ function clearParseCache() {
 function _parseSingleSetGroup(seg){
   seg = seg.trim();
   if(!seg) return null;
-  // NxM(weight) — existing parenthesized format, extended to AMRAP/AMAP/MR/F/? as reps
+  // NxM(weight) — parenthesized format, extended to AMRAP/AMAP/MR/F/? as reps and optional "+" AMRAP marker
+  // Handles: "4x8(280)", "1xAMRAP(280)", "1x8+(280)" (nSuns AMRAP-last notation)
   {
-    const sets=[]; const pat=/(\d+x)?(\d+|AMRAP|AMAP|MR|F|\?)\s*\(([^)]+)\)/gi; let m;
+    const sets=[]; const pat=/(\d+x)?(\d+|AMRAP|AMAP|MR|F|\?)(\+?)\s*\(([^)]+)\)/gi; let m;
     while((m=pat.exec(seg))!==null){
       const mult=m[1]?parseInt(m[1]):1;
       const rraw=m[2]; const rups=rraw.toUpperCase();
       const reps=/^\d+$/.test(rraw)?parseInt(rraw):(rups==='AMAP'||rups==='MR'||rups==='F')?'AMRAP':rraw;
-      const amrapFlag=reps==='AMRAP';
-      for(let i=0;i<mult;i++) sets.push({reps,weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim())),...(amrapFlag?{amrap:true}:{})});
+      const amrapFlag=reps==='AMRAP'||m[3]==='+';
+      for(let i=0;i<mult;i++) sets.push({reps,weight:m[4].trim(),isRpe:isNaN(Number(m[4].trim())),...(amrapFlag?{amrap:true}:{})});
     }
     if(sets.length>0) return sets;
   }
@@ -6766,15 +6777,16 @@ function parseSets(pres){
     }
   }
 
-  // Existing NxM(weight) global pattern — extended to AMRAP/AMAP/MR/F/? as reps
+  // NxM(weight) global pattern — extended to AMRAP/AMAP/MR/F/? as reps and optional "+" AMRAP marker
+  // Handles: "4x8(280)", "1xAMRAP(280)", "1x8+(280)" (nSuns AMRAP-last notation)
   {
-    const sets=[]; const pat=/(\d+x)?(\d+|AMRAP|AMAP|MR|F|\?)\s*\(([^)]+)\)/gi; let m;
+    const sets=[]; const pat=/(\d+x)?(\d+|AMRAP|AMAP|MR|F|\?)(\+?)\s*\(([^)]+)\)/gi; let m;
     while((m=pat.exec(pres))!==null){
       const mult=m[1]?parseInt(m[1]):1;
       const rraw=m[2]; const rups=rraw.toUpperCase();
       const reps=/^\d+$/.test(rraw)?parseInt(rraw):(rups==='AMAP'||rups==='MR'||rups==='F')?'AMRAP':rraw;
-      const amrapFlag=reps==='AMRAP';
-      for(let i=0;i<mult;i++) sets.push({reps,weight:m[3].trim(),isRpe:isNaN(Number(m[3].trim())),...(amrapFlag?{amrap:true}:{})});
+      const amrapFlag=reps==='AMRAP'||m[3]==='+';
+      for(let i=0;i<mult;i++) sets.push({reps,weight:m[4].trim(),isRpe:isNaN(Number(m[4].trim())),...(amrapFlag?{amrap:true}:{})});
     }
     if(sets.length>0){ _parseSetsCache.set(pres,sets); return sets; }
   }
@@ -6845,6 +6857,9 @@ function parseSets(pres){
   if(r){ const n=parseInt(r[1]),reps=r[2].trim(),percentage=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
   r=pres.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*$/);
   if(r){ const n=parseInt(r[1]),reps=r[2].trim(); const sets=Array.from({length:n},()=>({reps})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxS @RPE (sets only, open reps) — e.g. "5x@7", "3x@7.5"
+  r=pres.match(/^(\d+)\s*x\s*@\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
+  if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[2]); const sets=Array.from({length:n},()=>({reps:'open',rpe})); _parseSetsCache.set(pres,sets); return sets; }
 
   _parseSetsCache.set(pres,[]);
   return [];
@@ -6929,6 +6944,8 @@ function parseBarePres(pres){
   else if(/^\d+RM$/i.test(p)) result={sets:1,reps:String(parseInt(p))};
   // "Max Attempt" or "Max Out" — 1 set of max weight/reps
   else if(/^max\s+(attempt|out)[!]*/i.test(p)) result={sets:1,reps:'max'};
+  // Bare time: optional "x", number, optional space, time unit  e.g. "x10 min", "30 sec", "2 min"
+  else if(/^x?\d+\s*(?:min|sec|s|m)$/i.test(p)) result={sets:1,reps:p};
   _parseBarePresCache.set(pres, result);
   return result;
 }
@@ -16049,6 +16066,186 @@ function _ff_isDayHeader(row) {
   return row.slice(1).every(function(c) { return c == null || String(c).trim() === ''; });
 }
 
+// ── FORMAT KIMCOACH PARSER (Coach per-sheet-per-week, multi-block vertical layout) ──
+//
+// Detection: workbook has ≥1 sheet where col 1 of ≥2 rows equals "Sets X Reps @RPE"
+// (exact string). These rows are block headers. Col 0 = block/day name. Col 1 =
+// prescription for exercise rows below. Col 2 = athlete log (ignored). Col 3 = coach note.
+//
+// Each sheet maps to one training week (label = sheet name).
+// Each block within a sheet (delimited by blank rows + a "Sets X Reps @RPE" header) is one
+// training day.
+
+function scoreKimCoachFormat(wb, negSignals) {
+  var id = 'KIMCOACH';
+  var matched = [], missing = [], negative = [];
+  var score = 0;
+
+  try {
+    // Hard reject: no sheets
+    if (!wb.SheetNames || !wb.SheetNames.length) {
+      missing.push('no sheets');
+      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    // Hard reject: has week/phase tabs → FamilyB handles that
+    var weekTabs = wb.SheetNames.filter(function(s) {
+      return /^(week|wk|phase)\s*\d/i.test(String(s).trim());
+    });
+    if (weekTabs.length >= 2) {
+      negative.push('2+ week/phase tabs — FamilyB handles this');
+      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    // Count sheets that have ≥2 "Sets X Reps @RPE" header rows
+    var sheetsWithMultiBlock = 0;
+    var totalBlockHeaders = 0;
+
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var ws = wb.Sheets[wb.SheetNames[si]];
+      if (!ws || !ws['!ref']) continue;
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      var blockHeaderCount = 0;
+      for (var ri = 0; ri < rows.length; ri++) {
+        var row = rows[ri];
+        if (!row) continue;
+        var col1 = row[1];
+        if (col1 && String(col1).trim() === 'Sets X Reps @RPE') {
+          blockHeaderCount++;
+        }
+      }
+      if (blockHeaderCount >= 2) {
+        sheetsWithMultiBlock++;
+        totalBlockHeaders += blockHeaderCount;
+      }
+    }
+
+    if (sheetsWithMultiBlock === 0) {
+      missing.push('no sheets with 2+ "Sets X Reps @RPE" block headers');
+      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    // Strong signal: multi-block sheets found
+    score += 0.75;
+    matched.push(sheetsWithMultiBlock + ' sheet(s) with ' + totalBlockHeaders + ' total block headers ("Sets X Reps @RPE" in col 1)');
+
+    // Bonus: multiple sheets (multi-week program)
+    if (wb.SheetNames.length >= 2) {
+      score += 0.15;
+      matched.push(wb.SheetNames.length + ' sheets (one per week)');
+    }
+
+    // Negative signals (pre-scanned)
+    if (negSignals) {
+      if (negSignals.hasTierLabels) { score -= 0.3; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+      if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasRPLayout) { score -= 0.3; negative.push('RP horizontal layout (→RP)'); }
+      if (negSignals.hasAttemptColumns) { score -= 0.3; negative.push('meet day attempt columns'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    }
+
+    return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
+  } catch (e) {
+    console.error('[liftlog] scoreKimCoachFormat error:', e);
+    return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: ['error: ' + e.message] } };
+  }
+}
+
+// Parse one sheet as one training week, splitting into days at each block header row.
+// Block header row: col 1 === "Sets X Reps @RPE"
+// Exercise row: col 0 = name, col 1 = prescription, col 3 = coach note (col 2 = athlete log, ignored)
+// Blank row or next block header terminates the current day.
+function _kc_parseSheet(sheetName, rows) {
+  var days = [];
+  var currentDay = null;
+
+  for (var ri = 0; ri < rows.length; ri++) {
+    var row = rows[ri];
+    if (!row) continue;
+
+    var col0 = row[0] != null ? String(row[0]).trim() : '';
+    var col1 = row[1] != null ? String(row[1]).trim() : '';
+    var col3 = row[3] != null ? String(row[3]).trim() : '';
+
+    // Block header: col 1 === "Sets X Reps @RPE"
+    if (col1 === 'Sets X Reps @RPE') {
+      // col 0 is the day/block name (e.g. "Upper 1 (Bench ACC)")
+      var dayName = col0 || ('Day ' + (days.length + 1));
+      currentDay = { name: dayName, exercises: [] };
+      days.push(currentDay);
+      continue;
+    }
+
+    // Skip if no current block started
+    if (!currentDay) continue;
+
+    // Blank row — ends the current block
+    if (!col0 && !col1) {
+      currentDay = null;
+      continue;
+    }
+
+    // Trailing numeric junk (e.g. row 33 = ["2"]) — skip rows that are just numbers with no prescription
+    if (!col1 && /^\d+$/.test(col0)) continue;
+
+    // Exercise row — col 0 must have real text (letters), col 1 is the prescription
+    if (col0 && /[a-zA-Z]{2,}/.test(col0)) {
+      var name = col0;
+      var prescription = col1 || '';
+      var note = col3 || null;
+      currentDay.exercises.push({
+        name: name,
+        prescription: prescription,
+        note: note,
+        supersetGroup: null
+      });
+    }
+  }
+
+  return days.filter(function(d) { return d.exercises.length > 0; });
+}
+
+function parseKimCoachFormat(wb) {
+  var weeks = [];
+
+  for (var si = 0; si < wb.SheetNames.length; si++) {
+    var sheetName = wb.SheetNames[si];
+    var ws = wb.Sheets[sheetName];
+    if (!ws || !ws['!ref']) continue;
+
+    var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
+      .map(function(r) {
+        return r ? r.map(function(c) {
+          return (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c;
+        }) : r;
+      });
+
+    var days = _kc_parseSheet(sheetName, rows);
+    if (days.length === 0) continue;
+
+    weeks.push({
+      label: sheetName,
+      days: days
+    });
+  }
+
+  if (weeks.length === 0) return [];
+
+  // Derive program name from filename if available, otherwise generic label
+  var programName = 'Training Program';
+
+  return [{
+    id: 'kimcoach_' + Date.now(),
+    name: programName,
+    format: 'KIMCOACH',
+    dateRange: null,
+    maxes: { squat: null, bench: null, deadlift: null },
+    weeks: weeks
+  }];
+}
+
 // ── scoreFamilyF ──────────────────────────────────────────────────────────────
 function scoreFamilyF(wb, negSignals = null) {
   var id = 'FAMILYF';
@@ -16566,6 +16763,8 @@ if (typeof module !== 'undefined' && module.exports) {
     scoreFamilyF, parseFamilyF,
     _ff_isNonWorkoutTab, _ff_findHeaderRow, _ff_mapColumns, _ff_buildPrescription,
     _ff_isBlankRow, _ff_isDayHeader, _ff_parseWeekTab, _ff_parsePortraitGrid,
+    // KimCoach Parser (Sheet-per-week, multi-block vertical layout with "Sets X Reps @RPE" headers)
+    scoreKimCoachFormat, parseKimCoachFormat, _kc_parseSheet,
     // RP Hypertrophy Parser (Horizontal Mesocycle Format)
     scoreRP, parseRP,
     _rp_findWeekLabelRow, _rp_findColHeaderRow, _rp_mapOffsets, _rp_findDayBounds, _rp_buildPrescription,
