@@ -2665,6 +2665,169 @@ function parseFamilyB(wb) {
   }];
 }
 
+// ── MATRIX LAYOUT PARSER SCORE ────────────────────────────────────────────────
+// Detects "exercises × days" or "phases × days" columnar matrix layouts.
+// In matrix layout, exercises/phases are ROWS and training days are COLUMNS.
+// This is the opposite of all other parsers (which have days as rows/sections).
+// Examples: Smolov ATG (phases×days per sheet), nSuns Upper/Lower (exercises×days).
+function scoreMatrixLayout(wb, negSignals) {
+  const id = 'MATRIX';
+  const matched = [], missing = [], negative = [];
+  let score = 0;
+
+  try {
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
+      return { id, score: 0.0, signals: { matched, missing: ['no sheets'], negative } };
+    }
+
+    // Matches day names, "Day N", "Session N" anywhere inside a cell string
+    const DAY_CONTAINS_RE = /\b(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?|day\s*\d+|session\s*\d+)\b/i;
+    // Matches PURE day abbreviations (col-A exercise column test: these are NOT exercise names)
+    const DAY_PURE_RE = /^(mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
+    // Sheets that are metadata / reference only — skip for scoring
+    const SKIP_RE = /^(readme|instruction|cue|output|log|settings|notes?|legend|glossary|index|\*)/i;
+
+    let foundDayHeaderRow    = false;
+    let foundExerciseColumn  = false;
+    let foundPrescriptionGrid = false;
+    let foundWideAspect      = false;
+    let foundSetsAsColumns   = false;
+    let foundFlatTable       = false;
+    let foundWeekColACount   = 0;
+
+    for (let si = 0; si < wb.SheetNames.length; si++) {
+      const sn = wb.SheetNames[si];
+      if (SKIP_RE.test(sn.trim())) continue;
+      const rows = _sheetRows(wb, si);
+      if (!rows || rows.length < 3) continue;
+
+      // ── KIMCOACH hard reject ──────────────────────────────────────────────
+      let kimcoachFound = false;
+      for (let r = 0; r < Math.min(10, rows.length); r++) {
+        if (/sets\s*x\s*reps\s*@\s*rpe/i.test((rows[r] || []).join(' '))) {
+          kimcoachFound = true; break;
+        }
+      }
+      if (kimcoachFound) {
+        return { id, score: 0.0, signals: { matched, missing: [], negative: ['KIMCOACH signature'] } };
+      }
+
+      // ── Sets-as-columns check (nSuns_1t / sets-column layout) ────────────
+      if (!foundSetsAsColumns) {
+        for (let r = 0; r < Math.min(15, rows.length); r++) {
+          const setLabels = (rows[r] || []).filter(c => /^set\s*\d+$/i.test(String(c || '').trim()));
+          if (setLabels.length >= 2) { foundSetsAsColumns = true; break; }
+        }
+      }
+
+      // ── Flat relational table check (Prep10 / Week+Session+Lift header) ──
+      if (!foundFlatTable) {
+        for (let r = 0; r < Math.min(5, rows.length); r++) {
+          const rowStr = (rows[r] || []).join(' ').toLowerCase();
+          if (/week/.test(rowStr) && /session|phase/.test(rowStr) && /lift|exercise/.test(rowStr)) {
+            foundFlatTable = true; break;
+          }
+        }
+      }
+
+      // ── "Week N" labels in col A (week-section layout, not matrix) ───────
+      for (let r = 0; r < rows.length; r++) {
+        if (/^week\s*\d+$/i.test(String(((rows[r] || [])[0]) || '').trim())) foundWeekColACount++;
+      }
+
+      // ── Day header row: ≥3 day-like cells spread across one row ──────────
+      // Also requires NO repeated day names — repeating-cycle formats (e.g. Texas Method
+      // with Mon/Wed/Fri/Mon/Wed/Fri) are not matrix layouts.
+      // Date objects are skipped — their string representation includes day-of-week names
+      // (e.g. "Tue Aug 23 2016...") which would otherwise produce false matches.
+      let sheetHeaderRowIdx = -1;
+      for (let r = 0; r < Math.min(15, rows.length); r++) {
+        const row = rows[r] || [];
+        const dayNames = [];
+        let firstDayColIdx = Infinity;
+        for (let ci = 0; ci < row.length; ci++) {
+          const cell = row[ci];
+          if (cell instanceof Date) continue; // skip date cells — their toString() includes day names
+          const m = DAY_CONTAINS_RE.exec(String(cell || '').trim());
+          if (m) {
+            dayNames.push(m[1].toLowerCase().slice(0, 3)); // normalize to 3-char day key
+            if (ci < firstDayColIdx) firstDayColIdx = ci;
+          }
+        }
+        const uniqueDays = new Set(dayNames);
+        if (dayNames.length >= 3 && dayNames.length === uniqueDays.size && firstDayColIdx <= 8) {
+          // ≥3 unique day-label cells, starting within first 8 cols → genuine matrix header
+          // (rules out sidebar scheduling forms where days appear at col 10+)
+          sheetHeaderRowIdx = r;
+          foundDayHeaderRow = true;
+          // Wide aspect: more non-empty column labels than remaining data rows
+          const dataCols = (row || []).filter(c => c !== null && c !== undefined && String(c).trim()).length;
+          if (dataCols > rows.length - r) foundWideAspect = true;
+          break;
+        }
+      }
+
+      // ── Exercise column: col A has ≥3 text rows that look like names ─────
+      if (!foundExerciseColumn) {
+        let textCount = 0;
+        const startRow = sheetHeaderRowIdx >= 0 ? sheetHeaderRowIdx + 1 : 0;
+        for (let r = startRow; r < rows.length; r++) {
+          const cell = String(((rows[r] || [])[0]) || '').trim();
+          if (/[a-zA-Z]{2,}/.test(cell) && !DAY_PURE_RE.test(cell) && !/^\d+$/.test(cell)) textCount++;
+        }
+        if (textCount >= 3) foundExerciseColumn = true;
+      }
+
+      // ── Prescription grid: NxM / weight@rpe patterns in interior cells ───
+      if (!foundPrescriptionGrid && sheetHeaderRowIdx >= 0) {
+        let prescCount = 0, interiorCount = 0;
+        for (let r = sheetHeaderRowIdx + 1; r < Math.min(sheetHeaderRowIdx + 20, rows.length); r++) {
+          const row = rows[r] || [];
+          for (let c = 1; c < row.length; c++) {
+            const cell = String(row[c] || '').trim();
+            if (cell) {
+              interiorCount++;
+              if (/\d+\s*[x×]\s*\d|\d+\s*@\s*\d|\bx\d+\b/i.test(cell)) prescCount++;
+            }
+          }
+        }
+        if (interiorCount > 0 && prescCount / interiorCount >= 0.20) foundPrescriptionGrid = true;
+      }
+    }
+
+    // ── A matrix layout MUST have day names as column headers ────────────────
+    if (!foundDayHeaderRow) {
+      return { id, score: 0.0, signals: { matched, missing: ['no day header row across columns'], negative } };
+    }
+
+    // ── Accumulate positive signals ──────────────────────────────────────────
+    score += 0.35; matched.push('day header row with ≥3 day-label columns');
+    if (foundExerciseColumn) { score += 0.30; matched.push('exercise/phase column in col A'); }
+    else missing.push('no exercise/phase column in col A');
+    if (foundPrescriptionGrid) { score += 0.20; matched.push('NxM prescription grid in interior cells'); }
+    else missing.push('no prescription grid in interior cells');
+    if (foundWideAspect) { score += 0.10; matched.push('wide aspect ratio (more cols than rows)'); }
+    else missing.push('aspect ratio not wide');
+
+    // ── Negative suppressors ─────────────────────────────────────────────────
+    if (foundSetsAsColumns)        { score -= 0.50; negative.push('sets-as-columns pattern (-0.50)'); }
+    if (foundFlatTable)            { score -= 0.50; negative.push('flat relational table header (-0.50)'); }
+    if (foundWeekColACount >= 2)   { score -= 0.40; negative.push('Week-N labels in col A (-0.40)'); }
+    if (negSignals && negSignals.hasSheikoExPrefix)  { score -= 0.30; negative.push('Sheiko ex-prefix (-0.30)'); }
+    if (negSignals && negSignals.hasFatiguePercents) { score -= 0.40; negative.push('fatigue percents (-0.40)'); }
+    if (negSignals && negSignals.hasMRVMEV)          { score -= 0.40; negative.push('MRV/MEV/MAV signals (-0.40)'); }
+    if (negSignals && negSignals.hasRPLayout)        { score -= 0.30; negative.push('RP layout signals (-0.30)'); }
+    if (negSignals && negSignals.hasAttemptColumns)  { score -= 0.30; negative.push('attempt columns (-0.30)'); }
+
+    score = Math.min(0.85, Math.max(0.0, score));
+    return { id, score, signals: { matched, missing, negative } };
+
+  } catch (e) {
+    console.error('[liftlog] scoreMatrixLayout error:', e);
+    return { id, score: 0.0, signals: { matched, missing, negative: ['error: ' + e.message] } };
+  }
+}
+
 // ── ADAPTIVE PARSER SCORE ─────────────────────────────────────────────────────
 // Returns max 0.3 so dedicated parsers always win when they score > 0.3.
 // Fires as fallback only when no dedicated parser recognises the file.
@@ -2736,6 +2899,7 @@ function _tryParse(wb, formatId) {
       case 'FAMILYE': return parseFamilyE(wb);
       case 'FAMILYF': return parseFamilyF(wb);
       case 'KIMCOACH': return parseKimCoachFormat(wb);
+      case 'MATRIX': return parseMatrixLayout(wb);
       case 'FAMILYB': return parseFamilyB(wb);
       case 'FAMILYC': return parseFamilyC(wb);
       case 'RP': return parseRP(wb);
@@ -2902,6 +3066,7 @@ function detectFormat(wb){
       scoreKimCoachFormat(wb, negSignals),
       scoreFamilyC(wb, negSignals),
       scoreFamilyB(wb, negSignals),
+      scoreMatrixLayout(wb, negSignals),  // MATRIX: must come before scoreAdaptive (L046)
       scoreAdaptive(wb)  // must be last — max 0.3, dedicated parsers always win at >0.3; stable sort preserves order on ties
     ].sort((a, b) => b.score - a.score);
 
@@ -2928,6 +3093,11 @@ function detectFormat(wb){
 
     // Low confidence but something matched
     if (top.score > 0.2) {
+      // Adaptive only wins if every dedicated parser scored 0 — true last resort
+      if (top.id === 'ADAPTIVE') {
+        const bestDedicated = scores.find(s => s.id !== 'ADAPTIVE' && s.score > 0);
+        if (bestDedicated) return bestDedicated.id;
+      }
       return top.id;
     }
 
@@ -3692,6 +3862,7 @@ function parseWorkbook(wb){
   else if (fmt === 'FAMILYE') blocks = parseFamilyE(wb);
   else if (fmt === 'FAMILYF') blocks = parseFamilyF(wb);
   else if (fmt === 'KIMCOACH') blocks = parseKimCoachFormat(wb);
+  else if (fmt === 'MATRIX') blocks = parseMatrixLayout(wb);
   else if (fmt === 'FAMILYB') blocks = parseFamilyB(wb);
   else if (fmt === 'FAMILYC') blocks = parseFamilyC(wb);
   else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
@@ -3805,7 +3976,8 @@ function parseWorkbook(wb){
 
           // Fix 6: Exercise name normalization (alias dictionary)
           // Skip for KIMCOACH — coach wrote these names intentionally, preserve as-is
-          if (fmt !== 'KIMCOACH') {
+          // Skip for MATRIX — raw cell values are used as exercise names/labels, preserve as-is
+          if (fmt !== 'KIMCOACH' && fmt !== 'MATRIX') {
             for (const ex of day.exercises) {
               if (ex.name) ex.name = _normalizeExerciseName(ex.name);
             }
@@ -3975,6 +4147,8 @@ function parseE_nSuns(wb) {
         if (DAYS.some(d => exStr.toLowerCase() === d || exStr.toLowerCase().startsWith(d + ' ')) || /^day\s*\d/i.test(exStr)) break;
         if (/^\d+\.?\d*$/.test(exStr)) continue;
         if (/^(1RM|TM|lb|kg)/i.test(exStr)) continue;
+        // Skip instruction/note rows — real exercise names are never long sentences
+        if (exStr.length > 60 || (exStr.split(/\s+/).length > 7 && !/\d/.test(exStr))) continue;
 
         // Find first numeric cell after dataCol
         let numStart = -1;
@@ -4167,7 +4341,7 @@ function parseE_phaseGrid(wb) {
 
     // Find wave/section boundaries below the header
     const waveSections = []; // [{name, startRow, endRow}]
-    for (let i = hdrRow - 2; i >= 0; i--) {
+    for (let i = hdrRow - 1; i >= 0; i--) {
       const row = rows[i]; if (!row) continue;
       const val = row[0]; if (val == null) continue;
       const str = String(val).trim();
@@ -4185,12 +4359,17 @@ function parseE_phaseGrid(wb) {
       if (/\d+\s*Rep\s*Wave/i.test(str)) {
         // End previous wave
         if (waveSections.length > 0) waveSections[waveSections.length - 1].endRow = i;
-        // Check for Weight/Reps headers below
+        // Check for Weight/Reps headers — first check if they're on the wave label row itself
         let newHdr = -1;
-        for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
-          const hr = rows[j]; if (!hr) continue;
-          const hstrs = hr.map(_normalizeCell);
-          if (hstrs.filter(s => s === 'weight').length >= 2) { newHdr = j; break; }
+        const waveLabelStrs = rows[i].map(_normalizeCell);
+        if (waveLabelStrs.filter(s => s === 'weight').length >= 2) {
+          newHdr = i;
+        } else {
+          for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
+            const hr = rows[j]; if (!hr) continue;
+            const hstrs = hr.map(_normalizeCell);
+            if (hstrs.filter(s => s === 'weight').length >= 2) { newHdr = j; break; }
+          }
         }
         waveSections.push({ name: str, startRow: (newHdr >= 0 ? newHdr + 1 : i + 2) });
       }
@@ -4210,6 +4389,8 @@ function parseE_phaseGrid(wb) {
         let currentEx = null;
         for (let r = wave.startRow; r < wave.endRow; r++) {
           const row = rows[r]; if (!row) continue;
+          // Stop at TM Calculator block — everything after it is recalculation output, not workout data
+          if (row.some(c => c != null && /New\s+Training\s+Max|Training\s+Max\s+Calculator|New\s+TM/i.test(String(c)))) break;
           // Check for exercise name in col adjacent to weight col
           const nameCol = pg.weightCol - 1;
           const exName = nameCol >= 0 && row[nameCol] ? String(row[nameCol]).trim() : '';
@@ -6202,9 +6383,7 @@ function detectG(wb) {
 // ── FORMAT G PARSER (Sheiko numbered exercises) ──────────────────────────────
 function parseG(wb) {
   const SKIP = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|max|output|pr\s*sheet|notes?|start\s*here|1\.\s*start|predicted|volume)/i;
-  const allWeeks = [];
-  let blockName = '';
-  let globalWeekNum = 0;
+  const sheetsData = []; // one entry per program sheet: { name, weeks[] }
 
   for (const sn of wb.SheetNames) {
     if (SKIP.test(sn.trim())) continue;
@@ -6236,16 +6415,15 @@ function parseG(wb) {
       }
     }
     if (weekStarts.length === 0) continue;
-    if (!blockName) blockName = sn;
 
-    // Process each week
+    // Process each week into this sheet's local week array
+    const sheetWeeks = [];
     for (let w = 0; w < weekStarts.length; w++) {
       const weekStart = weekStarts[w].row;
       const weekEnd = w + 1 < weekStarts.length ? weekStarts[w + 1].row : rows.length;
       const weekDays = dayStarts.filter(d => d.row > weekStart && d.row < weekEnd);
       if (weekDays.length === 0) continue;
 
-      globalWeekNum++;
       const parsedDays = [];
 
       for (let d = 0; d < weekDays.length; d++) {
@@ -6292,14 +6470,22 @@ function parseG(wb) {
       }
 
       if (parsedDays.length > 0) {
-        allWeeks.push({label: 'Week ' + globalWeekNum, days: parsedDays});
+        sheetWeeks.push({label: 'Week ' + weekStarts[w].weekNum, days: parsedDays});
       }
     }
+
+    if (sheetWeeks.length > 0) sheetsData.push({name: sn, weeks: sheetWeeks});
   }
 
-  if (allWeeks.length === 0) return parseB(wb);
+  if (sheetsData.length === 0) return parseB(wb);
   const maxes = _extractMaxesFromSheet(wb);
-  return [{id: 'G_' + (blockName || 'block').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(), name: blockName, format: 'G', weeks: allWeeks, maxes}];
+  return sheetsData.map(sheet => ({
+    id: 'G_' + sheet.name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now(),
+    name: sheet.name,
+    format: 'G',
+    weeks: sheet.weeks,
+    maxes
+  }));
 }
 
 function _gBuildExercise(ex) {
@@ -16696,6 +16882,247 @@ function parseFamilyF(wb) {
   }
 }
 
+// ── MATRIX LAYOUT PARSER ──────────────────────────────────────────────────────
+// Handles "exercises × days" and "phases × days" columnar matrix layouts.
+// Two sub-types:
+//   Phase-matrix: col A = phase/week labels, day columns = prescriptions for one exercise
+//                 (e.g. Smolov ATG: each row is a training block, cols are days of week)
+//   Exercise-matrix: col A = exercise names, day columns = exercise prescriptions per day
+//                    (e.g. nSuns Upper/Lower: each row is an exercise, cols are sessions)
+
+// Normalize a day column label to a display-friendly name.
+// Pure abbreviations → full name; complex strings (e.g. "Bench Volume (Mon)") → preserved as-is.
+function _mx_normalizeDayLabel(label) {
+  const s = String(label || '').trim();
+  const lo = s.toLowerCase();
+  const MAP = {
+    'mon': 'Monday', 'monday': 'Monday',
+    'tue': 'Tuesday', 'tues': 'Tuesday', 'tuesday': 'Tuesday',
+    'wed': 'Wednesday', 'wednesday': 'Wednesday',
+    'thu': 'Thursday', 'thur': 'Thursday', 'thurs': 'Thursday', 'thursday': 'Thursday',
+    'fri': 'Friday', 'friday': 'Friday',
+    'sat': 'Saturday', 'saturday': 'Saturday',
+    'sun': 'Sunday', 'sunday': 'Sunday',
+  };
+  return MAP[lo] || s;
+}
+
+// Scan rows above the header for a 1RM reference to infer the primary exercise name.
+// Falls back to "Squat" (correct for all known phase-matrix files like Smolov).
+function _mx_inferExerciseName(rows, headerRowIdx) {
+  for (let r = 0; r < headerRowIdx; r++) {
+    for (const cell of (rows[r] || [])) {
+      const s = String(cell || '');
+      const m = s.match(/1\s*rm\s+(\w+)/i) || s.match(/current\s+(\w+)\s+1\s*rm/i) || s.match(/(\w+)\s+1\s*rm/i);
+      if (m && /[a-zA-Z]{2,}/.test(m[1])) {
+        return m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+      }
+    }
+  }
+  return 'Squat';
+}
+
+// Parse a phase-matrix sheet (col A = phase label, cols B+ = day prescriptions for one exercise).
+// Returns an array of blocks (usually one block with multiple weeks/phases).
+function _mx_parsePhaseMatrix(sheetName, rows, headerRowIdx, dayColumns) {
+  // Bare-number reference table check: only sample rows where col A is a number (data rows).
+  // If every such row has numeric-only interior cells, it's a percentage/weight lookup table — skip.
+  let numCount = 0, totalCells = 0;
+  for (let r = headerRowIdx + 1; r < Math.min(headerRowIdx + 20, rows.length); r++) {
+    const row = rows[r] || [];
+    if (typeof row[0] !== 'number') continue; // only check rows with numeric col A (pure data rows)
+    for (let c = 1; c < row.length; c++) {
+      const cell = row[c];
+      if (cell !== null && cell !== undefined && String(cell).trim()) {
+        totalCells++;
+        if (typeof cell === 'number' || /^\d+\.?\d*%?$/.test(String(cell).trim())) numCount++;
+      }
+    }
+  }
+  if (totalCells > 0 && numCount / totalCells > 0.80) return []; // pure reference table — skip
+
+  const exName = _mx_inferExerciseName(rows, headerRowIdx);
+  const SKIP_CELL = /^(—|-+|n\/?a)$/i;
+
+  const weeks = [];
+  let curLabel = null;
+  let curPresc = {}; // {colIdx: [prescription strings]}
+
+  function flushPhase() {
+    if (!curLabel) return;
+    const days = [];
+    for (const dc of dayColumns) {
+      const parts = (curPresc[dc.colIdx] || []).filter(Boolean);
+      if (parts.length === 0) continue;
+      days.push({
+        name: _mx_normalizeDayLabel(dc.label),
+        exercises: [{ name: exName, prescription: parts.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null }]
+      });
+    }
+    if (days.length > 0) weeks.push({ label: curLabel, days });
+    curPresc = {};
+  }
+
+  const DAY_RE = /\b(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?|day\s*\d+|session\s*\d+)\b/i;
+
+  for (let r = headerRowIdx + 1; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const colAVal = String(row[0] || '').trim();
+
+    // Skip repeated header rows (same structure as the original header row appearing again)
+    const repeatedDayCols = dayColumns.filter(dc => DAY_RE.test(String(row[dc.colIdx] || '').trim())).length;
+    if (repeatedDayCols >= 2) continue;
+
+    if (!colAVal) {
+      // Continuation row — add prescriptions to current phase
+      if (curLabel !== null) {
+        for (const dc of dayColumns) {
+          const cell = String(row[dc.colIdx] || '').trim();
+          if (cell && !SKIP_CELL.test(cell)) {
+            if (!curPresc[dc.colIdx]) curPresc[dc.colIdx] = [];
+            curPresc[dc.colIdx].push(cell);
+          }
+        }
+      }
+    } else if (/[a-zA-Z]{2,}/.test(colAVal)) {
+      // New phase label (has ≥2 letters — distinguishes phase names from pure-numeric rows)
+      flushPhase();
+      curLabel = colAVal;
+      curPresc = {};
+      for (const dc of dayColumns) {
+        const cell = String(row[dc.colIdx] || '').trim();
+        if (cell && !SKIP_CELL.test(cell)) curPresc[dc.colIdx] = [cell];
+      }
+    } else if (curLabel !== null) {
+      // Numeric col-A value (e.g. continuation with a number like "126x5 x1" spilling into col A)
+      for (const dc of dayColumns) {
+        const cell = String(row[dc.colIdx] || '').trim();
+        if (cell && !SKIP_CELL.test(cell)) {
+          if (!curPresc[dc.colIdx]) curPresc[dc.colIdx] = [];
+          curPresc[dc.colIdx].push(cell);
+        }
+      }
+    }
+  }
+  flushPhase();
+
+  if (weeks.length === 0) return [];
+
+  return [{
+    id: 'MATRIX_ph_' + sheetName + '_' + Date.now(),
+    name: sheetName,
+    format: 'MATRIX',
+    athleteName: '',
+    dateRange: '',
+    maxes: {},
+    weeks
+  }];
+}
+
+// Parse an exercise-matrix sheet (col A = exercise names, cols B+ = day prescriptions).
+// Returns an array of day objects {name, exercises[]}.
+function _mx_parseExerciseMatrixSheet(sheetName, rows, headerRowIdx, dayColumns) {
+  const SKIP_CELL = /^(—|-+|n\/?a)$/i;
+  const dayExercises = {}; // {colIdx: [{name, prescription, ...}]}
+
+  for (let r = headerRowIdx + 1; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const colA = String(row[0] || '').trim();
+
+    // Row must have at least one letter in col A to be an exercise row
+    if (!/[a-zA-Z]/.test(colA)) continue;
+
+    // Must have data in at least one day column (skip pure section headers)
+    let hasData = false;
+    for (const dc of dayColumns) {
+      if (String(row[dc.colIdx] || '').trim()) { hasData = true; break; }
+    }
+    if (!hasData) continue;
+
+    for (const dc of dayColumns) {
+      const cell = String(row[dc.colIdx] || '').trim();
+      if (!cell || SKIP_CELL.test(cell)) continue;
+      if (!dayExercises[dc.colIdx]) dayExercises[dc.colIdx] = [];
+      dayExercises[dc.colIdx].push({ name: colA, prescription: cell, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null });
+    }
+  }
+
+  return dayColumns
+    .filter(dc => dayExercises[dc.colIdx] && dayExercises[dc.colIdx].length > 0)
+    .map(dc => ({ name: _mx_normalizeDayLabel(dc.label), exercises: dayExercises[dc.colIdx] }));
+}
+
+// Main MATRIX parser entry point.
+// Two passes: phase-matrix sheets → separate blocks; exercise-matrix sheets → merged into one block.
+function parseMatrixLayout(wb) {
+  const DAY_CONTAINS_RE = /\b(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?|day\s*\d+|session\s*\d+)\b/i;
+  // Sheets that are clearly non-workout metadata
+  const SKIP_RE = /^(readme|instruction|cue|output|log|settings|notes?|legend|glossary|index|\*)/i;
+
+  const phaseBlocks = [];   // blocks from phase-matrix sheets (one block each)
+  const exerciseDays = [];  // days collected from exercise-matrix sheets (merged later)
+  let exerciseSheetName = ''; // name for the merged exercise-matrix block
+
+  for (let si = 0; si < wb.SheetNames.length; si++) {
+    const sn = wb.SheetNames[si];
+    if (SKIP_RE.test(sn.trim())) continue;
+    const rows = _sheetRows(wb, si);
+    if (!rows || rows.length < 3) continue;
+
+    // Find header row: first row with ≥2 day-containing cells across columns
+    let headerRowIdx = -1;
+    let dayColumns = [];
+    for (let r = 0; r < Math.min(15, rows.length); r++) {
+      const row = rows[r] || [];
+      const dayCols = [];
+      for (let c = 0; c < row.length; c++) {
+        if (DAY_CONTAINS_RE.test(String(row[c] || '').trim())) {
+          dayCols.push({ colIdx: c, label: String(row[c]).trim() });
+        }
+      }
+      if (dayCols.length >= 2) {
+        headerRowIdx = r;
+        dayColumns = dayCols;
+        break;
+      }
+    }
+    if (headerRowIdx < 0 || dayColumns.length === 0) continue;
+
+    // Classify sheet type by col-A header cell
+    const colAHeader = String(((rows[headerRowIdx] || [])[0]) || '').trim().toLowerCase();
+    const isPhaseMatrix = /^(week|phase|block|wk|%)/.test(colAHeader) || colAHeader === '';
+
+    if (isPhaseMatrix) {
+      const blocks = _mx_parsePhaseMatrix(sn, rows, headerRowIdx, dayColumns);
+      phaseBlocks.push(...blocks);
+    } else {
+      // Exercise-matrix: collect days from this sheet and merge later
+      const days = _mx_parseExerciseMatrixSheet(sn, rows, headerRowIdx, dayColumns);
+      if (days.length > 0) {
+        if (!exerciseSheetName) exerciseSheetName = sn;
+        exerciseDays.push(...days);
+      }
+    }
+  }
+
+  const result = [...phaseBlocks];
+
+  // Merge all exercise-matrix days into a single block with one week
+  if (exerciseDays.length > 0) {
+    result.push({
+      id: 'MATRIX_ex_' + Date.now(),
+      name: exerciseSheetName || wb.SheetNames[0] || 'Training Program',
+      format: 'MATRIX',
+      athleteName: '',
+      dateRange: '',
+      maxes: {},
+      weeks: [{ label: 'Week 1', days: exerciseDays }]
+    });
+  }
+
+  return result;
+}
+
 // ── MODULE EXPORTS (Node.js) / GLOBAL (browser) ──────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -16768,6 +17195,9 @@ if (typeof module !== 'undefined' && module.exports) {
     // RP Hypertrophy Parser (Horizontal Mesocycle Format)
     scoreRP, parseRP,
     _rp_findWeekLabelRow, _rp_findColHeaderRow, _rp_mapOffsets, _rp_findDayBounds, _rp_buildPrescription,
+    // Matrix Layout Parser (Exercises × Days columnar format)
+    scoreMatrixLayout, parseMatrixLayout,
+    _mx_normalizeDayLabel, _mx_inferExerciseName, _mx_parsePhaseMatrix, _mx_parseExerciseMatrixSheet,
   };
 }
 
