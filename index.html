@@ -423,7 +423,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .theme-toggle-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: var(--fs-lg); transition: all 0.15s; padding: 0; }
 .theme-toggle-btn:active { background: rgba(255,255,255,0.08); }
 .upload-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100dvh - 70px); padding: 32px 32px 80px; text-align: center; }
-.upload-icon { width: 72px; height: 72px; border: 1.5px solid rgba(201,168,76,0.4); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: var(--sp-8); background: rgba(201,168,76,0.06); }
+.upload-icon-wrap { position: relative; display: inline-flex; margin-bottom: var(--sp-8); }
+.upload-icon-wrap::before { content: ''; position: absolute; inset: -28px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.16) 0%, rgba(var(--gold-rgb), 0.04) 50%, transparent 70%); pointer-events: none; }
+.upload-icon { width: 72px; height: 72px; border: 1.5px solid rgba(201,168,76,0.4); border-radius: 18px; display: flex; align-items: center; justify-content: center; background: rgba(201,168,76,0.06); position: relative; z-index: 1; }
 .upload-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-display); letter-spacing: 0.02em; margin-bottom: var(--sp-5); color: var(--text-primary); }
 .upload-desc { color: var(--text-muted); font-size: var(--fs-lg); line-height: 1.75; margin-bottom: 32px; max-width: 290px; }
 .upload-btn { background: var(--gold); color: #000; border: none; padding: var(--sp-6) 28px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; max-width: 300px; transition: opacity 0.15s; }
@@ -850,13 +852,16 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
 .home-screen { padding: 48px var(--sp-6) 80px; overflow: hidden; }
-.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-sub); margin-bottom: var(--sp-1); }
+.home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 2px; }
+.home-date { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 500; letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: var(--sp-4); }
 
 /* Hero card */
 .home-hero { position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: var(--sp-5); cursor: pointer; transition: transform 0.15s, border-color 0.15s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .home-hero:active { transform: scale(0.95); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
-.home-hero-barbell { position: absolute; right: -12px; bottom: -18px; opacity: 0.08; pointer-events: none; }
+.home-hero-barbell-wrap { position: absolute; right: -12px; bottom: -18px; pointer-events: none; }
+.home-hero-barbell-wrap::before { content: ''; position: absolute; inset: -24px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.05) 0%, rgba(var(--gold-rgb), 0.01) 55%, transparent 70%); }
+.home-hero-barbell { opacity: 0.08; position: relative; z-index: 1; }
 .home-hero-inner { position: relative; z-index: 1; padding: var(--sp-6) var(--sp-7); }
 .home-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: var(--sp-3); }
 .home-hero-day { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-3xl); font-weight: 700; color: var(--text-bright); letter-spacing: 0.02em; line-height: 1; margin-bottom: var(--sp-2); }
@@ -1350,7 +1355,9 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 
 /* No-program state */
 .home-empty { text-align: center; padding: 60px var(--sp-8); }
-.home-empty-icon { margin: 0 auto var(--sp-7); opacity: 0.15; }
+.home-empty-icon { position: relative; display: inline-block; margin: 0 auto var(--sp-7); }
+.home-empty-icon::before { content: ''; position: absolute; inset: -28px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.16) 0%, rgba(var(--gold-rgb), 0.04) 50%, transparent 70%); pointer-events: none; }
+.home-empty-icon svg { position: relative; z-index: 1; }
 .home-empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--text-bright); margin-bottom: var(--sp-4); letter-spacing: 0.04em; }
 .home-empty-desc { font-family: 'Barlow', sans-serif; font-size: var(--fs-lg); color: var(--text-faint); line-height: 1.6; margin-bottom: var(--sp-8); }
 .home-upload-btn { padding: var(--sp-6) 28px; background: var(--gold); border: none; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; }
@@ -1393,7 +1400,9 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .onboarding-overlay { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .onboarding-container { width: 100%; max-width: 400px; padding: 0 var(--sp-8); text-align: center; animation: onboardFadeIn 0.4s ease; }
 @keyframes onboardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-.onboard-icon { margin-bottom: 28px; }
+.onboard-icon { position: relative; display: inline-block; margin-bottom: 28px; }
+.onboard-icon::before { content: ''; position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.18) 0%, rgba(var(--gold-rgb), 0.05) 45%, transparent 70%); pointer-events: none; }
+.onboard-icon svg { position: relative; z-index: 1; }
 .onboard-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-display); font-weight: 700; color: var(--text-bright); margin-bottom: var(--sp-4); letter-spacing: -0.01em; }
 .onboard-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-lg); color: var(--text-faint); line-height: 1.6; margin-bottom: 32px; }
 .onboard-features { display: flex; flex-direction: column; gap: var(--sp-6); margin-bottom: 36px; text-align: left; }
@@ -1674,7 +1683,27 @@ canvas.chart-overlay { pointer-events: auto; }
 .metrics-empty-icon { font-size: var(--fs-3xl); margin-bottom: var(--sp-4); opacity: 0.5; }
 .metrics-empty-text { font-size: var(--fs-lg); color: var(--text-dim); font-family: 'Barlow', sans-serif; margin-bottom: var(--sp-2); }
 .metrics-empty-sub { font-size: var(--fs-sm); color: var(--text-faint); font-family: 'Barlow', sans-serif; }
+/* Empty state for comp lift cards (S/B/D) with no logged data */
+.metrics-empty-body { padding: var(--sp-8) var(--sp-6); display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); text-align: center; }
+.metrics-empty-body-icon { opacity: 0.45; }
+.metrics-empty-body-headline { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.05em; color: var(--text-sub); text-transform: uppercase; }
+.metrics-empty-body-sub { font-size: var(--fs-sm); color: var(--text-dim); line-height: 1.4; max-width: 200px; }
+.metrics-empty-cta { margin-top: var(--sp-2); padding: 10px 22px; background: rgba(var(--gold-rgb), 0.08); border: 1px solid rgba(var(--gold-rgb), 0.35); border-radius: 20px; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-base); letter-spacing: 0.06em; cursor: pointer; transition: opacity 0.15s; }
 .var-pill.empty { opacity: 0.5; }
+/* No-program metrics empty state — Option 3 */
+.metrics-no-program { padding: var(--sp-6); }
+.metrics-empty-lift-row { display: flex; align-items: center; gap: 14px; padding: 18px 20px 22px; border-top: 1px solid var(--border); }
+.metrics-empty-lift-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 2px; }
+.metrics-empty-lift-sub { font-size: var(--fs-xs); color: var(--text-faint); }
+.metrics-upload-card { background: rgba(var(--gold-rgb), 0.05); border: 1px solid rgba(var(--gold-rgb), 0.22); border-radius: 14px; padding: 20px; margin-bottom: var(--sp-6); }
+.metrics-upload-card-header { margin-bottom: 16px; text-align: center; }
+.metrics-upload-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--gold); letter-spacing: 0.04em; text-align: center; }
+.metrics-upload-sub { font-size: var(--fs-sm); color: rgba(var(--gold-rgb), 0.5); margin-top: 3px; text-align: center; }
+.metrics-upload-chip-row { display: flex; gap: 8px; }
+.metrics-upload-chip { flex: 1; padding: 12px 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; text-align: center; }
+.metrics-upload-chip.selected { background: rgba(var(--gold-rgb), 0.1); border-color: rgba(var(--gold-rgb), 0.45); color: var(--gold); }
+.metrics-upload-confirm { margin-top: 10px; width: 100%; padding: 13px; background: rgba(var(--gold-rgb), 0.12); border: 1px solid rgba(var(--gold-rgb), 0.4); border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; letter-spacing: 0.06em; color: var(--gold); cursor: pointer; transition: opacity 0.15s; display: none; }
+.metrics-upload-confirm.visible { display: block; }
 
 /* Add lift button */
 .add-lift-btn { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); width: 100%; padding: var(--sp-6); background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); letter-spacing: 0.04em; cursor: pointer; margin-bottom: var(--sp-6); transition: all 0.15s; }
@@ -3365,20 +3394,36 @@ function renderMetrics(){
 
   // No program loaded — empty state
   if(state.blocks.length===0){
-    h+=`<div style="padding:var(--sp-6)">`;
+    h+=`<div class="metrics-no-program">`;
     ['Squat','Bench','Deadlift'].forEach(label=>{
-      h+=`<div class="metrics-lift-group" style="margin-bottom:var(--sp-6)">
+      h+=`<div class="metrics-lift-group">
         <div class="metrics-lift-header">
           <h2 class="metrics-lift-title">${label}</h2>
-          <div style="text-align:right"><div class="metrics-best" style="color:var(--border)">—</div><div class="metrics-best-label">Best Est. 1RM</div></div>
+          <div style="text-align:right"><div class="metrics-best" style="color:var(--border)">—</div><div class="metrics-best-label">Est. 1RM</div></div>
         </div>
-        <div class="chart-wrap" style="position:relative">
-          <canvas class="rm-chart" width="400" height="120" style="opacity:0.15" aria-label="Estimated 1RM chart — no data yet"></canvas>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-base);color:var(--text-dimmer);letter-spacing:0.06em;text-transform:uppercase">No data</div>
+        <div class="metrics-empty-lift-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" width="24" height="24" style="opacity:0.35;flex-shrink:0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <div>
+            <div class="metrics-empty-lift-label">No data yet</div>
+            <div class="metrics-empty-lift-sub">Log a set to see your trend</div>
+          </div>
         </div>
       </div>`;
     });
-    h+=`<div style="text-align:center;font-size:var(--fs-md);color:var(--text-dim);padding:var(--sp-4) 0 var(--sp-8)">Load a program and log weights to start tracking</div>`;
+    h+=`<div class="metrics-upload-card">
+      <div class="metrics-upload-card-header">
+        <div>
+          <div class="metrics-upload-title">Load a Program to Start Tracking</div>
+          <div class="metrics-upload-sub">Upload your spreadsheet or build from scratch</div>
+        </div>
+      </div>
+      <div class="metrics-upload-chip-row" id="metrics-upload-chip-row">
+        <button class="metrics-upload-chip" onclick="metricsUploadSelectChip(this,'upload')">Upload File</button>
+        <button class="metrics-upload-chip" onclick="metricsUploadSelectChip(this,'demo')">Sample Program</button>
+        <button class="metrics-upload-chip" onclick="metricsUploadSelectChip(this,'build')">Build Your Own</button>
+      </div>
+      <button class="metrics-upload-confirm" id="metrics-upload-confirm" onclick="metricsUploadConfirm()"></button>
+    </div>`;
     h+=`</div></div>`;
     main.innerHTML=h;
     return;
@@ -3484,17 +3529,18 @@ function renderMetrics(){
         <div class="metrics-lift-header">
           <h2 class="metrics-lift-title">${escH(group.label)}</h2>
           <div style="text-align:right">
-            <div class="metrics-best">—</div>
-            <div class="metrics-best-label">Best Est. 1RM</div>
+            <div class="metrics-best" style="color:var(--border)">—</div>
+            <div class="metrics-best-label">Est. 1RM</div>
           </div>
         </div>
-        <div class="chart-wrap" style="position:relative">
-          <canvas class="rm-chart" width="400" height="120" style="opacity:0.15" aria-label="Estimated 1RM chart for ${escH(group.label)} — no data yet"></canvas>
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-4)">
-            <div style="font-size:var(--fs-md);color:var(--text-sub)">No data yet</div>
-            <div style="display:flex;align-items:center;gap:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-            <div style="font-size:var(--fs-sm);color:var(--text-dim)">Log training data to see trends</div>
+        <div class="metrics-empty-body">
+          <div class="metrics-empty-body-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
           </div>
+          <div class="metrics-empty-body-headline">No data yet</div>
+          <div class="metrics-empty-body-sub">Log weight and reps to track your e1RM</div>
         </div>
       </div>`;
       continue;
@@ -3694,6 +3740,38 @@ function toggleMetricsRows(groupKey){
     if(datapoints && datapoints.classList.contains('rm-datapoints'))
       datapoints.style.display = nowExpanded ? '' : 'none';
   }
+}
+
+// ── Metrics upload chip — select + confirm ────────────────────────────────────
+let _metricsUploadAction = null;
+const _metricsUploadLabels = { upload: 'Select a File', demo: 'Load Sample Program', build: 'Start Building' };
+
+function metricsUploadSelectChip(el, action) {
+  const row = document.getElementById('metrics-upload-chip-row');
+  const btn = document.getElementById('metrics-upload-confirm');
+  if (!row || !btn) return;
+
+  // If same chip tapped again, treat as confirm
+  if (el.classList.contains('selected') && _metricsUploadAction === action) {
+    metricsUploadConfirm();
+    return;
+  }
+
+  // Select chip
+  row.querySelectorAll('.metrics-upload-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _metricsUploadAction = action;
+
+  // Show confirm button
+  btn.textContent = '→ ' + _metricsUploadLabels[action];
+  btn.classList.add('visible');
+}
+
+function metricsUploadConfirm() {
+  if (!_metricsUploadAction) return;
+  if (_metricsUploadAction === 'upload') document.getElementById('file-input').click();
+  else if (_metricsUploadAction === 'demo') loadDemoProgram();
+  else if (_metricsUploadAction === 'build') startBuildProgram();
 }
 
 function toggleOtherLift(name){
@@ -5933,7 +6011,7 @@ function _renderUpNextHero(block, nwInfo) {
   }).join('');
   return `<div class="home-hero" onclick="goToWorkout(${weekIdx},${dayIdx},true)">
     <div class="home-hero-bg"></div>
-    <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+    <div class="home-hero-barbell-wrap"><svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
     <div class="home-hero-inner">
       <h2 class="home-hero-label">Up Next</h2>
       <div class="home-hero-day">${escH(day.name || 'Workout')}</div>
@@ -6071,7 +6149,7 @@ function _renderFreshHero(block, nwInfo) {
   const firstDay = nw.day;
   return `<div class="home-hero" onclick="goToWorkout(${nw.weekIdx},${nw.dayIdx},true)">
     <div class="home-hero-bg"></div>
-    <svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
+    <div class="home-hero-barbell-wrap"><svg class="home-hero-barbell" viewBox="0 0 28 40" width="110" height="160" fill="var(--gold)"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
     <div class="home-hero-inner">
       <h2 class="home-hero-label">Ready to Start</h2>
       <div class="home-hero-day">${escH(firstDay?.name || 'Day 1')}</div>
@@ -6094,8 +6172,9 @@ function renderHome() {
   if (!block || !block.weeks || block.weeks.length === 0) {
     content.innerHTML = `<div class="home-screen">
       <h1 class="home-greeting">${getGreeting()}</h1>
+      <div class="home-date">${getDateLine()}</div>
       <div class="home-empty">
-        <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
+        <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70" style="opacity:0.9"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
         <h2 class="home-empty-title">No Program Loaded</h2>
         <div class="home-empty-desc">Upload a spreadsheet, try a sample program, or build your own.</div>
         ${renderUploadOptions('home-')}
@@ -6183,6 +6262,7 @@ function renderHome() {
 
   content.innerHTML = `<div class="home-screen">
     <h1 class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</h1>
+    <div class="home-date">${getDateLine()}</div>
     ${demoBannerHtml}
     ${updateBannerHtml}
     ${heroHtml}
@@ -6315,6 +6395,13 @@ function getGreeting() {
   return 'Good evening';
 }
 
+function getDateLine() {
+  const d = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
 function finishBlock() {
   const block = state.activeBlock;
   if (!block) return;
@@ -6441,7 +6528,7 @@ function renderUploadOptions(prefix) {
 
 function renderUploadScreen() {
   return `<div class="upload-screen">
-    <div class="upload-icon" style="color:var(--gold)"><svg viewBox="0 0 28 40" fill="currentColor" width="36" height="54"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
+    <div class="upload-icon-wrap"><div class="upload-icon" style="color:var(--gold)"><svg viewBox="0 0 28 40" fill="currentColor" width="36" height="54"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div></div>
     <div class="upload-title">UNRACK</div>
     <div class="upload-desc">Upload your training program to get started.</div>
     ${renderUploadOptions('wo-')}

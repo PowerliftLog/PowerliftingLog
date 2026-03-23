@@ -1587,6 +1587,7 @@ function scoreD(wb, negSignals = null) {
   // Negative signals (pre-scanned) — D is exempt from hasTierLabels (GZCL uses tiers)
   if (negSignals) {
     if (negSignals.hasSheikoExPrefix) { score -= 0.3; negative.push('Sheiko Ex. prefix (→G)'); }
+    if (negSignals.hasSheikoDayColumns) { score -= 0.3; negative.push('Sheiko multi-column-day layout (→G)'); }
     if (negSignals.hasFatiguePercents) { score -= 0.4; negative.push('Fatigue Percents header (→P)'); }
     if (negSignals.hasRPETargetColumn) { score -= 0.3; negative.push('RPE Target column (→P/Q)'); }
     if (negSignals.hasMRVMEV) { score -= 0.4; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
@@ -1898,6 +1899,36 @@ function scoreG(wb, negSignals = null) {
     if (hasNumberedExercise) { score += 0.55; matched.push('numbered exercise + percentage (col A int, col C decimal)'); }
     else missing.push('numbered exercise (col A int 1-20, col B text, col C decimal 0-1)');
     break;
+  }
+
+  // Sheiko multi-column-day probe: "Sheiko" text + day-name column headers (Mon/Wed/Fri in same row)
+  if (score < 0.8) {
+    let hasSheiko = false;
+    for (let si = 0; si < wb.SheetNames.length && !hasSheiko; si++) {
+      const rows = _sheetRows(wb, si);
+      if (!rows) continue;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        if (row.some(c => c && /sheiko/i.test(String(c)))) { hasSheiko = true; break; }
+      }
+    }
+    if (hasSheiko) {
+      for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
+        const sn = wb.SheetNames[si];
+        if (SKIP.test(sn.trim())) continue;
+        const rows = _sheetRows(wb, si);
+        if (!rows || rows.length < 10) continue;
+        for (let i = 0; i < Math.min(10, rows.length); i++) {
+          const row = rows[i]; if (!row) continue;
+          let dayColCount = 0;
+          for (let c = 0; c < row.length; c++) {
+            if (row[c] != null && /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(String(row[c]).trim())) dayColCount++;
+          }
+          if (dayColCount >= 2) { score = 0.92; matched.push('Sheiko multi-column-day layout'); break; }
+        }
+        if (score >= 0.92) break;
+      }
+    }
   }
 
   // Negative signals (pre-scanned) — G is exempt from hasSheikoExPrefix
@@ -3710,6 +3741,7 @@ function _detectNegativeSignals(wb) {
     hasAttemptColumns: false,     // Meet day "Opener"/"2nd"/"3rd" attempt columns
     hasCandidoPhases: false,      // Candito phase sheet tabs (Hypertrophy/Strength/Peaking Phase)
     hasPreCalcWeightTable: false, // Hatfield-style number grids (entire row is numbers, no prescriptions)
+    hasSheikoDayColumns: false,   // Sheiko multi-column-day: "Sheiko" text + Mon/Wed/Fri as column headers
   };
 
   try {
@@ -3808,6 +3840,32 @@ function _detectNegativeSignals(wb) {
               if (pctCount >= 3) { signals.hasPreCalcWeightTable = true; break; }
             }
           }
+        }
+      }
+    }
+    // Sheiko multi-column-day: "Sheiko" text in first 5 rows + 2+ day names in same row as column headers
+    if (!signals.hasSheikoDayColumns) {
+      let hasSheiko = false;
+      for (let si = 0; si < sheetNames.length && !hasSheiko; si++) {
+        const rows = _sheetRows(wb, si);
+        if (!rows) continue;
+        for (let i = 0; i < Math.min(5, rows.length); i++) {
+          if ((rows[i] || []).some(c => c && /sheiko/i.test(String(c)))) { hasSheiko = true; break; }
+        }
+      }
+      if (hasSheiko) {
+        for (let si = 0; si < sheetNames.length; si++) {
+          const rows = _sheetRows(wb, si);
+          if (!rows || rows.length < 10) continue;
+          for (let i = 0; i < Math.min(10, rows.length); i++) {
+            const row = rows[i]; if (!row) continue;
+            let dayColCount = 0;
+            for (let c = 0; c < row.length; c++) {
+              if (row[c] != null && /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(String(row[c]).trim())) dayColCount++;
+            }
+            if (dayColCount >= 2) { signals.hasSheikoDayColumns = true; break; }
+          }
+          if (signals.hasSheikoDayColumns) break;
         }
       }
     }
@@ -7057,85 +7115,292 @@ function parseG(wb) {
       .map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
     if (!rows || rows.length < 10) continue;
 
-    // Find week and day boundaries (check col A, fall back to col B if col A empty)
-    const weekStarts = [];
-    const dayStarts = [];
-    for (let i = 0; i < rows.length; i++) {
+    // ── Detect multi-column-day layout (Sheiko bench-only variant) ──
+    // Day names (Monday/Wednesday/Friday) as column headers in the same row
+    let multiColDay = null;
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
       const row = rows[i]; if (!row) continue;
-      const colA = String(row[0] || '').trim();
-      const colBstr = (row[0] == null && row[1] != null) ? String(row[1]).trim() : '';
-      const label = colA || colBstr;
-      if (/^week\s*\d/i.test(label)) {
-        weekStarts.push({row: i, weekNum: parseInt(label.match(/\d+/)[0])});
+      const dayCols = [];
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] != null && /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(String(row[c]).trim())) {
+          dayCols.push({col: c, dayName: String(row[c]).trim()});
+        }
       }
-      // "N day (DayName)" format or "Day N" format or plain day name
-      const dayMatch = label.match(/^(\d+)\s*day\s*\((\w+)/i);
-      const dayMatch2 = label.match(/^day\s*(\d+)/i);
-      if (dayMatch) {
-        dayStarts.push({row: i, dayName: dayMatch[2]});
-      } else if (dayMatch2) {
-        dayStarts.push({row: i, dayName: 'Day ' + dayMatch2[1]});
-      } else if (DAYS.some(d => label.toLowerCase() === d)) {
-        dayStarts.push({row: i, dayName: label});
+      if (dayCols.length >= 2) { multiColDay = {headerRow: i, dayGroups: dayCols}; break; }
+    }
+
+    // ── Detect horizontal week layout ──
+    // Scan first 10 rows for week labels across ALL columns
+    const allWeekLabels = [];
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      const row = rows[i]; if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] != null && /^week\s*\d/i.test(String(row[c]).trim())) {
+          allWeekLabels.push({row: i, col: c, weekNum: parseInt(String(row[c]).match(/\d+/)[0])});
+        }
       }
     }
-    if (weekStarts.length === 0) continue;
+    const isHorizontal = !multiColDay && allWeekLabels.length > 1 && allWeekLabels.some(w => w.col > 5);
 
-    // Process each week into this sheet's local week array
     const sheetWeeks = [];
-    for (let w = 0; w < weekStarts.length; w++) {
-      const weekStart = weekStarts[w].row;
-      const weekEnd = w + 1 < weekStarts.length ? weekStarts[w + 1].row : rows.length;
-      const weekDays = dayStarts.filter(d => d.row > weekStart && d.row < weekEnd);
-      if (weekDays.length === 0) continue;
 
-      const parsedDays = [];
+    if (multiColDay) {
+      // ── Multi-column-day layout: days as column groups, weeks as row sections ──
+      // Find WEEK labels in col 0
+      const weekStarts = [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i]; if (!row) continue;
+        const c0 = String(row[0] || '').trim();
+        if (/^WEEK\s*\d/i.test(c0)) {
+          weekStarts.push({row: i, weekNum: parseInt(c0.match(/\d+/)[0])});
+        }
+      }
+      if (weekStarts.length === 0) continue;
 
-      for (let d = 0; d < weekDays.length; d++) {
-        const dayStart = weekDays[d].row;
-        const dayEnd = d + 1 < weekDays.length ? weekDays[d + 1].row : weekEnd;
-        const exercises = [];
-        let currentEx = null;
+      for (let w = 0; w < weekStarts.length; w++) {
+        const weekStart = weekStarts[w].row;
+        const weekEnd = w + 1 < weekStarts.length ? weekStarts[w + 1].row : rows.length;
+        const parsedDays = [];
 
-        for (let r = dayStart + 1; r < dayEnd; r++) {
-          const row = rows[r]; if (!row) continue;
-          const colA = row[0], colB = row[1], colC = row[2], colD = row[3], colE = row[4], colF = row[5];
+        for (const dg of multiColDay.dayGroups) {
+          const bc = dg.col; // base column for this day group
+          const exercises = [];
+          let currentEx = null;
 
-          // New exercise: col A is an integer
-          if (typeof colA === 'number' && colA >= 1 && colA <= 20 && colA === Math.floor(colA)) {
-            if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
-            const name = colB != null ? String(colB).trim() : '';
-            if (!name || !/[a-zA-Z]{2,}/.test(name)) { currentEx = null; continue; }
-            currentEx = {name, sets: []};
-            if (colC != null || colD != null || colE != null) {
+          for (let r = weekStart + 1; r < weekEnd; r++) {
+            const row = rows[r]; if (!row) continue;
+            const cell = row[bc], cellPct = row[bc + 1], cellReps = row[bc + 2], cellSets = row[bc + 3], cellWt = row[bc + 4];
+            // Skip header rows: day name or column labels
+            if (cell != null) {
+              const str = String(cell).trim();
+              if (DAYS.some(d => str.toLowerCase() === d)) continue;
+              if (/^(%|reps?|sets?|load|weight)$/i.test(str)) continue;
+            }
+            // Exercise row: cell has text name
+            if (cell != null && String(cell).trim() && /[a-zA-Z]{2,}/.test(String(cell))) {
+              if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+              currentEx = {name: String(cell).trim(), sets: []};
+              if (cellPct != null || cellReps != null || cellSets != null) {
+                currentEx.sets.push({
+                  pct: typeof cellPct === 'number' ? cellPct : null,
+                  reps: cellReps != null ? String(cellReps) : '',
+                  setCount: typeof cellSets === 'number' ? Math.round(cellSets) : (parseInt(cellSets) || 1),
+                  weight: typeof cellWt === 'number' && cellWt > 0 ? cellWt : null
+                });
+              }
+            } else if (currentEx && (cellPct != null || cellReps != null || cellSets != null)) {
               currentEx.sets.push({
-                pct: typeof colC === 'number' ? colC : null,
-                reps: colD != null ? String(colD) : '',
-                setCount: typeof colE === 'number' ? Math.round(colE) : (parseInt(colE) || 1),
-                weight: typeof colF === 'number' && colF > 0 ? colF : null
+                pct: typeof cellPct === 'number' ? cellPct : null,
+                reps: cellReps != null ? String(cellReps) : '',
+                setCount: typeof cellSets === 'number' ? Math.round(cellSets) : (parseInt(cellSets) || 1),
+                weight: typeof cellWt === 'number' && cellWt > 0 ? cellWt : null
               });
             }
-          } else if (currentEx && (colC != null || colD != null || colE != null)) {
-            // Skip volume/tonnage summary rows: colB names a lift but colC has no percentage
-            if (colB != null && String(colB).trim() && colC == null) continue;
-            // Continuation row for current exercise
-            currentEx.sets.push({
-              pct: typeof colC === 'number' ? colC : null,
-              reps: colD != null ? String(colD) : '',
-              setCount: typeof colE === 'number' ? Math.round(colE) : (parseInt(colE) || 1),
-              weight: typeof colF === 'number' && colF > 0 ? colF : null
-            });
           }
+          if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+          if (exercises.length > 0) parsedDays.push({name: dg.dayName, exercises});
         }
-        if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
 
-        if (exercises.length > 0) {
-          parsedDays.push({name: weekDays[d].dayName, exercises});
+        if (parsedDays.length > 0) {
+          sheetWeeks.push({label: 'Week ' + weekStarts[w].weekNum, days: parsedDays});
+        }
+      }
+    } else if (isHorizontal) {
+      // ── Horizontal layout: weeks as column groups ──
+      allWeekLabels.sort((a, b) => a.weekNum - b.weekNum);
+      for (const weekInfo of allWeekLabels) {
+        const baseCol = weekInfo.col;
+        // Find day headers for this column group
+        const dayStarts = [];
+        for (let r = weekInfo.row + 1; r < rows.length; r++) {
+          const row = rows[r]; if (!row) continue;
+          const cell = row[baseCol];
+          if (cell == null) continue;
+          const str = String(cell).trim();
+          if (!str) continue;
+          const dayMatch = str.match(/^(\d+)\s*day\s*\((\w+)/i);
+          const dayMatch2 = str.match(/^day\s*(\d+)/i);
+          if (dayMatch) dayStarts.push({row: r, dayName: dayMatch[2]});
+          else if (dayMatch2) dayStarts.push({row: r, dayName: 'Day ' + dayMatch2[1]});
+          else if (DAYS.some(d => str.toLowerCase() === d)) dayStarts.push({row: r, dayName: str});
+        }
+        if (dayStarts.length === 0) continue;
+
+        const parsedDays = [];
+        for (let d = 0; d < dayStarts.length; d++) {
+          const dayStart = dayStarts[d].row;
+          const dayEnd = d + 1 < dayStarts.length ? dayStarts[d + 1].row : rows.length;
+          const exercises = [];
+          let currentEx = null;
+
+          for (let r = dayStart + 1; r < dayEnd; r++) {
+            const row = rows[r]; if (!row) continue;
+            const cA = row[baseCol], cB = row[baseCol + 1];
+            const cC = row[baseCol + 2], cD = row[baseCol + 3];
+            const cE = row[baseCol + 4], cF = row[baseCol + 5];
+
+            if (typeof cA === 'number' && cA >= 1 && cA <= 20 && cA === Math.floor(cA)) {
+              if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+              const name = cB != null ? String(cB).trim() : '';
+              if (!name || !/[a-zA-Z]{2,}/.test(name)) { currentEx = null; continue; }
+              currentEx = {name, sets: []};
+              if (cC != null || cD != null || cE != null) {
+                currentEx.sets.push({
+                  pct: typeof cC === 'number' ? cC : null,
+                  reps: cD != null ? String(cD) : '',
+                  setCount: typeof cE === 'number' ? Math.round(cE) : (parseInt(cE) || 1),
+                  weight: typeof cF === 'number' && cF > 0 ? cF : null
+                });
+              }
+            } else if (currentEx && (cC != null || cD != null || cE != null)) {
+              if (cB != null && String(cB).trim() && cC == null) continue;
+              currentEx.sets.push({
+                pct: typeof cC === 'number' ? cC : null,
+                reps: cD != null ? String(cD) : '',
+                setCount: typeof cE === 'number' ? Math.round(cE) : (parseInt(cE) || 1),
+                weight: typeof cF === 'number' && cF > 0 ? cF : null
+              });
+            }
+          }
+          if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+          if (exercises.length > 0) parsedDays.push({name: dayStarts[d].dayName, exercises});
+        }
+
+        if (parsedDays.length > 0) {
+          sheetWeeks.push({label: 'Week ' + weekInfo.weekNum, days: parsedDays});
+        }
+      }
+    } else {
+      // ── Vertical layout: weeks as row sections (existing logic) ──
+      // Detect name-first layout (MSIC equipped): exercise name in col 0, reps/sets in cols 1-2
+      let isNameFirst = false;
+      for (let i = 0; i < Math.min(15, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        const c1 = String(row[1] || '').trim().toLowerCase();
+        const c2 = String(row[2] || '').trim().toLowerCase();
+        if ((c1 === 'reps' || c1 === 'rep') && (c2 === 'sets' || c2 === 'set')) { isNameFirst = true; break; }
+      }
+
+      // Find ALL column groups with day headers (left group at col 0, possible right group at col 8+)
+      const dayColGroups = [0]; // base columns for each day column group
+      if (isNameFirst) {
+        for (let i = 0; i < Math.min(50, rows.length); i++) {
+          const row = rows[i]; if (!row) continue;
+          for (let c = 5; c < row.length; c++) {
+            if (row[c] != null && /^DAY\s*\d/i.test(String(row[c]).trim())) {
+              if (!dayColGroups.includes(c)) { dayColGroups.push(c); break; }
+            }
+          }
         }
       }
 
-      if (parsedDays.length > 0) {
-        sheetWeeks.push({label: 'Week ' + weekStarts[w].weekNum, days: parsedDays});
+      const weekStarts = [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i]; if (!row) continue;
+        const colA = String(row[0] || '').trim();
+        const colBstr = (row[0] == null && row[1] != null) ? String(row[1]).trim() : '';
+        const label = colA || colBstr;
+        if (/^week\s*\d/i.test(label)) {
+          weekStarts.push({row: i, weekNum: parseInt(label.match(/\d+/)[0])});
+        }
+      }
+      if (weekStarts.length === 0) continue;
+
+      for (let w = 0; w < weekStarts.length; w++) {
+        const weekStart = weekStarts[w].row;
+        const weekEnd = w + 1 < weekStarts.length ? weekStarts[w + 1].row : rows.length;
+        const parsedDays = [];
+
+        // Parse each column group independently
+        for (const baseCol of dayColGroups) {
+          // Find day headers for this column group
+          const dayStarts = [];
+          for (let i = weekStart + 1; i < weekEnd; i++) {
+            const row = rows[i]; if (!row) continue;
+            const cell = row[baseCol];
+            if (cell == null) continue;
+            const str = String(cell).trim();
+            const dayMatch = str.match(/^(\d+)\s*day\s*\((\w+)/i);
+            const dayMatch2 = str.match(/^day\s*(\d+)/i);
+            if (dayMatch) dayStarts.push({row: i, dayName: dayMatch[2]});
+            else if (dayMatch2) dayStarts.push({row: i, dayName: 'Day ' + dayMatch2[1]});
+            else if (DAYS.some(d => str.toLowerCase() === d)) dayStarts.push({row: i, dayName: str});
+          }
+          if (dayStarts.length === 0) continue;
+
+          for (let d = 0; d < dayStarts.length; d++) {
+            const dayStart = dayStarts[d].row;
+            const dayEnd = d + 1 < dayStarts.length ? dayStarts[d + 1].row : weekEnd;
+            const exercises = [];
+            let currentEx = null;
+
+            for (let r = dayStart + 1; r < dayEnd; r++) {
+              const row = rows[r]; if (!row) continue;
+
+              if (isNameFirst) {
+                // MSIC layout: baseCol=name, +1=reps, +2=sets, +3=%, +4=weight(FULL)
+                const exName = row[baseCol], cellReps = row[baseCol + 1], cellSets = row[baseCol + 2];
+                const cellPct = row[baseCol + 3], cellWt = row[baseCol + 4];
+                const nameStr = exName != null ? String(exName).trim() : '';
+                // Skip header rows and non-exercise labels
+                if (/^(reps?|sets?|%|load|weight|FULL|Partial|Raw)$/i.test(nameStr)) continue;
+                if (/^(WEEK|DAY)\s/i.test(nameStr)) continue;
+                if (nameStr && /[a-zA-Z]{2,}/.test(nameStr)) {
+                  if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+                  currentEx = {name: nameStr, sets: []};
+                  if (cellPct != null || cellReps != null || cellSets != null) {
+                    currentEx.sets.push({
+                      pct: typeof cellPct === 'number' ? cellPct : null,
+                      reps: cellReps != null ? String(cellReps) : '',
+                      setCount: typeof cellSets === 'number' ? Math.round(cellSets) : (parseInt(cellSets) || 1),
+                      weight: typeof cellWt === 'number' && cellWt > 0 ? cellWt : null
+                    });
+                  }
+                } else if (currentEx && (cellPct != null || cellReps != null || cellSets != null)) {
+                  currentEx.sets.push({
+                    pct: typeof cellPct === 'number' ? cellPct : null,
+                    reps: cellReps != null ? String(cellReps) : '',
+                    setCount: typeof cellSets === 'number' ? Math.round(cellSets) : (parseInt(cellSets) || 1),
+                    weight: typeof cellWt === 'number' && cellWt > 0 ? cellWt : null
+                  });
+                }
+              } else {
+                // Standard G layout: col0=index, col1=name, col2=%, col3=reps, col4=sets, col5=weight
+                const colA = row[0], colB = row[1], colC = row[2], colD = row[3], colE = row[4], colF = row[5];
+                if (typeof colA === 'number' && colA >= 1 && colA <= 20 && colA === Math.floor(colA)) {
+                  if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+                  const name = colB != null ? String(colB).trim() : '';
+                  if (!name || !/[a-zA-Z]{2,}/.test(name)) { currentEx = null; continue; }
+                  currentEx = {name, sets: []};
+                  if (colC != null || colD != null || colE != null) {
+                    currentEx.sets.push({
+                      pct: typeof colC === 'number' ? colC : null,
+                      reps: colD != null ? String(colD) : '',
+                      setCount: typeof colE === 'number' ? Math.round(colE) : (parseInt(colE) || 1),
+                      weight: typeof colF === 'number' && colF > 0 ? colF : null
+                    });
+                  }
+                } else if (currentEx && (colC != null || colD != null || colE != null)) {
+                  if (colB != null && String(colB).trim() && colC == null) continue;
+                  currentEx.sets.push({
+                    pct: typeof colC === 'number' ? colC : null,
+                    reps: colD != null ? String(colD) : '',
+                    setCount: typeof colE === 'number' ? Math.round(colE) : (parseInt(colE) || 1),
+                    weight: typeof colF === 'number' && colF > 0 ? colF : null
+                  });
+                }
+              }
+            }
+            if (currentEx && currentEx.sets.length > 0) exercises.push(_gBuildExercise(currentEx));
+            if (exercises.length > 0) {
+              parsedDays.push({name: dayStarts[d].dayName, exercises});
+            }
+          }
+        }
+
+        if (parsedDays.length > 0) {
+          sheetWeeks.push({label: 'Week ' + weekStarts[w].weekNum, days: parsedDays});
+        }
       }
     }
 
@@ -7161,6 +7426,9 @@ function _gBuildExercise(ex) {
     const wt = s.weight ? Math.round(s.weight) : null;
     if (sc > 0 && reps) {
       parts.push(wt ? sc + 'x' + reps + '(' + wt + ')' : sc + 'x' + reps);
+    } else if (sc > 0 && !reps) {
+      // Sets-only prescription (no reps specified) — e.g. Sheiko accessory "5 sets"
+      parts.push(sc + ' sets');
     }
   }
   return {name: ex.name, prescription: parts.join(', '), note: '', lifterNote: '', loggedWeight: '', supersetGroup: null};
