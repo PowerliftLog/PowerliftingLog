@@ -1730,53 +1730,108 @@ function scoreF(wb, negSignals = null) {
   let score = 0;
   const SKIP = /^(readme|read\s*me|how\s*to|instruction|info|updates?|stats?|save|accessor|start[-\s]?option|inputs?|maxes?|output|pr\s*sheet|notes?|start\s*here|1\.\s*start|predicted)$/i;
 
-  for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
-    const sn = wb.SheetNames[si];
-    if (SKIP.test(sn.trim())) continue;
-    const rows = _sheetRows(wb, si);
-    if (!rows || rows.length < 5) continue;
+  // Features-first path: use wb._features for week header detection
+  const features = wb._features || null;
+  if (features) {
+    for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
+      const sn = wb.SheetNames[si];
+      if (SKIP.test(sn.trim())) continue;
+      const sf = features.sheets[sn];
+      if (!sf || !sf.weekLabelsInCells || sf.weekLabelsInCells.length < 2) continue;
 
-    for (let i = 0; i < Math.min(15, rows.length); i++) {
-      const row = rows[i]; if (!row) continue;
-      const weekCols = [];
-      for (let c = 0; c < row.length; c++) {
-        const val = row[c]; if (val == null) continue;
-        if (/^Week\s*\d/i.test(String(val).trim())) weekCols.push(c);
+      // Check that week labels are in the SAME ROW (horizontal layout = Format F)
+      const rowGroups = {};
+      for (const wl of sf.weekLabelsInCells) {
+        if (!rowGroups[wl.row]) rowGroups[wl.row] = [];
+        rowGroups[wl.row].push(wl);
       }
-      if (weekCols.length >= 2) {
-        score += 0.4; matched.push('2+ Week N columns horizontal');
-        for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
-          const sr = rows[j]; if (!sr) continue;
-          const strs = sr.map(_normalizeCell);
-          const setsRepeat = strs.filter(s => s === 'sets').length;
-          const hasIntensity = strs.some(s => s === 'intensity');
-          if (setsRepeat >= 2 && hasIntensity) { score -= 0.2; negative.push('Sets+Intensity repeating (→D)'); continue; }
-          const subMatch = (strs.filter(s => s === 'weight').length >= 2 && strs.filter(s => s === 'reps').length >= 2)
-            || strs.filter(s => s === '%' || s === 'percentage').length >= 2
-            || strs.filter(s => s === 'exercise').length >= 2;
-          if (subMatch) { score += 0.3; matched.push('F sub-headers (Weight/Reps or % or Exercise)'); }
-          // Sheiko exclusion
-          let sheikoPat = false;
-          for (let k = j + 1; k < Math.min(j + 5, rows.length); k++) {
-            const dr = rows[k]; if (!dr) continue;
-            const a = dr[0], b = dr[1], cc = dr[2];
-            if (typeof a === 'number' && a >= 1 && a <= 20 && b != null && /[a-zA-Z]{2,}/.test(String(b)) && typeof cc === 'number' && cc > 0 && cc < 1) {
-              sheikoPat = true; break;
+      const horizontalRow = Object.values(rowGroups).find(r => r.length >= 2);
+      if (horizontalRow) {
+        score += 0.4;
+        matched.push('2+ horizontal Week N columns (via features)');
+
+        // Sub-header checks still run against raw rows (features don't cover these)
+        const rows = _sheetRows(wb, si);
+        if (rows && rows.length >= 5) {
+          const weekHeaderRow = horizontalRow[0].row;
+          for (let j = weekHeaderRow + 1; j < Math.min(weekHeaderRow + 3, rows.length); j++) {
+            const sr = rows[j]; if (!sr) continue;
+            const strs = sr.map(_normalizeCell);
+            const setsRepeat = strs.filter(s => s === 'sets').length;
+            const hasIntensity = strs.some(s => s === 'intensity');
+            if (setsRepeat >= 2 && hasIntensity) { score -= 0.2; negative.push('Sets+Intensity repeating (→D)'); continue; }
+            const subMatch = (strs.filter(s => s === 'weight').length >= 2 && strs.filter(s => s === 'reps').length >= 2)
+              || strs.filter(s => s === '%' || s === 'percentage').length >= 2
+              || strs.filter(s => s === 'exercise').length >= 2;
+            if (subMatch) { score += 0.3; matched.push('F sub-headers (Weight/Reps or % or Exercise)'); }
+            // Sheiko exclusion
+            let sheikoPat = false;
+            for (let k = j + 1; k < Math.min(j + 5, rows.length); k++) {
+              const dr = rows[k]; if (!dr) continue;
+              const a = dr[0], b = dr[1], cc = dr[2];
+              if (typeof a === 'number' && a >= 1 && a <= 20 && b != null && /[a-zA-Z]{2,}/.test(String(b)) && typeof cc === 'number' && cc > 0 && cc < 1) {
+                sheikoPat = true; break;
+              }
             }
+            if (sheikoPat) { score -= 0.3; negative.push('Sheiko numbered exercise pattern (→G)'); }
           }
-          if (sheikoPat) { score -= 0.3; negative.push('Sheiko numbered exercise pattern (→G)'); }
         }
         break;
       }
-      // Madcow: Day + Exercise + W1/W2 columns
-      const strs = row.map(_normalizeCell);
-      if (strs.some(s => s === 'day') && strs.some(s => s === 'exercise')) {
-        let wLabels = strs.filter(s => /^w\d+/i.test(s)).length;
-        let seqCount = row.filter(v => typeof v === 'number' && v === Math.floor(v) && v >= 1 && v <= 52).length;
-        if (wLabels >= 3 || seqCount >= 4) { score += 0.65; matched.push('Madcow Day+Exercise+week cols'); break; }
-      }
+      if (score > 0) break;
     }
-    if (score > 0.5) break;
+  }
+
+  // Fallback: manual scanning (covers week headers past features range + Madcow detection)
+  if (score === 0) {
+    for (let si = 0; si < Math.min(8, wb.SheetNames.length); si++) {
+      const sn = wb.SheetNames[si];
+      if (SKIP.test(sn.trim())) continue;
+      const rows = _sheetRows(wb, si);
+      if (!rows || rows.length < 5) continue;
+
+      for (let i = 0; i < Math.min(15, rows.length); i++) {
+        const row = rows[i]; if (!row) continue;
+        const weekCols = [];
+        for (let c = 0; c < row.length; c++) {
+          const val = row[c]; if (val == null) continue;
+          if (/^Week\s*\d/i.test(String(val).trim())) weekCols.push(c);
+        }
+        if (weekCols.length >= 2) {
+          score += 0.4; matched.push('2+ Week N columns horizontal');
+          for (let j = i + 1; j < Math.min(i + 3, rows.length); j++) {
+            const sr = rows[j]; if (!sr) continue;
+            const strs = sr.map(_normalizeCell);
+            const setsRepeat = strs.filter(s => s === 'sets').length;
+            const hasIntensity = strs.some(s => s === 'intensity');
+            if (setsRepeat >= 2 && hasIntensity) { score -= 0.2; negative.push('Sets+Intensity repeating (→D)'); continue; }
+            const subMatch = (strs.filter(s => s === 'weight').length >= 2 && strs.filter(s => s === 'reps').length >= 2)
+              || strs.filter(s => s === '%' || s === 'percentage').length >= 2
+              || strs.filter(s => s === 'exercise').length >= 2;
+            if (subMatch) { score += 0.3; matched.push('F sub-headers (Weight/Reps or % or Exercise)'); }
+            // Sheiko exclusion
+            let sheikoPat = false;
+            for (let k = j + 1; k < Math.min(j + 5, rows.length); k++) {
+              const dr = rows[k]; if (!dr) continue;
+              const a = dr[0], b = dr[1], cc = dr[2];
+              if (typeof a === 'number' && a >= 1 && a <= 20 && b != null && /[a-zA-Z]{2,}/.test(String(b)) && typeof cc === 'number' && cc > 0 && cc < 1) {
+                sheikoPat = true; break;
+              }
+            }
+            if (sheikoPat) { score -= 0.3; negative.push('Sheiko numbered exercise pattern (→G)'); }
+          }
+          break;
+        }
+        // Madcow: Day + Exercise + W1/W2 columns
+        const strs = row.map(_normalizeCell);
+        if (strs.some(s => s === 'day') && strs.some(s => s === 'exercise')) {
+          let wLabels = strs.filter(s => /^w\d+/i.test(s)).length;
+          let seqCount = row.filter(v => typeof v === 'number' && v === Math.floor(v) && v >= 1 && v <= 52).length;
+          if (wLabels >= 3 || seqCount >= 4) { score += 0.65; matched.push('Madcow Day+Exercise+week cols'); break; }
+        }
+      }
+      if (score > 0.5) break;
+    }
   }
 
   if (score === 0) missing.push('2+ horizontal Week N columns with F sub-headers');
