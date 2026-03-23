@@ -594,6 +594,317 @@ function fixDateSerials(ws, rows) {
   return rows;
 }
 
+// ── PRESCRIPTION PARSER ──────────────────────────────────────────────────────
+// Parses powerlifting exercise prescription notation strings into structured
+// objects. Uses Chevrotain for lexing.
+//
+// Browser: Chevrotain is loaded from CDN as a global before parsers.js.
+// Node (tests): set  global.chevrotain = require('.../chevrotain/lib/src/api.js')
+//               before requiring parsers.js.
+//
+// Returns null for non-prescription strings or unparseable input.
+// Never throws.
+//
+var _prxState = null; // lazy init cache: { lexer, T }
+
+function _initPrx() {
+  if (_prxState) return _prxState;
+  if (typeof chevrotain === 'undefined') return null;
+  try {
+    const { createToken, Lexer } = chevrotain;
+    const T = {};
+    // Keywords must come before general tokens so the lexer prefers longer matches
+    T.WS    = createToken({ name: 'WS',    pattern: /\s+/,        group: Lexer.SKIPPED });
+    T.AMRAP = createToken({ name: 'AMRAP', pattern: /AMRAP/i });
+    T.RPE   = createToken({ name: 'RPE',   pattern: /RPE/i });
+    T.RIR   = createToken({ name: 'RIR',   pattern: /RIR/i });
+    T.ONERM = createToken({ name: 'ONERM', pattern: /1RM/i }); // before INT so "1RM" beats "1"
+    T.TM    = createToken({ name: 'TM',    pattern: /TM/ });
+    T.NEW   = createToken({ name: 'NEW',   pattern: /New/i });
+    T.OF    = createToken({ name: 'OF',    pattern: /of/i });
+    T.TEMPO = createToken({ name: 'TEMPO', pattern: /Tempo/i });
+    T.CLUST = createToken({ name: 'CLUST', pattern: /Clusters?/i });
+    T.UNIT  = createToken({ name: 'UNIT',  pattern: /lbs?|kg/i });
+    T.DEC   = createToken({ name: 'DEC',   pattern: /\d+\.\d+/ }); // before INT
+    T.INT   = createToken({ name: 'INT',   pattern: /\d+/ });
+    T.X     = createToken({ name: 'X',     pattern: /[xX]/ });
+    T.AT    = createToken({ name: 'AT',    pattern: /@/ });
+    T.PCT   = createToken({ name: 'PCT',   pattern: /%/ });
+    T.PLUS  = createToken({ name: 'PLUS',  pattern: /\+/ });
+    T.DASH  = createToken({ name: 'DASH',  pattern: /-/ });
+    T.SLASH = createToken({ name: 'SLASH', pattern: /\// });
+    T.COMMA = createToken({ name: 'COMMA', pattern: /,/ });
+    T.LP    = createToken({ name: 'LP',    pattern: /\(/ });
+    T.RP    = createToken({ name: 'RP',    pattern: /\)/ });
+    T.COLON = createToken({ name: 'COLON', pattern: /:/ });
+    T.MDOT  = createToken({ name: 'MDOT',  pattern: /·/ });    // middle dot separator
+    T.DOT   = createToken({ name: 'DOT',   pattern: /\./ });   // period (tempo like 1.2.1)
+
+    const ALL = [
+      T.WS, T.AMRAP, T.RPE, T.RIR, T.ONERM, T.TM, T.NEW, T.OF,
+      T.TEMPO, T.CLUST, T.UNIT, T.DEC, T.INT, T.X, T.AT, T.PCT,
+      T.PLUS, T.DASH, T.SLASH, T.COMMA, T.LP, T.RP, T.COLON, T.MDOT, T.DOT,
+    ];
+
+    _prxState = { lexer: new Lexer(ALL, { skipValidations: false }), T };
+    return _prxState;
+  } catch(e) {
+    return null;
+  }
+}
+
+function _emptyPres() {
+  return {
+    sets: null, reps: null, repRange: null,
+    weight: null, percentage: null,
+    rpe: null, rpeRange: null, rir: null,
+    amrap: false, tempo: null,
+    unit: null, note: null, chain: null,
+  };
+}
+
+/**
+ * Parse a prescription notation string into a structured object.
+ * Returns null if the string doesn't match any known notation pattern.
+ *
+ * @param {string} text - Cell value to parse (e.g. "3x5(225)", "@RPE8", "75%x5x3")
+ * @returns {Object|null}  Prescription object, or null for non-notation strings.
+ */
+function parsePrescription(text) {
+  if (!text || typeof text !== 'string') return null;
+  const str = text.trim();
+  if (!str) return null;
+  // Pre-filter: must start with a digit, @, or a known prescription keyword.
+  // Rejects exercise names like "Bench Press", week labels like "Week 1", etc.
+  if (!/^(\d|@|RPE\b|rpe\b|AMRAP\b|amrap\b|New\s)/i.test(str)) return null;
+
+  const state = _initPrx();
+  if (!state) return null;
+
+  try {
+    const { lexer, T } = state;
+    const result = lexer.tokenize(str);
+    const tokens = result.tokens;
+    if (!tokens.length) return null;
+
+    let pos = 0;
+    function peek(off)    { return tokens[pos + (off || 0)]; }
+    function atEnd()      { return pos >= tokens.length; }
+    function is(tok, off) { const t = peek(off); return !!(t && t.tokenType === tok); }
+    function eat(tok)     { if (is(tok)) { return tokens[pos++]; } return null; }
+    function eatInt()     { const t = eat(T.INT); return t ? parseInt(t.image, 10) : null; }
+    function eatNum()     { const t = eat(T.DEC) || eat(T.INT); return t ? parseFloat(t.image) : null; }
+
+    // Parse an RPE value (integer or decimal, optional range N-M)
+    function parseRpeMod(pres) {
+      const v = eatNum();
+      if (v === null) return;
+      if (eat(T.DASH)) {
+        const v2 = eatNum();
+        if (v2 !== null) { pres.rpeRange = { min: v, max: v2 }; return; }
+      }
+      pres.rpe = v;
+    }
+
+    // Parse zero or more modifiers appended after the core notation
+    function parseModifiers(pres) {
+      let found = true;
+      while (!atEnd() && found) {
+        found = false;
+        if (eat(T.AT))    { eat(T.RPE); parseRpeMod(pres); found = true; continue; }
+        if (eat(T.RPE))   { parseRpeMod(pres); found = true; continue; }
+        if (eat(T.RIR))   { pres.rir = eatInt(); found = true; continue; }
+        if (eat(T.MDOT))  { found = true; continue; } // skip · separator
+        if (eat(T.UNIT))  { pres.unit = tokens[pos - 1].image.toLowerCase(); found = true; continue; }
+        if (eat(T.NEW))   { eat(T.ONERM); pres.note = 'New 1RM'; found = true; continue; }
+        // "of 1RM" or just "1RM"
+        const _ofSave = pos;
+        if (eat(T.OF)) {
+          if (eat(T.ONERM)) { pres.note = '1RM'; found = true; continue; }
+          pos = _ofSave; // backtrack — "of" alone
+        }
+        if (eat(T.ONERM)) { pres.note = '1RM'; found = true; continue; }
+        if (eat(T.TM))    { pres.note = 'TM';  found = true; continue; }
+        if (eat(T.TEMPO)) {
+          eat(T.COLON);
+          let tempo = '';
+          while (!atEnd()) {
+            const t = peek();
+            if      (t.tokenType === T.INT  || t.tokenType === T.DEC)  { tempo += t.image; pos++; }
+            else if (t.tokenType === T.DASH)                            { tempo += '-';     pos++; }
+            else if (t.tokenType === T.DOT)                             { tempo += '.';     pos++; }
+            else if (t.tokenType === T.MDOT)                            { tempo += '·';     pos++; }
+            else if (t.tokenType === T.SLASH)                           { tempo += '/';     pos++; }
+            else break;
+          }
+          if (tempo) pres.tempo = tempo;
+          found = true; continue;
+        }
+        // "(N Clusters)" note
+        if (is(T.LP)) {
+          const _lpSave = pos;
+          pos++;
+          const cn = eat(T.INT);
+          if (cn && eat(T.CLUST)) {
+            eat(T.RP);
+            pres.note = (pres.note ? pres.note + ' ' : '') + parseInt(cn.image, 10) + ' Clusters';
+            found = true; continue;
+          }
+          pos = _lpSave; // backtrack
+        }
+      }
+    }
+
+    // Parse a single prescription (one element of a chain)
+    function parseSingle() {
+      const pres = _emptyPres();
+
+      // ── RPE-only: @RPE8, @8, RPE 8, RPE 7-8 ─────────────────────────────
+      if (is(T.AT) || is(T.RPE)) {
+        eat(T.AT); eat(T.RPE);
+        parseRpeMod(pres);
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // ── Standalone AMRAP ──────────────────────────────────────────────────
+      if (eat(T.AMRAP)) {
+        pres.amrap = true;
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // All remaining patterns start with an integer
+      if (!is(T.INT)) {
+        parseModifiers(pres);
+        return pres;
+      }
+      const n = eatInt();
+
+      // ── N% / N%xR / N%xRxS / N% 1RM / N% TM ─────────────────────────────
+      if (eat(T.PCT)) {
+        pres.percentage = n / 100;
+        if (eat(T.X)) {
+          pres.reps = eatInt();
+          if (eat(T.X)) pres.sets = eatInt();
+        }
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // ── N/N/N wave (5/3/1) ────────────────────────────────────────────────
+      if (is(T.SLASH)) {
+        eat(T.SLASH);
+        const b = eatInt(); eat(T.SLASH); const c = eatInt();
+        pres.note = n + '/' + b + '/' + c;
+        pres.sets = 3;
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // ── N+ → reps + AMRAP ─────────────────────────────────────────────────
+      if (eat(T.PLUS)) {
+        pres.reps = n; pres.amrap = true;
+        eat(T.AMRAP);
+        if (eat(T.LP)) { pres.weight = eatInt(); eat(T.RP); }
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // ── Nx... ─────────────────────────────────────────────────────────────
+      if (eat(T.X)) {
+        // NxAMRAP
+        if (eat(T.AMRAP)) {
+          pres.sets = n; pres.amrap = true;
+          if (eat(T.LP)) { pres.weight = eatInt(); eat(T.RP); }
+          parseModifiers(pres);
+          return pres;
+        }
+
+        const m = eatInt();
+        if (m === null) { pres.sets = n; parseModifiers(pres); return pres; }
+
+        // NxM-R → sets × repRange
+        if (eat(T.DASH)) {
+          const r = eatInt();
+          if (r !== null) {
+            pres.sets = n; pres.repRange = { min: m, max: r };
+            if (eat(T.LP)) { pres.weight = eatInt(); eat(T.RP); }
+            parseModifiers(pres);
+            return pres;
+          }
+        }
+
+        // NxMxP → 3-number (WxRxS if N>45, else SxRxW)
+        if (eat(T.X)) {
+          const p = eatInt();
+          if (p !== null) {
+            if (n > 45) { pres.weight = n; pres.reps = m; pres.sets = p; }
+            else        { pres.sets = n;  pres.reps = m; pres.weight = p; }
+            parseModifiers(pres);
+            return pres;
+          }
+        }
+
+        // NxM(W) → sets × reps × weight in parens
+        if (eat(T.LP)) {
+          const w = eatInt(); eat(T.RP); eat(T.UNIT);
+          pres.sets = n; pres.reps = m; pres.weight = w;
+          parseModifiers(pres);
+          return pres;
+        }
+
+        // NxM+ → sets × reps + AMRAP
+        if (eat(T.PLUS)) {
+          pres.sets = n; pres.reps = m; pres.amrap = true;
+          eat(T.AMRAP);
+          if (eat(T.LP)) { pres.weight = eatInt(); eat(T.RP); }
+          parseModifiers(pres);
+          return pres;
+        }
+
+        // NxM → 2-number: SxR if N≤45, else WxR (one heavy set)
+        if (n > 45) { pres.weight = n; pres.reps = m; }
+        else        { pres.sets   = n; pres.reps = m; }
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // ── Bare integer (no operator) ────────────────────────────────────────
+      pres.reps = n;
+      parseModifiers(pres);
+      return pres;
+    }
+
+    // Parse chain: single prescription or comma-separated list
+    const items = [parseSingle()];
+    while (!atEnd() && eat(T.COMMA)) {
+      items.push(parseSingle());
+    }
+
+    if (items.length === 1) {
+      const p = items[0];
+      // Reject empty results (nothing meaningful was parsed)
+      if (p.sets === null && p.reps === null && p.repRange === null &&
+          p.weight === null && p.percentage === null &&
+          p.rpe === null && p.rpeRange === null && p.rir === null &&
+          !p.amrap && p.tempo === null && p.note === null) {
+        return null;
+      }
+      return p;
+    }
+
+    const chainResult = _emptyPres();
+    chainResult.chain = items;
+    return chainResult;
+
+  } catch(e) {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Detects when Excel stored a comma-separated weight list as a single number
  * (thousands-separator interpretation). e.g., "455,495" → val=455495, cell.w="455,495".
@@ -644,6 +955,315 @@ function _buildMultiWeightPrescription(sets, reps, weights) {
   }
   const repsStr = reps != null ? String(reps) : '1';
   return groups.map(g => `${g.count}x${repsStr}(${g.weight})`).join('; ');
+}
+
+// ── FEATURE EXTRACTION & REGION DETECTION ─────────────────────────────────────
+// Shared preprocessing utilities — computed once in detectFormat(), stored on wb._features.
+// Scorers and parsers may read wb._features for structural analysis.
+
+/**
+ * Detect contiguous data regions on a worksheet.
+ * Returns array of regions sorted by cell count (largest first).
+ * Algorithm: row-density profiling → gap detection (GAP_TOLERANCE=1) → classification.
+ */
+function _detectRegions(ws) {
+  if (!ws || !ws['!ref']) return [];
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const totalRows = range.e.r - range.s.r + 1;
+  const totalCols = range.e.c - range.s.c + 1;
+
+  const rowDensity = [];
+  const grid = [];
+
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    let nonEmpty = 0;
+    const rowData = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      const cell = ws[addr];
+      if (cell && cell.v != null && String(cell.v).trim() !== '') {
+        nonEmpty++;
+        rowData[c - range.s.c] = { type: typeof cell.v === 'number' ? 'num' : 'text', value: cell.v };
+      } else {
+        rowData[c - range.s.c] = null;
+      }
+    }
+    rowDensity.push(nonEmpty);
+    grid.push(rowData);
+  }
+
+  // Gap: completely empty or very sparse (≤1 cell when sheet has 5+ cols)
+  const sparseThreshold = totalCols >= 5 ? 1 : 0;
+  const isGap = rowDensity.map(d => d <= sparseThreshold);
+
+  // Single empty rows are absorbed into adjacent regions (training-week spacers)
+  const GAP_TOLERANCE = 1;
+  const effectiveGap = new Array(totalRows).fill(false);
+  {
+    let gapStart = -1;
+    for (let r = 0; r <= totalRows; r++) {
+      if (r < totalRows && isGap[r]) {
+        if (gapStart === -1) gapStart = r;
+      } else {
+        if (gapStart !== -1) {
+          const gapLen = r - gapStart;
+          if (gapLen > GAP_TOLERANCE) {
+            for (let g = gapStart; g < r; g++) effectiveGap[g] = true;
+          }
+          gapStart = -1;
+        }
+      }
+    }
+  }
+
+  const runs = [];
+  let runStart = null;
+  for (let r = 0; r < totalRows; r++) {
+    if (!effectiveGap[r] && !isGap[r]) {
+      if (runStart === null) runStart = r;
+    } else if (effectiveGap[r]) {
+      if (runStart !== null) {
+        let endR = r - 1;
+        while (endR >= runStart && isGap[endR]) endR--;
+        if (endR >= runStart) runs.push({ startRow: runStart + range.s.r, endRow: endR + range.s.r });
+        runStart = null;
+      }
+    }
+  }
+  if (runStart !== null) {
+    let endR = totalRows - 1;
+    while (endR >= runStart && isGap[endR]) endR--;
+    if (endR >= runStart) runs.push({ startRow: runStart + range.s.r, endRow: endR + range.s.r });
+  }
+
+  const regions = [];
+  for (const run of runs) {
+    const rowSpan = run.endRow - run.startRow + 1;
+    let minCol = totalCols, maxCol = 0;
+    let cellCount = 0, textCount = 0, numCount = 0, longTextCount = 0;
+
+    for (let r = run.startRow; r <= run.endRow; r++) {
+      const ri = r - range.s.r;
+      for (let c = 0; c < totalCols; c++) {
+        const cell = grid[ri]?.[c];
+        if (cell) {
+          cellCount++;
+          if (c < minCol) minCol = c;
+          if (c > maxCol) maxCol = c;
+          if (cell.type === 'num') numCount++;
+          else { textCount++; if (String(cell.value).length >= 30) longTextCount++; }
+        }
+      }
+    }
+    if (cellCount === 0) continue;
+
+    const colSpan = maxCol - minCol + 1;
+    const density = cellCount / (rowSpan * colSpan);
+    const textRatio = textCount / cellCount;
+    const numRatio = numCount / cellCount;
+    const longTextRatio = longTextCount / cellCount;
+    const hasBothTypes = numRatio >= 0.1 && textRatio >= 0.1;
+
+    let classification;
+    if (rowSpan <= 3 && longTextRatio > 0.3)              classification = 'title_block';
+    else if (rowSpan <= 5 && colSpan <= 3 && textRatio > 0.6) classification = 'config_form';
+    else if (numRatio >= 0.3 && rowSpan >= 5)             classification = 'data_table';
+    else if (textRatio > 0.7 && rowSpan <= 5)             classification = 'metadata';
+    else if (rowSpan >= 5 && hasBothTypes && colSpan >= 4 && density >= 0.25) classification = 'program_data';
+    else if (rowSpan >= 5 && density >= 0.3)              classification = 'program_data';
+    else if (rowSpan < 5)                                  classification = 'fragment';
+    else                                                   classification = 'sparse_data';
+
+    regions.push({
+      startRow: run.startRow, endRow: run.endRow,
+      startCol: minCol + range.s.c, endCol: maxCol + range.s.c,
+      rowSpan, colSpan, cellCount,
+      density: Math.round(density * 100) / 100,
+      textRatio: Math.round(textRatio * 100) / 100,
+      numRatio: Math.round(numRatio * 100) / 100,
+      classification,
+    });
+  }
+
+  regions.sort((a, b) => b.cellCount - a.cellCount);
+  return regions;
+}
+
+/**
+ * Extract structural features from a workbook.
+ * Scans sheet names + first 25 rows per sheet for header/keyword/layout signals.
+ * Calls _detectRegions() per sheet and attaches results to each sheet's features.
+ * Returns features object; detectFormat() stores it on wb._features.
+ */
+function _extractFeatures(wb) {
+  const features = {
+    sheetCount: wb.SheetNames.length,
+    sheetNames: wb.SheetNames,
+    weekTabs: [],
+    weekTabCount: 0,
+    dayTabs: [],
+    dayTabCount: 0,
+    specialTabs: {},
+    primarySheet: null,
+    keywords: new Set(),
+    sheets: {}
+  };
+
+  const weekPattern = /^Week\s*\d+/i;
+  const dayPattern = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/i;
+
+  for (const sn of wb.SheetNames) {
+    if (weekPattern.test(sn.trim())) features.weekTabs.push(sn);
+    if (dayPattern.test(sn.trim())) features.dayTabs.push(sn);
+    const snLower = sn.trim().toLowerCase();
+    if (/^(maxes?|1rm|max\s*weight)$/i.test(snLower)) features.specialTabs.maxes = true;
+    if (/^(inputs?|setup|config)$/i.test(snLower)) features.specialTabs.inputs = true;
+    if (/^(instructions?|readme|info|about|how\s*to)$/i.test(snLower)) features.specialTabs.instructions = true;
+    if (/^(start\s*here)$/i.test(snLower)) features.specialTabs.startHere = true;
+  }
+  features.weekTabCount = features.weekTabs.length;
+  features.dayTabCount = features.dayTabs.length;
+
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    if (!ws || !ws['!ref']) continue;
+
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const rowCount = range.e.r - range.s.r + 1;
+    const colCount = range.e.c - range.s.c + 1;
+
+    const sheetFeatures = {
+      name: sn, rowCount, colCount,
+      headerRow: null,
+      headerKeywords: {},
+      exerciseColumn: null,
+      dayNamesInRows: [],
+      weekLabelsInCells: [],
+      tierMarkers: false,
+      sxrPatterns: 0,
+      percentageCells: 0,
+      regions: []
+    };
+
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    const scanRows = Math.min(25, rows.length);
+    const textColCounts = {};
+
+    for (let r = 0; r < scanRows; r++) {
+      const row = rows[r];
+      if (!row) continue;
+
+      const cellTexts = [];
+      let hasSetKeyword = false, hasRepKeyword = false, hasExKeyword = false, hasWeightKeyword = false;
+      let dayNameCount = 0;
+
+      for (let c = 0; c < Math.min(row.length, 20); c++) {
+        const val = row[c];
+        if (val == null) continue;
+        const str = String(val).trim().toLowerCase();
+        cellTexts.push({ col: c, text: str, raw: String(val).trim() });
+
+        // Header keyword detection
+        if (/^(sets?|set\s*\#?)$/.test(str))                 { hasSetKeyword = true; features.keywords.add('sets'); }
+        if (/^(reps?|rep\s*\#?|repetitions?)$/.test(str))   { hasRepKeyword = true; features.keywords.add('reps'); }
+        if (/^(exercise|exercises?|movement|lift|name)$/.test(str)) { hasExKeyword = true; features.keywords.add('exercise'); }
+        if (/^(weight|load|lbs|kg)$/.test(str))              { hasWeightKeyword = true; features.keywords.add('weight'); }
+        if (/^(intensity|%\s*1?\s*rm|%1rm|percent)$/.test(str)) features.keywords.add('intensity');
+        if (/^(rpe|rir|rpe\s*target)$/.test(str))           features.keywords.add('rpe');
+        if (/^(tempo)$/.test(str))                           features.keywords.add('tempo');
+        if (/^(rest)$/.test(str))                            features.keywords.add('rest');
+        if (/^(notes?|cues?)$/.test(str))                   features.keywords.add('notes');
+        if (/^(amrap|amap)$/i.test(str))                    features.keywords.add('amrap');
+        if (/^(1rm|one\s*rep\s*max|training\s*max|tm)$/i.test(str)) features.keywords.add('1rm');
+
+        if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)$/i.test(str)) dayNameCount++;
+
+        const weekMatch = str.match(/^week\s*(\d+)/i);
+        if (weekMatch) {
+          sheetFeatures.weekLabelsInCells.push({ row: r, col: c, value: String(val).trim() });
+          features.keywords.add('week');
+        }
+
+        if (/^t[123]$/i.test(str) || /^t[123]\s*[:\-]/i.test(str)) {
+          sheetFeatures.tierMarkers = true;
+          features.keywords.add('tier');
+        }
+
+        if (/^\d+\s*x\s*\d/i.test(str)) sheetFeatures.sxrPatterns++;
+
+        if (typeof val === 'number' && val > 0 && val < 1) sheetFeatures.percentageCells++;
+        if (typeof val === 'string' && /\d+\s*%/.test(val)) sheetFeatures.percentageCells++;
+
+        // Exercise column candidate: 3+ consecutive letters, not a structural keyword
+        if (typeof val === 'string' && /[a-zA-Z]{3,}/.test(val) &&
+            !/^(sets?|reps?|weight|load|exercise|day|week|notes?|intensity|rpe|rir|tempo|rest)$/i.test(str)) {
+          textColCounts[c] = (textColCounts[c] || 0) + 1;
+        }
+      }
+
+      // Header row detection — 3-tier heuristic
+      const kwCount = (hasSetKeyword ? 1 : 0) + (hasRepKeyword ? 1 : 0) +
+                      (hasExKeyword ? 1 : 0) + (hasWeightKeyword ? 1 : 0);
+
+      if (!sheetFeatures.headerRow) {
+        let isHeader = false, confidence = 'none';
+        if (kwCount >= 2) {
+          // Tier 1: 2+ structural keywords — high confidence
+          isHeader = true; confidence = 'tier1';
+        } else if (kwCount >= 1) {
+          // Tier 2: 1 keyword + type difference (text row above numeric row)
+          const nextRow = (r + 1 < scanRows) ? rows[r + 1] : null;
+          if (nextRow) {
+            let textCount = 0;
+            for (let c2 = 0; c2 < Math.min(row.length, 15); c2++) {
+              if (row[c2] != null && typeof row[c2] === 'string' && /[a-zA-Z]{2,}/.test(row[c2])) textCount++;
+            }
+            let nextNumCount = 0;
+            for (let c2 = 0; c2 < Math.min(nextRow.length, 15); c2++) {
+              if (nextRow[c2] != null && typeof nextRow[c2] === 'number') nextNumCount++;
+            }
+            if (textCount >= 3 && nextNumCount >= 2) { isHeader = true; confidence = 'tier2'; }
+          }
+        } else {
+          // Tier 3: ≥60% short text cells followed by ≥50% numeric row
+          const nonEmpty = cellTexts.length;
+          const shortText = cellTexts.filter(c => c.text.length <= 20 && /[a-zA-Z]{2,}/.test(c.text)).length;
+          if (nonEmpty >= 3 && shortText / nonEmpty >= 0.6) {
+            const nextRow = (r + 1 < scanRows) ? rows[r + 1] : null;
+            if (nextRow) {
+              let nextNumCount = 0, nextNonEmpty = 0;
+              for (let c2 = 0; c2 < Math.min(nextRow.length, 15); c2++) {
+                if (nextRow[c2] != null) { nextNonEmpty++; if (typeof nextRow[c2] === 'number') nextNumCount++; }
+              }
+              if (nextNonEmpty >= 3 && nextNumCount / nextNonEmpty >= 0.5) { isHeader = true; confidence = 'tier3'; }
+            }
+          }
+        }
+
+        if (isHeader) {
+          sheetFeatures.headerRow = { index: r, cells: cellTexts.map(c => c.raw), confidence };
+          sheetFeatures.headerKeywords = { sets: hasSetKeyword, reps: hasRepKeyword, exercise: hasExKeyword, weight: hasWeightKeyword };
+        }
+      }
+
+      if (dayNameCount >= 2) sheetFeatures.dayNamesInRows.push({ row: r, count: dayNameCount });
+    }
+
+    // Exercise column: column with most exercise-like text entries in first 25 rows
+    let maxTextCol = -1, maxTextCount = 0;
+    for (const [col, count] of Object.entries(textColCounts)) {
+      if (count > maxTextCount) { maxTextCount = count; maxTextCol = parseInt(col); }
+    }
+    if (maxTextCount >= 3) sheetFeatures.exerciseColumn = maxTextCol;
+
+    sheetFeatures.regions = _detectRegions(ws);
+    features.sheets[sn] = sheetFeatures;
+    if (!features.primarySheet && rowCount >= 5 && colCount >= 2) features.primarySheet = sn;
+  }
+
+  features.keywords = Array.from(features.keywords).sort();
+  return features;
 }
 
 // ── CONFIDENCE SCORE FUNCTIONS ────────────────────────────────────────────────
@@ -3055,6 +3675,9 @@ function _detectNegativeSignals(wb) {
 function detectFormat(wb){
   try {
     const negSignals = _detectNegativeSignals(wb);
+    const features = _extractFeatures(wb);
+    features.negSignals = negSignals;
+    wb._features = features;
     const scores = [
       scoreRP(wb, negSignals),
       scoreA(wb, negSignals), scoreC(wb, negSignals), scoreD(wb, negSignals), scoreE(wb, negSignals), scoreF(wb, negSignals),
@@ -13986,6 +14609,35 @@ function _resolveMergedCells(ws) {
 }
 
 /**
+ * _preResolveMerges(ws)
+ * Propagate merged cell values into all constituent cells of each merge range.
+ * Idempotent: sets ws._mergesResolved = true after first run.
+ * Called in parseWorkbook() so all parsers benefit, not just Adaptive.
+ *
+ * @param {object} ws — SheetJS worksheet
+ */
+function _preResolveMerges(ws) {
+  if (!ws || ws._mergesResolved || !ws['!merges'] || ws['!merges'].length === 0) return;
+  for (const merge of ws['!merges']) {
+    const topLeft = XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c });
+    const srcCell = ws[topLeft];
+    if (!srcCell) continue;
+    for (let r = merge.s.r; r <= merge.e.r; r++) {
+      for (let c = merge.s.c; c <= merge.e.c; c++) {
+        if (r === merge.s.r && c === merge.s.c) continue; // skip top-left itself
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (!ws[addr]) {
+          // Propagate value to empty merged cell
+          ws[addr] = { t: srcCell.t, v: srcCell.v };
+          if (srcCell.w) ws[addr].w = srcCell.w;
+        }
+      }
+    }
+  }
+  ws._mergesResolved = true;
+}
+
+/**
  * _buildOccupancyMatrix(ws)
  * Convert a SheetJS worksheet into a 2D grid of typed cells.
  * Cell types: 'empty' | 'string' | 'number' | 'formula' | 'date'
@@ -17139,6 +17791,7 @@ if (typeof module !== 'undefined' && module.exports) {
     parseCAutoFormat, extractCAutoMeta, parseCAutoSheet,
     parseD, parseDSheet, buildDPrescription,
     deduplicateExerciseNames,
+    parsePrescription,
     parseSets, parseSimple, parseRangeSet, parseBarePres, parseWarmupSets,
     _detectMultiWeight, _buildMultiWeightPrescription,
     parseCSVRows, detectCSVFormat, parseCSVImport,
@@ -17164,7 +17817,7 @@ if (typeof module !== 'undefined' && module.exports) {
     _fixParenTypos, _isCircuitPrefix, _isCoachInstruction, _isSectionHeader, _isHeaderTerm, HEADER_BLOCKLIST,
     EXERCISE_ALIASES, _normalizeExerciseName,
     // Adaptive Parser — Session 1
-    _resolveMergedCells, _buildOccupancyMatrix, _scoreRegionWorkoutLikeness, _detectRegions,
+    _preResolveMerges, _resolveMergedCells, _buildOccupancyMatrix, _scoreRegionWorkoutLikeness, _detectRegions,
     // Adaptive Parser — Session 2
     _classifySheetLayout, _classifyLayout, _detectHeaders, _detectDayBoundaries, _detectWeekBoundaries,
     // Adaptive Parser — Session 3

@@ -113,6 +113,8 @@
 <script defer src="libs/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
+<!-- Chevrotain parser library — must load before parsers.js (used by parsePrescription) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chevrotain/11.0.3/chevrotain.min.js"></script>
 <!-- WARNING: parsers.js must load synchronously (no defer/async).
      Inline scripts and _bootApp() depend on parser globals at parse time.
      Adding defer will silently make all parser functions undefined. See L170. -->
@@ -428,9 +430,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .upload-btn:active { opacity: 0.75; }
 .upload-hint { margin-top: var(--sp-7); font-size: var(--fs-base); color: var(--text-dim); line-height: 1.6; max-width: 260px; }
 .upload-divider { display: flex; align-items: center; gap: var(--sp-5); width: 100%; max-width: 300px; margin: var(--sp-6) 0; }
-.upload-divider::before, .upload-divider::after { content: ''; flex: 1; height: 1px; background: #222; }
+.upload-divider::before, .upload-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-2); }
 .upload-divider span { font-size: var(--fs-base); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
-.drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid #333; padding: 13px var(--sp-7); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--sp-5); }
+.drive-btn { background: var(--surface-3); color: var(--text-primary); border: 1px solid var(--border-3); padding: 13px var(--sp-7); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; border-radius: 10px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--sp-5); }
 .drive-btn:active { opacity: 0.75; }
 .block-bar { padding: var(--sp-3) var(--sp-5); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); gap: var(--sp-4); }
 .block-bar-left { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; }
@@ -511,10 +513,10 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .ex-expand-pill { width: 40px; height: 4px; border-radius: 2px; background: var(--text-dimmer); opacity: 0.9; transition: opacity 0.15s; }
 .ex-expand-handle:active .ex-expand-pill { opacity: 1; background: var(--text-muted); }
 .ex-detail { border-top: 1px solid rgba(255,255,255,0.05); }
-.skip-btn { font-size: var(--fs-md); color: var(--text-muted); background: none; border: 1px solid #333; border-radius: 8px; min-height: 36px; padding: var(--sp-4) var(--sp-6); cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
-.skip-btn.active { color: var(--text-sub); border-color: #555; background: var(--surface-3); }
+.skip-btn { font-size: var(--fs-md); color: var(--text-muted); background: none; border: 1px solid var(--border-3); border-radius: 8px; min-height: 36px; padding: var(--sp-4) var(--sp-6); cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
+.skip-btn.active { color: var(--text-sub); border-color: var(--text-dimmer); background: var(--surface-3); }
 .skip-row { padding: 0 var(--sp-6) var(--sp-6); display: flex; justify-content: flex-end; gap: var(--sp-4); }
-.set-adjust-btn { font-size: var(--fs-md); color: var(--text-muted); background: none; border: 1px solid #333; border-radius: 8px; padding: var(--sp-4) var(--sp-6); min-height: 36px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
+.set-adjust-btn { font-size: var(--fs-md); color: var(--text-muted); background: none; border: 1px solid var(--border-3); border-radius: 8px; padding: var(--sp-4) var(--sp-6); min-height: 36px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
 .set-adjust-btn:active { color: var(--gold); border-color: var(--gold); }
 .skipped-badge { font-size: var(--fs-xs); color: var(--text-faint); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); border-radius: 4px; padding: var(--sp-1) var(--sp-3); }
 .edit-name-btn { background: none; border: none; cursor: pointer; font-size: var(--fs-base); color: var(--gold); opacity: 0.0; padding: var(--sp-1) var(--sp-2); transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
@@ -815,7 +817,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .completed-ex-detail { text-align: right; flex-shrink: 0; margin-left: var(--sp-5); }
 .completed-ex-top { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 800; color: rgba(74,222,128,0.85); letter-spacing: 0.02em; line-height: 1.15; }
 .completed-ex-meta { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-faint); margin-top: 1px; }
-.set-row:has(.set-check.done) { border-left: 2.5px solid rgba(74,222,128,0.45); background: rgba(var(--green-rgb), 0.04); border-radius: 4px; padding-left: 8px; }
+.set-row:has(.set-check.done) { border-left: 2.5px solid rgba(74,222,128,0.45); background: rgba(var(--green-rgb), 0.04); border-radius: 4px; padding-left: var(--sp-4); }
 .exercise-check svg { width: 14px; height: 14px; }
 
 /* ── Start/Resume Workout Banners ── */
@@ -1257,16 +1259,16 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .e5-e1rm-card.status-green { border-color: rgba(var(--green-rgb), 0.25); }
 .e5-e1rm-card.status-amber { border-color: rgba(var(--amber-rgb), 0.25); }
 .e5-e1rm-lift { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 600; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
-.e5-e1rm-val { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-bright); line-height: 1.1; }
+.e5-e1rm-val { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--text-bright); line-height: 1.1; }
 .e5-e1rm-delta { font-family: 'Barlow', sans-serif; font-size: var(--fs-xs); font-weight: 600; margin-top: 1px; }
 .e5-e1rm-delta.up { color: var(--green); }
 .e5-e1rm-delta.down { color: var(--amber); }
 .e5-e1rm-delta.flat { color: var(--text-dim); }
-.e5-e1rm-status { font-family: 'Barlow', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-top: var(--sp-2); }
+.e5-e1rm-status { font-family: 'Barlow', sans-serif; font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-top: var(--sp-2); }
 .e5-e1rm-status.adapting { color: var(--green); opacity: 0.8; }
 .e5-e1rm-status.fatigue { color: var(--amber); opacity: 0.8; }
 .e5-e1rm-status.maintaining { color: var(--text-dim); }
-.e5-e1rm-empty { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-faint); line-height: 1.1; }
+.e5-e1rm-empty { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--text-faint); line-height: 1.1; }
 
 /* E5 Banners */
 .e5-banner { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-5); }
@@ -1289,7 +1291,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .e5-chip-icon { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .e5-chip-val { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--text-bright); line-height: 1; }
 .e5-chip-val .unit { font-size: var(--fs-sm); font-weight: 500; color: var(--text-dim); }
-.e5-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
+.e5-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-micro); color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* ── E6 Program Card (homepage) ── */
 .e6-prog-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: var(--sp-5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: var(--sp-6) 20px; position: relative; }
@@ -1303,7 +1305,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .e6-chip-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .e6-chip-val { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--text-bright); line-height: 1; }
 .e6-chip-val .unit { font-size: var(--fs-sm); font-weight: 500; color: var(--text-dim); }
-.e6-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); margin-top: 1px; }
+.e6-chip-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); margin-top: 1px; }
 
 /* Week pills (≤4 weeks) */
 .e6-weeks { display: flex; gap: 6px; margin-bottom: var(--sp-6); }
@@ -1313,7 +1315,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .e6-week-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; color: var(--text-mid); }
 .e6-week.active .e6-week-label { color: var(--gold); }
 .e6-week.done .e6-week-label { color: var(--green); }
-.e6-week-sub { font-family: 'Barlow', sans-serif; font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+.e6-week-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-micro); color: var(--text-dim); margin-top: 1px; }
 .e6-week-bar { height: 3px; border-radius: 2px; background: var(--border); margin: 4px var(--sp-4) 0; overflow: hidden; }
 .e6-week-bar-fill { height: 100%; border-radius: 2px; }
 .e6-week.active .e6-week-bar-fill { background: var(--gold); }
@@ -1580,7 +1582,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .metrics-export-btn { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: var(--sp-2) var(--sp-3); display: flex; align-items: center; margin-left: auto; transition: color 0.15s; }
 .metrics-export-btn:active { color: var(--gold); }
 .metrics-export-btn svg { width: 16px; height: 16px; }
-.metrics-back-btn { background: none; border: 1px solid #333; border-radius: 100px; color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); letter-spacing: 0.04em; padding: var(--sp-3) var(--sp-6); cursor: pointer; transition: all 0.15s; }
+.metrics-back-btn { background: none; border: 1px solid var(--border-3); border-radius: 100px; color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); letter-spacing: 0.04em; padding: var(--sp-3) var(--sp-6); cursor: pointer; transition: all 0.15s; }
 .metrics-back-btn:active { border-color: var(--gold); color: var(--gold); }
 .metrics-cycle-toggle { display: flex; gap: var(--sp-4); padding: 0 0 var(--sp-6); }
 .metrics-toggle-pill { flex: 1; padding: var(--sp-4) var(--sp-5); border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-lg); letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--text-faint); cursor: pointer; transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1640,7 +1642,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .metrics-screen { padding: var(--sp-6) var(--sp-6) 100px; }
 .cycle-tabs { display: flex; gap: var(--sp-4); padding: 0 0 var(--sp-6); overflow-x: auto; scrollbar-width: none; }
 .cycle-tabs::-webkit-scrollbar { display: none; }
-.cycle-tab { flex-shrink: 0; padding: 7px 18px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-lg); letter-spacing: 0.04em; border: 1px solid #333; background: transparent; color: var(--text-faint); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.cycle-tab { flex-shrink: 0; padding: 7px 18px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-lg); letter-spacing: 0.04em; border: 1px solid var(--border-3); background: transparent; color: var(--text-faint); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
 .cycle-tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
 .metrics-lift-group { margin-bottom: var(--sp-7); background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; overflow: hidden; box-shadow: var(--card-shadow); position: relative; }
 .metrics-lift-header { padding: var(--sp-6) var(--sp-6) var(--sp-5); display: flex; align-items: center; justify-content: space-between; }
@@ -1693,7 +1695,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .add-lift-confirm:disabled { background: var(--border); color: var(--text-faint); cursor: default; }
 .untracked-list { max-height: 220px; overflow-y: auto; margin-bottom: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-2); }
 .untracked-item { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-5) var(--sp-5); background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 8px; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
-.untracked-item:hover { border-color: #333; background: var(--surface-5); }
+.untracked-item:hover { border-color: var(--border-3); background: var(--surface-5); }
 .untracked-item.selected { border-color: var(--gold); background: rgba(201,168,76,0.08); }
 .untracked-item-name { font-family: 'Barlow', sans-serif; font-size: var(--fs-lg); color: var(--text-mid); }
 .untracked-item.selected .untracked-item-name { color: var(--gold); }
@@ -1814,7 +1816,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .calc-collar-sub { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 1px; }
 .calc-collar-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--border-2); border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
 .calc-collar-toggle.on { background: var(--gold, #C9A84C); }
-.calc-collar-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #555; transition: transform 0.2s, background 0.2s; }
+.calc-collar-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-dimmer); transition: transform 0.2s, background 0.2s; }
 .calc-collar-toggle.on::after { transform: translateX(20px); background: #fff; }
 
 /* ── LIGHT THEME OVERRIDES ───────────────────────────────────────────────── */
@@ -1874,8 +1876,8 @@ canvas.chart-overlay { pointer-events: auto; }
 /* calc unit LBS/KG toggle */
 [data-theme="light"] .calc-unit-btn.active { color: var(--gold); font-weight: 700; }
 /* prescription text — keep gold but use light-mode gold */
-[data-theme="light"] [style*="color:#C9A84C"],
-[data-theme="light"] [style*="color: #C9A84C"] { color: var(--gold) !important; }
+[data-theme="light"] [style*="color:var(--gold)"],
+[data-theme="light"] [style*="color: var(--gold)"] { color: var(--gold) !important; }
 [data-theme="light"] [style*="color:rgba(201,168,76"],
 [data-theme="light"] [style*="color: rgba(201,168,76"] { color: var(--gold) !important; }
 
@@ -2032,7 +2034,7 @@ canvas.chart-overlay { pointer-events: auto; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span id="hdr-ver" style="font-size:10px;font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-build" style="font-size:9px;font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-update-btn" onclick="_checkForUpdate(this)" style="font-size:9px;font-weight:600;color:var(--gold,#D4A843);letter-spacing:0.02em;vertical-align:middle;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:4px 0;margin-left:2px">Check for update</span></div>
+      <div class="header-logo">UNRACK <span id="hdr-ver" style="font-size:var(--fs-xs);font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-build" style="font-size:var(--fs-micro);font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-update-btn" onclick="_checkForUpdate(this)" style="font-size:var(--fs-micro);font-weight:600;color:var(--gold,#D4A843);letter-spacing:0.02em;vertical-align:middle;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:4px 0;margin-left:2px">Check for update</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2174,10 +2176,10 @@ canvas.chart-overlay { pointer-events: auto; }
     <h2 class="add-lift-title" id="add-lift-title">Manage Tracked Lifts</h2>
     <div class="track-section-label">CURRENTLY TRACKED</div>
     <div id="tracked-list-wrap"></div>
-    <div class="track-section-label" style="margin-top:16px">ADD EXERCISE</div>
+    <div class="track-section-label" style="margin-top:var(--sp-6)">ADD EXERCISE</div>
     <input class="add-lift-input" id="track-search" placeholder="Search exercises in your program..." oninput="_onTrackSearch(this.value)" aria-label="Search exercises in your program" />
     <div id="available-list-wrap"></div>
-    <div class="add-lift-actions" style="margin-top:16px">
+    <div class="add-lift-actions" style="margin-top:var(--sp-6)">
       <button class="add-lift-cancel" onclick="closeAddLift()">Cancel</button>
       <button class="add-lift-confirm" id="track-save-btn" onclick="saveTrackChanges()">Save Changes</button>
     </div>
@@ -2187,9 +2189,9 @@ canvas.chart-overlay { pointer-events: auto; }
 <!-- Program Manager Modal -->
 <div class="add-lift-modal" id="program-modal" role="dialog" aria-modal="true" aria-labelledby="program-modal-title" style="display:none" onclick="if(event.target===this)closeProgramModal()">
   <div class="add-lift-sheet" style="max-height:80vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-6)">
       <h2 class="add-lift-title" id="program-modal-title" style="margin-bottom:0">Programs</h2>
-      <button onclick="closeProgramModal()" style="background:none;border:none;color:var(--text-faint);font-size:22px;cursor:pointer;padding:4px">×</button>
+      <button onclick="closeProgramModal()" style="background:none;border:none;color:var(--text-faint);font-size:var(--fs-2xl);cursor:pointer;padding:4px">×</button>
     </div>
 
     <!-- Add New — two cards side by side -->
@@ -2336,7 +2338,7 @@ canvas.chart-overlay { pointer-events: auto; }
     </button>
     <div class="settings-row-btn settings-row-btn--static" id="calc-display-unit-row">
       <div class="settings-row-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg>
         Plate Calculator
       </div>
       <div class="settings-unit-pill-group">
@@ -2376,7 +2378,7 @@ canvas.chart-overlay { pointer-events: auto; }
       <button class="settings-theme-pill" data-theme="light" onclick="applyTheme('light');updateSettingsThemePills()">Light</button>
     </div>
 
-    <div class="settings-version" id="settings-version-tap" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates"></div>
+    <div class="settings-version" id="settings-version-tap" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:var(--sp-6);font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-sm);font-weight:600;color:var(--gold);letter-spacing:0.02em;opacity:0.6;cursor:pointer;-webkit-tap-highlight-color:transparent" title="Tap to check for updates"></div>
     <div class="settings-footer">
       <a href="https://powerliftlog.github.io/PowerliftingLog/privacy/" target="_blank" class="settings-footer-link">Privacy Policy</a>
     </div>
@@ -2635,7 +2637,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.11';
-const APP_BUILD   = '3/22/26d';
+const APP_BUILD   = '3/22/26g';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3363,20 +3365,20 @@ function renderMetrics(){
 
   // No program loaded — empty state
   if(state.blocks.length===0){
-    h+=`<div style="padding:16px">`;
+    h+=`<div style="padding:var(--sp-6)">`;
     ['Squat','Bench','Deadlift'].forEach(label=>{
-      h+=`<div class="metrics-lift-group" style="margin-bottom:16px">
+      h+=`<div class="metrics-lift-group" style="margin-bottom:var(--sp-6)">
         <div class="metrics-lift-header">
           <h2 class="metrics-lift-title">${label}</h2>
           <div style="text-align:right"><div class="metrics-best" style="color:var(--border)">—</div><div class="metrics-best-label">Best Est. 1RM</div></div>
         </div>
         <div class="chart-wrap" style="position:relative">
           <canvas class="rm-chart" width="400" height="120" style="opacity:0.15" aria-label="Estimated 1RM chart — no data yet"></canvas>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-dimmer);letter-spacing:0.06em;text-transform:uppercase">No data</div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-base);color:var(--text-dimmer);letter-spacing:0.06em;text-transform:uppercase">No data</div>
         </div>
       </div>`;
     });
-    h+=`<div style="text-align:center;font-size:13px;color:var(--text-dim);padding:8px 0 24px">Load a program and log weights to start tracking</div>`;
+    h+=`<div style="text-align:center;font-size:var(--fs-md);color:var(--text-dim);padding:var(--sp-4) 0 var(--sp-8)">Load a program and log weights to start tracking</div>`;
     h+=`</div></div>`;
     main.innerHTML=h;
     return;
@@ -3488,10 +3490,10 @@ function renderMetrics(){
         </div>
         <div class="chart-wrap" style="position:relative">
           <canvas class="rm-chart" width="400" height="120" style="opacity:0.15" aria-label="Estimated 1RM chart for ${escH(group.label)} — no data yet"></canvas>
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
-            <div style="font-size:13px;color:var(--text-sub)">No data yet</div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-4)">
+            <div style="font-size:var(--fs-md);color:var(--text-sub)">No data yet</div>
             <div style="display:flex;align-items:center;gap:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-            <div style="font-size:11px;color:var(--text-dim)">Log training data to see trends</div>
+            <div style="font-size:var(--fs-sm);color:var(--text-dim)">Log training data to see trends</div>
           </div>
         </div>
       </div>`;
@@ -3558,7 +3560,7 @@ function renderMetrics(){
         h+=`<div class="rm-row">
           <div style="display:flex;flex-direction:column;gap:1px">
             <div class="rm-session">${escH(pt.session)}</div>
-            ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
+            ${sublabel?`<div style="font-size:var(--fs-sm);color:var(--text-dim)">${sublabel}</div>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}<span class="unit-label">${unitLabel(true)}</span></div></div>
         </div>`;
@@ -3583,26 +3585,26 @@ function renderMetrics(){
     const otherWithData = otherVars.filter(([,pts])=>pts.length>0);
     if(otherWithData.length > 0) hasAnyData = true;
     h+=`<div class="metrics-tracked-section">`;
-    h+=`<div class="metrics-tracked-header" style="display:flex;align-items:center;gap:8px;padding:12px 0 8px;cursor:default">
+    h+=`<div class="metrics-tracked-header" style="display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-5) 0 var(--sp-4);cursor:default">
       <h3 style="margin:0;font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Tracked Lifts</h3>
       <span style="font-size:var(--fs-xs);color:var(--text-dimmer)">${otherVars.length}</span>
     </div>`;
     for(const [vname, pts] of otherVars){
       const best = pts.length > 0 ? Math.max(...pts.map(p=>p.e1rm)) : null;
       const trend = pts.length >= 2 ? pts[pts.length-1].e1rm - pts[pts.length-2].e1rm : null;
-      const trendStr = trend !== null ? `<span style="font-size:11px;color:${trend>=0?'var(--accent,#c8a951)':'var(--text-dim)'}">${trend>=0?'+':''}${trend}</span>` : '';
+      const trendStr = trend !== null ? `<span style="font-size:var(--fs-sm);color:${trend>=0?'var(--accent,#c8a951)':'var(--text-dim)'}">${trend>=0?'+':''}${trend}</span>` : '';
       const isExpanded = state.metricsOtherExpanded && state.metricsOtherExpanded[vname];
       h+=`<div class="metrics-tracked-row" style="border-top:1px solid var(--border);padding:10px 0;${isExpanded?'':'cursor:pointer'}" ${isExpanded?'':`onclick="toggleOtherLift('${esc(vname)}')"`}>
         <div style="display:flex;justify-content:space-between;align-items:center;${isExpanded?'cursor:pointer':''}" ${isExpanded?`onclick="toggleOtherLift('${esc(vname)}')"`:''}>
           <div style="font-size:var(--fs-base);color:var(--text-primary);font-weight:500">${escH(vname)}</div>
           <div style="display:flex;align-items:center;gap:6px">
             ${trendStr}
-            <span style="font-size:var(--fs-base);color:var(--text-primary);font-weight:600">${best?best+'<span style="font-size:11px;color:var(--text-dim);font-weight:400">'+unitLabel(true)+'</span>':'—'}</span>
+            <span style="font-size:var(--fs-base);color:var(--text-primary);font-weight:600">${best?best+'<span style="font-size:var(--fs-sm);color:var(--text-dim);font-weight:400">'+unitLabel(true)+'</span>':'—'}</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${isExpanded?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>`;
       if(isExpanded){
-        h+=`<div class="chart-wrap" style="position:relative;margin-top:8px"><canvas class="rm-chart" id="chart-other-${esc(vname)}" width="400" height="140" aria-label="Estimated 1RM progression for ${escH(vname)}"></canvas><canvas class="rm-chart chart-overlay" id="chart-other-${esc(vname)}-overlay" width="400" height="140" style="position:absolute;top:0;left:0;pointer-events:auto" aria-hidden="true"></canvas></div>`;
+        h+=`<div class="chart-wrap" style="position:relative;margin-top:var(--sp-4)"><canvas class="rm-chart" id="chart-other-${esc(vname)}" width="400" height="140" aria-label="Estimated 1RM progression for ${escH(vname)}"></canvas><canvas class="rm-chart chart-overlay" id="chart-other-${esc(vname)}-overlay" width="400" height="140" style="position:absolute;top:0;left:0;pointer-events:auto" aria-hidden="true"></canvas></div>`;
         if(pts.length > 0){
           h+=`<div class="rm-datapoints"><div class="var-section">`;
           pts.forEach((pt,i)=>{
@@ -3619,15 +3621,15 @@ function renderMetrics(){
             h+=`<div class="rm-row">
               <div style="display:flex;flex-direction:column;gap:1px">
                 <div class="rm-session">${escH(pt.session)}</div>
-                ${sublabel?`<div style="font-size:11px;color:var(--text-dim)">${sublabel}</div>`:''}
+                ${sublabel?`<div style="font-size:var(--fs-sm);color:var(--text-dim)">${sublabel}</div>`:''}
               </div>
               <div style="display:flex;align-items:center;gap:4px">${deltaStr}${methodBadge}<div class="rm-value">${pt.e1rm}<span class="unit-label">${unitLabel(true)}</span></div></div>
             </div>`;
           });
           h+=`</div></div>`;
         } else {
-          h+=`<div class="metrics-empty-state" style="padding:12px 0">
-            <div style="font-size:12px;color:var(--text-dim)">Log training data to see trends</div>
+          h+=`<div class="metrics-empty-state" style="padding:var(--sp-5) 0">
+            <div style="font-size:var(--fs-base);color:var(--text-dim)">Log training data to see trends</div>
           </div>`;
         }
       }
@@ -5997,7 +5999,7 @@ function _renderSessionHero(block, nwInfo, lastDone) {
         <h2 class="session-hero-label"><div class="session-hero-label-dot" style="background:var(--gold)"></div>All Sessions Complete</h2>
         <div class="session-hero-day">${escH(displayBlockName(block.name))}</div>
         <div class="session-hero-meta">Done with this training cycle?</div>
-        <div class="finish-block-actions" style="margin-top:16px">
+        <div class="finish-block-actions" style="margin-top:var(--sp-6)">
           <div class="bc-btn bc-btn-primary" onclick="finishBlock()">Finish Block</div>
           <div class="bc-btn bc-btn-secondary" onclick="openProgramModal()">Add More Weeks</div>
         </div>
@@ -6097,7 +6099,7 @@ function renderHome() {
         <h2 class="home-empty-title">No Program Loaded</h2>
         <div class="home-empty-desc">Upload a spreadsheet, try a sample program, or build your own.</div>
         ${renderUploadOptions('home-')}
-        <div style="display:flex;gap:8px;margin-top:10px">
+        <div style="display:flex;gap:var(--sp-4);margin-top:10px">
           <button onclick="loadDemoProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Try Sample Program</button>
           <button onclick="startBuildProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Build Your Own</button>
         </div>
@@ -6133,11 +6135,11 @@ function renderHome() {
   // Demo banner
   const _isDemoBlock = isDemoProgram(block);
   const demoBannerHtml = _isDemoBlock ? `
-    <div id="demo-banner" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(var(--gold-rgb),0.08);border:1px solid rgba(var(--gold-rgb),0.2);border-radius:12px;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('file-input').click()">
+    <div id="demo-banner" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(var(--gold-rgb),0.08);border:1px solid rgba(var(--gold-rgb),0.2);border-radius:12px;margin-bottom:var(--sp-5);cursor:pointer" onclick="document.getElementById('file-input').click()">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       <div style="flex:1">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.02em">Sample Program</div>
-        <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim)">Tap to upload your own training program</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-md);font-weight:700;color:var(--gold);letter-spacing:0.02em">Sample Program</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim)">Tap to upload your own training program</div>
       </div>
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
     </div>` : '';
@@ -6432,7 +6434,7 @@ function renderUploadOptions(prefix) {
     </div>
 
     <div style="text-align:center;padding-top:4px">
-      <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
+      <button onclick="openFormatExample()" style="background:none;border:none;font-family:'Barlow',sans-serif;font-size:var(--fs-md);color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px">What should my spreadsheet look like?</button>
     </div>
   </div>`;
 }
@@ -6458,7 +6460,7 @@ function renderBlockBar(block) {
   }
   let h=`<div class="block-bar"><div class="block-bar-left">
     <div style="min-width:0;overflow:hidden"><div class="block-name">${escH(displayBlockName(block.name))}</div><div class="block-dates">${escH(block.dateRange || '')}</div></div>
-    <button class="edit-name-btn" style="opacity:0.3;font-size:11px;flex-shrink:0" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    <button class="edit-name-btn" style="opacity:0.3;font-size:var(--fs-sm);flex-shrink:0" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
   </div>`;
   if(state.blocks.length>1){
     h+=`<select class="cycle-select" onchange="switchBlock(this.value)" aria-label="Switch program">`;
@@ -6516,7 +6518,7 @@ function formatDayTabLabel(name){
   if(parenIdx>0){
     const before=escH(n.slice(0,parenIdx).trim().toUpperCase());
     const after=escH(n.slice(parenIdx).trim().toUpperCase());
-    return `<span style="display:block">${before}</span><span style="display:block;opacity:0.75;font-size:10px">${after}</span>`;
+    return `<span style="display:block">${before}</span><span style="display:block;opacity:0.75;font-size:var(--fs-xs)">${after}</span>`;
   }
   // If name has multiple words, try to split at roughly the middle
   const words=n.toUpperCase().split(/\s+/);
@@ -6524,7 +6526,7 @@ function formatDayTabLabel(name){
     const mid=Math.ceil(words.length/2);
     const line1=escH(words.slice(0,mid).join(' '));
     const line2=escH(words.slice(mid).join(' '));
-    return `<span style="display:block">${line1}</span><span style="display:block;opacity:0.75;font-size:10px">${line2}</span>`;
+    return `<span style="display:block">${line1}</span><span style="display:block;opacity:0.75;font-size:var(--fs-xs)">${line2}</span>`;
   }
   // Short name — just uppercase it, single line
   return escH(n.toUpperCase());
@@ -9389,8 +9391,8 @@ function renderIntakeStep1(body) {
       const tgt = existingBlocks[0];
       mergeTargetHtml = `
         <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
-          <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:4px">Adding to:</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);padding:8px 12px;background:var(--surface-3);border-radius:8px;border:1px solid var(--border)">${escH(displayBlockName(tgt.name) || tgt.id)}</div>
+          <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-base);color:var(--text-sub);margin-bottom:4px">Adding to:</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright);padding:var(--sp-4) var(--sp-5);background:var(--surface-3);border-radius:8px;border:1px solid var(--border)">${escH(displayBlockName(tgt.name) || tgt.id)}</div>
           <input type="hidden" id="import-merge-target" value="${tgt.id}">
         </div>`;
     } else {
@@ -9400,7 +9402,7 @@ function renderIntakeStep1(body) {
       ).join('');
       mergeTargetHtml = `
         <div id="import-merge-select" style="display:${isMerge?'block':'none'};margin-bottom:10px">
-          <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
+          <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-base);color:var(--text-sub);margin-bottom:6px">Add to which program?</div>
           <select id="import-merge-target" class="intake-field-input" aria-label="Select program to merge into">${mergeOpts}</select>
         </div>`;
     }
@@ -9408,12 +9410,12 @@ function renderIntakeStep1(body) {
 
   body.innerHTML = `
     <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Program</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${escH(names)}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Import Program</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-md);color:var(--text-sub);margin-top:3px;text-align:center">${escH(names)}</div>
     </div>
     ${_importIntentReason ? `
-    <div style="margin:8px 0;padding:8px 12px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.4">
+    <div style="margin:var(--sp-4) 0;padding:var(--sp-4) var(--sp-5);background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+      <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-base);color:var(--text-primary);line-height:1.4">
         <span style="color:var(--gold);font-weight:700">Auto-detected:</span> ${escH(_importIntentReason)}
       </div>
     </div>` : ''}
@@ -9468,7 +9470,7 @@ function renderIntakeStep1(body) {
     </div>
     ${isHistorical ? `
     <div style="margin-top:4px;padding:10px 12px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
-      <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-primary);line-height:1.5">
+      <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-base);color:var(--text-primary);line-height:1.5">
         <span style="color:var(--gold);font-weight:700">Note:</span> Your active program won't change. All weeks will be marked complete using logged weights from the sheet.
       </div>
     </div>` : ''}` : ''}
@@ -9506,11 +9508,11 @@ function renderIntakeStep2(body) {
         <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-3);border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid var(--border);transition:border-color .15s">
           <input type="checkbox" name="import-select-block" value="${i}" ${checked} onchange="updateSelectImportBtn()" style="width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;cursor:pointer">
           <div style="flex:1;min-width:0">
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright)">${escH(displayBlockName(a.block.name))}</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-sub)">${weekCount} week${weekCount===1?'':'s'}</div>
-            ${previewExercises ? `<div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(previewExercises)}${(day1?.exercises?.length||0) > 3 ? '…' : ''}</div>` : ''}
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright)">${escH(displayBlockName(a.block.name))}</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-sub)">${weekCount} week${weekCount===1?'':'s'}</div>
+            ${previewExercises ? `<div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(previewExercises)}${(day1?.exercises?.length||0) > 3 ? '…' : ''}</div>` : ''}
           </div>
-          <div style="font-family:'Barlow',sans-serif;font-size:11px;color:${statusColor};font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:3px">
+          <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:${statusColor};font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:3px">
             <span>${statusIcon}</span> ${statusLabel}
           </div>
         </label>`;
@@ -9519,12 +9521,12 @@ function renderIntakeStep2(body) {
     const preChecked = _importAnnotated.filter(a => a.isNew).length;
     body.innerHTML = `
       <div style="margin-bottom:10px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Select Programs to Import</div>
-        <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">${escH(_importIntentReason)}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Select Programs to Import</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-md);color:var(--text-sub);margin-top:3px;text-align:center">${escH(_importIntentReason)}</div>
       </div>
-      <div style="margin-bottom:12px">${selectHtml}</div>
+      <div style="margin-bottom:var(--sp-5)">${selectHtml}</div>
       <button class="import-confirm-btn" id="import-select-btn" onclick="confirmSelectImport()" ${preChecked === 0 ? 'disabled style="opacity:0.5"' : ''}>Import Selected (${preChecked})</button>
-      <div style="display:flex;justify-content:center;margin-top:8px">
+      <div style="display:flex;justify-content:center;margin-top:var(--sp-4)">
         <span class="intake-skip-link" onclick="closeImportIntent()">Cancel</span>
       </div>
     `;
@@ -9576,10 +9578,10 @@ function renderIntakeStep2(body) {
         <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-3);border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid var(--border);transition:border-color .15s">
           <input type="checkbox" name="merge-select-week" value="${i}" ${checked} onchange="updateSelectMergeBtn()" style="width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;cursor:pointer">
           <div style="flex:1;min-width:0">
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright)">${escH(a.week.label || 'Week')}</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-sub)">${dayCount} day${dayCount===1?'':'s'}${dayNames ? ' — ' + escH(dayNames) : ''}</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright)">${escH(a.week.label || 'Week')}</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-sub)">${dayCount} day${dayCount===1?'':'s'}${dayNames ? ' — ' + escH(dayNames) : ''}</div>
           </div>
-          <div style="font-family:'Barlow',sans-serif;font-size:11px;color:${statusColor};font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:3px">
+          <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:${statusColor};font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:3px">
             <span>${statusIcon}</span> ${statusLabel}
           </div>
         </label>`;
@@ -9588,12 +9590,12 @@ function renderIntakeStep2(body) {
     const preChecked = annotatedWeeks.filter(a => a.isNew).length;
     body.innerHTML = `
       <div style="margin-bottom:10px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Select Weeks to Add</div>
-        <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">Adding to ${escH(displayBlockName(target.name))}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Select Weeks to Add</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-md);color:var(--text-sub);margin-top:3px;text-align:center">Adding to ${escH(displayBlockName(target.name))}</div>
       </div>
-      <div style="margin-bottom:12px">${selectHtml}</div>
+      <div style="margin-bottom:var(--sp-5)">${selectHtml}</div>
       <button class="import-confirm-btn" id="merge-select-btn" onclick="confirmSelectMerge()" ${preChecked === 0 ? 'disabled style="opacity:0.5"' : ''}>Add Selected Weeks (${preChecked})</button>
-      <div style="display:flex;justify-content:center;margin-top:8px">
+      <div style="display:flex;justify-content:center;margin-top:var(--sp-4)">
         <span class="intake-skip-link" onclick="intakeBack()">← Back</span>
       </div>
     `;
@@ -9632,14 +9634,14 @@ function renderIntakeStep2(body) {
     dayCardsHtml += `
       <div class="review-day-card">
         <div class="review-day-header">${escH(day.name || 'Day')}</div>
-        ${exRows || '<div style="padding:8px 12px;font-size:12px;color:var(--text-dim)">No exercises found</div>'}
+        ${exRows || '<div style="padding:var(--sp-4) var(--sp-5);font-size:var(--fs-base);color:var(--text-dim)">No exercises found</div>'}
       </div>`;
   }
 
   body.innerHTML = `
     <div style="margin-bottom:6px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Review Week 1</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-sub);margin-top:3px;text-align:center">Check that your exercises and prescriptions look right</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--text-bright);letter-spacing:0.02em;text-align:center">Review Week 1</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-md);color:var(--text-sub);margin-top:3px;text-align:center">Check that your exercises and prescriptions look right</div>
     </div>
     <div class="review-day-list">
       ${dayCardsHtml}
@@ -9648,16 +9650,16 @@ function renderIntakeStep2(body) {
     <div style="margin-top:10px;text-align:center">
       <span class="review-wrong-link" onclick="showReviewHelp()">Something doesn't look right</span>
     </div>
-    <div id="review-help-msg" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
-      <div style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-primary);line-height:1.6">
+    <div id="review-help-msg" style="display:none;margin-top:var(--sp-5);padding:12px 14px;background:var(--surface-3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
+      <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-md);color:var(--text-primary);line-height:1.6">
         The parser may not support your spreadsheet's layout. You can:
       </div>
-      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+      <div style="margin-top:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-4)">
         <button class="colmap-btn-secondary" onclick="closeImportIntent()">Try a Different File</button>
         <button class="colmap-btn-secondary" onclick="confirmImportIntent()">Import Anyway</button>
       </div>
     </div>
-    <div style="display:flex;justify-content:center;margin-top:8px">
+    <div style="display:flex;justify-content:center;margin-top:var(--sp-4)">
       <span class="intake-skip-link" onclick="intakeBack()">← Back</span>
     </div>
   `;
@@ -10685,11 +10687,11 @@ function showCSVUnitPicker(csvText, source) {
         <button class="export-modal-close" onclick="document.getElementById('csv-unit-overlay').remove()">✕</button>
       </div>
       <div style="padding:0 4px">
-        <div style="color:var(--text-sub);font-size:13px;line-height:1.5;margin-bottom:16px">
+        <div style="color:var(--text-sub);font-size:var(--fs-md);line-height:1.5;margin-bottom:var(--sp-6)">
           Import your workout history from ${source}. This will appear as a historical block in your metrics.
         </div>
-        <div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Weight Unit</div>
-        <div style="display:flex;gap:8px;margin-bottom:20px">
+        <div style="font-size:var(--fs-base);color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:var(--sp-4)">Weight Unit</div>
+        <div style="display:flex;gap:var(--sp-4);margin-bottom:20px">
           <button class="export-scope-pill ${getDisplayUnit()==='lbs'?'active':''}" id="csv-unit-lbs" onclick="selectCSVUnit('lbs')">lbs</button>
           <button class="export-scope-pill ${getDisplayUnit()==='kg'?'active':''}" id="csv-unit-kg" onclick="selectCSVUnit('kg')">kg</button>
         </div>
@@ -10806,8 +10808,8 @@ function closeProgramModal(){
 }
 function renderProgramList(){
   const list=document.getElementById('program-list');
-  if(!state.blocks.length){ list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:8px 0">No programs loaded yet.</div>'; return; }
-  let h='<div class="add-lift-group-label" style="margin-bottom:8px">Your Programs</div>';
+  if(!state.blocks.length){ list.innerHTML='<div style="font-size:var(--fs-md);color:var(--text-dim);padding:var(--sp-4) 0">No programs loaded yet.</div>'; return; }
+  let h='<div class="add-lift-group-label" style="margin-bottom:var(--sp-4)">Your Programs</div>';
   state.blocks.forEach(block=>{
     const isCurrent=state.activeBlock&&state.activeBlock.id===block.id;
     const weeks=block.weeks||[];
@@ -10816,7 +10818,7 @@ function renderProgramList(){
     weeks.forEach(w=>(w.days||[]).forEach(d=>{ if(isDayComplete(block,w,d)) completedDays++; }));
     const pct=totalDays>0?Math.round(completedDays/totalDays*100):0;
     const progressLabel=totalDays>0?`${completedDays}/${totalDays} sessions`:'No sessions';
-    h+=`<div class="program-item" style="flex-wrap:wrap;${isCurrent?'border-left:3px solid var(--gold);padding-left:12px;margin-left:-3px;':''}">
+    h+=`<div class="program-item" style="flex-wrap:wrap;${isCurrent?'border-left:3px solid var(--gold);padding-left:var(--sp-5);margin-left:-3px;':''}">
       <div class="program-item-info" onclick="selectBlock('${esc(block.id)}')" style="flex:1;min-width:0">
         <div class="program-item-name${isCurrent?' active-cycle':''}">${escH(displayBlockName(block.name))}</div>
         <div class="program-item-meta">${weeks.length} weeks${block.dateRange?' · '+escH(block.dateRange):''} · ${progressLabel}</div>
@@ -11042,7 +11044,7 @@ function openExportModal(blockId) {
         <button class="export-action-btn" onclick="exportTrainingLog('${blockId}')" style="flex:1" id="log-download-btn">Download</button>
         <button class="export-action-btn export-drive-btn" onclick="exportLogOrCSVToDrive('${blockId}')" style="flex:1"><svg viewBox="0 0 87.3 78" width="14" height="12" style="vertical-align:-1px;margin-right:4px"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H1.2c0 1.55.4 3.1 1.2 4.5l4.2 9.35z" fill="#0066DA"/><path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.2 52.7c-.8 1.4-1.2 2.95-1.2 4.5h27.5L43.65 25z" fill="#00AC47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/><path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/><path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/></svg> Save to Drive</button>
       </div>
-      <div id="log-format-hint" class="export-card-desc" style="text-align:center;margin-top:6px;font-size:12px;opacity:0.85;font-weight:600">Excel file (.xlsx)</div>
+      <div id="log-format-hint" class="export-card-desc" style="text-align:center;margin-top:6px;font-size:var(--fs-base);opacity:0.85;font-weight:600">Excel file (.xlsx)</div>
     </div>
 
     <!-- Training Report Card -->
@@ -11061,7 +11063,7 @@ function openExportModal(blockId) {
           <div class="export-card-desc">Squat / Bench / Deadlift progressions with charts</div>
         </div>
       </div>
-      <div style="margin:8px 0 12px">
+      <div style="margin:var(--sp-4) 0 var(--sp-5)">
         <select id="report-block-select" class="export-block-select">
           ${state.blocks.map((b, i) => `<option value="${esc(b.id)}"${b.id === blockId ? ' selected' : ''}>${escH(displayBlockName(b.name) || 'Block ' + (i + 1))}</option>`).join('')}
         </select>
@@ -11140,7 +11142,7 @@ function openBackupModal() {
         <button class="export-action-btn" onclick="closeBackupModal();downloadBackup()" style="flex:1">Download</button>
         <button class="export-action-btn export-drive-btn" onclick="closeBackupModal();triggerRestore()" style="flex:1">Restore</button>
       </div>
-      <div id="backup-modal-last-time" class="export-card-desc" style="text-align:center;margin-top:8px;font-size:11px;opacity:0.5"></div>
+      <div id="backup-modal-last-time" class="export-card-desc" style="text-align:center;margin-top:var(--sp-4);font-size:var(--fs-sm);opacity:0.5"></div>
     </div>
 
     <!-- Google Drive Card -->
@@ -12705,7 +12707,7 @@ async function exportHTMLReport(blockId) {
   iframe.src = URL.createObjectURL(blob);
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '\u2715 Close Report';
-  closeBtn.style.cssText = 'position:fixed;top:env(safe-area-inset-top,12px);right:12px;z-index:10001;padding:8px 16px;background:#333;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;';
+  closeBtn.style.cssText = 'position:fixed;top:env(safe-area-inset-top,12px);right:12px;z-index:10001;padding:var(--sp-4) var(--sp-6);background:#333;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;';
   closeBtn.onclick = () => { URL.revokeObjectURL(iframe.src); overlay.remove(); };
   overlay.appendChild(closeBtn);
   overlay.appendChild(iframe);
@@ -12911,15 +12913,15 @@ function validateAndRestore(backup, fileName) {
         <button class="export-modal-close" onclick="document.getElementById('restore-confirm-overlay').remove()">✕</button>
       </div>
       <div style="padding:0 4px">
-        <div style="color:var(--text-sub);font-size:13px;line-height:1.5;margin-bottom:16px">
+        <div style="color:var(--text-sub);font-size:var(--fs-md);line-height:1.5;margin-bottom:var(--sp-6)">
           This will <strong style="color:var(--text-primary)">replace all current data</strong> with the backup contents.
         </div>
-        <div style="background:var(--card-bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text-sub);line-height:1.6">
+        <div style="background:var(--card-bg);border-radius:10px;padding:12px 14px;margin-bottom:var(--sp-6);font-size:var(--fs-md);color:var(--text-sub);line-height:1.6">
           <div><span style="color:var(--text-dim)">Backup date:</span> ${escH(dateStr)}</div>
           <div><span style="color:var(--text-dim)">Programs:</span> ${blockCount}</div>
           <div><span style="color:var(--text-dim)">Logged workouts:</span> ${logCount}</div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:var(--sp-4)">
           <button class="export-action-btn" style="flex:1;background:var(--card-bg);color:var(--text-sub)" onclick="document.getElementById('restore-confirm-overlay').remove()">Cancel</button>
           <button class="export-action-btn" style="flex:1;background:#c0392b;color:#fff" onclick="executeRestore()">Restore</button>
         </div>
@@ -13039,7 +13041,7 @@ function renderFormatExample() {
 
   if (_formatExampleTab === 'A') {
     content += `
-      <div class="format-note" style="margin-bottom:12px">
+      <div class="format-note" style="margin-bottom:var(--sp-5)">
         Each sheet is a full training block. Days run left-to-right as columns. Each exercise lists its weekly prescriptions vertically.
       </div>
 
@@ -13055,7 +13057,7 @@ function renderFormatExample() {
 
       <div class="format-note" style="margin-top:14px">
         <strong style="display:block;margin-bottom:6px">How it works</strong>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:13px">
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:var(--fs-md)">
           <div>Each <strong>column pair</strong> is a training day + a tracking column</div>
           <div>Prescriptions are prefixed by week: <strong>W1:</strong>, <strong>W2:</strong>, etc.</div>
           <div>The tracking column records what was actually lifted</div>
@@ -13065,7 +13067,7 @@ function renderFormatExample() {
 
       <div class="format-note">
         <strong style="display:block;margin-bottom:6px">Prescription examples</strong>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:var(--fs-base)">
           <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3x5(315)</code> &mdash; 3 sets of 5 at 315 lbs</div>
           <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">4x3 @8</code> &mdash; 4 sets of 3 at RPE 8</div>
           <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">5x2(405) @9</code> &mdash; weight and RPE together</div>
@@ -13075,13 +13077,13 @@ function renderFormatExample() {
     `;
   } else {
     content += `
-      <div class="format-note" style="margin-bottom:12px">
+      <div class="format-note" style="margin-bottom:var(--sp-5)">
         Each sheet is one week. Days appear as section headers within the sheet. Each exercise is a single row with its prescription beside it.
       </div>
 
       <div class="format-grid">
         <div class="format-grid-header"><span>Exercise</span><span>Prescription</span><span>Record</span></div>
-        <div class="format-grid-row section-header"><span>Upper 1</span><span style="font-size:10px;font-weight:400;opacity:0.5">sets, reps, weight, RPE</span><span style="font-size:10px;font-weight:400;opacity:0.5">logged weight</span></div>
+        <div class="format-grid-row section-header"><span>Upper 1</span><span style="font-size:var(--fs-xs);font-weight:400;opacity:0.5">sets, reps, weight, RPE</span><span style="font-size:var(--fs-xs);font-weight:400;opacity:0.5">logged weight</span></div>
         <div class="format-grid-row"><span>Comp Bench</span><span>4x3 @8</span><span style="color:var(--green)">225</span></div>
         <div class="format-grid-row"><span>Close Grip Bench</span><span>3x6(185)</span><span></span></div>
         <div class="format-grid-row"><span>Cable Fly</span><span>3x12</span><span></span></div>
@@ -13092,7 +13094,7 @@ function renderFormatExample() {
 
       <div class="format-note" style="margin-top:14px">
         <strong style="display:block;margin-bottom:6px">How it works</strong>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:13px">
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:var(--fs-md)">
           <div><strong>Column A:</strong> Exercise name</div>
           <div><strong>Column B:</strong> Prescription &mdash; can include weight, RPE, or both</div>
           <div><strong>Column C:</strong> What you actually lifted (read on import)</div>
@@ -13103,7 +13105,7 @@ function renderFormatExample() {
 
       <div class="format-note">
         <strong style="display:block;margin-bottom:6px">Prescription examples</strong>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:var(--fs-base)">
           <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3x5</code> &mdash; 3 sets of 5</div>
           <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">4x3 @8</code> &mdash; 4 sets of 3 at RPE 8</div>
           <div><code style="color:var(--gold);background:rgba(201,168,76,0.12);padding:2px 7px;border-radius:4px">3x6(185)</code> &mdash; 3 sets of 6 at 185 lbs</div>
@@ -13117,7 +13119,7 @@ function renderFormatExample() {
 
   content += `
     <button class="parse-error-btn-primary" onclick="closeFormatExample()" style="margin-top:4px">Got It</button>
-    <button class="parse-error-btn-secondary" onclick="downloadTemplate()" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+    <button class="parse-error-btn-secondary" onclick="downloadTemplate()" style="margin-top:var(--sp-4);display:flex;align-items:center;justify-content:center;gap:var(--sp-4)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download Blank Template
     </button>
@@ -13155,7 +13157,7 @@ function showParseError(errorType, details) {
     <div class="parse-error-actions">
       <button class="parse-error-btn-primary" onclick="closeParseError();document.getElementById('file-input').click()">Try Another File</button>
       <button class="parse-error-btn-secondary" onclick="closeParseError();openFormatExample()">View Supported Formats</button>
-      <button class="parse-error-btn-secondary" onclick="downloadTemplate()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+      <button class="parse-error-btn-secondary" onclick="downloadTemplate()" style="display:flex;align-items:center;justify-content:center;gap:var(--sp-4)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download Blank Template
       </button>
@@ -13363,10 +13365,10 @@ function showPercentPrompt(blocks, onDone) {
     <div class="pct-prompt-header">
       <div class="pct-prompt-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="pct-prompt-title">Percentage Program</div>
-      <div class="pct-prompt-sub">Your program uses percentage-based weights. Enter your Training Max to calculate working weights.<br><span style="color:var(--text-dimmer);font-size:11px">Training Max is usually 85\u201390% of your true 1RM. If unsure, enter your 1RM.</span></div>
+      <div class="pct-prompt-sub">Your program uses percentage-based weights. Enter your Training Max to calculate working weights.<br><span style="color:var(--text-dimmer);font-size:var(--fs-sm)">Training Max is usually 85\u201390% of your true 1RM. If unsure, enter your 1RM.</span></div>
     </div>
     <div class="pct-prompt-fields">${fieldsHtml}</div>
-    <div style="text-align:center;margin-top:6px;font-size:11px;color:var(--text-dim)">Weight in ${unit}</div>
+    <div style="text-align:center;margin-top:6px;font-size:var(--fs-sm);color:var(--text-dim)">Weight in ${unit}</div>
     <div class="pct-prompt-btns">
       <button class="pct-prompt-skip" onclick="dismissPercentPrompt(false)">Skip</button>
       <button class="pct-prompt-apply" onclick="dismissPercentPrompt(true)">Apply</button>
@@ -13476,7 +13478,7 @@ function showOnboardingStep(step) {
         </div>
       </div>
       <button class="onboard-primary-btn" onclick="showOnboardingStep(2)">Get Started</button>
-      <button class="onboard-skip-btn" onclick="triggerRestore()" style="margin-top:12px;color:var(--gold)">Restore from backup</button>
+      <button class="onboard-skip-btn" onclick="triggerRestore()" style="margin-top:var(--sp-5);color:var(--gold)">Restore from backup</button>
     `;
     body.style.animation = 'none';
     body.offsetHeight;
@@ -13487,9 +13489,9 @@ function showOnboardingStep(step) {
   else if (step === 2) {
     body.innerHTML = `
       <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</h1>
-      <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Import your training spreadsheet or CSV.</div>
+      <div class="onboard-sub" style="margin-bottom:var(--sp-8);text-align:center">Import your training spreadsheet or CSV.</div>
       ${renderUploadOptions('ob-')}
-      <button class="onboard-skip-btn" onclick="showOnboardingStep('2b')" style="margin-top:12px">I don't have a file</button>
+      <button class="onboard-skip-btn" onclick="showOnboardingStep('2b')" style="margin-top:var(--sp-5)">I don't have a file</button>
       <button class="onboard-skip-btn" onclick="triggerRestore()" style="margin-top:4px;color:var(--gold)">Restore from backup</button>
     `;
     body.style.animation = 'none';
@@ -13501,15 +13503,15 @@ function showOnboardingStep(step) {
   else if (step === '2b') {
     body.innerHTML = `
       <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">No Problem</h1>
-      <div class="onboard-sub" style="margin-bottom:24px;text-align:center">Try a sample program or build your own. You can upload a spreadsheet anytime from the Programs menu.</div>
-      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin:0 auto 24px">
+      <div class="onboard-sub" style="margin-bottom:var(--sp-8);text-align:center">Try a sample program or build your own. You can upload a spreadsheet anytime from the Programs menu.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin:0 auto var(--sp-8)">
         <button class="onboard-nofile-card" onclick="loadDemoProgram()" style="display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;transition:opacity 0.15s">
           <div style="width:40px;height:40px;border-radius:10px;background:rgba(var(--gold-rgb),0.1);border:1px solid rgba(var(--gold-rgb),0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg viewBox="0 0 28 40" fill="var(--gold)" width="16" height="24"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg>
           </div>
           <div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em">Try Sample Program</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);margin-top:2px">3-day powerlifting split — squat, bench, deadlift</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright);letter-spacing:0.02em">Try Sample Program</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-base);color:var(--text-dim);margin-top:2px">3-day powerlifting split — squat, bench, deadlift</div>
           </div>
         </button>
         <button class="onboard-nofile-card" onclick="startBuildProgram()" style="display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;transition:opacity 0.15s">
@@ -13517,28 +13519,28 @@ function showOnboardingStep(step) {
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </div>
           <div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em">Build Your Own</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim);margin-top:2px">Create a custom program from scratch</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-lg);font-weight:700;color:var(--text-bright);letter-spacing:0.02em">Build Your Own</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-base);color:var(--text-dim);margin-top:2px">Create a custom program from scratch</div>
           </div>
         </button>
       </div>
       <div style="margin-bottom:20px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;text-align:center">What you'll see</div>
-        <div style="display:flex;gap:8px;overflow-x:auto;padding:0 4px;scroll-snap-type:x mandatory">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-sm);font-weight:700;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:var(--sp-5);text-align:center">What you'll see</div>
+        <div style="display:flex;gap:var(--sp-4);overflow-x:auto;padding:0 4px;scroll-snap-type:x mandatory">
           <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
             <div style="font-size:28px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h-2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2"/><path d="M17.5 6.5h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-2"/><path d="M6.5 4v16"/><path d="M17.5 4v16"/><line x1="6.5" y1="12" x2="17.5" y2="12"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/></svg></div>
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Workout Tracking</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5">Log sets, weight, and RPE. See your prescribed weights with one-tap plate calculator on barbell exercises.</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;line-height:1.5">Log sets, weight, and RPE. See your prescribed weights with one-tap plate calculator on barbell exercises.</div>
           </div>
           <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
             <div style="font-size:28px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Progress & PRs</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5">Estimated 1RM charts, PR detection, and DOTS/Wilks/GL scoring — all automatic.</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;line-height:1.5">Estimated 1RM charts, PR detection, and DOTS/Wilks/GL scoring — all automatic.</div>
           </div>
           <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
             <div style="font-size:28px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Training Reports</div>
-            <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5">Volume, intensity, and completion reports. Export as HTML or CSV anytime.</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;line-height:1.5">Volume, intensity, and completion reports. Export as HTML or CSV anytime.</div>
           </div>
         </div>
       </div>
@@ -13579,7 +13581,7 @@ function showOnboardingStep(step) {
         </div>
 
         <div class="intake-field-label">Weight Unit</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Unit used when logging your lifts</div>
+        <div style="font-size:var(--fs-base);color:var(--text-dim);margin-bottom:6px">Unit used when logging your lifts</div>
         <div class="intake-unit-toggle" style="justify-content:flex-start">
           <button class="intake-unit-btn${_onboardWeightUnit==='lbs'?' active':''}" onclick="onboardSetWeightUnit('lbs',this)">lbs</button>
           <button class="intake-unit-btn${_onboardWeightUnit==='kg'?' active':''}" onclick="onboardSetWeightUnit('kg',this)">kg</button>
@@ -13599,18 +13601,18 @@ function showOnboardingStep(step) {
     body.innerHTML = `
       <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Rest Timer</h1>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Automatic rest timer between sets. You can change this anytime in Settings.</div>
-      <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px;margin:0 auto">
-        <button class="intake-gender-btn${curMode==='auto'?' selected':''}" onclick="onboardSetRestTimer('auto',this)" style="padding:14px;font-size:15px">
+      <div style="display:flex;flex-direction:column;gap:var(--sp-4);width:100%;max-width:300px;margin:0 auto">
+        <button class="intake-gender-btn${curMode==='auto'?' selected':''}" onclick="onboardSetRestTimer('auto',this)" style="padding:14px;font-size:var(--fs-lg)">
           <div style="font-weight:700">Auto</div>
-          <div style="font-size:12px;opacity:0.7;margin-top:2px">Starts after every set check</div>
+          <div style="font-size:var(--fs-base);opacity:0.7;margin-top:2px">Starts after every set check</div>
         </button>
-        <button class="intake-gender-btn${curMode==='manual'?' selected':''}" onclick="onboardSetRestTimer('manual',this)" style="padding:14px;font-size:15px">
+        <button class="intake-gender-btn${curMode==='manual'?' selected':''}" onclick="onboardSetRestTimer('manual',this)" style="padding:14px;font-size:var(--fs-lg)">
           <div style="font-weight:700">Manual Only</div>
-          <div style="font-size:12px;opacity:0.7;margin-top:2px">Tap to start when you want</div>
+          <div style="font-size:var(--fs-base);opacity:0.7;margin-top:2px">Tap to start when you want</div>
         </button>
-        <button class="intake-gender-btn${curMode==='off'?' selected':''}" onclick="onboardSetRestTimer('off',this)" style="padding:14px;font-size:15px">
+        <button class="intake-gender-btn${curMode==='off'?' selected':''}" onclick="onboardSetRestTimer('off',this)" style="padding:14px;font-size:var(--fs-lg)">
           <div style="font-weight:700">Off</div>
-          <div style="font-size:12px;opacity:0.7;margin-top:2px">No rest timer</div>
+          <div style="font-size:var(--fs-base);opacity:0.7;margin-top:2px">No rest timer</div>
         </button>
       </div>
       <button class="onboard-primary-btn" onclick="finishOnboarding()" style="margin-top:20px">Done</button>
@@ -13673,8 +13675,8 @@ function finishOnboarding() {
     <div style="width:48px;height:48px;border-radius:50%;background:rgba(200,169,81,0.15);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;animation:checkPop 0.4s cubic-bezier(0.34,1.56,0.64,1)">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
     </div>
-    <div style="margin-top:16px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:0.04em">YOU'RE ALL SET</div>
-    <div style="margin-top:8px;font-size:13px;color:var(--text-sub)">Let's lift.</div>
+    <div style="margin-top:var(--sp-6);font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--text-primary);letter-spacing:0.04em">YOU'RE ALL SET</div>
+    <div style="margin-top:var(--sp-4);font-size:var(--fs-md);color:var(--text-sub)">Let's lift.</div>
   `;
   document.body.appendChild(splash);
   setTimeout(() => splash.remove(), 2000);
@@ -15071,7 +15073,7 @@ function _renderDayEditor(block, week, day) {
   h += `<div class="edit-day-border">`;
 
   if (!day.exercises || day.exercises.length === 0) {
-    h += `<div style="padding:24px 16px;text-align:center;color:var(--text-faint);font-size:13px">No exercises yet. Tap + Add Exercise below.</div>`;
+    h += `<div style="padding:var(--sp-8) var(--sp-6);text-align:center;color:var(--text-faint);font-size:var(--fs-md)">No exercises yet. Tap + Add Exercise below.</div>`;
   } else {
     day.exercises.forEach((ex, ei) => {
       const isFirst = ei === 0;
@@ -15112,7 +15114,7 @@ function _renderDayEditor(block, week, day) {
     });
   }
 
-  h += `<button class="add-exercise-btn" onclick="_addExInEditMode()" style="margin:8px 12px 12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
+  h += `<button class="add-exercise-btn" onclick="_addExInEditMode()" style="margin:var(--sp-4) var(--sp-5) var(--sp-5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Exercise</button>`;
   h += `</div>`;
 
   h += `<div class="edit-day-footer">
@@ -16084,7 +16086,7 @@ function renderCmStep2() {
   } else {
     daysH = `<div class="colmap-card">
       <div class="colmap-card-title" style="color:var(--text-faint)">No training days detected</div>
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">Try switching the day boundary option above. If your sheet doesn't have day headers, all exercises will be grouped into one day per sheet.</div>
+      <div style="font-size:var(--fs-base);color:var(--text-dim);line-height:1.5">Try switching the day boundary option above. If your sheet doesn't have day headers, all exercises will be grouped into one day per sheet.</div>
     </div>`;
   }
 
@@ -16209,13 +16211,13 @@ function renderCmStep3() {
     </div>
 
     <div style="padding:12px 14px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:10px;margin-bottom:20px">
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">Column mapping will be saved so future uploads from the same format import automatically.</div>
+      <div style="font-size:var(--fs-base);color:var(--text-dim);line-height:1.5">Column mapping will be saved so future uploads from the same format import automatically.</div>
     </div>
     ${totalExercises > 0 ? `
       <button class="colmap-btn-primary" onclick="confirmColumnMapper()">Import Program</button>
     ` : `
       <button class="colmap-btn-primary" disabled>No exercises found</button>
-      <div style="font-size:12px;color:var(--red);text-align:center;margin-top:4px">Try adjusting your column assignments or day detection settings.</div>
+      <div style="font-size:var(--fs-base);color:var(--red);text-align:center;margin-top:4px">Try adjusting your column assignments or day detection settings.</div>
     `}
     <button class="colmap-btn-secondary" onclick="cmGoStep(2)">Back</button>
   `;
@@ -16930,16 +16932,16 @@ function renderCalc() {
       const down = rounded - 5; const up = rounded + 5;
       if (rounded !== numVal) {
         snapHtml = `<div style="margin-top:10px;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;text-align:center;">Nearest Loadable</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-xs);font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;text-align:center;">Nearest Loadable</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
-          <div onclick="calcSnapLbs(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapColor};">
-            <span style="color:var(--gold);font-size:13px;">−</span><span>${down}lb</span>
+          <div onclick="calcSnapLbs(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:var(--fs-sm);color:${T.snapColor};">
+            <span style="color:var(--gold);font-size:var(--fs-md);">−</span><span>${down}lb</span>
           </div>
-          <div onclick="calcSnapLbs(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapMidBg};border:${T.snapMidBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapMidColor};font-weight:600;">
+          <div onclick="calcSnapLbs(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapMidBg};border:${T.snapMidBorder};border-radius:8px;padding:4px 8px;font-size:var(--fs-sm);color:${T.snapMidColor};font-weight:600;">
             <span>→ ${rounded}lb</span>
           </div>
-          <div onclick="calcSnapLbs(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapColor};">
-            <span style="color:var(--gold);font-size:13px;">+</span><span>${up}lb</span>
+          <div onclick="calcSnapLbs(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:var(--fs-sm);color:${T.snapColor};">
+            <span style="color:var(--gold);font-size:var(--fs-md);">+</span><span>${up}lb</span>
           </div>
           </div>
         </div>`;
@@ -16961,16 +16963,16 @@ function renderCalc() {
         const snapFn = inputUnit === 'lbs' ? 'calcSnapLbs' : 'calcSnapToNearest';
         const snapArg = (kgVal) => inputUnit === 'lbs' ? Math.round(kgToLbs(kgVal)) : kgVal;
         snapHtml = `<div style="margin-top:10px;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;text-align:center;">Valid Attempt</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-xs);font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;text-align:center;">Valid Attempt</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
-          <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapColor};">
-            <span style="color:var(--gold);font-size:13px;">−</span><span>${snapLabel(down)}</span>
+          <div onclick="calcSnapToNearest(${down})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:var(--fs-sm);color:${T.snapColor};">
+            <span style="color:var(--gold);font-size:var(--fs-md);">−</span><span>${snapLabel(down)}</span>
           </div>
-          <div onclick="calcSnapToNearest(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapMidBg};border:${T.snapMidBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapMidColor};font-weight:600;">
+          <div onclick="calcSnapToNearest(${rounded})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapMidBg};border:${T.snapMidBorder};border-radius:8px;padding:4px 8px;font-size:var(--fs-sm);color:${T.snapMidColor};font-weight:600;">
             <span>→ ${snapLabel(rounded)}</span>
           </div>
-          <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:11px;color:${T.snapColor};">
-            <span style="color:var(--gold);font-size:13px;">+</span><span>${snapLabel(up)}</span>
+          <div onclick="calcSnapToNearest(${up})" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:${T.snapBg};border:${T.snapBorder};border-radius:8px;padding:4px 8px;font-size:var(--fs-sm);color:${T.snapColor};">
+            <span style="color:var(--gold);font-size:var(--fs-md);">+</span><span>${snapLabel(up)}</span>
           </div>
           </div>
         </div>`;
@@ -16981,7 +16983,7 @@ function renderCalc() {
   let html = `<div class="calc-screen">
 
     <!-- ── MODE TOGGLE ── -->
-    <div class="calc-section" style="padding:12px;">
+    <div class="calc-section" style="padding:var(--sp-5);">
       <div class="calc-mode-toggle" id="calc-mode-toggle">
         <div class="calc-mode-pill" id="calc-mode-pill"></div>
         <button class="calc-mode-btn${mode === 'target' ? ' active' : ''}" onclick="calcSetMode('target')">Target Weight</button>
@@ -16992,17 +16994,17 @@ function renderCalc() {
     ${mode === 'target' ? `
 
       <!-- ── TARGET: INPUT ── -->
-      <div class="calc-section" style="padding:12px;">
-        <div style="display:flex;gap:8px;align-items:stretch;height:68px;">
+      <div class="calc-section" style="padding:var(--sp-5);">
+        <div style="display:flex;gap:var(--sp-4);align-items:stretch;height:68px;">
           <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" aria-label="Target weight" style="flex:1;min-width:0;background:${T.inputBg};border:${T.inputBorder};color:${T.inputColor};" />
           ${displayLbs ? `
           <div style="display:flex;align-items:center;flex-shrink:0;">
-            <div style="border-radius:7px;padding:8px 14px;border:${T.unitBorder(true)};background:${T.unitBg2(true)};color:${T.unitColor(true)};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;">LBS</div>
+            <div style="border-radius:7px;padding:8px 14px;border:${T.unitBorder(true)};background:${T.unitBg2(true)};color:${T.unitColor(true)};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;">LBS</div>
           </div>
           ` : `
           <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:56px;">
-            <button onclick="calcSetUnit('lbs')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='lbs')};background:${T.unitBg2(inputUnit==='lbs')};color:${T.unitColor(inputUnit==='lbs')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
-            <button onclick="calcSetUnit('kg')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='kg')};background:${T.unitBg2(inputUnit==='kg')};color:${T.unitColor(inputUnit==='kg')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
+            <button onclick="calcSetUnit('lbs')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='lbs')};background:${T.unitBg2(inputUnit==='lbs')};color:${T.unitColor(inputUnit==='lbs')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
+            <button onclick="calcSetUnit('kg')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='kg')};background:${T.unitBg2(inputUnit==='kg')};color:${T.unitColor(inputUnit==='kg')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
           </div>
           `}
         </div>
@@ -17041,7 +17043,7 @@ function renderCalc() {
       </div>
 
       <!-- ── TARGET: BAR SELECTION + COLLARS ── -->
-      <div class="calc-section" style="padding:12px;">
+      <div class="calc-section" style="padding:var(--sp-5);">
         <div class="calc-bar-selector" style="margin-bottom:10px;">
           ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
             ${b.label}<span class="calc-bar-btn-sub">${displayLbs ? `${b.lbs}lb` : `${b.kg}kg / ${b.lbs}lb`}</span>
@@ -17059,7 +17061,7 @@ function renderCalc() {
     ` : `
 
       <!-- ── MANUAL: PLATE GRID ── -->
-      <div class="calc-section" style="padding:12px;">
+      <div class="calc-section" style="padding:var(--sp-5);">
         <div class="calc-section-title" style="margin-bottom:10px;">Plates (per side)</div>
         <div class="calc-plates-grid">${manualRowsHtml}</div>
         <button class="calc-reset-btn" onclick="calcReset()">Clear All Plates</button>
@@ -17096,7 +17098,7 @@ function renderCalc() {
       </div>
 
       <!-- ── MANUAL: BAR SELECTION + COLLARS ── -->
-      <div class="calc-section" style="padding:12px;">
+      <div class="calc-section" style="padding:var(--sp-5);">
         <div class="calc-bar-selector" style="margin-bottom:10px;">
           ${BARS.map(b => `<button class="calc-bar-btn${state.calc.barId === b.id ? ' active' : ''}" onclick="calcSetBar('${b.id}')">
             ${b.label}<span class="calc-bar-btn-sub">${displayLbs ? `${b.lbs}lb` : `${b.kg}kg / ${b.lbs}lb`}</span>

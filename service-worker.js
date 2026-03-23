@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v170';
+const CACHE_NAME = 'liftlog-v173';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -13,6 +13,8 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
   // Google Fonts CSS — pre-cached so offline first load gets correct typography
   'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap',
+  // Chevrotain parser library — used by parsePrescription in parsers.js
+  'https://cdnjs.cloudflare.com/ajax/libs/chevrotain/11.0.3/chevrotain.min.js',
   // PDF export libs — pre-cached so offline PDF export works
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
