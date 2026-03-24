@@ -4352,29 +4352,13 @@ function _normalizeExerciseName(name) {
     return EXERCISE_ALIASES.exact[lower];
   }
 
-  // 2. Word-level abbreviation expansion
-  let changed = false;
-  const words = s.split(/\s+/);
-  const expanded = words.map(word => {
-    const canonical = EXERCISE_ALIASES.abbrevs[word.toLowerCase()];
-    if (canonical) {
-      changed = true;
-      return canonical;
-    }
-    return word;
-  });
+  // 2. Word-level abbreviation expansion REMOVED (Session 53)
+  // Previously expanded "DB" → "Dumbbell", "OHP" → "Overhead Press" etc. inside
+  // multi-word names, mutating what the user actually typed. Ghost weight matching
+  // uses _smartExerciseMatch/SYNONYM_MAP which already handles abbreviation forms.
+  // Only exact full-name aliases (step 1 above) should change exercise names.
 
-  if (!changed) {
-    return s.replace(/\s+/g, ' ');
-  }
-
-  // 3. Rejoin and normalize spacing
-  s = expanded.join(' ').replace(/\s+/g, ' ');
-
-  // 4. Title-case the result
-  s = s.replace(/(^|[\s-])(\w)/g, (m, pre, ch) => pre + ch.toUpperCase());
-
-  return s;
+  return s.replace(/\s+/g, ' ');
 }
 
 // ── POST-PARSE VALIDATION ─────────────────────────────────────────────────────
@@ -7444,14 +7428,18 @@ function parseD(wb) {
   }
 
   let blockMeta = { name: '', athlete: '' };
+  // Non-program sheet names to skip for block naming (case-insensitive)
+  // These sheets may still be parsed for detection/scoring — this only affects the display name
+  const _nameSkipList = ['read me','readme','instructions','info','information','changelog',
+    'notes','about','help','template','guide','how to','introduction','overview',
+    'setup','config','configuration','legend','key','input','inputs'];
   const trainingSheets = wb.SheetNames.filter(sn => !skipSheets.has(sn));
-  if (trainingSheets.length > 0) {
-    const firstSheet = trainingSheets[0];
-    if (/week/i.test(firstSheet)) {
-      blockMeta.name = 'Training Block';
-    } else {
-      blockMeta.name = firstSheet;
-    }
+  const nameCandidate = trainingSheets.find(sn => !_nameSkipList.includes(sn.toLowerCase().trim()));
+  const firstSheet = nameCandidate || trainingSheets[0] || '';
+  if (firstSheet && /week/i.test(firstSheet)) {
+    blockMeta.name = 'Training Block';
+  } else if (firstSheet) {
+    blockMeta.name = firstSheet;
   }
   if (!blockMeta.name) blockMeta.name = 'Training Block';
 
@@ -7836,7 +7824,7 @@ function _parseSingleSetGroup(seg){
 
 function parseSets(pres){
   if(!pres) return [];
-  pres = pres.replace(/×/g, 'x').trim(); /* normalize unicode multiply + trim whitespace */
+  pres = pres.replace(/×/g, 'x').replace(/[–—]/g, '-').replace(/(\d)\s*-\s*(\d)/g,'$1-$2').trim(); /* normalize unicode multiply + en/em-dash + collapse spaces around digit-hyphen-digit */
   const cached = _parseSetsCache.get(pres);
   if(cached !== undefined) return cached;
   // Strip EMOM / E\dMOM prefix or suffix  e.g. "EMOM 10x1 @85%", "E2MOM 5x3", "10x1 EMOM"
@@ -7986,7 +7974,7 @@ function parseSets(pres){
 
 function parseSimple(pres){
   if(!pres) return null;
-  pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
+  pres = pres.replace(/×/g, 'x').replace(/[–—]/g, '-').replace(/(\d)\s*-\s*(\d)/g,'$1-$2'); /* normalize unicode multiply + en/em-dash + collapse spaces */
   if(_parseSimpleCache.has(pres)) return _parseSimpleCache.get(pres);
   const m=pres.match(/^(\d+)\s*x\s*([\d\-]+(?:\s*(?:sec|min|s|m)\w*)?)/i);
   if(!m){ _parseSimpleCache.set(pres,null); return null; }
@@ -8000,7 +7988,7 @@ function parseSimple(pres){
 
 function parseRangeSet(pres){
   if(!pres) return null;
-  pres = pres.replace(/×/g, 'x'); /* normalize unicode multiply sign */
+  pres = pres.replace(/×/g, 'x').replace(/[–—]/g, '-').replace(/(\d)\s*-\s*(\d)/g,'$1-$2'); /* normalize unicode multiply + en/em-dash + collapse spaces */
   if(_parseRangeSetCache.has(pres)) return _parseRangeSetCache.get(pres);
   // Range with optional weight in parens: "3-5x1 (405)"
   const mw=pres.match(/^(\d+)[\-–](\d+)\s*x\s*([\d\-–]+(?:\s*(?:sec|min|s|m)\w*)?)\s*\(([^)]+)\)/i);
@@ -8046,6 +8034,7 @@ function parseRangeSet(pres){
 
 function parseBarePres(pres){
   if(!pres) return null;
+  pres = pres.replace(/[–—]/g, '-').replace(/(\d)\s*-\s*(\d)/g,'$1-$2'); /* normalize en/em-dash + collapse spaces */
   if(_parseBarePresCache.has(pres)) return _parseBarePresCache.get(pres);
   const p=pres.trim();
   let result = null;
@@ -8071,6 +8060,7 @@ function parseBarePres(pres){
 
 function parseWarmupSets(pres){
   if(!pres) return [];
+  pres = pres.replace(/[–—]/g, '-').replace(/(\d)\s*-\s*(\d)/g,'$1-$2'); /* normalize en/em-dash + collapse spaces */
   if(_parseWarmupSetsCache.has(pres)) return _parseWarmupSetsCache.get(pres);
   const p=pres.trim();
   if(!p.includes(',')){ _parseWarmupSetsCache.set(pres,[]); return []; }
