@@ -1705,6 +1705,35 @@ canvas.chart-overlay { pointer-events: auto; }
 .metrics-upload-confirm { margin-top: 10px; width: 100%; padding: 13px; background: rgba(var(--gold-rgb), 0.12); border: 1px solid rgba(var(--gold-rgb), 0.4); border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; letter-spacing: 0.06em; color: var(--gold); cursor: pointer; transition: opacity 0.15s; display: none; }
 .metrics-upload-confirm.visible { display: block; }
 
+/* Workout tab empty state — ghost preview + floating CTA */
+.wkt-empty { position: relative; height: 720px; overflow: hidden; }
+.wkt-ghost { padding: 0 var(--sp-5); }
+.wkt-ghost-bar { background: rgba(255,255,255,0.025); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 14px var(--sp-5); margin: 0 calc(-1 * var(--sp-5)) 14px; display: flex; justify-content: space-between; align-items: center; }
+.wkt-ghost-name { height: 14px; width: 48%; border-radius: 4px; background: rgba(255,255,255,0.06); }
+.wkt-ghost-dates { height: 10px; width: 28%; border-radius: 3px; background: rgba(255,255,255,0.03); margin-top: 6px; }
+.wkt-ghost-pills { display: flex; gap: 6px; margin-bottom: 10px; }
+.wkt-ghost-pill { padding: 6px 14px; border-radius: 20px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; border: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.08); }
+.wkt-ghost-pill.hi { border-color: rgba(var(--gold-rgb),0.12); color: rgba(var(--gold-rgb),0.15); background: rgba(var(--gold-rgb),0.03); }
+.wkt-ghost-tabs { display: flex; gap: 2px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.wkt-ghost-tab { padding: 8px 14px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; color: rgba(255,255,255,0.08); border-bottom: 2px solid transparent; }
+.wkt-ghost-tab.hi { color: rgba(var(--gold-rgb),0.2); border-bottom-color: rgba(var(--gold-rgb),0.15); }
+.wkt-ghost-card { background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+.wkt-ghost-ex-name { height: 13px; border-radius: 4px; background: rgba(255,255,255,0.06); margin-bottom: 8px; }
+.wkt-ghost-ex-pres { height: 10px; border-radius: 3px; background: rgba(255,255,255,0.03); width: 45%; margin-bottom: 10px; }
+.wkt-ghost-sets { display: flex; gap: 6px; }
+.wkt-ghost-set { height: 36px; width: 36px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; }
+.wkt-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 380px; background: linear-gradient(to bottom, transparent, rgba(var(--bg-page-rgb,12,12,20),0.88) 50%, #0c0c14 100%); pointer-events: none; }
+.wkt-cta { position: absolute; bottom: 12px; left: 16px; right: 16px; background: rgba(18,18,28,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 22px 20px 18px; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
+.wkt-cta-bolt { position: relative; display: inline-block; margin-bottom: 14px; }
+.wkt-cta-bolt::before { content: ''; position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb),0.14) 0%, transparent 70%); pointer-events: none; }
+.wkt-cta-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: 0.04em; margin-bottom: 6px; }
+.wkt-cta-desc { font-size: var(--fs-md); color: var(--text-dim); line-height: 1.45; margin-bottom: 18px; }
+.wkt-chip-row { display: flex; gap: 7px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+.wkt-chip { padding: 9px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-2); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.wkt-chip.selected { background: rgba(var(--gold-rgb),0.1); border-color: rgba(var(--gold-rgb),0.45); color: var(--gold); }
+.wkt-confirm { margin-top: 2px; width: 100%; padding: 13px; background: rgba(var(--gold-rgb),0.12); border: 1px solid rgba(var(--gold-rgb),0.4); border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; letter-spacing: 0.06em; color: var(--gold); cursor: pointer; transition: opacity 0.15s; display: none; }
+.wkt-confirm.visible { display: block; }
+
 /* Add lift button */
 .add-lift-btn { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); width: 100%; padding: var(--sp-6); background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); letter-spacing: 0.04em; cursor: pointer; margin-bottom: var(--sp-6); transition: all 0.15s; }
 .add-lift-btn:hover { border-color: #444; color: var(--text-sub); }
@@ -2666,7 +2695,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.25.11';
-const APP_BUILD   = '3/23/26b';
+const APP_BUILD   = '3/23/26c';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -3772,6 +3801,32 @@ function metricsUploadConfirm() {
   if (_metricsUploadAction === 'upload') document.getElementById('file-input').click();
   else if (_metricsUploadAction === 'demo') loadDemoProgram();
   else if (_metricsUploadAction === 'build') startBuildProgram();
+}
+
+// ── Workout tab empty state chip — select + confirm ───────────────────────────
+let _wktUploadAction = null;
+const _wktUploadLabels = { upload: 'Select a File', demo: 'Load Sample Program', build: 'Start Building' };
+
+function wktUploadSelectChip(el, action) {
+  const row = document.getElementById('wkt-chip-row');
+  const btn = document.getElementById('wkt-confirm');
+  if (!row || !btn) return;
+  if (el.classList.contains('selected') && _wktUploadAction === action) {
+    wktUploadConfirm();
+    return;
+  }
+  row.querySelectorAll('.wkt-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _wktUploadAction = action;
+  btn.textContent = '→ ' + _wktUploadLabels[action];
+  btn.classList.add('visible');
+}
+
+function wktUploadConfirm() {
+  if (!_wktUploadAction) return;
+  if (_wktUploadAction === 'upload') document.getElementById('file-input').click();
+  else if (_wktUploadAction === 'demo') loadDemoProgram();
+  else if (_wktUploadAction === 'build') startBuildProgram();
 }
 
 function toggleOtherLift(name){
@@ -6536,6 +6591,55 @@ function renderUploadScreen() {
   </div>`;
 }
 
+function renderWorkoutEmptyState() {
+  const ghostCards = [
+    { nameW: '58%', presW: '38%', sets: 5 },
+    { nameW: '44%', presW: '30%', sets: 3 },
+    { nameW: '52%', presW: '35%', sets: 4 },
+    { nameW: '37%', presW: '27%', sets: 5 },
+  ];
+  let cards = ghostCards.map(c => {
+    const sets = Array(c.sets).fill(0).map(() => `<div class="wkt-ghost-set"></div>`).join('');
+    return `<div class="wkt-ghost-card">
+      <div class="wkt-ghost-ex-name" style="width:${c.nameW}"></div>
+      <div class="wkt-ghost-ex-pres" style="width:${c.presW}"></div>
+      <div class="wkt-ghost-sets">${sets}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="wkt-empty">
+    <div class="wkt-ghost">
+      <div class="wkt-ghost-bar">
+        <div><div class="wkt-ghost-name"></div><div class="wkt-ghost-dates"></div></div>
+      </div>
+      <div class="wkt-ghost-pills">
+        <div class="wkt-ghost-pill hi">W1</div>
+        <div class="wkt-ghost-pill">W2</div>
+        <div class="wkt-ghost-pill">W3</div>
+        <div class="wkt-ghost-pill">W4</div>
+      </div>
+      <div class="wkt-ghost-tabs">
+        <div class="wkt-ghost-tab hi">MON</div>
+        <div class="wkt-ghost-tab">WED</div>
+        <div class="wkt-ghost-tab">FRI</div>
+      </div>
+      ${cards}
+    </div>
+    <div class="wkt-fade"></div>
+    <div class="wkt-cta">
+      <div class="wkt-cta-bolt"><svg viewBox="0 0 28 40" fill="var(--gold)" width="36" height="52" style="opacity:0.9"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
+      <div class="wkt-cta-title">No Program Loaded</div>
+      <div class="wkt-cta-desc">Upload a training block to start logging your sets.</div>
+      <div class="wkt-chip-row" id="wkt-chip-row">
+        <button class="wkt-chip" onclick="wktUploadSelectChip(this,'upload')">Upload File</button>
+        <button class="wkt-chip" onclick="wktUploadSelectChip(this,'demo')">Sample Program</button>
+        <button class="wkt-chip" onclick="wktUploadSelectChip(this,'build')">Build Your Own</button>
+      </div>
+      <button class="wkt-confirm" id="wkt-confirm" onclick="wktUploadConfirm()"></button>
+    </div>
+  </div>`;
+}
+
 function renderBlockBar(block) {
   if(state.editingBlockName){
     return `<div class="block-bar">
@@ -7496,7 +7600,7 @@ function renderWorkout(){
   const main=document.getElementById('main-content');
   document.getElementById('athlete-name').textContent=state.activeBlock?.athleteName||'';
 
-  if(!state.activeBlock){ main.innerHTML=renderUploadScreen(); return; }
+  if(!state.activeBlock){ main.innerHTML=renderWorkoutEmptyState(); return; }
 
   const block=state.activeBlock;
   // Clamp activeWeek to valid range (can go stale after week deletion or stale saveNav)
