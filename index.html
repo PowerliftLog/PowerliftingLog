@@ -122,6 +122,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* Hide scrollbar globally — content still scrollable, touch gestures unaffected */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
 /* ── THEME TOKENS ────────────────────────────────────────────────────────── */
 :root {
   --bg:            #000000;
@@ -537,6 +540,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .pres-row .prescription { padding: 0; flex: 1; min-width: 0; }
 .pres-row-controls { display: flex; align-items: center; gap: var(--sp-4); flex-shrink: 0; }
 .prescription.purple { color: var(--gold-data); }
+.pres-text-fallback { font-size: var(--fs-sm); color: var(--text-sub); font-style: italic; line-height: 1.4; }
 .sets-grid { padding: var(--sp-2) var(--sp-6) var(--sp-6); display: flex; flex-direction: column; gap: 0; }
 .set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px var(--sp-1); border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
@@ -2086,6 +2090,174 @@ canvas.chart-overlay { pointer-events: auto; }
 .install-banner-btn.dismiss { background: transparent; color: var(--text-dim); }
 @keyframes installSlideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
+/* ── MEET DAY TOOLKIT ───────────────────────────────────────────────────────── */
+.meet-screen { padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-6); }
+.meet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0 var(--sp-4); }
+.meet-header-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--text-primary); letter-spacing: 0.04em; text-transform: uppercase; }
+.meet-header-sub { font-size: var(--fs-xs); color: var(--text-sub); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
+.meet-exit-link { font-size: var(--fs-sm); color: var(--text-dimmer); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.meet-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: var(--sp-6); }
+.meet-card-header { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-bright); margin-bottom: var(--sp-5); display: flex; align-items: center; gap: var(--sp-4); }
+.meet-form-group { display: flex; flex-direction: column; gap: 4px; }
+.meet-form-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-sm); color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.08em; }
+.meet-form-input { background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-bright); font-family: 'Barlow', sans-serif; font-size: 16px; width: 100%; }
+.meet-form-input:focus { outline: none; border-color: rgba(var(--gold-rgb), 0.5); }
+.meet-form-input::placeholder { color: var(--text-dimmer); }
+.meet-form-row { display: flex; gap: 12px; }
+.meet-form-row .meet-form-group { flex: 1; }
+.meet-form-textarea { min-height: 60px; resize: vertical; font-size: var(--fs-md); }
+.meet-btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.15), rgba(var(--gold-rgb),0.08)); border: 1.5px solid rgba(var(--gold-rgb),0.5); border-radius: 14px; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s; }
+.meet-btn-primary:active { opacity: 0.75; }
+.meet-btn-secondary { width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; color: var(--text-bright); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s; }
+.meet-btn-secondary:active { opacity: 0.75; }
+.meet-mode-card { border-radius: 14px; padding: 14px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.15s, background 0.15s; }
+.meet-mode-card.active { background: rgba(var(--gold-rgb),0.06); border: 1.5px solid rgba(var(--gold-rgb),0.4); }
+.meet-mode-card.inactive { background: var(--surface-2); border: 1.5px solid var(--border); }
+.meet-mode-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); text-transform: uppercase; }
+.meet-mode-desc { font-size: var(--fs-sm); color: var(--text-sub); margin-top: 2px; }
+.meet-radio { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.meet-radio.active { border: 2px solid var(--gold); }
+.meet-radio.active::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); }
+.meet-radio.inactive { border: 2px solid var(--border); }
+.meet-toggle-group { display: flex; gap: 4px; flex-shrink: 0; }
+.meet-toggle-btn { padding: 9px 12px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-base); font-weight: 700; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface-3); color: var(--text-sub); transition: all 0.15s; }
+.meet-toggle-btn.active { background: rgba(var(--gold-rgb),0.06); border-color: rgba(var(--gold-rgb),0.5); color: var(--gold); }
+
+/* Meet day attempt plan */
+.meet-attempt-badge { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); flex-shrink: 0; }
+.meet-attempt-badge.opener { background: rgba(var(--gold-rgb),0.12); border: 1.5px solid rgba(var(--gold-rgb),0.5); color: var(--gold); }
+.meet-attempt-badge.regular { background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); color: var(--text-sub); }
+.meet-option-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; margin-bottom: 4px; cursor: pointer; transition: all 0.15s; }
+.meet-option-row.selected { background: rgba(var(--gold-rgb),0.06); border: 1.5px solid rgba(var(--gold-rgb),0.4); }
+.meet-option-row.unselected { background: var(--surface-2); border: 1px solid var(--border); }
+.meet-option-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); color: var(--text-sub); width: 24px; flex-shrink: 0; }
+.meet-option-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); }
+.meet-option-info { font-size: var(--fs-xs); color: var(--text-dimmer); margin-left: auto; }
+.meet-lift-tabs { display: flex; gap: 4px; }
+.meet-lift-tab { flex: 1; padding: 10px 0; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.04em; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+.meet-lift-tab.active { color: var(--gold); background: rgba(var(--gold-rgb),0.08); border: 1.5px solid rgba(var(--gold-rgb),0.4); }
+.meet-lift-tab.inactive { color: var(--text-dimmer); background: var(--surface-2); border: 1.5px solid var(--border); }
+.meet-miss-fallback { padding: 8px 12px; border-radius: 12px; background: rgba(226,44,44,0.03); border: 1px solid rgba(226,44,44,0.08); }
+
+/* Meet day warm-ups */
+.meet-warmup-set { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.meet-warmup-set:last-child { border-bottom: none; }
+.meet-warmup-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: all 0.15s; position: relative; }
+.meet-warmup-check::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 44px; min-height: 44px; }
+.meet-warmup-check.done { background: var(--green); border-color: var(--green); }
+.meet-warmup-check.done::after { content: '\2713'; color: #000; font-size: 14px; font-weight: 700; }
+.meet-warmup-info { flex: 1; }
+.meet-warmup-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-bright); }
+.meet-warmup-plates { font-size: var(--fs-xs); color: var(--text-dim); margin-top: 1px; }
+.meet-warmup-reps { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); color: var(--text-sub); text-align: right; }
+
+/* Meet day live mode */
+.meet-live-lift { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-3xl); color: var(--gold); letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+.meet-live-attempt-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-sm); letter-spacing: 0.08em; text-transform: uppercase; }
+.meet-live-weight { text-align: center; padding: 20px 0 8px; }
+.meet-live-weight-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 64px; color: var(--text-primary); line-height: 1; }
+.meet-live-weight-unit { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); color: var(--text-sub); font-weight: 600; margin-left: 4px; }
+.meet-live-weight-lbs { font-size: var(--fs-lg); color: var(--text-dim); margin-top: 4px; text-align: center; }
+.meet-live-commands { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; margin: 0 16px; }
+.meet-live-cmd { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.meet-live-cmd-arrow { color: var(--text-dimmer); font-size: var(--fs-xs); }
+.meet-result-buttons { display: flex; gap: 12px; padding: 0 16px; }
+.meet-result-btn { flex: 1; padding: 20px; border-radius: 16px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); letter-spacing: 0.06em; text-align: center; cursor: pointer; border: 2px solid; transition: opacity 0.15s; }
+.meet-result-btn:active { opacity: 0.75; }
+.meet-result-btn.made { background: rgba(var(--green-rgb),0.08); border-color: rgba(var(--green-rgb),0.4); color: var(--green); }
+.meet-result-btn.missed { background: rgba(226,44,44,0.08); border-color: rgba(226,44,44,0.4); color: var(--red); }
+.meet-running-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(var(--gold-rgb),0.04); border: 1px solid rgba(var(--gold-rgb),0.15); border-radius: 12px; margin: 0 16px; }
+.meet-running-total-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.06em; }
+.meet-running-total-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--gold); }
+
+/* 60-second timer bar */
+.meet-timer-bar { height: 4px; background: var(--surface-3); border-radius: 2px; margin: 0 16px; overflow: hidden; }
+.meet-timer-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 1s linear; }
+.meet-timer-fill.urgent { background: var(--red); }
+.meet-timer-text { text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); color: var(--text-dim); margin-top: 4px; }
+
+/* Effort rating / miss diagnosis cards */
+.meet-feedback-card { padding: 16px; border-radius: 14px; cursor: pointer; text-align: center; transition: all 0.15s; border: 1.5px solid var(--border); background: var(--surface-2); }
+.meet-feedback-card:active { opacity: 0.75; }
+.meet-feedback-card .meet-fb-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); text-transform: uppercase; }
+.meet-feedback-card .meet-fb-desc { font-size: var(--fs-sm); color: var(--text-sub); margin-top: 4px; }
+.meet-feedback-card.made-well { border-color: rgba(var(--green-rgb),0.3); background: rgba(var(--green-rgb),0.04); }
+.meet-feedback-card.made-well .meet-fb-title { color: var(--green); }
+.meet-feedback-card.made-expected .meet-fb-title { color: var(--gold); }
+.meet-feedback-card.made-expected { border-color: rgba(var(--gold-rgb),0.3); background: rgba(var(--gold-rgb),0.04); }
+.meet-feedback-card.made-heavy .meet-fb-title { color: var(--amber); }
+.meet-feedback-card.made-heavy { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.04); }
+.meet-feedback-card.miss-close .meet-fb-title { color: var(--amber); }
+.meet-feedback-card.miss-close { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.04); }
+.meet-feedback-card.miss-not-there .meet-fb-title { color: var(--red); }
+.meet-feedback-card.miss-not-there { border-color: rgba(226,44,44,0.3); background: rgba(226,44,44,0.04); }
+.meet-feedback-card.miss-technical .meet-fb-title { color: var(--text-mid); }
+
+/* Meet day results */
+.meet-results-lift { margin-bottom: 16px; }
+.meet-results-lift-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-bright); margin-bottom: 8px; }
+.meet-results-attempt { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.meet-results-attempt:last-child { border-bottom: none; }
+.meet-results-attempt-num { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); color: var(--text-dimmer); width: 20px; }
+.meet-results-attempt-weight { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); flex: 1; }
+.meet-results-attempt-weight.made { color: var(--green); }
+.meet-results-attempt-weight.missed { color: var(--red); }
+.meet-results-badge { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; }
+.meet-results-badge.made { color: var(--green); }
+.meet-results-badge.missed { color: var(--red); }
+.meet-final-total { text-align: center; padding: 20px 0 8px; }
+.meet-final-total-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 48px; color: var(--gold); }
+.meet-final-total-sub { font-size: var(--fs-md); color: var(--text-sub); margin-top: 4px; }
+.meet-final-scores { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
+.meet-score-pill { padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; text-align: center; }
+.meet-score-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.06em; }
+.meet-score-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--text-bright); margin-top: 2px; }
+
+/* Bomb-out state */
+.meet-bombout { text-align: center; padding: 24px; background: rgba(226,44,44,0.06); border: 2px solid rgba(226,44,44,0.3); border-radius: 16px; }
+.meet-bombout-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); color: var(--red); text-transform: uppercase; letter-spacing: 0.06em; }
+.meet-bombout-sub { font-size: var(--fs-md); color: var(--text-dim); margin-top: 8px; }
+
+/* Competition history on metrics */
+.meet-history-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer; margin-bottom: 8px; transition: opacity 0.15s; }
+.meet-history-card:active { opacity: 0.75; }
+.meet-history-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-bright); }
+.meet-history-date { font-size: var(--fs-xs); color: var(--text-dim); margin-top: 2px; }
+.meet-history-total { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--gold); }
+
+/* Confirmation dialog */
+.meet-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.meet-confirm-dialog { background: var(--surface-1); border: 1px solid var(--border); border-radius: 20px; padding: 24px; max-width: 340px; width: 100%; }
+.meet-confirm-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--text-primary); margin-bottom: 8px; }
+.meet-confirm-body { font-size: var(--fs-md); color: var(--text-dim); line-height: 1.5; margin-bottom: 20px; }
+.meet-confirm-actions { display: flex; gap: 8px; }
+.meet-confirm-actions button { flex: 1; padding: 12px; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); cursor: pointer; transition: opacity 0.15s; }
+.meet-confirm-actions button:active { opacity: 0.75; }
+.meet-confirm-cancel { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-mid); }
+.meet-confirm-ok { background: rgba(var(--gold-rgb),0.15); border: 1.5px solid rgba(var(--gold-rgb),0.5); color: var(--gold); }
+
+/* Toast notification */
+.app-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--surface-2); color: var(--text-bright); padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 9999; white-space: nowrap; animation: toast-in 0.2s ease; border: 1px solid var(--border); }
+@keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* Save & Exit button */
+.meet-save-exit { width: 100%; padding: 10px; background: none; border: none; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-base); letter-spacing: 0.03em; cursor: pointer; transition: opacity 0.15s; }
+.meet-save-exit:active { opacity: 0.6; }
+
+/* Upcoming meets cards */
+.meet-upcoming-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; }
+.meet-upcoming-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-bright); }
+.meet-upcoming-date { font-size: var(--fs-xs); color: var(--text-dim); margin-top: 2px; }
+.meet-upcoming-lifts { font-size: var(--fs-sm); color: var(--text-sub); margin-top: 6px; }
+.meet-upcoming-actions { display: flex; gap: 8px; margin-top: 10px; }
+.meet-upcoming-resume { flex: 1; padding: 10px; background: rgba(var(--gold-rgb),0.1); border: 1.5px solid rgba(var(--gold-rgb),0.4); border-radius: 10px; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-base); text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.15s; }
+.meet-upcoming-resume:active { opacity: 0.75; }
+.meet-upcoming-discard { padding: 10px 14px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-base); cursor: pointer; transition: opacity 0.15s; }
+.meet-upcoming-discard:active { opacity: 0.6; }
+
+/* Comp Total chip on home screen */
+.meet-comp-total-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(var(--gold-rgb),0.08); border: 1px solid rgba(var(--gold-rgb),0.2); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-sm); color: var(--gold); letter-spacing: 0.02em; }
+
 </style>
 </head>
 <body>
@@ -2384,6 +2556,13 @@ canvas.chart-overlay { pointer-events: auto; }
       </div>
       <div class="settings-toggle on" id="scores-toggle" role="switch" aria-checked="true" aria-label="DOTS / Wilks Scores toggle"></div>
     </button>
+    <button class="settings-row-btn" id="comp-mode-row" onclick="toggleCompetitionMode()">
+      <div class="settings-row-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        Competition Mode <span style="font-size:var(--fs-xs);color:var(--text-secondary);font-weight:400;margin-left:4px">(BETA TESTING)</span>
+      </div>
+      <div class="settings-toggle" id="comp-mode-toggle" role="switch" aria-checked="false" aria-label="Competition Mode toggle"></div>
+    </button>
     <button class="settings-row-btn" onclick="openRestTimerModal()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -2628,7 +2807,8 @@ function _idbMigrateFromLS() {
       'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
       'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
       'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides',
-      LAST_BACKUP_KEY, REP_TIP_KEY, 'liftlog_calcDisplayUnit', DRIVE_AUTHED_KEY
+      LAST_BACKUP_KEY, REP_TIP_KEY, 'liftlog_calcDisplayUnit', DRIVE_AUTHED_KEY,
+      'liftlog_meet_plans', 'liftlog_active_meet', 'liftlog_competition_mode'
     ];
     const tx = _idbDB.transaction(_IDB_STORE, 'readwrite');
     const store = tx.objectStore(_IDB_STORE);
@@ -2694,8 +2874,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.25.11';
-const APP_BUILD   = '3/23/26d';
+const APP_VERSION = 'v0.27.0';
+const APP_BUILD   = '3/25/26d';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2720,7 +2900,7 @@ async function _bootApp() {
   // 2. Initialize state — wrapped in try/catch so UI always boots
   try {
     const _savedBlocks = loadBlocks() || [];
-    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    state = { blocks:_savedBlocks, activeBlock:_savedBlocks[_savedBlocks.length-1]||null, activeWeek:0, activeDay:0, logs:loadLogs(), screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:loadCustomLifts(), trackedLifts:loadTrackedLifts(), editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } }, competitionMode:_loadCompetitionMode(), meetDayView:'setup', activeMeetPlan:null };
 
     // 3. Restore nav position from last session
     const nav = loadNav();
@@ -2752,7 +2932,7 @@ async function _bootApp() {
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
-    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+    if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } }, competitionMode:false, meetDayView:'setup', activeMeetPlan:null };
   }
 
   // 5. Stamp version strings from constants (single source of truth)
@@ -3718,6 +3898,8 @@ function renderMetrics(){
   }
 
   h+=`<button class="add-lift-btn" onclick="openAddLift()">Manage Tracked Lifts</button>`;
+  // Competition history section
+  h+=_renderCompetitionHistory();
   h+=`</div>`;
   // Clear stale chart state before DOM swap destroys old canvases
   for(const key in _chartCoords){ delete _chartCoords[key]; }
@@ -5567,6 +5749,7 @@ function getHomeBanners(block) {
       for (const ex of (day.exercises || [])) {
         const group = classifyLift(ex.name);
         if (!group || group === 'other') continue;
+        if (!isCompLift(ex.name)) continue;
         const pres = ex.prescription || '';
         const parsed = parseSimple(pres) || parseRangeSet(pres) || parseBarePres(pres);
         const numSets = parsed ? (parsed.sets || 1) : 4;
@@ -6220,6 +6403,9 @@ function _renderFreshHero(block, nwInfo) {
 // ── renderHome orchestrator ──────────────────────────────────────────────────
 
 function renderHome() {
+  // Competition mode or meet recap: render meet day screens instead of normal home
+  if (state.competitionMode || state.viewingMeetRecap) { renderMeetDay(); return; }
+
   const block = state.activeBlock;
   const content = document.getElementById('main-content');
 
@@ -6312,6 +6498,15 @@ function renderHome() {
   // E5/E6 program card
   const e5Html = renderE5Components(block, isBlockComplete);
 
+  // Comp Total chip (from completed meets)
+  let compTotalHtml = '';
+  if (!state.competitionMode) {
+    const compTotal = _getCompTotal();
+    if (compTotal) {
+      compTotalHtml = `<div style="margin-top:8px"><span class="meet-comp-total-chip">Comp Total: ${compTotal} kg (${Math.round(compTotal * KG_TO_LBS).toLocaleString()} lbs)</span></div>`;
+    }
+  }
+
   // Update banner
   const updateBannerHtml = document.getElementById('update-banner') ? '<div id="update-banner-slot"></div>' : '';
 
@@ -6322,6 +6517,7 @@ function renderHome() {
     ${updateBannerHtml}
     ${heroHtml}
     ${e5Html}
+    ${compTotalHtml}
   </div>`;
 
   const updateSlot = document.getElementById('update-banner-slot');
@@ -6515,6 +6711,7 @@ function render(){
     const el=document.getElementById('nav-'+s);
     if(el) el.classList.toggle('active', state.screen===s);
   });
+  _updateNavHomeIcon();
   const screenNames={home:'Home',workout:'Workout',metrics:'Metrics',calc:'Calculator'};
   _announce((screenNames[state.screen]||state.screen)+' screen');
   if(state.screen==='home'){ renderHome(); return; }
@@ -7173,17 +7370,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     }
     h += `</div>`;
   } else if (pres) {
-    const sk = key+`||s0`; const sl = state.logs[sk]||{};
-    h += `<div class="pres-row"><div class="prescription purple">${pres}</div>${_inlineControls}</div>`;
     h += _coachBannerHtml;
-    h += `<div class="sets-grid">`;
-    h += _setRowHeaderHtml(inputMode, false, false);
-    h += `${_setRowOpen(sk)}
-        <div class="set-presc-col">${_setNumHtml(sk, 0)}<div class="set-prescribed">open</div></div>
-        ${_exSetInputsHtml(sk, sl, getDisplayUnit(), 0, undefined, ex.name, inputMode, '')}
-        <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-      </div>${_exPrevHintHtml(0, prevPerf)}`;
-    h += `</div>`;
+    h += `<div class="pres-row"><span class="pres-text-fallback">${escH(pres.trim())}</span>${_inlineControls}</div>`;
   }
 
   if (prevPerf) {
@@ -8351,16 +8539,6 @@ function _shouldFireRestTimer(setKey) {
   const day = week.days.find(d => d.name === dayName);
   if (!day) return true;
   const ex = day.exercises.find(e => e.name === exName);
-  // Skip rest timer if this set completes the exercise (nothing left to rest for)
-  if (ex) {
-    const _p=ex.prescription; const _ss=_p?parseSets(_p):[]; if(!_ss.length&&_p){const _wu=parseWarmupSets(_p);if(_wu.length)_ss.push(..._wu);}
-    const _si2=parseSimple(_p); const _rn=(!_ss.length&&!_si2)?parseRangeSet(_p):null;
-    const _ssr=ex.supersetGroup?.rounds||0; const _br=(!_ss.length&&!_si2&&!_rn)?parseBarePres(_p):null;
-    const _total=_ss.length||(_si2?.sets||0)||(_rn?.sets||0)||(_br?(_ssr||_br.sets):0)||_ssr||(_p?1:0)||1;
-    const _extra=state.extraSets[lk(blockId,weekLabel,dayName,exName)]||0;
-    let _allDone=true; for(let i=0;i<_total+_extra;i++){if(!(state.logs[lk(blockId,weekLabel,dayName,exName)+`||s${i}`]||{}).done){_allDone=false;break;}}
-    if(_allDone) return false;
-  }
   if (!ex || !ex.supersetGroup) return true; // Not in a circuit — fire normally
 
   const groupLabel = ex.supersetGroup.label;
@@ -8576,11 +8754,22 @@ function setActualReps(key,v){
       setTimeout(() => _showInlinePR(key), 100);
     }
   }
+  // If weight is already entered, re-check the set on reps edit
+  if (state.logs[key].actual && state.logs[key].actual.trim() !== '') {
+    state.logs[key].done = true;
+    updateSetCheckmark(key, true);
+  }
   autoCompleteExercise(key);
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
   saveLogs();
+  // If weight is already entered, re-check the set on RPE edit
+  const sl2 = state.logs[key] || {};
+  if (sl2.actual && sl2.actual.trim() !== '') {
+    state.logs[key].done = true;
+    updateSetCheckmark(key, true);
+  }
   // RPE doesn't trigger checkmark, but might trigger exercise complete
   autoCompleteExercise(key);
 }
@@ -14969,10 +15158,13 @@ function _builderSave() {
 // ── END ONBOARDING ────────────────────────────────────────────────────────────
 
 // Boot the app — opens IndexedDB, migrates data, initializes state, renders
-_bootApp().catch(e => {
+_bootApp().then(() => {
+  // Restore competition mode state after boot
+  if (typeof _bootCompetitionMode === 'function') _bootCompetitionMode();
+}).catch(e => {
   console.error('[Boot] Unhandled boot error:', e);
   // Last resort — if _bootApp somehow fails entirely, init empty state and render
-  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } } };
+  if (!state) state = { blocks:[], activeBlock:null, activeWeek:0, activeDay:0, logs:{}, screen:'home', metricsDrillBlock:null, metricsActiveVar:{}, metricsOtherExpanded:{}, metricsRowsExpanded:{}, customLifts:[], trackedLifts:{}, editingExKey:null, editingBlockName:false, expandedEx:new Set(), extraSets:{}, workoutActive:null, calc:{ mode:'target', inputUnit:'lbs', inputVal:'', barId:'standard', collarsOn:false, manualCounts:{ 25:0, 20:0, 15:0, 10:0, 5:0, 2.5:0, 1.25:0, 0.5:0, 0.25:0 }, manualCountsLbs:{ 45:0, 35:0, 25:0, 10:0, 5:0, 2.5:0 } }, competitionMode:false, meetDayView:'setup', activeMeetPlan:null };
   checkOnboarding();
 });
 
@@ -17508,6 +17700,1819 @@ if (document.readyState === 'loading') {
 } else {
   _initPlateLongPress();
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MEET DAY TOOLKIT
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Competition mode storage ────────────────────────────────────────────────
+function _loadCompetitionMode() {
+  const v = (_idbReady && _idbCache['liftlog_competition_mode']) !== undefined
+    ? _idbCache['liftlog_competition_mode']
+    : JSON.parse(localStorage.getItem('liftlog_competition_mode') || 'false');
+  return !!v;
+}
+
+function _saveCompetitionMode(on) {
+  _idbPut('liftlog_competition_mode', on);
+  try { localStorage.setItem('liftlog_competition_mode', JSON.stringify(on)); } catch(e) { console.error(e); }
+}
+
+function _loadMeetPlans() {
+  if (_idbReady && _idbCache['liftlog_meet_plans'] !== undefined) {
+    return _idbCache['liftlog_meet_plans'];
+  }
+  return JSON.parse(localStorage.getItem('liftlog_meet_plans') || '[]');
+}
+
+function _saveMeetPlans(plans) {
+  _idbPut('liftlog_meet_plans', plans);
+  try { localStorage.setItem('liftlog_meet_plans', JSON.stringify(plans)); } catch(e) { console.error(e); showSaveError(); }
+}
+
+function _loadActiveMeetId() {
+  return (_idbReady && _idbCache['liftlog_active_meet']) || localStorage.getItem('liftlog_active_meet') || null;
+}
+
+function _saveActiveMeetId(id) {
+  _idbPut('liftlog_active_meet', id);
+  try { localStorage.setItem('liftlog_active_meet', id || ''); } catch(e) { console.error(e); }
+}
+
+function _getActiveMeetPlan() {
+  const id = _loadActiveMeetId();
+  if (!id) return null;
+  const plans = _loadMeetPlans();
+  return plans.find(p => p.id === id) || null;
+}
+
+function _saveCurrentMeetPlan() {
+  if (!state.activeMeetPlan) return;
+  const plans = _loadMeetPlans();
+  const idx = plans.findIndex(p => p.id === state.activeMeetPlan.id);
+  if (idx >= 0) plans[idx] = state.activeMeetPlan;
+  else plans.push(state.activeMeetPlan);
+  _saveMeetPlans(plans);
+  _saveActiveMeetId(state.activeMeetPlan.id);
+}
+
+// ── MeetPlan model ─────────────────────────────────────────────────────────
+function _createMeetPlan() {
+  return {
+    id: 'meet_' + Date.now(),
+    meetName: '',
+    meetDate: new Date().toISOString().slice(0,10),
+    weightClass: '',
+    bodyweight: null,
+    bodyweightUnit: 'kg',
+    mode: 'auto',
+    barWeights: { squat: 20, bench: 20, deadlift: 20 },
+    collarWeight: 5,
+    notes: '',
+    lifts: {
+      squat: _createLiftPlan(),
+      bench: _createLiftPlan(),
+      deadlift: _createLiftPlan()
+    },
+    warmups: { squat: null, bench: null, deadlift: null },
+    status: 'planning',
+    createdAt: Date.now(),
+    completedAt: null
+  };
+}
+
+function _createLiftPlan() {
+  return {
+    e1rm: null,
+    e1rmKg: null,
+    e1rmSource: null,
+    e1rmMethod: null,
+    recentPerformance: null,
+    opener: null,
+    planned2nd: null,
+    planned3rd: null,
+    results: []
+  };
+}
+
+// ── Attempt calculation engine ──────────────────────────────────────────────
+function _roundToNearest2_5(kg, direction) {
+  if (direction === 'down') return Math.floor(kg / 2.5) * 2.5;
+  if (direction === 'up') return Math.ceil(kg / 2.5) * 2.5;
+  return Math.round(kg / 2.5) * 2.5;
+}
+
+function _calcOpener(e1rmKg) {
+  if (!e1rmKg || e1rmKg <= 0) return null;
+  return _roundToNearest2_5(e1rmKg * 0.90, 'down');
+}
+
+function _calc2ndAttempts(e1rmKg) {
+  if (!e1rmKg || e1rmKg <= 0) return null;
+  return {
+    a: _roundToNearest2_5(e1rmKg * 0.95, 'down'),
+    b: _roundToNearest2_5(e1rmKg * 0.965, 'nearest'),
+    c: _roundToNearest2_5(e1rmKg * 0.98, 'up')
+  };
+}
+
+function _calc3rdAttempts(e1rmKg, chosen2nd) {
+  if (!e1rmKg || e1rmKg <= 0) return null;
+  return {
+    a: chosen2nd + 2.5,
+    b: _roundToNearest2_5(e1rmKg * 1.00, 'nearest'),
+    c: _roundToNearest2_5(e1rmKg * 1.03, 'up')
+  };
+}
+
+function _calcAdaptive2nd(e1rmKg, openerWeight, feedback) {
+  if (!e1rmKg) return { a: openerWeight, b: openerWeight, c: openerWeight };
+  if (feedback === 'moved_well') {
+    return {
+      a: _roundToNearest2_5(e1rmKg * 0.96, 'nearest'),
+      b: _roundToNearest2_5(e1rmKg * 0.975, 'nearest'),
+      c: _roundToNearest2_5(e1rmKg * 0.99, 'up')
+    };
+  } else if (feedback === 'heavy') {
+    return {
+      a: _roundToNearest2_5(e1rmKg * 0.94, 'down'),
+      b: _roundToNearest2_5(e1rmKg * 0.95, 'nearest'),
+      c: _roundToNearest2_5(e1rmKg * 0.96, 'nearest')
+    };
+  }
+  // 'expected' or default
+  return _calc2ndAttempts(e1rmKg);
+}
+
+function _calcAdaptive3rd(e1rmKg, chosen2nd, feedback) {
+  if (!e1rmKg) return { a: chosen2nd, b: chosen2nd, c: chosen2nd };
+  if (feedback === 'moved_well') {
+    return {
+      a: _roundToNearest2_5(e1rmKg * 1.00, 'nearest'),
+      b: _roundToNearest2_5(e1rmKg * 1.02, 'up'),
+      c: _roundToNearest2_5(e1rmKg * 1.03, 'up')
+    };
+  } else if (feedback === 'heavy') {
+    return {
+      a: chosen2nd + 2.5,
+      b: _roundToNearest2_5(e1rmKg * 0.99, 'nearest'),
+      c: _roundToNearest2_5(e1rmKg * 1.00, 'nearest')
+    };
+  }
+  return _calc3rdAttempts(e1rmKg, chosen2nd);
+}
+
+function _calcMissOptions(prevWeight) {
+  // After a miss: repeat same weight or small bump
+  return {
+    a: prevWeight,
+    b: prevWeight + 2.5,
+    c: prevWeight + 5
+  };
+}
+
+function _kgToLbs(kg) { return Math.round(kg * KG_TO_LBS * 10) / 10; }
+function _lbsToKgMeet(lbs) { return lbs / KG_TO_LBS; }
+
+// ── Warm-up calculation ────────────────────────────────────────────────────
+function _calcWarmupSets(openerKg, liftType, barKg) {
+  if (!openerKg || openerKg <= 0) return [];
+  const collarKg = 5;
+  const percentages = liftType === 'bench'
+    ? [{ pct: 0, reps: 8 }, { pct: 0.50, reps: 5 }, { pct: 0.70, reps: 3 }, { pct: 0.85, reps: 1 }, { pct: 0.92, reps: 1 }]
+    : liftType === 'deadlift'
+      ? [{ pct: 0, reps: 5 }, { pct: 0.40, reps: 5 }, { pct: 0.60, reps: 3 }, { pct: 0.75, reps: 2 }, { pct: 0.85, reps: 1 }, { pct: 0.92, reps: 1 }]
+      : [{ pct: 0, reps: 8 }, { pct: 0.40, reps: 5 }, { pct: 0.60, reps: 3 }, { pct: 0.75, reps: 2 }, { pct: 0.85, reps: 1 }, { pct: 0.92, reps: 1 }];
+
+  return percentages.map(s => {
+    let weightKg;
+    if (s.pct === 0) {
+      weightKg = barKg;
+    } else {
+      const raw = openerKg * s.pct;
+      // Round to nearest loadable weight (2.5 kg increments considering bar + collars)
+      const loadable = barKg + collarKg + Math.round(((raw - barKg - collarKg) / 2) / 2.5) * 2.5 * 2;
+      weightKg = Math.max(barKg, loadable);
+    }
+    const plates = _meetPlatesPerSide(weightKg, barKg, collarKg);
+    return {
+      weight: weightKg,
+      weightLbs: _kgToLbs(weightKg),
+      reps: s.reps,
+      plates: plates,
+      platesStr: s.pct === 0 ? 'Bar only' : plates.map(p => p + ' kg').join(' + ') + ' per side',
+      completed: false
+    };
+  });
+}
+
+function _meetPlatesPerSide(totalKg, barKg, collarKg) {
+  let remaining = (totalKg - barKg - collarKg) / 2;
+  if (remaining <= 0) return [];
+  const available = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5];
+  const result = [];
+  for (const plate of available) {
+    while (remaining >= plate - 0.01) {
+      result.push(plate);
+      remaining -= plate;
+    }
+  }
+  return result;
+}
+
+// ── Competition mode toggle / exit ─────────────────────────────────────────
+function toggleCompetitionMode() {
+  if (state.competitionMode) {
+    // Already on — turn off via settings
+    exitCompetitionMode();
+    return;
+  }
+  // Show confirmation dialog
+  _showMeetConfirmDialog(
+    'Activate Competition Mode?',
+    'This replaces your home screen with meet day tools. You can exit anytime from the setup or results screen.',
+    'Activate',
+    function() {
+      state.competitionMode = true;
+      _saveCompetitionMode(true);
+      // Load or create meet plan
+      const existing = _getActiveMeetPlan();
+      if (existing && existing.status !== 'completed') {
+        state.activeMeetPlan = existing;
+      } else {
+        state.activeMeetPlan = _createMeetPlan();
+        // Pre-populate bodyweight from athlete profile
+        const athlete = loadAthlete();
+        if (athlete) {
+          if (athlete.bw) {
+            const bwUnit = athlete.bwUnit || 'lbs';
+            state.activeMeetPlan.bodyweight = athlete.bw;
+            state.activeMeetPlan.bodyweightUnit = bwUnit;
+          }
+        }
+        _saveCurrentMeetPlan();
+      }
+      state.meetDayView = 'setup';
+      // Update toggle
+      const t = document.getElementById('comp-mode-toggle');
+      if (t) { t.classList.add('on'); t.setAttribute('aria-checked', 'true'); }
+      // Navigate to home (which now shows meet day)
+      setScreen('home');
+    }
+  );
+}
+
+function exitCompetitionMode() {
+  state.competitionMode = false;
+  _saveCompetitionMode(false);
+  state.meetDayView = 'setup';
+  // Update toggle in settings
+  const t = document.getElementById('comp-mode-toggle');
+  if (t) { t.classList.remove('on'); t.setAttribute('aria-checked', 'false'); }
+  setScreen('home');
+}
+
+function _showToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'app-toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function _meetSaveAndExit() {
+  if (state.activeMeetPlan) {
+    state.activeMeetPlan.status = 'planning';
+    _saveCurrentMeetPlan();
+  }
+  exitCompetitionMode();
+  _showToast('Plan saved \u2014 find it on the Metrics tab');
+}
+
+function _showMeetSaveOrDiscardDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'meet-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="meet-confirm-dialog">
+      <div class="meet-confirm-title">Save this plan?</div>
+      <div class="meet-confirm-body">You have meet data entered. Save it to resume later, or discard and exit.</div>
+      <div class="meet-confirm-actions">
+        <button class="meet-confirm-cancel" id="meet-sd-discard">Discard</button>
+        <button class="meet-confirm-ok" id="meet-sd-save">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#meet-sd-discard').onclick = () => { overlay.remove(); exitCompetitionMode(); };
+  overlay.querySelector('#meet-sd-save').onclick = () => { overlay.remove(); _meetSaveAndExit(); };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+function _meetExitOrSave() {
+  const plan = state.activeMeetPlan;
+  const hasData = plan && (plan.lifts.squat.e1rmKg || plan.lifts.bench.e1rmKg || plan.meetName);
+  if (hasData) {
+    _showMeetSaveOrDiscardDialog();
+  } else {
+    exitCompetitionMode();
+  }
+}
+
+function _meetDiscardPlan(planId) {
+  const plans = _loadMeetPlans().filter(p => p.id !== planId);
+  _saveMeetPlans(plans);
+  renderMetrics();
+}
+
+function _meetResumePlan(planId) {
+  const plans = _loadMeetPlans();
+  const plan = plans.find(p => p.id === planId);
+  if (!plan) return;
+
+  state.activeMeetPlan = plan;
+  _saveActiveMeetId(planId);
+
+  state.competitionMode = true;
+  _saveCompetitionMode(true);
+  _updateNavHomeIcon();
+
+  const hasOpeners = plan.lifts.squat.opener || plan.lifts.bench.opener || plan.lifts.deadlift.opener;
+  const hasE1RMs = plan.lifts.squat.e1rmKg || plan.lifts.bench.e1rmKg || plan.lifts.deadlift.e1rmKg;
+
+  if (hasOpeners) {
+    state.meetDayView = 'warmup';
+    _meetGenerateWarmups();
+  } else if (hasE1RMs) {
+    state.meetDayView = plan.mode === 'auto' ? 'plan-auto' : 'plan-manual';
+    _meetPlanLift = 'squat';
+  } else {
+    state.meetDayView = 'setup';
+  }
+
+  setScreen('home');
+}
+
+function _showMeetConfirmDialog(title, body, okText, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'meet-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="meet-confirm-dialog">
+      <div class="meet-confirm-title">${title}</div>
+      <div class="meet-confirm-body">${body}</div>
+      <div class="meet-confirm-actions">
+        <button class="meet-confirm-cancel" id="meet-confirm-cancel">Cancel</button>
+        <button class="meet-confirm-ok" id="meet-confirm-ok">${okText}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#meet-confirm-cancel').onclick = () => overlay.remove();
+  overlay.querySelector('#meet-confirm-ok').onclick = () => { overlay.remove(); onConfirm(); };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ── Nav icon swap ──────────────────────────────────────────────────────────
+const _NAV_HOME_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>';
+const _NAV_TROPHY_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6V2h12v2h1.5a2.5 2.5 0 0 1 0 5H18a6 6 0 0 1-5 5.91V17h3v2h2v2H6v-2h2v-2h3v-2.09A6 6 0 0 1 6 9zm0-3H4.5a.5.5 0 0 0 0 1H6V6zm12 1h1.5a.5.5 0 0 0 0-1H18v1zM8 4v5a4 4 0 0 0 8 0V4H8z"/></svg>';
+
+function _updateNavHomeIcon() {
+  const navHome = document.getElementById('nav-home');
+  if (!navHome) return;
+  const iconSpan = navHome.querySelector('.nav-icon');
+  if (!iconSpan) return;
+  if (state.competitionMode) {
+    iconSpan.innerHTML = _NAV_TROPHY_SVG;
+    navHome.lastChild.textContent = 'Meet';
+  } else {
+    iconSpan.innerHTML = _NAV_HOME_SVG;
+    navHome.lastChild.textContent = 'Home';
+  }
+}
+
+// ── Boot: restore competition mode toggle state ─────────────────────────────
+function _bootCompetitionMode() {
+  if (state.competitionMode) {
+    const t = document.getElementById('comp-mode-toggle');
+    if (t) { t.classList.add('on'); t.setAttribute('aria-checked', 'true'); }
+    // Restore active meet plan
+    const plan = _getActiveMeetPlan();
+    if (plan && plan.status !== 'completed') {
+      state.activeMeetPlan = plan;
+      // Restore the meet day view based on plan status
+      if (plan.status === 'active') {
+        state.meetDayView = 'live';
+      }
+    } else {
+      // No active plan — create fresh
+      state.activeMeetPlan = _createMeetPlan();
+    }
+  }
+}
+
+// ── Meet day screen router ─────────────────────────────────────────────────
+function renderMeetDay() {
+  const content = document.getElementById('main-content');
+  if (!content) return;
+  switch (state.meetDayView) {
+    case 'setup': renderMeetSetup(content); break;
+    case 'e1rm-input': renderMeetE1RMInput(content); break;
+    case 'plan-auto': renderMeetPlanAuto(content); break;
+    case 'plan-manual': renderMeetPlanManual(content); break;
+    case 'warmup': renderMeetWarmup(content); break;
+    case 'live': renderMeetLive(content); break;
+    case 'effort-rating': renderMeetEffortRating(content); break;
+    case 'miss-diagnosis': renderMeetMissDiagnosis(content); break;
+    case 'attempt-select': renderMeetAttemptSelect(content); break;
+    case 'results': renderMeetResults(content); break;
+    default: renderMeetSetup(content);
+  }
+}
+
+// ── Meet Setup Screen (Screen 1) ───────────────────────────────────────────
+function renderMeetSetup(content) {
+  const plan = state.activeMeetPlan || _createMeetPlan();
+  state.activeMeetPlan = plan;
+
+  const athlete = loadAthlete();
+  const bwVal = plan.bodyweight || '';
+  const bwUnit = plan.bodyweightUnit || 'kg';
+  const sqBarKg = plan.barWeights.squat;
+
+  content.innerHTML = `<div class="meet-screen">
+    <div class="meet-header">
+      <div>
+        <div class="meet-header-title">New Meet Plan</div>
+      </div>
+      <span class="meet-exit-link" onclick="_meetExitOrSave()">Exit Competition Mode</span>
+    </div>
+
+    <div class="meet-form-group">
+      <div class="meet-form-label">Meet Name</div>
+      <input class="meet-form-input" id="meet-name" type="text" placeholder="e.g. USAPL State Meet" value="${plan.meetName}" oninput="state.activeMeetPlan.meetName=this.value;_saveCurrentMeetPlan()">
+    </div>
+
+    <div class="meet-form-row">
+      <div class="meet-form-group">
+        <div class="meet-form-label">Date</div>
+        <input class="meet-form-input" id="meet-date" type="date" value="${plan.meetDate}" onchange="state.activeMeetPlan.meetDate=this.value;_saveCurrentMeetPlan()">
+      </div>
+      <div class="meet-form-group">
+        <div class="meet-form-label">Weight Class</div>
+        <input class="meet-form-input" id="meet-wc" type="text" placeholder="e.g. 93 kg" value="${plan.weightClass}" oninput="state.activeMeetPlan.weightClass=this.value;_saveCurrentMeetPlan()">
+      </div>
+    </div>
+
+    <div class="meet-form-group">
+      <div class="meet-form-label">Bodyweight</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="meet-form-input" id="meet-bw" type="number" inputmode="decimal" step="0.1" placeholder="0" value="${bwVal}" oninput="_meetUpdateBW(this.value)" style="flex:1">
+        <div class="meet-toggle-group">
+          <button class="meet-toggle-btn ${bwUnit==='kg'?'active':''}" onclick="_meetSetBWUnit('kg')">KG</button>
+          <button class="meet-toggle-btn ${bwUnit==='lbs'?'active':''}" onclick="_meetSetBWUnit('lbs')">LBS</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="meet-form-group">
+      <div class="meet-form-label">Squat Bar</div>
+      <div class="meet-toggle-group" style="margin-top:6px">
+        <button class="meet-toggle-btn ${sqBarKg===20?'active':''}" onclick="_meetSetSquatBar(20)">20 KG</button>
+        <button class="meet-toggle-btn ${sqBarKg===25?'active':''}" onclick="_meetSetSquatBar(25)">25 KG</button>
+      </div>
+    </div>
+
+    <div class="meet-form-group">
+      <div class="meet-form-label">Meet Notes</div>
+      <textarea class="meet-form-input meet-form-textarea" id="meet-notes" placeholder="Rack heights, equipment notes, reminders..." oninput="state.activeMeetPlan.notes=this.value;_saveCurrentMeetPlan()">${plan.notes || ''}</textarea>
+    </div>
+
+    <div class="meet-form-group">
+      <div class="meet-form-label">Planning Mode</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="meet-mode-card ${plan.mode==='auto'?'active':'inactive'}" onclick="_meetSetMode('auto')">
+          <div>
+            <div class="meet-mode-title" style="color:${plan.mode==='auto'?'var(--gold)':'var(--text-bright)'}">Auto</div>
+            <div class="meet-mode-desc">App builds your attempt plan from training data or entered maxes.</div>
+          </div>
+          <div class="meet-radio ${plan.mode==='auto'?'active':'inactive'}"></div>
+        </div>
+        <div class="meet-mode-card ${plan.mode==='manual'?'active':'inactive'}" onclick="_meetSetMode('manual')">
+          <div>
+            <div class="meet-mode-title" style="color:${plan.mode==='manual'?'var(--gold)':'var(--text-bright)'}">Manual</div>
+            <div class="meet-mode-desc">You pick every number. Subtle suggestions if you want them.</div>
+          </div>
+          <div class="meet-radio ${plan.mode==='manual'?'active':'inactive'}"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;padding-top:var(--sp-6)">
+      <button class="meet-btn-primary" onclick="_meetContinueFromSetup()">CONTINUE \u2192</button>
+    </div>
+  </div>`;
+}
+
+function _meetUpdateBW(val) {
+  const n = parseFloat(val);
+  state.activeMeetPlan.bodyweight = isNaN(n) ? null : n;
+  _saveCurrentMeetPlan();
+}
+
+function _meetSetBWUnit(unit) {
+  if (state.activeMeetPlan.bodyweightUnit === unit) return;
+  // Convert existing value
+  const bw = state.activeMeetPlan.bodyweight;
+  if (bw) {
+    state.activeMeetPlan.bodyweight = unit === 'kg'
+      ? Math.round(bw / KG_TO_LBS * 10) / 10
+      : Math.round(bw * KG_TO_LBS * 10) / 10;
+  }
+  state.activeMeetPlan.bodyweightUnit = unit;
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetSetSquatBar(kg) {
+  state.activeMeetPlan.barWeights.squat = kg;
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetSetMode(mode) {
+  state.activeMeetPlan.mode = mode;
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetContinueFromSetup() {
+  state.meetDayView = 'e1rm-input';
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+// ── Get most recent e1RM per comp lift group (for meet day pre-population) ──
+function _getMeetE1RMs() {
+  const result = { squat: null, bench: null, deadlift: null };
+  const _activeBlockIds = new Set(state.blocks.map(b => b.id));
+  // Track most recent timestamp per group
+  const latest = { squat: 0, bench: 0, deadlift: 0 };
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (!val.done || !val.actual) continue;
+    const pk = _parseLogKey(key);
+    if (!pk) continue;
+    if (!_activeBlockIds.has(pk.blockId)) continue;
+    const exName = canonicalizeLift(pk.exName);
+    if (!isCompLift(exName)) continue;
+    const group = classifyLift(exName);
+    if (!group || group === 'other') continue;
+    let weight = parseFloat(val.actual);
+    if (!weight || isNaN(weight) || weight <= 0) continue;
+    // Convert to kg
+    const unit = getEntryUnit(val);
+    const weightKg = unit === 'lbs' ? weight / KG_TO_LBS : weight;
+    const reps = val.actualReps ? parseInt(val.actualReps) : 1;
+    const rpe = val.rpe ? parseFloat(val.rpe) : null;
+    const e1rmResult = calc1rm(weightKg, reps, rpe);
+    if (!e1rmResult) continue;
+    const ts = val.ts || 0;
+    if (ts >= latest[group]) {
+      latest[group] = ts;
+      result[group] = Math.round(e1rmResult.value * 10) / 10;
+    }
+  }
+  return result;
+}
+
+// ── E1RM Input Screen (Screen 1B) ──────────────────────────────────────────
+function renderMeetE1RMInput(content) {
+  const plan = state.activeMeetPlan;
+  const trainingE1RMs = _getMeetE1RMs();
+  const lifts = ['squat', 'bench', 'deadlift'];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+
+  // Pre-populate from training data if no manual entry yet
+  lifts.forEach(lift => {
+    const lp = plan.lifts[lift];
+    if (!lp.e1rmKg && trainingE1RMs[lift]) {
+      lp.e1rmKg = trainingE1RMs[lift];
+      lp.e1rmSource = 'training';
+      lp.opener = _calcOpener(lp.e1rmKg);
+    }
+  });
+
+  const hasTrainingData = lifts.some(l => trainingE1RMs[l]);
+  const infoBanner = hasTrainingData
+    ? '<div style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;margin-bottom:8px;padding:6px 12px;background:rgba(var(--gold-rgb),0.04);border:1px solid rgba(var(--gold-rgb),0.1);border-radius:10px">Pulled from your training data. Tap any number to adjust.</div>'
+    : '<div style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;margin-bottom:8px;padding:6px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">Enter your estimated max or a recent lift for each movement.</div>';
+
+  let cardsHtml = '';
+  lifts.forEach(lift => {
+    const lp = plan.lifts[lift];
+    const e1rmVal = lp.e1rmKg || '';
+    const openerVal = lp.opener || '';
+    const sourceTag = lp.e1rmSource === 'training' ? 'from training data' : (lp.e1rmSource === 'calculated' ? 'calculated' : 'manual entry');
+    const e1rmLbs = e1rmVal ? Math.round(e1rmVal * KG_TO_LBS) : '';
+    const openerLbs = openerVal ? Math.round(openerVal * KG_TO_LBS) : '';
+    const openerPct = (e1rmVal && openerVal) ? Math.round(openerVal / e1rmVal * 100) : '';
+
+    // Recent performance inputs for auto mode e1RM calculation
+    const rp = lp.recentPerformance;
+    const rpWeight = rp ? rp.weight : '';
+    const rpReps = rp ? rp.reps : '';
+    const rpUnit = rp ? rp.unit : 'kg';
+
+    cardsHtml += `
+    <div class="meet-card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xl);letter-spacing:0.04em">${liftLabels[lift]}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-dimmer)">${sourceTag}</div>
+      </div>
+
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-sub);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Recent lift (optional)</div>
+      <div class="meet-form-row" style="margin-bottom:10px">
+        <div class="meet-form-group" style="flex:2">
+          <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Weight" value="${rpWeight}" oninput="_meetUpdateRP('${lift}','weight',this.value)" style="font-size:16px">
+        </div>
+        <div class="meet-form-group" style="flex:1">
+          <input class="meet-form-input" type="number" inputmode="numeric" placeholder="Reps" value="${rpReps}" oninput="_meetUpdateRP('${lift}','reps',this.value)" style="font-size:16px">
+        </div>
+        <div class="meet-toggle-group" style="align-self:flex-end">
+          <button class="meet-toggle-btn ${rpUnit==='kg'?'active':''}" onclick="_meetSetRPUnit('${lift}','kg')" style="padding:9px 8px;font-size:var(--fs-xs)">KG</button>
+          <button class="meet-toggle-btn ${rpUnit==='lbs'?'active':''}" onclick="_meetSetRPUnit('${lift}','lbs')" style="padding:9px 8px;font-size:var(--fs-xs)">LBS</button>
+        </div>
+      </div>
+
+      <div class="meet-form-row">
+        <div class="meet-form-group">
+          <div class="meet-form-label">Estimated Max (kg)</div>
+          <input class="meet-form-input" id="meet-e1rm-${lift}" type="number" inputmode="decimal" min="1" max="700" placeholder="\u2014" value="${e1rmVal}" oninput="_meetUpdateE1RM('${lift}',this.value)" style="font-size:var(--fs-xl);font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--gold);text-align:center">
+          <div id="meet-e1rm-lbs-${lift}" style="font-size:var(--fs-xs);color:var(--text-dim);text-align:center;margin-top:2px">${e1rmVal ? e1rmLbs + ' lbs' : ''}</div>
+        </div>
+        <div class="meet-form-group">
+          <div class="meet-form-label">Opener (90%)</div>
+          <input class="meet-form-input" id="meet-opener-${lift}" type="number" inputmode="decimal" min="1" max="700" placeholder="\u2014" value="${openerVal}" oninput="_meetUpdateOpener('${lift}',this.value)" style="font-size:var(--fs-xl);font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--text-bright);text-align:center">
+          <div id="meet-opener-lbs-${lift}" style="font-size:var(--fs-xs);color:var(--text-dim);text-align:center;margin-top:2px">${openerVal ? openerLbs + ' lbs' + (openerPct ? ' \u00B7 ' + openerPct + '%' : '') : ''}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  content.innerHTML = `<div class="meet-screen">
+    <div class="meet-header">
+      <span class="meet-exit-link" onclick="state.meetDayView='setup';renderMeetDay();window.scrollTo(0,0)">\u2190 Setup</span>
+      <div style="text-align:center">
+        <div class="meet-header-title">Your Maxes</div>
+        <div class="meet-header-sub">${plan.meetName || 'Meet Day'}${plan.meetDate ? ' \u00B7 ' + plan.meetDate : ''}</div>
+      </div>
+      <span style="width:40px"></span>
+    </div>
+    ${infoBanner}
+    ${cardsHtml}
+    <button class="meet-btn-primary" onclick="_meetContinueFromE1RM()">
+      ${plan.mode === 'auto' ? 'BUILD MY PLAN \u2192' : 'PLAN MY ATTEMPTS \u2192'}
+    </button>
+  </div>`;
+}
+
+function _meetUpdateRP(lift, field, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  if (!lp.recentPerformance) lp.recentPerformance = { weight: null, reps: null, unit: 'kg' };
+  if (field === 'weight') lp.recentPerformance.weight = parseFloat(val) || null;
+  if (field === 'reps') lp.recentPerformance.reps = parseInt(val) || null;
+  // Live Epley calc
+  const rp = lp.recentPerformance;
+  if (rp.weight && rp.reps) {
+    let weightKg = rp.unit === 'lbs' ? rp.weight / KG_TO_LBS : rp.weight;
+    const e1rm = rp.reps === 1 ? weightKg : weightKg * (1 + rp.reps / 30);
+    lp.e1rmKg = Math.round(e1rm * 10) / 10;
+    lp.e1rmSource = 'calculated';
+    lp.e1rmMethod = 'epley';
+    lp.opener = _calcOpener(lp.e1rmKg);
+    // Update display
+    const e1rmEl = document.getElementById('meet-e1rm-' + lift);
+    const openerEl = document.getElementById('meet-opener-' + lift);
+    if (e1rmEl) e1rmEl.value = lp.e1rmKg;
+    if (openerEl) openerEl.value = lp.opener;
+    // Update lbs displays
+    const e1rmLbsEl = document.getElementById('meet-e1rm-lbs-' + lift);
+    const openerLbsEl = document.getElementById('meet-opener-lbs-' + lift);
+    if (e1rmLbsEl) e1rmLbsEl.textContent = Math.round(lp.e1rmKg * KG_TO_LBS) + ' lbs';
+    if (openerLbsEl) {
+      const pct = ' \u00B7 ' + Math.round(lp.opener / lp.e1rmKg * 100) + '%';
+      openerLbsEl.textContent = Math.round(lp.opener * KG_TO_LBS) + ' lbs' + pct;
+    }
+  }
+  _saveCurrentMeetPlan();
+}
+
+function _meetSetRPUnit(lift, unit) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  if (!lp.recentPerformance) lp.recentPerformance = { weight: null, reps: null, unit: 'kg' };
+  if (lp.recentPerformance.unit === unit) return;
+  // Convert weight if exists
+  if (lp.recentPerformance.weight) {
+    lp.recentPerformance.weight = unit === 'kg'
+      ? Math.round(lp.recentPerformance.weight / KG_TO_LBS * 10) / 10
+      : Math.round(lp.recentPerformance.weight * KG_TO_LBS * 10) / 10;
+  }
+  lp.recentPerformance.unit = unit;
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetUpdateE1RM(lift, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  const n = parseFloat(val);
+  if (isNaN(n)) { lp.e1rmKg = null; _saveCurrentMeetPlan(); return; }
+  if (n <= 0 || n > 700) return;
+  lp.e1rmKg = n;
+  lp.e1rmSource = 'manual';
+  lp.e1rmMethod = null;
+  if (lp.e1rmKg) {
+    lp.opener = _calcOpener(lp.e1rmKg);
+    const openerEl = document.getElementById('meet-opener-' + lift);
+    if (openerEl) openerEl.value = lp.opener;
+  }
+  // Update lbs displays
+  const e1rmLbsEl = document.getElementById('meet-e1rm-lbs-' + lift);
+  const openerLbsEl = document.getElementById('meet-opener-lbs-' + lift);
+  if (e1rmLbsEl) e1rmLbsEl.textContent = lp.e1rmKg ? Math.round(lp.e1rmKg * KG_TO_LBS) + ' lbs' : '';
+  if (openerLbsEl) {
+    if (lp.opener) {
+      const pct = lp.e1rmKg ? ' \u00B7 ' + Math.round(lp.opener / lp.e1rmKg * 100) + '%' : '';
+      openerLbsEl.textContent = Math.round(lp.opener * KG_TO_LBS) + ' lbs' + pct;
+    } else openerLbsEl.textContent = '';
+  }
+  _saveCurrentMeetPlan();
+}
+
+function _meetUpdateOpener(lift, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  const n = parseFloat(val);
+  lp.opener = isNaN(n) ? null : _roundToNearest2_5(n, 'nearest');
+  // Update lbs display
+  const openerLbsEl = document.getElementById('meet-opener-lbs-' + lift);
+  if (openerLbsEl) {
+    if (lp.opener) {
+      const pct = lp.e1rmKg ? ' \u00B7 ' + Math.round(lp.opener / lp.e1rmKg * 100) + '%' : '';
+      openerLbsEl.textContent = Math.round(lp.opener * KG_TO_LBS) + ' lbs' + pct;
+    } else openerLbsEl.textContent = '';
+  }
+  _saveCurrentMeetPlan();
+}
+
+function _meetContinueFromE1RM() {
+  const plan = state.activeMeetPlan;
+  // Validate: at least one lift has an opener
+  const hasOpener = ['squat','bench','deadlift'].some(l => plan.lifts[l].opener);
+  if (!hasOpener) {
+    _showMeetConfirmDialog('Missing Data', 'Enter at least one estimated max or opener to continue.', 'OK', function(){});
+    return;
+  }
+  // Warn if any opener > 93% of e1RM
+  const warnings = [];
+  ['squat','bench','deadlift'].forEach(l => {
+    const lp = plan.lifts[l];
+    if (lp.opener && lp.e1rmKg && (lp.opener / lp.e1rmKg) > 0.93) {
+      warnings.push(l.charAt(0).toUpperCase() + l.slice(1) + ' opener is above 93% of e1RM');
+    }
+  });
+  if (warnings.length > 0) {
+    _showMeetConfirmDialog(
+      'High Openers',
+      warnings.join('. ') + '. Are you sure?',
+      'Continue Anyway',
+      function() { _meetNavigateToPlan(); }
+    );
+    return;
+  }
+  _meetNavigateToPlan();
+}
+
+function _meetNavigateToPlan() {
+  const plan = state.activeMeetPlan;
+  state.meetDayView = plan.mode === 'auto' ? 'plan-auto' : 'plan-manual';
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+// ── Meet state helpers ──────────────────────────────────────────────────────
+// Track which lift tab is active in the plan view
+let _meetPlanLift = 'squat';
+
+// ── Auto Plan Screen (Screen 2A) ───────────────────────────────────────────
+function renderMeetPlanAuto(content) {
+  const plan = state.activeMeetPlan;
+  const lift = _meetPlanLift;
+  const lp = plan.lifts[lift];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEAD' };
+  const e1rm = lp.e1rmKg;
+  const opener = lp.opener;
+
+  // Calculate 2nd and 3rd attempt options
+  const sec = e1rm ? _calc2ndAttempts(e1rm) : null;
+  const selected2nd = lp.planned2nd || (sec ? sec.b : null);
+  const thi = (e1rm && selected2nd) ? _calc3rdAttempts(e1rm, selected2nd) : null;
+  const selected3rd = lp.planned3rd || (thi ? thi.b : null);
+
+  function optionRow(label, kg, selected, attemptNum) {
+    const sel = kg === selected;
+    const lbs = Math.round(kg * KG_TO_LBS);
+    const pct = e1rm ? Math.round(kg / e1rm * 100) : '';
+    return `<div class="meet-option-row ${sel?'selected':'unselected'}" onclick="_meetSelectAttempt('${lift}',${attemptNum},${kg})">
+      <div class="meet-option-label">${label}</div>
+      <div class="meet-option-weight" style="color:${sel?'var(--text-primary)':'var(--text-mid)'}">${kg} <span style="font-size:var(--fs-sm);color:var(--text-dimmer)">kg</span></div>
+      <div class="meet-option-info">${lbs} lbs${pct ? ' \u00B7 '+pct+'%':''}</div>
+    </div>`;
+  }
+
+  // Jump validation
+  let jumpNote2 = '', jumpNote3 = '';
+  if (opener && selected2nd) {
+    const jump = selected2nd - opener;
+    jumpNote2 = `<div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:6px;padding-left:2px">+${jump} kg jump from opener</div>`;
+  }
+  if (selected2nd && selected3rd) {
+    const jump2 = selected2nd - (opener || 0);
+    const jump3 = selected3rd - selected2nd;
+    const warn = jump3 > jump2 ? ' style="color:var(--amber)"' : '';
+    jumpNote3 = `<div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:6px;padding-left:2px"${warn}>+${jump3} kg from 2nd${jump3 > jump2 ? ' \u26A0 larger than 1st\u21922nd jump' : ' \u00B7 smaller jump = higher make rate'}</div>`;
+  }
+
+  content.innerHTML = `<div class="meet-screen" style="gap:10px">
+    <div class="meet-header">
+      <span class="meet-exit-link" onclick="state.meetDayView='e1rm-input';renderMeetDay();window.scrollTo(0,0)">\u2190 Maxes</span>
+      <div style="text-align:center">
+        <div class="meet-header-title">Attempt Plan</div>
+        <div class="meet-header-sub">${plan.meetName || 'Meet Day'}${plan.meetDate ? ' \u00B7 ' + plan.meetDate : ''}</div>
+      </div>
+      <span style="width:40px"></span>
+    </div>
+
+    <div class="meet-lift-tabs">
+      ${['squat','bench','deadlift'].map(l => `<div class="meet-lift-tab ${l===lift?'active':'inactive'}" onclick="_meetPlanLift='${l}';renderMeetDay()">${liftLabels[l]}</div>`).join('')}
+    </div>
+
+    ${opener ? `
+    <div class="meet-card" style="border-color:rgba(var(--gold-rgb),0.3);background:rgba(var(--gold-rgb),0.03)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="meet-attempt-badge opener">1</div>
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-xs);font-weight:700;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Opener</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-3xl);color:var(--gold);line-height:1">${opener} <span style="font-size:var(--fs-lg);color:var(--text-sub);font-weight:600">kg</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:var(--fs-sm);color:var(--text-dim)">${Math.round(opener * KG_TO_LBS)} lbs</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-dimmer)">${e1rm ? Math.round(opener/e1rm*100)+'% of max' : ''}</div>
+        </div>
+      </div>
+    </div>` : '<div class="meet-card"><div style="color:var(--text-dimmer);text-align:center">No opener set \u2014 go back to set your max</div></div>'}
+
+    ${sec ? `
+    <div class="meet-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div class="meet-attempt-badge regular">2</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright);text-transform:uppercase;letter-spacing:0.04em">Second Attempt</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-left:auto">if opener made</div>
+      </div>
+      ${optionRow('A', sec.a, selected2nd, 2)}
+      ${optionRow('B', sec.b, selected2nd, 2)}
+      ${optionRow('C', sec.c, selected2nd, 2)}
+      ${jumpNote2}
+    </div>` : ''}
+
+    ${thi ? `
+    <div class="meet-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div class="meet-attempt-badge regular">3</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright);text-transform:uppercase;letter-spacing:0.04em">Third Attempt</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-left:auto">if 2nd made</div>
+      </div>
+      ${optionRow('A', thi.a, selected3rd, 3)}
+      ${optionRow('B', thi.b, selected3rd, 3)}
+      ${optionRow('C', thi.c, selected3rd, 3)}
+      ${jumpNote3}
+    </div>` : ''}
+
+    <div class="meet-miss-fallback">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em">If you miss</div>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.03)"></div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:var(--fs-xs)">
+        <div><span style="color:var(--red);font-family:'Barlow Condensed',sans-serif;font-weight:700">MISS 1st</span> <span style="color:var(--text-dimmer)">\u2192 repeat ${opener || '?'}</span></div>
+        ${selected2nd ? `<div><span style="color:var(--red);font-family:'Barlow Condensed',sans-serif;font-weight:700">MISS 2nd</span> <span style="color:var(--text-dimmer)">\u2192 repeat ${selected2nd}</span></div>` : ''}
+      </div>
+    </div>
+
+    <button class="meet-btn-primary" onclick="_meetContinueFromPlan()">
+      ${lift === 'deadlift' ? 'CONTINUE TO WARM-UPS \u2192' : 'NEXT: ' + (lift === 'squat' ? 'BENCH' : 'DEADLIFT') + ' \u2192'}
+    </button>
+    <button class="meet-save-exit" onclick="_meetSaveAndExit()">Save & Exit</button>
+  </div>`;
+}
+
+function _meetSelectAttempt(lift, attemptNum, kg) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  if (attemptNum === 2) {
+    lp.planned2nd = kg;
+    // Enforce no-drop: 2nd >= opener
+    if (lp.opener && kg < lp.opener) { lp.planned2nd = lp.opener; }
+    // Recalculate 3rd options based on new 2nd
+    lp.planned3rd = null;
+  } else if (attemptNum === 3) {
+    lp.planned3rd = kg;
+    // Enforce no-drop: 3rd >= 2nd
+    if (lp.planned2nd && kg < lp.planned2nd) { lp.planned3rd = lp.planned2nd; }
+  }
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetContinueFromPlan() {
+  if (_meetPlanLift === 'squat') { _meetPlanLift = 'bench'; renderMeetDay(); window.scrollTo(0,0); return; }
+  if (_meetPlanLift === 'bench') { _meetPlanLift = 'deadlift'; renderMeetDay(); window.scrollTo(0,0); return; }
+  // All 3 planned — continue to warmups
+  _meetPlanLift = 'squat';
+  state.meetDayView = 'warmup';
+  state.activeMeetPlan._warmupLift = 'squat';
+  // Generate warmups
+  _meetGenerateWarmups();
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+function _meetGenerateWarmups() {
+  const plan = state.activeMeetPlan;
+  ['squat','bench','deadlift'].forEach(lift => {
+    const lp = plan.lifts[lift];
+    if (lp.opener) {
+      plan.warmups[lift] = { sets: _calcWarmupSets(lp.opener, lift, plan.barWeights[lift]) };
+    }
+  });
+}
+
+// ── Manual Plan Screen (Screen 2M) ─────────────────────────────────────────
+function renderMeetPlanManual(content) {
+  const plan = state.activeMeetPlan;
+  const lift = _meetPlanLift;
+  const lp = plan.lifts[lift];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+  const liftNum = lift === 'squat' ? 1 : lift === 'bench' ? 2 : 3;
+  const e1rm = lp.e1rmKg;
+  const opener = lp.opener;
+
+  // Suggestion values
+  const sec = e1rm ? _calc2ndAttempts(e1rm) : null;
+  const selected2nd = lp.planned2nd || (sec ? sec.b : null);
+  const thi = (e1rm && selected2nd) ? _calc3rdAttempts(e1rm, selected2nd) : null;
+  const selected3rd = lp.planned3rd || (thi ? thi.b : null);
+
+  // App suggestion text
+  const suggestText = e1rm ? `app suggests: ${_calcOpener(e1rm)} / ${sec?sec.b:'?'}` : '';
+
+  content.innerHTML = `<div class="meet-screen" style="gap:10px">
+    <div class="meet-header">
+      <span class="meet-exit-link" onclick="state.meetDayView='e1rm-input';renderMeetDay();window.scrollTo(0,0)">\u2190 Maxes</span>
+      <div style="text-align:center">
+        <div class="meet-header-title">Your Plan</div>
+        <div class="meet-header-sub">${liftLabels[lift]} \u00B7 ${liftNum} of 3</div>
+      </div>
+      <span style="width:40px"></span>
+    </div>
+
+    <div style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;padding:6px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">You're in full control. Enter every number.</div>
+
+    <div class="meet-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xl);letter-spacing:0.04em">${liftLabels[lift]}</div>
+        ${suggestText ? `<div style="font-size:var(--fs-xs);color:rgba(var(--gold-rgb),0.35)">${suggestText}</div>` : ''}
+      </div>
+      <div class="meet-form-row">
+        <div class="meet-form-group">
+          <div class="meet-form-label">Estimated Max (kg)</div>
+          <input class="meet-form-input" type="number" inputmode="decimal" min="1" max="700" placeholder="\u2014" value="${e1rm||''}" oninput="_meetManualUpdateE1RM('${lift}',this.value)" style="font-size:var(--fs-xl);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;color:var(--text-bright)">
+          <div id="meet-manual-e1rm-lbs" style="font-size:var(--fs-xs);color:var(--text-dimmer);text-align:center;margin-top:2px">${e1rm ? Math.round(e1rm * KG_TO_LBS) + ' lbs' : ''}</div>
+        </div>
+        <div class="meet-form-group">
+          <div class="meet-form-label">Opener (kg)</div>
+          <input class="meet-form-input" type="number" inputmode="decimal" min="1" max="700" placeholder="\u2014" value="${opener||''}" oninput="_meetManualUpdateOpener('${lift}',this.value)" style="font-size:var(--fs-xl);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;color:var(--text-bright)">
+          <div id="meet-manual-opener-lbs" style="font-size:var(--fs-xs);color:var(--text-dimmer);text-align:center;margin-top:2px">${opener ? Math.round(opener * KG_TO_LBS) + ' lbs' + (e1rm ? ' \u00B7 ' + Math.round(opener / e1rm * 100) + '%' : '') : ''}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="meet-card">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px">2nd Attempt \u2014 if opener made</div>
+      <div class="meet-form-row" style="margin-bottom:6px">
+        ${sec ? ['a','b','c'].map(key => `
+        <div class="meet-form-group" style="flex:1">
+          <div class="meet-form-label">${key.toUpperCase()}</div>
+          <div class="meet-option-row ${sec[key]===selected2nd?'selected':'unselected'}" onclick="_meetSelectAttempt('${lift}',2,${sec[key]})" style="padding:8px;justify-content:center;margin:0">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright);text-align:center">${sec[key]} kg <span style="font-weight:400;font-size:var(--fs-xs);color:var(--text-dim)">\u00B7 ${Math.round(sec[key]*KG_TO_LBS)} lbs</span></div>
+          </div>
+        </div>`).join('') : '<div style="color:var(--text-dimmer);font-size:var(--fs-sm);padding:8px">Set opener first</div>'}
+      </div>
+      <div class="meet-form-group" style="margin-top:6px">
+        <div class="meet-form-label">Or enter custom</div>
+        <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Custom kg" value="${lp.planned2nd && sec && lp.planned2nd !== sec.a && lp.planned2nd !== sec.b && lp.planned2nd !== sec.c ? lp.planned2nd : ''}" oninput="_meetManualSet2nd('${lift}',this.value)" style="font-size:16px">
+      </div>
+    </div>
+
+    <div class="meet-card">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px">3rd Attempt \u2014 if 2nd made</div>
+      <div class="meet-form-row" style="margin-bottom:6px">
+        ${thi ? ['a','b','c'].map(key => `
+        <div class="meet-form-group" style="flex:1">
+          <div class="meet-form-label">${key.toUpperCase()}</div>
+          <div class="meet-option-row ${thi[key]===selected3rd?'selected':'unselected'}" onclick="_meetSelectAttempt('${lift}',3,${thi[key]})" style="padding:8px;justify-content:center;margin:0">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright);text-align:center">${thi[key]} kg <span style="font-weight:400;font-size:var(--fs-xs);color:var(--text-dim)">\u00B7 ${Math.round(thi[key]*KG_TO_LBS)} lbs</span></div>
+          </div>
+        </div>`).join('') : '<div style="color:var(--text-dimmer);font-size:var(--fs-sm);padding:8px">Set 2nd attempt first</div>'}
+      </div>
+      <div class="meet-form-group" style="margin-top:6px">
+        <div class="meet-form-label">Or enter custom</div>
+        <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Custom kg" value="${lp.planned3rd && thi && lp.planned3rd !== thi.a && lp.planned3rd !== thi.b && lp.planned3rd !== thi.c ? lp.planned3rd : ''}" oninput="_meetManualSet3rd('${lift}',this.value)" style="font-size:16px">
+      </div>
+    </div>
+
+    <div class="meet-miss-fallback">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">If you miss</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dimmer)">Miss opener \u2192 repeat same weight \u00B7 Miss 2nd \u2192 repeat same weight \u00B7 Can't go down.</div>
+    </div>
+
+    <button class="meet-btn-primary" onclick="_meetContinueFromPlan()">
+      ${lift === 'deadlift' ? 'CONTINUE TO WARM-UPS \u2192' : 'NEXT: ' + (lift === 'squat' ? 'BENCH' : 'DEADLIFT') + ' \u2192'}
+    </button>
+    <button class="meet-save-exit" onclick="_meetSaveAndExit()">Save & Exit</button>
+  </div>`;
+}
+
+function _meetManualUpdateE1RM(lift, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  const n = parseFloat(val);
+  if (isNaN(n)) { lp.e1rmKg = null; _saveCurrentMeetPlan(); return; }
+  if (n <= 0 || n > 700) return;
+  lp.e1rmKg = n;
+  lp.e1rmSource = 'manual';
+  // Update lbs display
+  const el = document.getElementById('meet-manual-e1rm-lbs');
+  if (el) el.textContent = lp.e1rmKg ? Math.round(lp.e1rmKg * KG_TO_LBS) + ' lbs' : '';
+  _saveCurrentMeetPlan();
+}
+
+function _meetManualUpdateOpener(lift, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  const n = parseFloat(val);
+  lp.opener = isNaN(n) ? null : _roundToNearest2_5(n, 'nearest');
+  // Update lbs display
+  const el = document.getElementById('meet-manual-opener-lbs');
+  if (el) {
+    if (lp.opener) {
+      const pct = lp.e1rmKg ? ' \u00B7 ' + Math.round(lp.opener / lp.e1rmKg * 100) + '%' : '';
+      el.textContent = Math.round(lp.opener * KG_TO_LBS) + ' lbs' + pct;
+    } else el.textContent = '';
+  }
+  _saveCurrentMeetPlan();
+}
+
+function _meetManualSet2nd(lift, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  const n = parseFloat(val);
+  if (isNaN(n)) { lp.planned2nd = null; }
+  else {
+    const rounded = _roundToNearest2_5(n, 'nearest');
+    lp.planned2nd = lp.opener ? Math.max(rounded, lp.opener) : rounded;
+  }
+  lp.planned3rd = null;
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetManualSet3rd(lift, val) {
+  const lp = state.activeMeetPlan.lifts[lift];
+  const n = parseFloat(val);
+  if (isNaN(n)) { lp.planned3rd = null; }
+  else {
+    const rounded = _roundToNearest2_5(n, 'nearest');
+    lp.planned3rd = lp.planned2nd ? Math.max(rounded, lp.planned2nd) : rounded;
+  }
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+function renderMeetWarmup(content) {
+  const plan = state.activeMeetPlan;
+  const lift = plan._warmupLift || 'squat';
+  const lp = plan.lifts[lift];
+  const wu = plan.warmups[lift];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+  const opener = lp.opener;
+  const barKg = plan.barWeights[lift];
+  const sets = wu ? wu.sets : [];
+  const showLbs = plan._warmupUnit === 'lbs';
+
+  // Build plate loading info for each set using renderCalcBarSVG if available
+  let setsHtml = '';
+  sets.forEach((s, i) => {
+    const weightDisplay = showLbs
+      ? `${Math.round(s.weight * KG_TO_LBS)} lbs <span style="color:var(--text-dim);font-size:var(--fs-sm)">\u00B7 ${s.weight} kg</span>`
+      : `${s.weight} kg <span style="color:var(--text-dim);font-size:var(--fs-sm)">\u00B7 ${Math.round(s.weight * KG_TO_LBS)} lbs</span>`;
+
+    setsHtml += `
+    <div class="meet-warmup-set">
+      <div class="meet-warmup-check ${s.completed?'done':''}" onclick="_meetToggleWarmup('${lift}',${i})"></div>
+      <div class="meet-warmup-info">
+        <div class="meet-warmup-weight">${weightDisplay}</div>
+      </div>
+      <div class="meet-warmup-reps">${s.reps > 1 ? '\u00D7'+s.reps : '\u00D71'}</div>
+    </div>`;
+  });
+
+  content.innerHTML = `<div class="meet-screen" style="gap:0;padding:var(--sp-6) 0">
+    <div style="padding:0 var(--sp-6)">
+      <div class="meet-header">
+        <span class="meet-exit-link" onclick="state.meetDayView='plan-${plan.mode==='manual'?'manual':'auto'}';renderMeetDay();window.scrollTo(0,0)">\u2190 Plan</span>
+        <div style="text-align:center">
+          <div class="meet-header-title" style="color:var(--gold)">${liftLabels[lift]} WARM-UPS</div>
+          <div class="meet-header-sub">Opener: ${opener} kg \u00B7 ${Math.round(opener * KG_TO_LBS)} lbs</div>
+        </div>
+        <span style="width:40px"></span>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-6) 12px">
+      <div style="font-size:var(--fs-xs);color:var(--text-dimmer)">Warm-up room plates</div>
+      <div class="meet-toggle-group">
+        <button class="meet-toggle-btn ${!showLbs?'active':''}" onclick="_meetSetWarmupUnit('kg')">KG</button>
+        <button class="meet-toggle-btn ${showLbs?'active':''}" onclick="_meetSetWarmupUnit('lbs')">LBS</button>
+      </div>
+    </div>
+
+    <div class="meet-card" style="padding:0;margin:0 var(--sp-6)">
+      ${setsHtml}
+    </div>
+
+    <div style="padding:var(--sp-6)">
+      <button class="meet-btn-primary" onclick="_meetStartAttempts()">START ${liftLabels[lift]} ATTEMPTS \u2192</button>
+      <div style="text-align:center;padding:8px 0 0">
+        <span class="meet-exit-link" onclick="_meetSkipWarmups()">Skip warm-ups \u2014 go straight to attempts</span>
+      </div>
+      <button class="meet-save-exit" style="margin-top:8px" onclick="_meetSaveAndExit()">Save & Exit</button>
+    </div>
+  </div>`;
+}
+
+function _meetToggleWarmup(lift, idx) {
+  const wu = state.activeMeetPlan.warmups[lift];
+  if (!wu || !wu.sets[idx]) return;
+  wu.sets[idx].completed = !wu.sets[idx].completed;
+  _saveCurrentMeetPlan();
+  renderMeetDay();
+}
+
+function _meetSetWarmupUnit(unit) {
+  state.activeMeetPlan._warmupUnit = unit;
+  renderMeetDay();
+}
+
+function _meetSkipWarmups() {
+  _meetStartAttempts();
+}
+
+function _meetStartAttempts() {
+  const plan = state.activeMeetPlan;
+  plan.status = 'active';
+  // Initialize live tracking state
+  plan._currentLift = plan._warmupLift || 'squat';
+  plan._currentAttempt = 1;
+  plan._timerStart = null;
+  _saveCurrentMeetPlan();
+  state.meetDayView = 'live';
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+// ── Live mode helpers ───────────────────────────────────────────────────────
+function _meetGetCurrentWeight() {
+  const plan = state.activeMeetPlan;
+  const lift = plan._currentLift;
+  const attempt = plan._currentAttempt;
+  const lp = plan.lifts[lift];
+  if (attempt === 1) return lp.opener;
+  // Check if previous attempt result suggests a weight
+  const prevResults = lp.results.filter(r => r.attemptNum < attempt);
+  const lastResult = prevResults[prevResults.length - 1];
+  if (attempt === 2) {
+    if (lastResult && !lastResult.made) return lastResult.weight; // Repeat on miss
+    return lp.planned2nd || lp.opener;
+  }
+  if (attempt === 3) {
+    if (lastResult && !lastResult.made) return lastResult.weight; // Repeat on miss
+    return lp.planned3rd || (lastResult ? lastResult.weight + 2.5 : lp.opener);
+  }
+  return lp.opener;
+}
+
+function _meetGetRunningTotal() {
+  const plan = state.activeMeetPlan;
+  let total = 0;
+  let bombed = false;
+  ['squat','bench','deadlift'].forEach(lift => {
+    const lp = plan.lifts[lift];
+    const made = lp.results.filter(r => r.made);
+    if (made.length > 0) {
+      total += Math.max(...made.map(r => r.weight));
+    }
+    // Check bomb-out
+    if (lp.results.length >= 3 && made.length === 0) bombed = true;
+  });
+  return { total, bombed };
+}
+
+function _meetLiftCommands(lift) {
+  if (lift === 'squat') return ['Squat', 'Rack'];
+  if (lift === 'bench') return ['Start', 'Press', 'Rack'];
+  return ['Down'];
+}
+
+let _meetTimerInterval = null;
+
+function _meetStartTimer() {
+  const plan = state.activeMeetPlan;
+  plan._timerStart = Date.now();
+  _saveCurrentMeetPlan();
+  if (_meetTimerInterval) clearInterval(_meetTimerInterval);
+  _meetTimerInterval = setInterval(() => {
+    const elapsed = (Date.now() - plan._timerStart) / 1000;
+    const remaining = Math.max(0, 60 - elapsed);
+    const fill = document.getElementById('meet-timer-fill');
+    const text = document.getElementById('meet-timer-text');
+    if (fill) {
+      fill.style.width = (remaining / 60 * 100) + '%';
+      if (remaining < 15) fill.classList.add('urgent');
+      else fill.classList.remove('urgent');
+    }
+    if (text) text.textContent = Math.ceil(remaining) + 's to submit next attempt';
+    if (remaining <= 0) { clearInterval(_meetTimerInterval); _meetTimerInterval = null; }
+  }, 1000);
+}
+
+function _meetStopTimer() {
+  if (_meetTimerInterval) { clearInterval(_meetTimerInterval); _meetTimerInterval = null; }
+}
+
+// ── Live Mode Screen (Screen 4A) ───────────────────────────────────────────
+function renderMeetLive(content) {
+  const plan = state.activeMeetPlan;
+  const lift = plan._currentLift || 'squat';
+  const attempt = plan._currentAttempt || 1;
+  const lp = plan.lifts[lift];
+  const weight = _meetGetCurrentWeight();
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+  const commands = _meetLiftCommands(lift);
+  const { total } = _meetGetRunningTotal();
+  const barKg = plan.barWeights[lift];
+
+  // Plate loading
+  let barSvgHtml = '';
+  if (weight) {
+    const plates = _meetPlatesPerSide(weight, barKg, 5);
+    const merged = [];
+    plates.forEach(kg => {
+      const ex = merged.find(m => m.kg === kg);
+      if (ex) ex.count++;
+      else merged.push({ kg, count: 1, lbs: Math.round(kg * KG_TO_LBS) });
+    });
+    try {
+      barSvgHtml = renderCalcBarSVG(merged, true, 'kg');
+    } catch(e) {}
+  }
+
+  // Commands bar
+  const cmdHtml = commands.map((c, i) =>
+    (i > 0 ? '<span class="meet-live-cmd-arrow">\u2192</span>' : '') +
+    `<span class="meet-live-cmd">${c}</span>`
+  ).join('');
+
+  content.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;padding:var(--sp-6) 0">
+    <div style="text-align:center">
+      <div class="meet-live-attempt-badge" style="background:rgba(var(--gold-rgb),0.1);border:1px solid rgba(var(--gold-rgb),0.3);color:var(--gold)">ATTEMPT ${attempt} OF 3</div>
+      <div class="meet-live-lift">${liftLabels[lift]}</div>
+    </div>
+
+    <div class="meet-live-weight">
+      <div class="meet-live-weight-val">${weight || '?'}<span class="meet-live-weight-unit">kg</span></div>
+      <div class="meet-live-weight-lbs">${weight ? Math.round(weight * KG_TO_LBS) + ' lbs' : ''}</div>
+    </div>
+
+    ${barSvgHtml ? `<div style="margin:0 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:8px;overflow:hidden">${barSvgHtml}</div>` : ''}
+
+    <div class="meet-live-commands">${cmdHtml}</div>
+
+    <div class="meet-result-buttons">
+      <div class="meet-result-btn made" onclick="_meetRecordAttempt(true)">MADE</div>
+      <div class="meet-result-btn missed" onclick="_meetRecordAttempt(false)">MISSED</div>
+    </div>
+
+    <div class="meet-running-total" style="margin:0 16px">
+      <div class="meet-running-total-label">Running Total</div>
+      <div class="meet-running-total-value">${total > 0 ? total + ' kg' : '\u2014 kg'}</div>
+    </div>
+  </div>`;
+}
+
+function _meetRecordAttempt(made) {
+  const plan = state.activeMeetPlan;
+  const lift = plan._currentLift;
+  const attempt = plan._currentAttempt;
+  const weight = _meetGetCurrentWeight();
+
+  // Record result
+  const result = {
+    attemptNum: attempt,
+    weight: weight,
+    weightLbs: Math.round(weight * KG_TO_LBS),
+    made: made,
+    feedback: null
+  };
+  plan.lifts[lift].results.push(result);
+  plan._lastResult = result;
+  _saveCurrentMeetPlan();
+
+  // Start 60-second timer
+  _meetStartTimer();
+
+  // Route to feedback screen
+  if (made) {
+    state.meetDayView = 'effort-rating';
+  } else {
+    state.meetDayView = 'miss-diagnosis';
+  }
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+// ── Effort Rating Screen (Screen 4A-1) ─────────────────────────────────────
+function renderMeetEffortRating(content) {
+  const plan = state.activeMeetPlan;
+  const result = plan._lastResult;
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+
+  content.innerHTML = `<div class="meet-screen" style="align-items:center;justify-content:center;min-height:70vh">
+    <div style="text-align:center;margin-bottom:24px">
+      <div class="meet-live-attempt-badge" style="background:rgba(var(--green-rgb),0.1);border:1px solid rgba(var(--green-rgb),0.3);color:var(--green)">${liftLabels[plan._currentLift]} \u00B7 ATTEMPT ${result.attemptNum}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-3xl);color:var(--green);margin-top:8px">GOOD LIFT</div>
+      <div style="font-size:var(--fs-md);color:var(--text-sub);margin-top:4px">${result.weight} kg \u00B7 ${result.weightLbs} lbs</div>
+    </div>
+
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright);text-align:center;margin-bottom:16px">How did that feel?</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%">
+      <div class="meet-feedback-card made-well" onclick="_meetSetFeedback('moved_well')">
+        <div class="meet-fb-title">Moved Well</div>
+        <div class="meet-fb-desc">Felt fast and controlled</div>
+      </div>
+      <div class="meet-feedback-card made-expected" onclick="_meetSetFeedback('expected')">
+        <div class="meet-fb-title">Expected</div>
+        <div class="meet-fb-desc">About what I planned for</div>
+      </div>
+      <div class="meet-feedback-card made-heavy" onclick="_meetSetFeedback('heavy')">
+        <div class="meet-fb-title">Heavy</div>
+        <div class="meet-fb-desc">Harder than expected</div>
+      </div>
+    </div>
+
+    <div class="meet-timer-bar" style="margin-top:20px"><div class="meet-timer-fill" id="meet-timer-fill" style="width:100%"></div></div>
+    <div class="meet-timer-text" id="meet-timer-text">60s to submit next attempt</div>
+  </div>`;
+}
+
+// ── Miss Diagnosis Screen (Screen 4A-2) ────────────────────────────────────
+function renderMeetMissDiagnosis(content) {
+  const plan = state.activeMeetPlan;
+  const result = plan._lastResult;
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+
+  content.innerHTML = `<div class="meet-screen" style="align-items:center;justify-content:center;min-height:70vh">
+    <div style="text-align:center;margin-bottom:24px">
+      <div class="meet-live-attempt-badge" style="background:rgba(226,44,44,0.1);border:1px solid rgba(226,44,44,0.3);color:var(--red)">${liftLabels[plan._currentLift]} \u00B7 ATTEMPT ${result.attemptNum}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-3xl);color:var(--red);margin-top:8px">NO LIFT</div>
+      <div style="font-size:var(--fs-md);color:var(--text-sub);margin-top:4px">${result.weight} kg \u00B7 ${result.weightLbs} lbs</div>
+    </div>
+
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright);text-align:center;margin-bottom:16px">What happened?</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%">
+      <div class="meet-feedback-card miss-close" onclick="_meetSetFeedback('close')">
+        <div class="meet-fb-title">Close</div>
+        <div class="meet-fb-desc">Had the strength, just missed</div>
+      </div>
+      <div class="meet-feedback-card miss-not-there" onclick="_meetSetFeedback('not_there')">
+        <div class="meet-fb-title">Not There</div>
+        <div class="meet-fb-desc">Wasn't strong enough today</div>
+      </div>
+      <div class="meet-feedback-card miss-technical" onclick="_meetSetFeedback('technical')">
+        <div class="meet-fb-title">Technical</div>
+        <div class="meet-fb-desc">Strength was fine, execution issue</div>
+      </div>
+    </div>
+
+    <div class="meet-timer-bar" style="margin-top:20px"><div class="meet-timer-fill" id="meet-timer-fill" style="width:100%"></div></div>
+    <div class="meet-timer-text" id="meet-timer-text">60s to submit next attempt</div>
+  </div>`;
+}
+
+function _meetSetFeedback(feedback) {
+  const plan = state.activeMeetPlan;
+  const lift = plan._currentLift;
+  const lp = plan.lifts[lift];
+  // Set feedback on last result
+  const lastResult = lp.results[lp.results.length - 1];
+  if (lastResult) lastResult.feedback = feedback;
+  plan._lastFeedback = feedback;
+  _saveCurrentMeetPlan();
+
+  // Check bomb-out: 3 misses on this lift
+  const misses = lp.results.filter(r => !r.made).length;
+  if (misses >= 3) {
+    _meetHandleBombout();
+    return;
+  }
+
+  // Check if this was the 3rd attempt — advance to next lift
+  if (plan._currentAttempt >= 3) {
+    _meetAdvanceToNextLift();
+    return;
+  }
+
+  // Show attempt selection for next attempt
+  state.meetDayView = 'attempt-select';
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+function _meetHandleBombout() {
+  const plan = state.activeMeetPlan;
+  const lift = plan._currentLift;
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+  _meetStopTimer();
+
+  // Show bomb-out briefly, then advance
+  const content = document.getElementById('main-content');
+  content.innerHTML = `<div class="meet-screen" style="align-items:center;justify-content:center;min-height:70vh">
+    <div class="meet-bombout">
+      <div class="meet-bombout-title">BOMBED OUT</div>
+      <div class="meet-bombout-sub">${liftLabels[lift]} \u2014 3 misses</div>
+    </div>
+  </div>`;
+
+  setTimeout(() => {
+    _meetAdvanceToNextLift();
+  }, 2000);
+}
+
+function _meetAdvanceToNextLift() {
+  const plan = state.activeMeetPlan;
+  _meetStopTimer();
+  const liftOrder = ['squat', 'bench', 'deadlift'];
+  const curIdx = liftOrder.indexOf(plan._currentLift);
+  if (curIdx < 2) {
+    // Go to warmups for next lift
+    plan._currentLift = liftOrder[curIdx + 1];
+    plan._currentAttempt = 1;
+    plan._warmupLift = plan._currentLift;
+    _meetGenerateWarmups();
+    _saveCurrentMeetPlan();
+    state.meetDayView = 'warmup';
+  } else {
+    // All lifts done — go to results
+    plan.status = 'completed';
+    plan.completedAt = Date.now();
+    _saveCurrentMeetPlan();
+    state.meetDayView = 'results';
+  }
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+// ── Attempt Selection Screen (Screen 4B/4C) ────────────────────────────────
+function renderMeetAttemptSelect(content) {
+  const plan = state.activeMeetPlan;
+  const lift = plan._currentLift;
+  const lp = plan.lifts[lift];
+  const lastResult = lp.results[lp.results.length - 1];
+  const e1rm = lp.e1rmKg;
+  const nextAttempt = plan._currentAttempt + 1;
+  const feedback = plan._lastFeedback;
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+
+  let suggestions;
+  let contextBanner = '';
+  if (lastResult.made) {
+    // Adaptive suggestions based on feedback
+    if (nextAttempt === 2) {
+      suggestions = _calcAdaptive2nd(e1rm, lastResult.weight, feedback);
+    } else {
+      suggestions = _calcAdaptive3rd(e1rm, lastResult.weight, feedback);
+    }
+    // Enforce no-drop
+    ['a','b','c'].forEach(k => {
+      if (suggestions[k] < lastResult.weight) suggestions[k] = lastResult.weight;
+    });
+    const feedbackLabels = { moved_well: 'moved well', expected: 'was expected', heavy: 'felt heavy' };
+    contextBanner = `<div style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;padding:8px 12px;background:rgba(var(--green-rgb),0.04);border:1px solid rgba(var(--green-rgb),0.1);border-radius:10px">${lastResult.weight} kg ${feedbackLabels[feedback] || ''} \u2014 showing adapted suggestions</div>`;
+  } else {
+    // Miss: repeat or small bump
+    suggestions = _calcMissOptions(lastResult.weight);
+    const feedbackLabels = { close: 'close miss', not_there: 'not strong enough', technical: 'technical issue' };
+    contextBanner = `<div style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;padding:8px 12px;background:rgba(226,44,44,0.04);border:1px solid rgba(226,44,44,0.1);border-radius:10px">${feedbackLabels[feedback] || 'Missed'} at ${lastResult.weight} kg \u2014 repeat or small adjustment</div>`;
+  }
+
+  const { total } = _meetGetRunningTotal();
+
+  function optRow(label, kg) {
+    const lbs = Math.round(kg * KG_TO_LBS);
+    return `<div class="meet-option-row unselected" onclick="_meetConfirmNextAttempt(${kg})" style="cursor:pointer">
+      <div class="meet-option-label">${label}</div>
+      <div class="meet-option-weight" style="color:var(--text-mid)">${kg} <span style="font-size:var(--fs-sm);color:var(--text-dimmer)">kg</span></div>
+      <div class="meet-option-info">${lbs} lbs</div>
+    </div>`;
+  }
+
+  content.innerHTML = `<div class="meet-screen">
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xl);color:var(--text-bright)">${liftLabels[lift]} \u2014 PICK YOUR ${nextAttempt === 2 ? '2ND' : '3RD'}</div>
+    </div>
+    ${contextBanner}
+
+    <div class="meet-card">
+      ${optRow('A', suggestions.a)}
+      ${optRow('B', suggestions.b)}
+      ${optRow('C', suggestions.c)}
+    </div>
+
+    <div class="meet-card">
+      <div class="meet-form-label" style="margin-bottom:6px">Custom weight</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="meet-form-input" id="meet-custom-weight" type="number" inputmode="decimal" placeholder="Enter kg" style="flex:1">
+        <button class="meet-toggle-btn active" onclick="_meetConfirmCustomWeight()" style="padding:10px 16px">GO</button>
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:4px">Min: ${lastResult.weight} kg (can't go down)</div>
+    </div>
+
+    <div class="meet-running-total">
+      <div class="meet-running-total-label">Running Total</div>
+      <div class="meet-running-total-value">${total > 0 ? total + ' kg' : '\u2014 kg'}</div>
+    </div>
+
+    <div class="meet-timer-bar"><div class="meet-timer-fill" id="meet-timer-fill" style="width:100%"></div></div>
+    <div class="meet-timer-text" id="meet-timer-text">60s to submit next attempt</div>
+  </div>`;
+}
+
+function _meetConfirmNextAttempt(kg) {
+  const plan = state.activeMeetPlan;
+  plan._currentAttempt++;
+  // Store the selected weight for the next attempt
+  const lift = plan._currentLift;
+  const lp = plan.lifts[lift];
+  if (plan._currentAttempt === 2) lp.planned2nd = kg;
+  if (plan._currentAttempt === 3) lp.planned3rd = kg;
+  _meetStopTimer();
+  _saveCurrentMeetPlan();
+  state.meetDayView = 'live';
+  renderMeetDay();
+  window.scrollTo(0, 0);
+}
+
+function _meetConfirmCustomWeight() {
+  const input = document.getElementById('meet-custom-weight');
+  if (!input) return;
+  const val = parseFloat(input.value);
+  if (isNaN(val) || val <= 0) return;
+  const kg = _roundToNearest2_5(val, 'up');
+  const plan = state.activeMeetPlan;
+  const lastResult = plan.lifts[plan._currentLift].results;
+  const prev = lastResult[lastResult.length - 1];
+  const minWeight = prev ? prev.weight : 0;
+  if (kg < minWeight) {
+    input.style.borderColor = 'var(--red)';
+    return;
+  }
+  _meetConfirmNextAttempt(kg);
+}
+function renderMeetResults(content) {
+  const plan = state.activeMeetPlan;
+  const athlete = loadAthlete();
+  const liftOrder = ['squat', 'bench', 'deadlift'];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+
+  // Calculate totals
+  let totalKg = 0;
+  let totalAttempts = 0;
+  let madeAttempts = 0;
+  let bombed = null;
+  let liftBests = {};
+
+  liftOrder.forEach(lift => {
+    const lp = plan.lifts[lift];
+    const results = lp.results || [];
+    const made = results.filter(r => r.made);
+    totalAttempts += results.length;
+    madeAttempts += made.length;
+    if (made.length > 0) {
+      const best = Math.max(...made.map(r => r.weight));
+      liftBests[lift] = best;
+      totalKg += best;
+    } else if (results.length >= 3) {
+      bombed = lift;
+    }
+  });
+
+  const hasTotal = !bombed && liftOrder.every(l => liftBests[l]);
+  const totalLbs = hasTotal ? Math.round(totalKg * KG_TO_LBS) : 0;
+
+  // DOTS / Wilks
+  let bwKg = plan.bodyweight;
+  if (plan.bodyweightUnit === 'lbs' && bwKg) bwKg = bwKg / KG_TO_LBS;
+  const gender = athlete?.gender || 'male';
+  const dots = hasTotal && bwKg ? calcDOTS(bwKg, totalKg, gender) : null;
+  const wilks = hasTotal && bwKg ? calcWilks(bwKg, totalKg, gender) : null;
+
+  // Attempt rows per lift
+  let liftsHtml = '';
+  liftOrder.forEach(lift => {
+    const results = plan.lifts[lift].results || [];
+    let attemptsHtml = '';
+    results.forEach(r => {
+      attemptsHtml += `
+      <div class="meet-results-attempt">
+        <div class="meet-results-attempt-num">${r.attemptNum}</div>
+        <div class="meet-results-attempt-weight ${r.made?'made':'missed'}">${r.weight} kg <span style="font-size:var(--fs-xs);color:var(--text-dim)">${r.weightLbs} lbs</span></div>
+        <div class="meet-results-badge ${r.made?'made':'missed'}">${r.made ? 'GOOD' : 'MISS'}</div>
+        ${r.feedback ? `<div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-left:4px">${r.feedback.replace('_',' ')}</div>` : ''}
+      </div>`;
+    });
+    liftsHtml += `
+    <div class="meet-results-lift">
+      <div class="meet-results-lift-name">${liftLabels[lift]}${liftBests[lift] ? ' \u2014 '+liftBests[lift]+' kg' : ''}</div>
+      ${attemptsHtml}
+    </div>`;
+  });
+
+  content.innerHTML = `<div class="meet-screen">
+    <div style="text-align:center">
+      <div class="meet-header-title" style="color:var(--gold)">MEET COMPLETE</div>
+      <div class="meet-header-sub">${plan.meetName || 'Meet Day'}${plan.meetDate ? ' \u00B7 ' + plan.meetDate : ''}</div>
+    </div>
+
+    <div class="meet-final-total">
+      ${hasTotal
+        ? `<div class="meet-final-total-value">${totalKg} <span style="font-size:var(--fs-xl);color:var(--text-sub)">kg</span></div>
+           <div class="meet-final-total-sub">${totalLbs.toLocaleString()} lbs \u00B7 ${madeAttempts}/${totalAttempts} attempts</div>`
+        : `<div class="meet-final-total-value" style="font-size:var(--fs-2xl);color:var(--red)">No Total</div>
+           <div class="meet-final-total-sub">Bombed ${bombed ? liftLabels[bombed] : ''}</div>`}
+      ${(dots || wilks) ? `
+      <div class="meet-final-scores">
+        ${dots ? `<div class="meet-score-pill"><div class="meet-score-label">DOTS</div><div class="meet-score-value">${dots}</div></div>` : ''}
+        ${wilks ? `<div class="meet-score-pill"><div class="meet-score-label">Wilks</div><div class="meet-score-value">${wilks}</div></div>` : ''}
+      </div>` : ''}
+    </div>
+
+    <div class="meet-card">
+      ${liftsHtml}
+    </div>
+
+    ${state.viewingMeetRecap
+      ? `<button class="meet-btn-secondary" onclick="state.viewingMeetRecap=false;state.meetDayView=null;state.activeMeetPlan=null;setScreen('metrics')">\u2190 Back to Metrics</button>`
+      : `<button class="meet-btn-primary" onclick="_meetExitFromResults()">EXIT COMPETITION MODE</button>`}
+  </div>`;
+}
+
+function _meetExitFromResults() {
+  // Save completed plan
+  const plan = state.activeMeetPlan;
+  if (plan.status !== 'completed') {
+    plan.status = 'completed';
+    plan.completedAt = Date.now();
+  }
+  _saveCurrentMeetPlan();
+  _saveActiveMeetId(null);
+  exitCompetitionMode();
+}
+
+// ── Competition History on Metrics page ────────────────────────────────────
+function _renderCompetitionHistory() {
+  const allPlans = _loadMeetPlans();
+  const upcoming = allPlans.filter(p => p.status === 'planning');
+  const completed = allPlans.filter(p => p.status === 'completed');
+  if (upcoming.length === 0 && completed.length === 0) return '';
+
+  let html = '';
+
+  // Upcoming Meets section
+  if (upcoming.length > 0) {
+    let upcomingHtml = '';
+    upcoming.forEach(plan => {
+      const lifts = ['squat', 'bench', 'deadlift'];
+      const liftParts = lifts.map(l => {
+        const lp = plan.lifts[l];
+        const label = l === 'deadlift' ? 'DL' : l.charAt(0).toUpperCase() + l.slice(1);
+        if (lp.opener) return `${label}: ${lp.opener}kg`;
+        if (lp.e1rmKg) return `${label}: ${lp.e1rmKg}kg (e1RM)`;
+        return `${label}: \u2014`;
+      });
+      upcomingHtml += `
+      <div class="meet-upcoming-card">
+        <div class="meet-upcoming-name">${esc(plan.meetName || 'Untitled Plan')}</div>
+        ${plan.meetDate ? `<div class="meet-upcoming-date">${plan.meetDate}</div>` : ''}
+        <div class="meet-upcoming-lifts">${liftParts.join(' \u00B7 ')}</div>
+        <div class="meet-upcoming-actions">
+          <button class="meet-upcoming-resume" onclick="event.stopPropagation();_meetResumePlan('${plan.id}')">Resume Plan</button>
+          <button class="meet-upcoming-discard" onclick="event.stopPropagation();_meetDiscardPlan('${plan.id}')">Discard</button>
+        </div>
+      </div>`;
+    });
+    html += `
+    <div style="margin-top:24px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright);margin-bottom:12px;letter-spacing:0.04em;text-transform:uppercase">Upcoming Meets</div>
+      ${upcomingHtml}
+    </div>`;
+  }
+
+  // Past Meets section
+  if (completed.length > 0) {
+    let cardsHtml = '';
+    completed.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+    completed.forEach(plan => {
+      let totalKg = 0;
+      let bombed = null;
+      let madeCount = 0;
+      let totalAttempts = 0;
+      ['squat', 'bench', 'deadlift'].forEach(lift => {
+        const results = plan.lifts[lift].results || [];
+        const made = results.filter(r => r.made);
+        totalAttempts += results.length;
+        madeCount += made.length;
+        if (made.length > 0) {
+          totalKg += Math.max(...made.map(r => r.weight));
+        } else if (results.length >= 3) {
+          bombed = lift;
+        }
+      });
+      const hasTotal = !bombed;
+      const dateStr = plan.meetDate || '';
+      cardsHtml += `
+      <div class="meet-history-card" onclick="_viewMeetRecap('${plan.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="meet-history-name">${plan.meetName || 'Unnamed Meet'}</div>
+            <div class="meet-history-date">${dateStr}${totalAttempts ? ' \u00B7 ' + madeCount + '/' + totalAttempts + ' attempts' : ''}</div>
+          </div>
+          <div class="meet-history-total">${hasTotal ? totalKg + ' kg' : 'No Total'}</div>
+        </div>
+      </div>`;
+    });
+    html += `
+    <div style="margin-top:24px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright);margin-bottom:12px;letter-spacing:0.04em;text-transform:uppercase">Past Meets</div>
+      ${cardsHtml}
+    </div>`;
+  }
+
+  return html;
+}
+
+function _viewMeetRecap(planId) {
+  const plans = _loadMeetPlans();
+  const plan = plans.find(p => p.id === planId);
+  if (!plan) return;
+  state.activeMeetPlan = plan;
+  state.meetDayView = 'results';
+  state.viewingMeetRecap = true;
+  // Don't set competitionMode — this is just a read-only recap view
+  setScreen('home');
+}
+
+// ── Comp Total chip for home screen ────────────────────────────────────────
+function _getCompTotal() {
+  const plans = _loadMeetPlans().filter(p => p.status === 'completed');
+  if (plans.length === 0) return null;
+  // Get the best total from all completed meets
+  let bestTotal = 0;
+  plans.forEach(plan => {
+    let total = 0;
+    let valid = true;
+    ['squat','bench','deadlift'].forEach(lift => {
+      const results = plan.lifts[lift].results || [];
+      const made = results.filter(r => r.made);
+      if (made.length > 0) total += Math.max(...made.map(r => r.weight));
+      else if (results.length >= 3) valid = false;
+    });
+    if (valid && total > bestTotal) bestTotal = total;
+  });
+  return bestTotal > 0 ? bestTotal : null;
+}
+
+
 </script>
 </body>
 </html>
