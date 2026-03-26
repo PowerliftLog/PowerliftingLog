@@ -2225,8 +2225,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .meet-history-card:active { opacity: 0.75; }
 .meet-history-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-bright); }
 .meet-history-date { font-size: var(--fs-xs); color: var(--text-dim); margin-top: 2px; }
-.meet-history-delete { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--text-dimmer); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: color 0.15s; }
-.meet-history-delete:hover { color: var(--text-dim); }
+/* .meet-history-delete removed — delete now in recap view */
 .meet-history-total { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); color: var(--gold); }
 
 /* Confirmation dialog */
@@ -2247,6 +2246,10 @@ canvas.chart-overlay { pointer-events: auto; }
 /* Save & Exit button */
 .meet-save-exit { width: 100%; padding: 10px; background: none; border: none; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: var(--fs-base); letter-spacing: 0.03em; cursor: pointer; transition: opacity 0.15s; }
 .meet-save-exit:active { opacity: 0.6; }
+
+/* Meet callouts (educational tips) */
+.meet-callout { background: rgba(var(--gold-rgb), 0.06); border: 1px solid rgba(var(--gold-rgb), 0.15); border-radius: 10px; padding: 10px 12px; font-size: var(--fs-sm); color: var(--text-sub); line-height: 1.4; margin-bottom: 12px; }
+.meet-preview-banner { text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xs); color: var(--text-dimmer); letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 0; margin-bottom: 4px; }
 
 /* Upcoming meets cards */
 .meet-upcoming-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; }
@@ -2567,6 +2570,7 @@ canvas.chart-overlay { pointer-events: auto; }
       </div>
       <div class="settings-toggle" id="comp-mode-toggle" role="switch" aria-checked="false" aria-label="Competition Mode toggle"></div>
     </button>
+    <div id="comp-mode-details"></div>
     <button class="settings-row-btn" onclick="openRestTimerModal()">
       <div class="settings-row-left">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -2878,8 +2882,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.28.0';
-const APP_BUILD   = '3/25/26e';
+const APP_VERSION = 'v0.29.0';
+const APP_BUILD   = '3/25/26f';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2943,6 +2947,9 @@ async function _bootApp() {
   const _hv=document.getElementById('hdr-ver');if(_hv)_hv.textContent=APP_VERSION;
   const _hb=document.getElementById('hdr-build');if(_hb)_hb.textContent=APP_BUILD;
   const _sv=document.getElementById('settings-version-tap');if(_sv)_sv.innerHTML='<span>'+APP_VERSION+' \u00B7 Build '+APP_BUILD+'</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>';
+
+  // 5b. Populate comp mode details in settings
+  _updateCompModeDetails();
 
   // 6. Boot the UI (onboarding check → render) — always runs
   checkOnboarding();
@@ -6410,6 +6417,11 @@ function renderHome() {
   // Competition mode or meet recap: render meet day screens instead of normal home
   if (state.competitionMode || state.viewingMeetRecap) { renderMeetDay(); return; }
 
+  // Check for meet day or upcoming meet
+  const _meetDayPlan = _getMeetDayPlan();
+  const _upcomingMeet = !_meetDayPlan ? _getUpcomingMeetPlan() : null;
+  const _meetCardHtml = _meetDayPlan ? _renderMeetDayHomeCard(_meetDayPlan) : (_upcomingMeet ? _renderUpcomingMeetHomeCard(_upcomingMeet) : '');
+
   const block = state.activeBlock;
   const content = document.getElementById('main-content');
 
@@ -6418,6 +6430,7 @@ function renderHome() {
     content.innerHTML = `<div class="home-screen">
       <h1 class="home-greeting">${getGreeting()}</h1>
       <div class="home-date">${getDateLine()}</div>
+      ${_meetCardHtml}
       <div class="home-empty">
         <div class="home-empty-icon"><svg viewBox="0 0 28 40" fill="var(--gold)" width="48" height="70" style="opacity:0.9"><polygon points="18,0 7,22 14,22 10,40 21,18 14,18"/></svg></div>
         <h2 class="home-empty-title">No Program Loaded</h2>
@@ -6517,6 +6530,7 @@ function renderHome() {
   content.innerHTML = `<div class="home-screen">
     <h1 class="home-greeting">${getGreeting()}${athleteName ? ', ' + escH(athleteName) : ''}</h1>
     <div class="home-date">${getDateLine()}</div>
+    ${_meetCardHtml}
     ${demoBannerHtml}
     ${updateBannerHtml}
     ${heroHtml}
@@ -17752,6 +17766,7 @@ function _getActiveMeetPlan() {
 
 function _saveCurrentMeetPlan() {
   if (!state.activeMeetPlan) return;
+  if (state.activeMeetPlan.isPreview) return; // Don't persist preview/walkthrough data
   const plans = _loadMeetPlans();
   const idx = plans.findIndex(p => p.id === state.activeMeetPlan.id);
   if (idx >= 0) plans[idx] = state.activeMeetPlan;
@@ -17857,6 +17872,7 @@ function _createMeetPlan() {
     weightClass: '',
     bodyweight: null,
     bodyweightUnit: 'kg',
+    protocol: 'standard',
     mode: 'auto',
     barWeights: { squat: 20, bench: 20, deadlift: 20 },
     collarWeight: 5,
@@ -17887,6 +17903,34 @@ function _createLiftPlan() {
   };
 }
 
+// ── Attempt protocols ───────────────────────────────────────────────────────
+const ATTEMPT_PROTOCOLS = {
+  conservative: {
+    label: 'Conservative',
+    desc: 'Go 9/9. Smaller jumps, higher make rate.',
+    opener: 0.875,
+    second: { a: 0.925, b: 0.95, c: 0.975 },
+    thirdJumps: [2.5, 5.0, 7.5],
+    thirdCeil: 1.00
+  },
+  standard: {
+    label: 'Standard',
+    desc: 'Balanced approach. Good for most meets.',
+    opener: 0.90,
+    second: { a: 0.95, b: 0.965, c: 0.98 },
+    thirdJumps: [2.5, 5.0, 7.5],
+    thirdCeil: 1.03
+  },
+  aggressive: {
+    label: 'Aggressive',
+    desc: 'PR hunt. Higher opener, bigger jumps.',
+    opener: 0.92,
+    second: { a: 0.97, b: 0.985, c: 1.00 },
+    thirdJumps: [2.5, 5.0, 7.5],
+    thirdCeil: 1.05
+  }
+};
+
 // ── Attempt calculation engine ──────────────────────────────────────────────
 function _roundToNearest2_5(kg, direction) {
   if (direction === 'down') return Math.floor(kg / 2.5) * 2.5;
@@ -17894,65 +17938,70 @@ function _roundToNearest2_5(kg, direction) {
   return Math.round(kg / 2.5) * 2.5;
 }
 
-function _calcOpener(e1rmKg) {
+function _calcOpener(e1rmKg, protocol) {
+  const p = ATTEMPT_PROTOCOLS[protocol || 'standard'];
   if (!e1rmKg || e1rmKg <= 0) return null;
-  return _roundToNearest2_5(e1rmKg * 0.90, 'down');
+  return _roundToNearest2_5(e1rmKg * p.opener, 'down');
 }
 
-function _calc2ndAttempts(e1rmKg) {
+function _calc2ndAttempts(e1rmKg, protocol) {
+  const p = ATTEMPT_PROTOCOLS[protocol || 'standard'];
   if (!e1rmKg || e1rmKg <= 0) return null;
   return {
-    a: _roundToNearest2_5(e1rmKg * 0.95, 'down'),
-    b: _roundToNearest2_5(e1rmKg * 0.965, 'nearest'),
-    c: _roundToNearest2_5(e1rmKg * 0.98, 'up')
+    a: _roundToNearest2_5(e1rmKg * p.second.a, 'down'),
+    b: _roundToNearest2_5(e1rmKg * p.second.b, 'nearest'),
+    c: _roundToNearest2_5(e1rmKg * p.second.c, 'up')
   };
 }
 
-function _calc3rdAttempts(e1rmKg, chosen2nd) {
+function _calc3rdAttempts(e1rmKg, chosen2nd, protocol) {
+  const p = ATTEMPT_PROTOCOLS[protocol || 'standard'];
   if (!e1rmKg || e1rmKg <= 0) return null;
-  // All options are relative jumps from chosen 2nd — guarantees A < B < C always
-  // regardless of which 2nd (A/B/C) was selected
-  const a = chosen2nd + 2.5;   // small jump — conservative, high make rate
-  const b = chosen2nd + 5.0;   // medium jump
-  const cTarget = Math.max(chosen2nd + 7.5, _roundToNearest2_5(e1rmKg * 1.03, 'up'));
+  const a = chosen2nd + p.thirdJumps[0];
+  const b = chosen2nd + p.thirdJumps[1];
+  const cTarget = Math.max(chosen2nd + p.thirdJumps[2], _roundToNearest2_5(e1rmKg * p.thirdCeil, 'up'));
   return { a, b, c: cTarget };
 }
 
-function _calcAdaptive2nd(e1rmKg, openerWeight, feedback) {
+function _calcAdaptive2nd(e1rmKg, openerWeight, feedback, protocol) {
+  const p = ATTEMPT_PROTOCOLS[protocol || 'standard'];
   if (!e1rmKg) return { a: openerWeight, b: openerWeight, c: openerWeight };
   if (feedback === 'moved_well') {
+    // Shift up from protocol's base 2nd percentages
     return {
-      a: _roundToNearest2_5(e1rmKg * 0.96, 'nearest'),
-      b: _roundToNearest2_5(e1rmKg * 0.975, 'nearest'),
-      c: _roundToNearest2_5(e1rmKg * 0.99, 'up')
+      a: _roundToNearest2_5(e1rmKg * Math.min(p.second.a + 0.01, 1.0), 'nearest'),
+      b: _roundToNearest2_5(e1rmKg * Math.min(p.second.b + 0.01, 1.0), 'nearest'),
+      c: _roundToNearest2_5(e1rmKg * Math.min(p.second.c + 0.01, 1.0), 'up')
     };
   } else if (feedback === 'heavy') {
+    // Shift down from protocol's base 2nd percentages
     return {
-      a: _roundToNearest2_5(e1rmKg * 0.94, 'down'),
-      b: _roundToNearest2_5(e1rmKg * 0.95, 'nearest'),
-      c: _roundToNearest2_5(e1rmKg * 0.96, 'nearest')
+      a: _roundToNearest2_5(e1rmKg * (p.second.a - 0.01), 'down'),
+      b: _roundToNearest2_5(e1rmKg * (p.second.b - 0.015), 'nearest'),
+      c: _roundToNearest2_5(e1rmKg * (p.second.c - 0.02), 'nearest')
     };
   }
   // 'expected' or default
-  return _calc2ndAttempts(e1rmKg);
+  return _calc2ndAttempts(e1rmKg, protocol);
 }
 
-function _calcAdaptive3rd(e1rmKg, chosen2nd, feedback) {
+function _calcAdaptive3rd(e1rmKg, chosen2nd, feedback, protocol) {
+  const p = ATTEMPT_PROTOCOLS[protocol || 'standard'];
   if (!e1rmKg) return { a: chosen2nd, b: chosen2nd, c: chosen2nd };
   if (feedback === 'moved_well') {
     return {
-      a: _roundToNearest2_5(e1rmKg * 1.00, 'nearest'),
-      b: _roundToNearest2_5(e1rmKg * 1.02, 'up'),
-      c: _roundToNearest2_5(e1rmKg * 1.03, 'up')
+      a: _roundToNearest2_5(e1rmKg * Math.min(p.thirdCeil - 0.03, 1.0), 'nearest'),
+      b: _roundToNearest2_5(e1rmKg * Math.min(p.thirdCeil - 0.01, 1.0), 'up'),
+      c: _roundToNearest2_5(e1rmKg * p.thirdCeil, 'up')
     };
   } else if (feedback === 'heavy') {
     return {
-      a: chosen2nd + 2.5,
-      b: _roundToNearest2_5(e1rmKg * 0.99, 'nearest'),
-      c: _roundToNearest2_5(e1rmKg * 1.00, 'nearest')
+      a: chosen2nd + p.thirdJumps[0],
+      b: _roundToNearest2_5(e1rmKg * (p.thirdCeil - 0.04), 'nearest'),
+      c: _roundToNearest2_5(e1rmKg * (p.thirdCeil - 0.03), 'nearest')
     };
   }
-  return _calc3rdAttempts(e1rmKg, chosen2nd);
+  return _calc3rdAttempts(e1rmKg, chosen2nd, protocol);
 }
 
 function _calcMissOptions(prevWeight) {
@@ -18119,6 +18168,106 @@ function _showToast(msg) {
   setTimeout(() => el.remove(), 3000);
 }
 
+// ── Meet Day Walkthrough (preview mode) ────────────────────────────────────
+function _meetCallout(key, text) {
+  const dismissed = JSON.parse(localStorage.getItem('liftlog_meet_callouts_dismissed') || '[]');
+  if (dismissed.includes(key)) return '';
+  return `<div class="meet-callout" data-key="${key}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <span>${text}</span>
+      <button onclick="_dismissMeetCallout('${key}')" style="background:none;border:none;color:var(--text-dimmer);font-size:16px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">\u00D7</button>
+    </div>
+  </div>`;
+}
+
+function _dismissMeetCallout(key) {
+  const dismissed = JSON.parse(localStorage.getItem('liftlog_meet_callouts_dismissed') || '[]');
+  if (!dismissed.includes(key)) dismissed.push(key);
+  localStorage.setItem('liftlog_meet_callouts_dismissed', JSON.stringify(dismissed));
+  const el = document.querySelector('.meet-callout[data-key="' + key + '"]');
+  if (el) el.remove();
+}
+
+function _meetPreviewBanner() {
+  if (!state.activeMeetPlan || !state.activeMeetPlan.isPreview) return '';
+  return '<div class="meet-preview-banner">MEET DAY WALKTHROUGH \u2014 no data will be saved</div>';
+}
+
+function _meetStartWalkthrough() {
+  // Check if a saved plan exists to use its data
+  const savedPlans = _loadMeetPlans();
+  const savedPlan = savedPlans.find(p => p.status === 'planning');
+  let plan;
+  if (savedPlan) {
+    plan = JSON.parse(JSON.stringify(savedPlan));
+  } else {
+    plan = _createMeetPlan();
+    // Try to seed from training data
+    const e1rms = _getMeetE1RMs();
+    if (e1rms.squat || e1rms.bench || e1rms.deadlift) {
+      ['squat','bench','deadlift'].forEach(l => {
+        if (e1rms[l]) {
+          plan.lifts[l].e1rmKg = e1rms[l];
+          plan.lifts[l].e1rmSource = 'training';
+          plan.lifts[l].opener = _calcOpener(e1rms[l], plan.protocol);
+        }
+      });
+    } else {
+      // Sample data fallback
+      plan.lifts.squat.e1rmKg = 140; plan.lifts.squat.e1rmSource = 'demo'; plan.lifts.squat.opener = _calcOpener(140, plan.protocol);
+      plan.lifts.bench.e1rmKg = 100; plan.lifts.bench.e1rmSource = 'demo'; plan.lifts.bench.opener = _calcOpener(100, plan.protocol);
+      plan.lifts.deadlift.e1rmKg = 160; plan.lifts.deadlift.e1rmSource = 'demo'; plan.lifts.deadlift.opener = _calcOpener(160, plan.protocol);
+    }
+    plan.meetName = plan.meetName || 'Demo Meet';
+    plan.meetDate = new Date().toISOString().slice(0,10);
+  }
+  plan.isPreview = true;
+  state.activeMeetPlan = plan;
+  state.competitionMode = true;
+  state.meetDayView = 'setup';
+  setScreen('home');
+}
+
+function _meetEndWalkthrough() {
+  state.activeMeetPlan = null;
+  state.competitionMode = false;
+  state.meetDayView = 'setup';
+  state.viewingMeetRecap = false;
+  setScreen('home');
+}
+
+function _meetWalkthroughToReal() {
+  state.activeMeetPlan = null;
+  state.meetDayView = 'setup';
+  state.viewingMeetRecap = false;
+  // Enter real competition mode
+  toggleCompetitionMode();
+}
+
+function _updateCompModeDetails() {
+  const el = document.getElementById('comp-mode-details');
+  if (!el) return;
+  const plans = _loadMeetPlans();
+  const saved = plans.find(p => p.status === 'planning');
+  if (saved) {
+    const protoLabel = ATTEMPT_PROTOCOLS[saved.protocol || 'standard'].label;
+    const dateStr = saved.meetDate ? new Date(saved.meetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    el.innerHTML = `<div style="padding:8px 16px 12px;background:var(--surface-2);border-radius:0 0 12px 12px;margin-top:-1px;border:1px solid var(--border);border-top:none">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright)">${esc(saved.meetName || 'Untitled Plan')}</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:8px">${dateStr}${dateStr && protoLabel ? ' \u00B7 ' : ''}${protoLabel}</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="meet-btn-secondary" style="flex:1;font-size:var(--fs-sm);padding:8px" onclick="_meetResumePlan('${saved.id}')">Resume Plan</button>
+        <button class="meet-btn-secondary" style="flex:1;font-size:var(--fs-sm);padding:8px;color:var(--red,#e74c3c)" onclick="_confirmDeleteMeet('${saved.id}');_updateCompModeDetails()">Delete Plan</button>
+      </div>
+      <div onclick="_meetStartWalkthrough()" style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;cursor:pointer;padding:4px 0">Meet Day Walkthrough</div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div style="padding:8px 16px 4px">
+      <div onclick="_meetStartWalkthrough()" style="font-size:var(--fs-sm);color:var(--text-dim);cursor:pointer;padding:4px 0">Meet Day Walkthrough</div>
+    </div>`;
+  }
+}
+
 function _meetSaveAndExit() {
   if (state.activeMeetPlan) {
     state.activeMeetPlan.status = 'planning';
@@ -18159,6 +18308,14 @@ function _meetExitOrSave() {
 function _meetDiscardPlan(planId) {
   const plans = _loadMeetPlans().filter(p => p.id !== planId);
   _saveMeetPlans(plans);
+  // If viewing this plan's recap, navigate back to metrics
+  if (state.viewingMeetRecap && state.activeMeetPlan && state.activeMeetPlan.id === planId) {
+    state.viewingMeetRecap = false;
+    state.meetDayView = null;
+    state.activeMeetPlan = null;
+    setScreen('metrics');
+    return;
+  }
   renderMetrics();
 }
 
@@ -18169,6 +18326,73 @@ function _confirmDeleteMeet(planId) {
     'Delete',
     () => { _meetDiscardPlan(planId); }
   );
+}
+
+function _getMeetDayPlan() {
+  const today = new Date().toISOString().slice(0,10);
+  const plans = _loadMeetPlans();
+  return plans.find(p => p.status === 'planning' && p.meetDate === today) || null;
+}
+
+function _getUpcomingMeetPlan() {
+  const now = new Date();
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+  const dayAfter = new Date(now); dayAfter.setDate(now.getDate() + 2);
+  const tmrStr = tomorrow.toISOString().slice(0,10);
+  const dayAfterStr = dayAfter.toISOString().slice(0,10);
+  const plans = _loadMeetPlans();
+  const plan = plans.find(p => p.status === 'planning' && (p.meetDate === tmrStr || p.meetDate === dayAfterStr));
+  if (!plan) return null;
+  const meetDate = new Date(plan.meetDate + 'T00:00:00');
+  const diff = Math.ceil((meetDate - now) / (1000 * 60 * 60 * 24));
+  return { plan, daysAway: diff };
+}
+
+function _renderMeetDayHomeCard(meetPlan) {
+  const plan = meetPlan;
+  const liftOrder = ['squat', 'bench', 'deadlift'];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+  const hasAllOpeners = liftOrder.every(l => plan.lifts[l].opener);
+  const protoLabel = ATTEMPT_PROTOCOLS[plan.protocol || 'standard'].label;
+
+  let liftsHtml = '';
+  liftOrder.forEach(l => {
+    const lp = plan.lifts[l];
+    if (lp.opener) {
+      const parts = [lp.opener];
+      if (lp.planned2nd) parts.push(lp.planned2nd);
+      if (lp.planned3rd) parts.push(lp.planned3rd);
+      liftsHtml += `<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-sm);color:var(--text-dim);width:65px;letter-spacing:0.04em">${liftLabels[l]}</div><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright)">${parts.join(' \u2192 ')} kg</div></div>`;
+    } else {
+      liftsHtml += `<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-sm);color:var(--text-dim);width:65px;letter-spacing:0.04em">${liftLabels[l]}</div><div style="font-size:var(--fs-sm);color:var(--text-dimmer)">\u2014</div></div>`;
+    }
+  });
+
+  const ctaText = hasAllOpeners ? 'LET\'S GO \u2014 START WARM-UPS \u2192' : 'CONTINUE PLANNING \u2192';
+
+  return `<div style="background:rgba(var(--gold-rgb),0.06);border:1.5px solid rgba(var(--gold-rgb),0.3);border-radius:16px;padding:16px 18px;margin-bottom:var(--sp-5)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xl);color:var(--gold);letter-spacing:0.04em">IT'S MEET DAY</div>
+    </div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright);margin-bottom:2px">${esc(plan.meetName || 'Meet Day')}</div>
+    <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:10px">${plan.weightClass ? plan.weightClass + ' kg \u00B7 ' : ''}${protoLabel} Strategy</div>
+    ${liftsHtml}
+    <button class="meet-btn-primary" style="margin-top:12px;font-size:var(--fs-lg)" onclick="_meetResumePlan('${plan.id}')">${ctaText}</button>
+  </div>`;
+}
+
+function _renderUpcomingMeetHomeCard(info) {
+  const plan = info.plan;
+  const daysText = info.daysAway === 1 ? 'tomorrow' : 'in ' + info.daysAway + ' days';
+  return `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:var(--sp-5)">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);color:var(--text-bright)">Your meet is ${daysText}</div>
+    <div style="font-size:var(--fs-sm);color:var(--text-dim);margin-bottom:10px">${esc(plan.meetName || 'Meet Day')}</div>
+    <div style="display:flex;gap:8px">
+      <button class="meet-btn-secondary" style="flex:1;font-size:var(--fs-sm);padding:10px" onclick="_viewMeetRecap('${plan.id}')">Review Plan</button>
+      <button class="meet-btn-secondary" style="flex:1;font-size:var(--fs-sm);padding:10px" onclick="_meetResumePlan('${plan.id}')">Edit Plan</button>
+    </div>
+  </div>`;
 }
 
 function _meetResumePlan(planId) {
@@ -18264,6 +18488,7 @@ function renderMeetDay() {
     case 'e1rm-input': renderMeetE1RMInput(content); break;
     case 'plan-auto': renderMeetPlanAuto(content); break;
     case 'plan-manual': renderMeetPlanManual(content); break;
+    case 'plan-complete': renderMeetPlanComplete(content); break;
     case 'warmup': renderMeetWarmup(content); break;
     case 'live': renderMeetLive(content); break;
     case 'effort-rating': renderMeetEffortRating(content); break;
@@ -18285,11 +18510,13 @@ function renderMeetSetup(content) {
   const sqBarKg = plan.barWeights.squat;
 
   content.innerHTML = `<div class="meet-screen">
+    ${_meetPreviewBanner()}
+    ${_meetCallout('setup', 'This is where you enter your meet details. Weight class and bodyweight are used for DOTS/Wilks scoring after the meet.')}
     <div class="meet-header">
       <div>
         <div class="meet-header-title">New Meet Plan</div>
       </div>
-      <span class="meet-exit-link" onclick="_meetExitOrSave()">Exit Competition Mode</span>
+      <span class="meet-exit-link" onclick="${plan.isPreview ? '_meetEndWalkthrough()' : '_meetExitOrSave()'}">${plan.isPreview ? 'Exit Walkthrough' : 'Exit Competition Mode'}</span>
     </div>
 
     <div class="meet-form-group">
@@ -18449,7 +18676,7 @@ function renderMeetE1RMInput(content) {
     if (!lp.e1rmKg && trainingE1RMs[lift]) {
       lp.e1rmKg = trainingE1RMs[lift];
       lp.e1rmSource = 'training';
-      lp.opener = _calcOpener(lp.e1rmKg);
+      lp.opener = _calcOpener(lp.e1rmKg, plan.protocol);
     }
   });
 
@@ -18511,6 +18738,8 @@ function renderMeetE1RMInput(content) {
   });
 
   content.innerHTML = `<div class="meet-screen">
+    ${_meetPreviewBanner()}
+    ${_meetCallout('e1rm', 'These are your estimated 1-rep maxes from training data. The app uses these to calculate your attempt plan. You can adjust them if needed.')}
     <div class="meet-header">
       <span class="meet-exit-link" onclick="state.meetDayView='setup';renderMeetDay();window.scrollTo(0,0)">\u2190 Setup</span>
       <div style="text-align:center">
@@ -18540,7 +18769,7 @@ function _meetUpdateRP(lift, field, val) {
     lp.e1rmKg = Math.round(e1rm * 10) / 10;
     lp.e1rmSource = 'calculated';
     lp.e1rmMethod = 'epley';
-    lp.opener = _calcOpener(lp.e1rmKg);
+    lp.opener = _calcOpener(lp.e1rmKg, state.activeMeetPlan.protocol);
     // Update display
     const e1rmEl = document.getElementById('meet-e1rm-' + lift);
     const openerEl = document.getElementById('meet-opener-' + lift);
@@ -18582,7 +18811,7 @@ function _meetUpdateE1RM(lift, val) {
   lp.e1rmSource = 'manual';
   lp.e1rmMethod = null;
   if (lp.e1rmKg) {
-    lp.opener = _calcOpener(lp.e1rmKg);
+    lp.opener = _calcOpener(lp.e1rmKg, state.activeMeetPlan.protocol);
     const openerEl = document.getElementById('meet-opener-' + lift);
     if (openerEl) openerEl.value = lp.opener;
   }
@@ -18663,9 +18892,10 @@ function renderMeetPlanAuto(content) {
   const opener = lp.opener;
 
   // Calculate 2nd and 3rd attempt options
-  const sec = e1rm ? _calc2ndAttempts(e1rm) : null;
+  const proto = plan.protocol || 'standard';
+  const sec = e1rm ? _calc2ndAttempts(e1rm, proto) : null;
   const selected2nd = lp.planned2nd || (sec ? sec.b : null);
-  const thi = (e1rm && selected2nd) ? _calc3rdAttempts(e1rm, selected2nd) : null;
+  const thi = (e1rm && selected2nd) ? _calc3rdAttempts(e1rm, selected2nd, proto) : null;
   const selected3rd = lp.planned3rd || (thi ? thi.b : null);
 
   function optionRow(label, kg, selected, attemptNum, prevWeight) {
@@ -18694,6 +18924,8 @@ function renderMeetPlanAuto(content) {
   }
 
   content.innerHTML = `<div class="meet-screen" style="gap:10px">
+    ${_meetPreviewBanner()}
+    ${_meetCallout('plan-opener', 'Your opener is set at ' + Math.round((ATTEMPT_PROTOCOLS[proto].opener)*100) + '% of your e1RM \u2014 a weight you can hit on your worst day. A/B/C options for 2nd and 3rd are conservative, moderate, and aggressive.')}
     <div class="meet-header">
       <span class="meet-exit-link" onclick="state.meetDayView='e1rm-input';renderMeetDay();window.scrollTo(0,0)">\u2190 Maxes</span>
       <div style="text-align:center">
@@ -18705,6 +18937,14 @@ function renderMeetPlanAuto(content) {
 
     <div class="meet-lift-tabs">
       ${['squat','bench','deadlift'].map(l => `<div class="meet-lift-tab ${l===lift?'active':'inactive'}" onclick="_meetPlanLift='${l}';renderMeetDay()">${liftLabels[l]}</div>`).join('')}
+    </div>
+
+    <div style="margin-bottom:2px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Attempt Strategy</div>
+      <div class="meet-toggle-group" style="gap:0;width:100%">
+        ${['conservative','standard','aggressive'].map(k => `<button class="meet-toggle-btn ${proto===k?'active':''}" style="flex:1;font-size:11px;padding:6px 4px" onclick="_meetSetProtocol('${k}')">${ATTEMPT_PROTOCOLS[k].label}</button>`).join('')}
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:4px;text-align:center">${ATTEMPT_PROTOCOLS[proto].desc}</div>
     </div>
 
     ${opener ? `
@@ -18786,15 +19026,96 @@ function _meetSelectAttempt(lift, attemptNum, kg) {
 function _meetContinueFromPlan() {
   if (_meetPlanLift === 'squat') { _meetPlanLift = 'bench'; renderMeetDay(); window.scrollTo(0,0); return; }
   if (_meetPlanLift === 'bench') { _meetPlanLift = 'deadlift'; renderMeetDay(); window.scrollTo(0,0); return; }
-  // All 3 planned — continue to warmups
+  // All 3 planned — show plan complete screen with save/continue options
+  if (!state.activeMeetPlan.isPreview) {
+    state.meetDayView = 'plan-complete';
+    renderMeetDay();
+    window.scrollTo(0, 0);
+    return;
+  }
+  // Preview mode: go straight to warmups
+  _meetGoToWarmups();
+}
+
+function _meetGoToWarmups() {
   _meetPlanLift = 'squat';
   state.meetDayView = 'warmup';
   state.activeMeetPlan._warmupLift = 'squat';
-  // Generate warmups
   _meetGenerateWarmups();
   _saveCurrentMeetPlan();
   renderMeetDay();
   window.scrollTo(0, 0);
+}
+
+function _meetSaveForMeetDay() {
+  if (state.activeMeetPlan) {
+    state.activeMeetPlan.status = 'planning';
+    _saveCurrentMeetPlan();
+  }
+  exitCompetitionMode();
+  _showToast('Plan saved \u2014 you\'ll see it on meet day');
+}
+
+function renderMeetPlanComplete(content) {
+  const plan = state.activeMeetPlan;
+  const liftOrder = ['squat', 'bench', 'deadlift'];
+  const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
+  let summaryHtml = '';
+  liftOrder.forEach(l => {
+    const lp = plan.lifts[l];
+    const parts = [lp.opener, lp.planned2nd, lp.planned3rd].filter(Boolean);
+    summaryHtml += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-sm);color:var(--text-dim);width:65px;letter-spacing:0.04em">${liftLabels[l]}</div><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-lg);color:var(--text-bright)">${parts.join(' \u2192 ')} kg</div></div>`;
+  });
+
+  content.innerHTML = `<div class="meet-screen">
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-2xl);color:var(--gold);letter-spacing:0.04em">YOUR PLAN IS SET</div>
+      <div style="font-size:var(--fs-sm);color:var(--text-dim)">What's next?</div>
+    </div>
+
+    <div class="meet-card">
+      ${summaryHtml}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <button class="meet-btn-primary" onclick="_meetSaveForMeetDay()">SAVE PLAN FOR MEET DAY</button>
+      <button class="meet-btn-secondary" onclick="_meetStartWalkthrough()">MEET DAY WALKTHROUGH \u2192</button>
+      <button class="meet-btn-secondary" onclick="_meetGoToWarmups()">START WARM-UPS \u2192</button>
+    </div>
+  </div>`;
+}
+
+function _meetSetProtocol(proto) {
+  const plan = state.activeMeetPlan;
+  if (plan.protocol === proto) return;
+  // Check if any attempts have been selected
+  const hasSelections = ['squat','bench','deadlift'].some(l => plan.lifts[l].planned2nd || plan.lifts[l].planned3rd);
+  if (hasSelections) {
+    _showMeetConfirmDialog(
+      'Change Strategy?',
+      'Changing strategy will reset your attempt selections for all lifts.',
+      'Change',
+      function() {
+        plan.protocol = proto;
+        ['squat','bench','deadlift'].forEach(l => {
+          const lp = plan.lifts[l];
+          lp.planned2nd = null;
+          lp.planned3rd = null;
+          if (lp.e1rmKg) lp.opener = _calcOpener(lp.e1rmKg, proto);
+        });
+        _saveCurrentMeetPlan();
+        renderMeetDay();
+      }
+    );
+  } else {
+    plan.protocol = proto;
+    ['squat','bench','deadlift'].forEach(l => {
+      const lp = plan.lifts[l];
+      if (lp.e1rmKg) lp.opener = _calcOpener(lp.e1rmKg, proto);
+    });
+    _saveCurrentMeetPlan();
+    renderMeetDay();
+  }
 }
 
 function _meetGenerateWarmups() {
@@ -18824,15 +19145,18 @@ function renderMeetPlanManual(content) {
   const opener = lp.opener;
 
   // Suggestion values
-  const sec = e1rm ? _calc2ndAttempts(e1rm) : null;
+  const proto = plan.protocol || 'standard';
+  const sec = e1rm ? _calc2ndAttempts(e1rm, proto) : null;
   const selected2nd = lp.planned2nd || (sec ? sec.b : null);
-  const thi = (e1rm && selected2nd) ? _calc3rdAttempts(e1rm, selected2nd) : null;
+  const thi = (e1rm && selected2nd) ? _calc3rdAttempts(e1rm, selected2nd, proto) : null;
   const selected3rd = lp.planned3rd || (thi ? thi.b : null);
 
   // App suggestion text
-  const suggestText = e1rm ? `app suggests: ${_calcOpener(e1rm)} / ${sec?sec.b:'?'}` : '';
+  const suggestText = e1rm ? `app suggests: ${_calcOpener(e1rm, proto)} / ${sec?sec.b:'?'}` : '';
 
   content.innerHTML = `<div class="meet-screen" style="gap:10px">
+    ${_meetPreviewBanner()}
+    ${_meetCallout('plan-manual', 'You\'re in full control here. Enter every number yourself. The app shows suggestions based on your strategy selection, but you can ignore them.')}
     <div class="meet-header">
       <span class="meet-exit-link" onclick="state.meetDayView='e1rm-input';renderMeetDay();window.scrollTo(0,0)">\u2190 Maxes</span>
       <div style="text-align:center">
@@ -18843,6 +19167,14 @@ function renderMeetPlanManual(content) {
     </div>
 
     <div style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;padding:6px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">You're in full control. Enter every number.</div>
+
+    <div style="margin-bottom:2px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Attempt Strategy</div>
+      <div class="meet-toggle-group" style="gap:0;width:100%">
+        ${['conservative','standard','aggressive'].map(k => `<button class="meet-toggle-btn ${proto===k?'active':''}" style="flex:1;font-size:11px;padding:6px 4px" onclick="_meetSetProtocol('${k}')">${ATTEMPT_PROTOCOLS[k].label}</button>`).join('')}
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:4px;text-align:center">${ATTEMPT_PROTOCOLS[proto].desc}</div>
+    </div>
 
     <div class="meet-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -18998,6 +19330,8 @@ function renderMeetWarmup(content) {
 
   content.innerHTML = `<div class="meet-screen" style="gap:0;padding:var(--sp-6) 0">
     <div style="padding:0 var(--sp-6)">
+      ${_meetPreviewBanner()}
+      ${_meetCallout('warmup', 'These are calculated warm-up sets to peak for your opener. Check them off as you go in the warm-up room.')}
       <div class="meet-header">
         <span class="meet-exit-link" onclick="state.meetDayView='plan-${plan.mode==='manual'?'manual':'auto'}';renderMeetDay();window.scrollTo(0,0)">\u2190 Plan</span>
         <div style="text-align:center">
@@ -19162,6 +19496,8 @@ function renderMeetLive(content) {
   ).join('');
 
   content.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;padding:var(--sp-6) 0">
+    ${_meetPreviewBanner()}
+    ${_meetCallout('live', 'During the meet, you\'ll log each attempt result here. The app adapts your next attempt based on how the lift moved.')}
     <div style="text-align:center">
       <div class="meet-live-attempt-badge" style="background:rgba(var(--gold-rgb),0.1);border:1px solid rgba(var(--gold-rgb),0.3);color:var(--gold)">ATTEMPT ${attempt} OF 3</div>
       <div class="meet-live-lift">${liftLabels[lift]}</div>
@@ -19226,6 +19562,7 @@ function renderMeetEffortRating(content) {
   const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
 
   content.innerHTML = `<div class="meet-screen" style="align-items:center;justify-content:center;min-height:70vh">
+    ${_meetPreviewBanner()}
     <div style="text-align:center;margin-bottom:24px">
       <div class="meet-live-attempt-badge" style="background:rgba(var(--green-rgb),0.1);border:1px solid rgba(var(--green-rgb),0.3);color:var(--green)">${liftLabels[plan._currentLift]} \u00B7 ATTEMPT ${result.attemptNum}</div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-3xl);color:var(--green);margin-top:8px">GOOD LIFT</div>
@@ -19261,6 +19598,7 @@ function renderMeetMissDiagnosis(content) {
   const liftLabels = { squat: 'SQUAT', bench: 'BENCH', deadlift: 'DEADLIFT' };
 
   content.innerHTML = `<div class="meet-screen" style="align-items:center;justify-content:center;min-height:70vh">
+    ${_meetPreviewBanner()}
     <div style="text-align:center;margin-bottom:24px">
       <div class="meet-live-attempt-badge" style="background:rgba(226,44,44,0.1);border:1px solid rgba(226,44,44,0.3);color:var(--red)">${liftLabels[plan._currentLift]} \u00B7 ATTEMPT ${result.attemptNum}</div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-3xl);color:var(--red);margin-top:8px">NO LIFT</div>
@@ -19377,10 +19715,11 @@ function renderMeetAttemptSelect(content) {
   let contextBanner = '';
   if (lastResult.made) {
     // Adaptive suggestions based on feedback
+    const proto = plan.protocol || 'standard';
     if (nextAttempt === 2) {
-      suggestions = _calcAdaptive2nd(e1rm, lastResult.weight, feedback);
+      suggestions = _calcAdaptive2nd(e1rm, lastResult.weight, feedback, proto);
     } else {
-      suggestions = _calcAdaptive3rd(e1rm, lastResult.weight, feedback);
+      suggestions = _calcAdaptive3rd(e1rm, lastResult.weight, feedback, proto);
     }
     // Enforce no-drop
     ['a','b','c'].forEach(k => {
@@ -19407,6 +19746,7 @@ function renderMeetAttemptSelect(content) {
   }
 
   content.innerHTML = `<div class="meet-screen">
+    ${_meetPreviewBanner()}
     <div style="text-align:center;margin-bottom:8px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xl);color:var(--text-bright)">${liftLabels[lift]} \u2014 PICK YOUR ${nextAttempt === 2 ? '2ND' : '3RD'}</div>
     </div>
@@ -19527,9 +19867,30 @@ function renderMeetResults(content) {
     </div>`;
   });
 
+  const isPreview = plan.isPreview;
+  const isRecap = state.viewingMeetRecap;
+
+  let actionsHtml;
+  if (isPreview) {
+    actionsHtml = `
+      <div style="text-align:center;margin-top:8px;font-size:var(--fs-sm);color:var(--text-dim)">Walkthrough complete!</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+        <button class="meet-btn-primary" onclick="_meetWalkthroughToReal()">PLAN MY MEET \u2192</button>
+        <button class="meet-btn-secondary" onclick="_meetEndWalkthrough()">Back to Home</button>
+      </div>`;
+  } else if (isRecap) {
+    actionsHtml = `
+      <button class="meet-btn-secondary" onclick="state.viewingMeetRecap=false;state.meetDayView=null;state.activeMeetPlan=null;setScreen('metrics')">\u2190 Back to Metrics</button>
+      <button class="meet-btn-secondary" style="color:var(--red,#e74c3c);margin-top:16px;font-size:var(--fs-sm)" onclick="_confirmDeleteMeet('${plan.id}')">Delete This Meet</button>`;
+  } else {
+    actionsHtml = `<button class="meet-btn-primary" onclick="_meetExitFromResults()">EXIT COMPETITION MODE</button>`;
+  }
+
   content.innerHTML = `<div class="meet-screen">
+    ${_meetPreviewBanner()}
+    ${_meetCallout('results', 'After all 9 attempts, you\'ll see your total, DOTS, and Wilks scores here.')}
     <div style="text-align:center">
-      <div class="meet-header-title" style="color:var(--gold)">MEET COMPLETE</div>
+      <div class="meet-header-title" style="color:var(--gold)">${isPreview ? 'WALKTHROUGH COMPLETE' : 'MEET COMPLETE'}</div>
       <div class="meet-header-sub">${plan.meetName || 'Meet Day'}${plan.meetDate ? ' \u00B7 ' + plan.meetDate : ''}</div>
     </div>
 
@@ -19550,9 +19911,7 @@ function renderMeetResults(content) {
       ${liftsHtml}
     </div>
 
-    ${state.viewingMeetRecap
-      ? `<button class="meet-btn-secondary" onclick="state.viewingMeetRecap=false;state.meetDayView=null;state.activeMeetPlan=null;setScreen('metrics')">\u2190 Back to Metrics</button>`
-      : `<button class="meet-btn-primary" onclick="_meetExitFromResults()">EXIT COMPETITION MODE</button>`}
+    ${actionsHtml}
   </div>`;
 }
 
@@ -19631,8 +19990,7 @@ function _renderCompetitionHistory() {
       const dateStr = plan.meetDate || '';
       cardsHtml += `
       <div class="meet-history-card" onclick="_viewMeetRecap('${plan.id}')">
-        <button class="meet-history-delete" onclick="event.stopPropagation();_confirmDeleteMeet('${plan.id}')">\u00D7</button>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding-right:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div class="meet-history-name">${plan.meetName || 'Unnamed Meet'}</div>
             <div class="meet-history-date">${dateStr}${totalAttempts ? ' \u00B7 ' + madeCount + '/' + totalAttempts + ' attempts' : ''}</div>
