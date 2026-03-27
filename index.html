@@ -2883,7 +2883,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/25/26f';
+const APP_BUILD   = '3/27/26g';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -7257,7 +7257,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   const _inlineControls = (_restBtnHtml || _unitToggleHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}</div>` : '';
 
   // Coach notes banner — render above sets (Option A: gold left-border banner)
-  const _allCoachNotes = [...(ex.coachNotes||[])];
+  const _allCoachNotes = Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : ex.coachNotes ? [ex.coachNotes] : [];
   if (ex.note && !_allCoachNotes.includes(ex.note)) _allCoachNotes.unshift(ex.note);
   const _coachBannerHtml = _allCoachNotes.length > 0
     ? _allCoachNotes.map(n=>`<div class="coach-note-banner">${escH(n)}</div>`).join('')
