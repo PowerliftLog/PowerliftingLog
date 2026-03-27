@@ -336,7 +336,7 @@
 .btn-danger:active { opacity: 0.75; }
 html { background: var(--bg); }
 body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 'Barlow', sans-serif; min-height: 100dvh; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom); }
-#main-content { padding-bottom: 100px; }
+#main-content { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
 .app { max-width: 480px; margin: 0 auto; min-height: 100dvh; }
 .header { padding: max(18px, env(safe-area-inset-top)) 16px 14px; border-bottom: 1px solid var(--header-border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--header-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 100; }
 .header-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); letter-spacing: 0.04em; color: var(--gold); }
@@ -427,7 +427,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .theme-toggle-btn:active { background: rgba(255,255,255,0.08); }
 .upload-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100dvh - 70px); padding: 32px 32px 80px; text-align: center; }
 .upload-icon-wrap { position: relative; display: inline-flex; margin-bottom: var(--sp-8); }
-.upload-icon-wrap::before { content: ''; position: absolute; inset: -28px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.16) 0%, rgba(var(--gold-rgb), 0.04) 50%, transparent 70%); pointer-events: none; }
+.upload-icon-wrap::before { content: ''; position: absolute; inset: -28px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.16) 0%, rgba(var(--gold-rgb), 0.10) 20%, rgba(var(--gold-rgb), 0.05) 40%, rgba(var(--gold-rgb), 0.01) 60%, transparent 75%); pointer-events: none; }
 .upload-icon { width: 72px; height: 72px; border: 1.5px solid rgba(201,168,76,0.4); border-radius: 18px; display: flex; align-items: center; justify-content: center; background: rgba(201,168,76,0.06); position: relative; z-index: 1; }
 .upload-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-display); letter-spacing: 0.02em; margin-bottom: var(--sp-5); color: var(--text-primary); }
 .upload-desc { color: var(--text-muted); font-size: var(--fs-lg); line-height: 1.75; margin-bottom: 32px; max-width: 290px; }
@@ -823,7 +823,8 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .completed-ex-detail { text-align: right; flex-shrink: 0; margin-left: var(--sp-5); }
 .completed-ex-top { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 800; color: rgba(74,222,128,0.85); letter-spacing: 0.02em; line-height: 1.15; }
 .completed-ex-meta { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-faint); margin-top: 1px; }
-.set-row:has(.set-check.done) { border-left: 2.5px solid rgba(74,222,128,0.45); background: rgba(var(--green-rgb), 0.04); border-radius: 4px; padding-left: var(--sp-4); }
+.set-row:has(.set-check.done) { position: relative; background: rgba(var(--green-rgb), 0.04); border-radius: 4px; padding-left: var(--sp-4); }
+.set-row:has(.set-check.done)::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: rgba(74,222,128,0.45); border-radius: 4px 0 0 4px; }
 .exercise-check svg { width: 14px; height: 14px; }
 
 /* ── Start/Resume Workout Banners ── */
@@ -855,7 +856,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .track-hint-inline { font-size: var(--fs-xs); color: var(--text-dim); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-style: normal; }
 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
-.home-screen { padding: 48px var(--sp-6) 80px; overflow: hidden; }
+.home-screen { padding: 20px var(--sp-6) 24px; overflow-x: hidden; }
 .home-greeting { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 2px; }
 .home-date { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 500; letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: var(--sp-4); }
 
@@ -864,7 +865,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .home-hero:active { transform: scale(0.95); }
 .home-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.08) 0%, transparent 60%); pointer-events: none; }
 .home-hero-barbell-wrap { position: absolute; right: -12px; bottom: -18px; pointer-events: none; }
-.home-hero-barbell-wrap::before { content: ''; position: absolute; inset: -24px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.05) 0%, rgba(var(--gold-rgb), 0.01) 55%, transparent 70%); }
+.home-hero-barbell-wrap::before { content: ''; position: absolute; inset: -24px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.05) 0%, rgba(var(--gold-rgb), 0.03) 25%, rgba(var(--gold-rgb), 0.01) 50%, transparent 70%); }
 .home-hero-barbell { opacity: 0.08; position: relative; z-index: 1; }
 .home-hero-inner { position: relative; z-index: 1; padding: var(--sp-6) var(--sp-7); }
 .home-hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: var(--sp-3); }
@@ -1358,9 +1359,9 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .e6-pr-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-xs); color: var(--text-dim); }
 
 /* No-program state */
-.home-empty { text-align: center; padding: 60px var(--sp-8); }
+.home-empty { text-align: center; padding: 24px var(--sp-8) 16px; }
 .home-empty-icon { position: relative; display: inline-block; margin: 0 auto var(--sp-7); }
-.home-empty-icon::before { content: ''; position: absolute; inset: -28px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.16) 0%, rgba(var(--gold-rgb), 0.04) 50%, transparent 70%); pointer-events: none; }
+.home-empty-icon::before { content: ''; position: absolute; inset: -28px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.16) 0%, rgba(var(--gold-rgb), 0.10) 20%, rgba(var(--gold-rgb), 0.05) 40%, rgba(var(--gold-rgb), 0.01) 60%, transparent 75%); pointer-events: none; }
 .home-empty-icon svg { position: relative; z-index: 1; }
 .home-empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--text-bright); margin-bottom: var(--sp-4); letter-spacing: 0.04em; }
 .home-empty-desc { font-family: 'Barlow', sans-serif; font-size: var(--fs-lg); color: var(--text-faint); line-height: 1.6; margin-bottom: var(--sp-8); }
@@ -1405,7 +1406,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .onboarding-container { width: 100%; max-width: 400px; padding: 0 var(--sp-8); text-align: center; animation: onboardFadeIn 0.4s ease; }
 @keyframes onboardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 .onboard-icon { position: relative; display: inline-block; margin-bottom: 28px; }
-.onboard-icon::before { content: ''; position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.18) 0%, rgba(var(--gold-rgb), 0.05) 45%, transparent 70%); pointer-events: none; }
+.onboard-icon::before { content: ''; position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb), 0.18) 0%, rgba(var(--gold-rgb), 0.11) 20%, rgba(var(--gold-rgb), 0.05) 40%, rgba(var(--gold-rgb), 0.01) 60%, transparent 75%); pointer-events: none; }
 .onboard-icon svg { position: relative; z-index: 1; }
 .onboard-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-display); font-weight: 700; color: var(--text-bright); margin-bottom: var(--sp-4); letter-spacing: -0.01em; }
 .onboard-sub { font-family: 'Barlow', sans-serif; font-size: var(--fs-lg); color: var(--text-faint); line-height: 1.6; margin-bottom: 32px; }
@@ -1710,7 +1711,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .metrics-upload-confirm.visible { display: block; }
 
 /* Workout tab empty state — ghost preview + floating CTA */
-.wkt-empty { position: relative; height: 720px; overflow: hidden; }
+.wkt-empty { position: relative; height: min(720px, calc(100dvh - 200px)); overflow: hidden; }
 .wkt-ghost { padding: 0 var(--sp-5); }
 .wkt-ghost-bar { background: rgba(255,255,255,0.025); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 14px var(--sp-5); margin: 0 calc(-1 * var(--sp-5)) 14px; display: flex; justify-content: space-between; align-items: center; }
 .wkt-ghost-name { height: 14px; width: 48%; border-radius: 4px; background: rgba(255,255,255,0.06); }
@@ -1729,7 +1730,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .wkt-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 380px; background: linear-gradient(to bottom, transparent, rgba(var(--bg-page-rgb,12,12,20),0.88) 50%, #0c0c14 100%); pointer-events: none; }
 .wkt-cta { position: absolute; bottom: 12px; left: 16px; right: 16px; background: rgba(18,18,28,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 22px 20px 18px; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
 .wkt-cta-bolt { position: relative; display: inline-block; margin-bottom: 14px; }
-.wkt-cta-bolt::before { content: ''; position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb),0.14) 0%, transparent 70%); pointer-events: none; }
+.wkt-cta-bolt::before { content: ''; position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--gold-rgb),0.14) 0%, rgba(var(--gold-rgb),0.09) 20%, rgba(var(--gold-rgb),0.04) 40%, rgba(var(--gold-rgb),0.01) 60%, transparent 75%); pointer-events: none; }
 .wkt-cta-title { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: 0.04em; margin-bottom: 6px; }
 .wkt-cta-desc { font-size: var(--fs-md); color: var(--text-dim); line-height: 1.45; margin-bottom: 18px; }
 .wkt-chip-row { display: flex; gap: 7px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
@@ -2883,7 +2884,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/27/26g';
+const APP_BUILD   = '3/27/26h';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -10636,12 +10637,31 @@ function checkAndActivateFinishButton(block, week, day) {
       btn.textContent = 'Finish Workout';
       btn.style.animation = 'finishPulse 0.5s ease-out';
       btn.addEventListener('animationend', () => { btn.style.animation = ''; }, { once: true });
-      // Scroll into view after last checkmark animation settles
-      setTimeout(() => {
-        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
+      // Defer scroll if user is still typing in the last exercise's inputs
+      _scrollToFinishWhenReady(block, week, day, btn);
     }
   }
+}
+function _scrollToFinishWhenReady(block, week, day, btn) {
+  const lastEx = day.exercises[day.exercises.length - 1];
+  const lastExKey = lk(block.id, week.label, day.name, lastEx.name);
+  const lastExCard = document.querySelector(`.exercise-card[data-ex-key="${cssEsc(lastExKey)}"]`);
+  // If focus is not in the last exercise's set inputs, scroll right away
+  const active = document.activeElement;
+  if (!lastExCard || !lastExCard.contains(active) || !active.matches('.set-input')) {
+    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    return;
+  }
+  // Focus is inside the last exercise — wait until user leaves it
+  const onFocusOut = (e) => {
+    const goingTo = e.relatedTarget;
+    // Still moving between set inputs inside the same card — keep waiting
+    if (goingTo && lastExCard.contains(goingTo) && goingTo.matches('.set-input')) return;
+    // Tapped outside (or dismissed keyboard) — scroll now
+    lastExCard.removeEventListener('focusout', onFocusOut);
+    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+  };
+  lastExCard.addEventListener('focusout', onFocusOut);
 }
 function updateExerciseCheckmark(exKey,isDone){
   const cssVal=exKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
