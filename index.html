@@ -1346,13 +1346,13 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 /* Split rows */
 .e6-split-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: var(--sp-4); }
 .e6-split { display: flex; flex-direction: column; }
-.e6-split-row { display: flex; align-items: center; padding: var(--sp-4) 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.e6-split-row { display: flex; align-items: center; padding: var(--sp-4) 0; border-bottom: 1px solid rgba(255,255,255,0.04); gap: var(--sp-4); }
 .e6-split-row:last-child { border-bottom: none; }
 .e6-split-row.highlight { background: rgba(var(--gold-rgb), 0.04); margin: 0 -20px; padding: var(--sp-4) 20px; border-left: 2px solid var(--gold); border-bottom-color: rgba(var(--gold-rgb), 0.08); }
-.e6-split-day { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--text-faint); width: 70px; flex-shrink: 0; }
+.e6-split-day { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--text-faint); width: 45%; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .e6-split-day.done { color: var(--green); }
 .e6-split-day.next { color: var(--gold); }
-.e6-split-primary { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 600; color: var(--text-mid); flex: 1; }
+.e6-split-primary { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 600; color: var(--text-mid); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .e6-split-row.highlight .e6-split-primary { color: var(--text-bright); }
 .e6-split-check { color: var(--green); font-size: var(--fs-sm); width: 30px; text-align: right; flex-shrink: 0; }
 
@@ -2894,7 +2894,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/28/26e';
+const APP_BUILD   = '3/28/26f';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
