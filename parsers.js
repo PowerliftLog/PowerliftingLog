@@ -96,10 +96,23 @@ const EXERCISE_ALIASES = {
   },
 };
 
+// Sanitize strings from Excel/PDF/Word — normalize Unicode artifacts to ASCII equivalents
+function _sanitizeExcelStr(s){
+  if(!s || typeof s !== 'string') return '';
+  return s
+    .replace(/[\u2018\u2019\u201A\uFF07]/g, "'")   // smart single quotes → ASCII
+    .replace(/[\u201C\u201D\u201E\uFF02]/g, '"')    // smart double quotes → ASCII
+    .replace(/[\u2013\u2014]/g, '-')                 // en-dash / em-dash → hyphen
+    .replace(/\u00D7/g, 'x')                         // multiplication sign → x
+    .replace(/[\u2026]/g, '...')                      // ellipsis → three dots
+    .replace(/\s+/g, ' ')                            // collapse all whitespace (incl \u00A0)
+    .trim();
+}
+
 function isCompLift(name){
   // Strip dedup bracket suffix + set-type qualifiers (backdowns = same lift, lighter sets)
   // + equipment modifiers (belt/wraps/sleeves/straps don't change competition classification)
-  const n = name.toLowerCase().trim()
+  const n = _sanitizeExcelStr(name).toLowerCase()
     .replace(/\s*\[.*\]$/, '')
     .replace(/\s+backdowns?\s*$/, '')
     .replace(/\s*w\/?\/?\s*(belt|wraps?|sleeves?|straps?)\s*$/i, '')
@@ -140,7 +153,7 @@ const LIFT_GROUP_DISQUALIFIERS = [
 // Base classifier — returns group name or null. No access to runtime state.
 // index.html layers on custom lifts and 'other' fallback via classifyLift().
 function _classifyLiftBase(name){
-  const n=name.toLowerCase();
+  const n=_sanitizeExcelStr(name).toLowerCase();
   // If name contains a disqualifying word, it's an accessory regardless of keyword match
   const disqualified = LIFT_GROUP_DISQUALIFIERS.some(d=>n.includes(d));
   if(!disqualified){
@@ -446,7 +459,7 @@ const SYNONYM_MAP = {
  * Returns the canonical name (proper-cased) or the original name if no synonym found.
  */
 function canonicalizeLift(name) {
-  const base = _getBaseName(name).trim();
+  const base = _sanitizeExcelStr(_getBaseName(name));
   const key = base.toLowerCase().replace(/[,.:;!?]+$/, '').trim();
   if (SYNONYM_MAP[key]) return SYNONYM_MAP[key];
   return base;
@@ -505,8 +518,8 @@ function editDistance(a,b){
  */
 function _smartExerciseMatch(a, b, opts = {}) {
   if (!a || !b) return false;
-  const normA = a.toLowerCase().trim();
-  const normB = b.toLowerCase().trim();
+  const normA = _sanitizeExcelStr(a).toLowerCase();
+  const normB = _sanitizeExcelStr(b).toLowerCase();
   // 1. EXACT
   if (normA === normB) return true;
   // 2. SYNONYM MAP
@@ -531,7 +544,7 @@ function _smartExerciseMatch(a, b, opts = {}) {
  */
 function _extractPrimaryKeyword(name, group) {
   if (!LIFT_GROUPS[group]) return null;
-  const lower = name.toLowerCase();
+  const lower = _sanitizeExcelStr(name).toLowerCase();
   const keywords = LIFT_GROUPS[group].slice().sort((a, b) => b.length - a.length);
   for (const keyword of keywords) {
     if (lower.includes(keyword)) return keyword;
@@ -3348,7 +3361,7 @@ function parseFamilyC(wb) {
 
     // Col B: exercise name
     if (colB != null && /[a-zA-Z]{2,}/.test(String(colB))) {
-      var exName = String(colB).trim();
+      var exName = _sanitizeExcelStr(colB);
       var prescription = _fc_buildPrescription(colC, colD);
       if (currentDay) {
         currentDay.exercises.push({
@@ -4302,7 +4315,7 @@ function parseBSheet(sn,rows,ws){
           const presParts = presStr.split(/,\s*/);
           if (presParts.length >= parts.length) {
             parts.forEach((exName, idx) => {
-              curDay.exercises.push({name:exName.trim(), prescription:(presParts[idx]||'').trim()||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
+              curDay.exercises.push({name:_sanitizeExcelStr(exName), prescription:(presParts[idx]||'').trim()||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
             });
           } else {
             const exNames = parts.map(p => p.trim().toLowerCase());
@@ -4325,7 +4338,7 @@ function parseBSheet(sn,rows,ws){
             });
             const fallback = defaultPres || assigned.filter(Boolean)[0] || presStr;
             parts.forEach((exName, idx) => {
-              curDay.exercises.push({name:exName.trim(), prescription:assigned[idx]||fallback||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
+              curDay.exercises.push({name:_sanitizeExcelStr(exName), prescription:assigned[idx]||fallback||null, note, lifterNote, loggedWeight:cleanLogged, supersetGroup});
             });
           }
           continue;
@@ -4658,7 +4671,7 @@ function parseRP(wb) {
         for (const db of dayBounds) {
           for (let r = db.startRow; r <= db.endRow; r++) {
             const row = rows[r]; if (!row) continue;
-            const exName = row[0] != null ? String(row[0]).trim() : '';
+            const exName = row[0] != null ? _sanitizeExcelStr(row[0]) : '';
             const rmVal = row[setup10RMCol];
             if (!exName || typeof rmVal !== 'number') continue;
             const group = _classifyLiftBase(exName);
@@ -5392,7 +5405,7 @@ function parseE_matrix(wb) {
               const row = rows[r]; if (!row) continue;
               const exCell = row[0];
               if (exCell == null) continue;
-              const exName = String(exCell).trim();
+              const exName = _sanitizeExcelStr(exCell);
               if (!exName || /^\d+(\.\d+)?$/.test(exName) || /^week\s*\d/i.test(exName)) continue;
               if (!/[a-zA-Z]{2,}/.test(exName)) continue;
               const presCell = row[dc.col];
@@ -8745,14 +8758,17 @@ function deduplicateExerciseNames(blocks) {
       for (const day of (week.days || [])) {
         const seen = {};
         for (const ex of (day.exercises || [])) {
+          // Sanitize exercise names from all parsers — normalize Unicode, collapse whitespace
+          if(ex.name) ex.name = _sanitizeExcelStr(ex.name);
           const base = ex.name;
           if (seen[base] === undefined) {
             seen[base] = 1;
           } else {
             seen[base]++;
             ex.displayName = base;
-            const disambig = ex.prescription
-              ? ex.prescription.replace(/\s+/g,' ').trim().substring(0, 30)
+            const presTrimmed = ex.prescription ? ex.prescription.replace(/\s+/g,' ').trim() : '';
+            const disambig = presTrimmed
+              ? presTrimmed.substring(0, 30)
               : ('#' + seen[base]);
             ex.name = base + ' [' + disambig + ']';
             const firstEx = day.exercises.find(e => e !== ex && (e.displayName || e.name) === base);

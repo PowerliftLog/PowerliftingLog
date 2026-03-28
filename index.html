@@ -2894,7 +2894,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/27/26p';
+const APP_BUILD   = '3/28/26d';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2948,6 +2948,33 @@ async function _bootApp() {
 
     // 4b. One-time prune: clean stale trackedLifts/customLifts entries from deleted blocks
     if (_savedBlocks.length > 0) _pruneTrackedLifts();
+
+    // 4c. One-time migration: clear stuck canonical false entries for comp lifts.
+    // Pre-S65 bug: autoRegisterCompLifts had an `=== undefined` guard that prevented
+    // overwriting stale false entries. This left canonical keys (e.g. "deadlift": false)
+    // stuck. Deleting them lets isCompLift() default kick in, restoring expected behavior.
+    // Runs once per install via the migration version stamp.
+    if (!state.trackedLifts._migV || state.trackedLifts._migV < 1) {
+      let _migChanged = false;
+      for (const key of Object.keys(state.trackedLifts)) {
+        if (key === '_migV') continue;
+        if (state.trackedLifts[key] === false) {
+          // Only clear if this key is the canonical form of a comp lift in a loaded block
+          const isStuckComp = _savedBlocks.length > 0 && _savedBlocks.some(block =>
+            (block.weeks||[]).some(week =>
+              (week.days||[]).some(day =>
+                (day.exercises||[]).some(ex =>
+                  canonicalizeLift(ex.name).toLowerCase().trim() === key && isCompLift(ex.name)
+                )
+              )
+            )
+          );
+          if (isStuckComp) { delete state.trackedLifts[key]; _migChanged = true; }
+        }
+      }
+      state.trackedLifts._migV = 1;
+      if (_migChanged) saveTrackedLifts();
+    }
   } catch (e) {
     console.error('[Boot] State init failed, using empty state:', e);
     // Emergency fallback — boot with empty state so the app isn't blank
@@ -3223,23 +3250,30 @@ function setScreen(s){
 // LIFT_GROUPS, COMP_KEYWORDS, VARIATION_MODIFIERS, SYNONYM_MAP, LIFT_GROUP_DISQUALIFIERS, isCompLift, canonicalizeLift → from parsers.js
 
 function isTracked(name){
-  // Returns true if this exercise should appear in metrics
-  // Check raw name first (backwards compat with existing trackedLifts entries)
-  const n=name.toLowerCase().trim();
-  if(state.trackedLifts[n]===false) return false;
-  if(state.trackedLifts[n]===true) return true;
-  // Check base name for deduped exercises (e.g., "Barbell Deadlift [1x1(352)]")
+  // Returns true if this exercise should appear in metrics.
+  // Canonical key is the source of truth — toggleTracked() and autoRegisterCompLifts()
+  // both write canonical keys. Check canonical FIRST so stale raw-name entries from older
+  // sessions (where canonicalizeLift produced a different key) can't shadow the real state.
+  const canon = canonicalizeLift(name).toLowerCase().trim();
+  if(state.trackedLifts[canon]===false) return false;
+  if(state.trackedLifts[canon]===true) return true;
+
+  // No canonical entry. If this exercise has a canonical mapping to a different key
+  // (e.g. "Barbell Deadlift" → "deadlift"), skip raw/base fallbacks — they may be
+  // stale from an older session. Fall straight through to isCompLift default.
+  const n = name.toLowerCase().trim();
   const base = _getBaseName(name).toLowerCase().trim();
+  if(canon !== n && canon !== base) return isCompLift(name);
+
+  // No canonical mapping (canon === raw name) — check base and raw for deduped exercises
+  // and backwards compat with entries that predate canonical normalization.
   if(base !== n) {
     if(state.trackedLifts[base]===false) return false;
     if(state.trackedLifts[base]===true) return true;
   }
-  // Check canonical name (synonym-merged) — e.g. "Back Squat" → "Squat"
-  const canon = canonicalizeLift(name).toLowerCase().trim();
-  if(canon !== n && canon !== base) {
-    if(state.trackedLifts[canon]===false) return false;
-    if(state.trackedLifts[canon]===true) return true;
-  }
+  if(state.trackedLifts[n]===false) return false;
+  if(state.trackedLifts[n]===true) return true;
+
   return isCompLift(name);                          // default: comp lifts on, variations off
 }
 
@@ -3279,7 +3313,6 @@ function autoRegisterCompLifts(blocks){
             state.trackedLifts[n]=true;
           } else if(state.trackedLifts[n]===undefined){
             // Non-comp lifts: register only if the user hasn't set a preference yet
-            // (currently no auto-registration needed, but preserves future extensibility)
           }
         }
       }
