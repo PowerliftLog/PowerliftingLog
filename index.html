@@ -328,6 +328,7 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
 *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+input[type="number"], input[inputmode="decimal"], input[inputmode="numeric"] { font-variant-numeric: tabular-nums; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 /* Button utilities */
 .btn-primary { background: var(--gold); color: #0a0a0a; border: none; border-radius: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; text-transform: uppercase; padding: var(--sp-6) var(--sp-8); cursor: pointer; transition: opacity 0.15s; }
@@ -2894,7 +2895,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/28/26f';
+const APP_BUILD   = '3/28/26g';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
