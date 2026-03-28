@@ -2894,7 +2894,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/28/26d';
+const APP_BUILD   = '3/28/26e';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -7263,16 +7263,14 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
         const rm1 = group ? Number(ath['tested1rm_'+group])||0 : 0;
         if (rm1 > 0) return String(Math.round(rm1*s.percentage));
       }
-      // RPE-only or drop percent — no absolute prescription, but use prev week's actual if available
+      // RPE-only or drop percent — autoregulated, no ghost pre-fill
       if (s.rpe != null || s.dropPercent != null || s.isRpe) {
-        if (prevPerf?.sets[si]?.actual && prevPerf.sets[si].actual !== '—') return prevPerf.sets[si].actual;
         return '';
       }
     }
     if (ranged && ranged.weight && !ranged.isRpe) return ranged.weight;
     /* Extract weight from simple prescriptions like "3x5 @ 315" */
     if (simple && pres) { const _wm = pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i); if (_wm) return _wm[1]; }
-    if (prevPerf && prevPerf.sets[si] && prevPerf.sets[si].actual && prevPerf.sets[si].actual !== '—') return prevPerf.sets[si].actual;
     return '';
   }
 
@@ -11383,6 +11381,7 @@ function _pruneTrackedLifts(){
   // Remove tracked entries that aren't in any remaining block
   let changed = false;
   for(const key of Object.keys(state.trackedLifts)){
+    if(key === '_migV') continue; // preserve migration version stamp
     if(!activeNames.has(key)){
       delete state.trackedLifts[key];
       changed = true;
@@ -15340,6 +15339,7 @@ function _installDismissed() {
 }
 
 function _maybeShowInstallBanner() {
+  if (window.Capacitor) return; // Native app — no install banner
   if (_isStandalone()) return;
   if (_installDismissed()) return;
   if (!isOnboarded()) return;
