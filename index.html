@@ -787,13 +787,13 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
   100% { opacity: 0.6; text-shadow: none; }
 }
 /* ── Workout Record Card (H15) ── */
-.workout-record-card { margin: var(--sp-6); background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06); overflow: hidden; }
+.workout-record-card { margin: var(--sp-4) var(--sp-5); background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06); overflow: hidden; }
 .wrc-header { padding: var(--sp-5) var(--sp-6); text-align: center; background: rgba(74,222,128,0.12); }
 .wrc-header-text { font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green); }
-.wrc-identity { padding: var(--sp-8) var(--sp-6) var(--sp-5); text-align: center; }
+.wrc-identity { padding: var(--sp-6) var(--sp-6) var(--sp-4); text-align: center; }
 .wrc-day-name { font-size: 24px; font-weight: 700; line-height: 1.2; color: var(--text-primary); }
 .wrc-block-context { font-size: 14px; font-weight: 400; color: var(--text-mid); margin-top: var(--sp-2); }
-.wrc-stats { display: flex; justify-content: center; gap: 0; padding: 0 var(--sp-6) var(--sp-6); }
+.wrc-stats { display: flex; justify-content: center; gap: 0; padding: 0 var(--sp-6) var(--sp-5); }
 .wrc-stat { text-align: center; flex: 1; position: relative; }
 .wrc-stat + .wrc-stat::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: var(--glass-border); }
 .wrc-stat-val { font-size: var(--fs-2xl); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
@@ -822,28 +822,18 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .wrc-detail-set.skipped .wrc-detail-set-data { text-decoration: line-through; }
 .wrc-detail-set.failed .wrc-detail-set-data { color: #FF9F43; }
 .wrc-divider { height: 1px; background: var(--glass-border); margin: 0; }
-.wrc-journal { padding: var(--sp-8) var(--sp-6) var(--sp-6); }
-.wrc-journal-heading { font-size: var(--fs-lg); font-weight: 600; color: var(--text-bright); margin-bottom: var(--sp-6); }
+.wrc-journal { padding: var(--sp-6) var(--sp-6) var(--sp-5); }
+.wrc-journal-heading { font-size: var(--fs-lg); font-weight: 600; color: var(--text-bright); margin-bottom: var(--sp-5); }
 .wrc-slider-row { margin-bottom: var(--sp-8); }
-.wrc-slider-track-wrap { position: relative; padding: var(--sp-6) 0 var(--sp-4); }
+.wrc-slider-track-wrap { position: relative; padding: 36px 0 var(--sp-4); }
 .wrc-slider-track { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; cursor: pointer; }
 .wrc-slider-fill { height: 100%; background: linear-gradient(90deg, #B8934A, var(--gold)); border-radius: 3px; transition: width 80ms ease; }
 .wrc-slider-thumb { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); border: 3px solid var(--bg); box-shadow: 0 2px 8px rgba(var(--gold-rgb),0.3), 0 0 0 1px rgba(var(--gold-rgb),0.2); position: absolute; top: 50%; transform: translate(-50%, -50%); cursor: grab; transition: left 80ms ease, transform 100ms ease; z-index: 1; }
 .wrc-slider-thumb:active, .wrc-slider-track-wrap.dragging .wrc-slider-thumb { transform: translate(-50%, -50%) scale(1.15); }
-.wrc-slider-value-badge { position: absolute; top: -6px; transform: translateX(-50%); background: var(--gold); color: var(--bg); font-size: var(--fs-md); font-weight: 700; padding: 3px 10px; border-radius: 6px; pointer-events: none; opacity: 0; transition: opacity 120ms; box-shadow: 0 4px 12px rgba(var(--gold-rgb),0.25); z-index: 2; }
+.wrc-slider-value-badge { position: absolute; top: -10px; transform: translateX(-50%) translateY(-100%); background: none; color: var(--gold); font-size: var(--fs-xl); font-weight: 700; padding: 0; pointer-events: none; opacity: 0; transition: opacity 150ms ease, left 80ms ease; z-index: 2; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
 .wrc-slider-value-badge.visible { opacity: 1; }
-.wrc-slider-value-badge::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--gold); }
-.wrc-slider-track-wrap:active .wrc-slider-value-badge, .wrc-slider-track-wrap.dragging .wrc-slider-value-badge { opacity: 1; }
 .wrc-slider-anchors { display: flex; justify-content: space-between; margin-top: var(--sp-4); }
 .wrc-slider-anchor { font-size: var(--fs-sm); font-weight: 500; color: var(--text-sub); letter-spacing: 0.03em; }
-.wrc-tags-section { margin-bottom: var(--sp-8); }
-.wrc-tag-row { display: flex; align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-4); }
-.wrc-tag-row:last-child { margin-bottom: 0; }
-.wrc-tag-row-label { font-size: var(--fs-base); font-weight: 600; color: var(--text-sub); min-width: 76px; flex-shrink: 0; letter-spacing: 0.02em; }
-.wrc-tag-row-chips { display: flex; gap: 6px; flex: 1; }
-.wrc-tag-row-chip { flex: 1; padding: 10px 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: var(--text-mid); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 500; text-align: center; cursor: pointer; transition: all 150ms ease; -webkit-user-select: none; user-select: none; min-height: 44px; display: flex; align-items: center; justify-content: center; }
-.wrc-tag-row-chip:active { transform: scale(0.95); }
-.wrc-tag-row-chip.selected { border-color: rgba(var(--gold-rgb),0.3); background: rgba(var(--gold-rgb),0.06); color: var(--gold); box-shadow: 0 0 0 1px rgba(var(--gold-rgb),0.08); }
 .wrc-notes-area { width: 100%; min-height: 72px; max-height: 140px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: var(--sp-5) var(--sp-6); color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; resize: none; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; field-sizing: content; }
 .wrc-notes-area::placeholder { color: var(--text-sub); }
 .wrc-notes-area:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(var(--gold-rgb),0.08); }
@@ -860,8 +850,6 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .wrc-journal-readonly-rating { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
 .wrc-journal-readonly-rating-label { font-size: var(--fs-base); color: var(--text-sub); font-weight: 500; }
 .wrc-journal-readonly-rating-val { font-size: 14px; font-weight: 700; color: var(--gold); }
-.wrc-journal-readonly-tags { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-bottom: var(--sp-4); }
-.wrc-journal-readonly-tag { font-size: var(--fs-sm); font-weight: 500; color: var(--text-mid); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px 8px; letter-spacing: 0.02em; }
 .wrc-journal-readonly-notes { font-size: var(--fs-md); color: var(--text-mid); line-height: 1.5; }
 .wrc-journal-readonly-notes.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .wrc-journal-show-more { font-size: var(--fs-base); color: var(--gold); cursor: pointer; margin-top: var(--sp-2); font-weight: 500; }
@@ -2819,7 +2807,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.30.0';
-const APP_BUILD   = '3/31/26i';
+const APP_BUILD   = '3/31/26j';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -7617,7 +7605,7 @@ function _buildWorkoutRecordCard(block, week, day, showEditBtn, editable) {
   const hasJournal = forceLog.journal && (forceLog.journal.rating != null || forceLog.journal.notes || (forceLog.journal.tags && Object.values(forceLog.journal.tags).some(v => v != null)));
   // Session detail expander — auto-expand in read-only presentation view (post-save)
   const fkEsc = esc(forceKey);
-  const _detailOpen = !editable && hasJournal;
+  const _detailOpen = false;
   h += `<div class="wrc-detail-expander${_detailOpen ? ' open' : ''}" onclick="_wrcToggleDetail(this)">
     <span class="wrc-detail-label">Session Detail</span>
     <svg class="wrc-detail-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
@@ -7717,22 +7705,6 @@ function _buildJournalSection(forceLog, forceKey, editable) {
       <div class="wrc-slider-thumb" id="wrc-slider-thumb" style="left:${pct}%" ontouchstart="_wrcSliderTouchStart(event)" ontouchmove="_wrcSliderTouchMove(event)" ontouchend="_wrcSliderTouchEnd()"></div>
     </div>
     <div class="wrc-slider-anchors"><span class="wrc-slider-anchor">1 \u2014 Easy</span><span class="wrc-slider-anchor">Brutal \u2014 10</span></div></div>`;
-    // Tags
-    h += `<div class="wrc-tags-section">`;
-    const tagDefs = [
-      { key: 'technique', label: 'Technique', opts: ['dialed','okay','off'], display: ['Dialed','Okay','Off'] },
-      { key: 'fatigue', label: 'Fatigue', opts: ['fresh','normal','gassed'], display: ['Fresh','Normal','Gassed'] },
-      { key: 'soreness', label: 'Soreness', opts: ['none','mild','heavy'], display: ['None','Mild','Heavy'] }
-    ];
-    tagDefs.forEach(td => {
-      h += `<div class="wrc-tag-row"><span class="wrc-tag-row-label">${td.label}</span><div class="wrc-tag-row-chips">`;
-      td.opts.forEach((opt, i) => {
-        const sel = tags[td.key] === opt ? ' selected' : '';
-        h += `<div class="wrc-tag-row-chip${sel}" onclick="_wrcToggleTag(this,'${fkEsc}','${td.key}','${opt}')">${td.display[i]}</div>`;
-      });
-      h += `</div></div>`;
-    });
-    h += `</div>`;
     // Notes textarea
     const notesVal = journal.notes ? escH(journal.notes) : '';
     h += `<textarea class="wrc-notes-area" placeholder="How was the session?" maxlength="500" oninput="_wrcUpdateNotes(this.value)">${notesVal}</textarea>`;
@@ -7744,13 +7716,6 @@ function _buildJournalSection(forceLog, forceKey, editable) {
     if (journal.rating != null) {
       h += `<div class="wrc-journal-readonly-rating"><span class="wrc-journal-readonly-rating-label">Session Rating</span><span class="wrc-journal-readonly-rating-val">${journal.rating} / 10</span></div>`;
     }
-    const tags = journal.tags || {};
-    const tagLabels = { technique: 'Technique', fatigue: 'Fatigue', soreness: 'Soreness' };
-    const tagChips = Object.entries(tagLabels).filter(([k]) => tags[k] != null).map(([k, label]) => {
-      const val = tags[k].charAt(0).toUpperCase() + tags[k].slice(1);
-      return `<span class="wrc-journal-readonly-tag">${label}: ${val}</span>`;
-    });
-    if (tagChips.length) h += `<div class="wrc-journal-readonly-tags">${tagChips.join('')}</div>`;
     if (journal.notes) {
       const needsCollapse = journal.notes.length > 150;
       h += `<div class="wrc-journal-readonly-notes${needsCollapse ? ' collapsed' : ''}">${escH(journal.notes)}</div>`;
@@ -7822,18 +7787,6 @@ function _wrcSliderTouchEnd() {
   if (badge && _wrcActiveForceKey) {
     const val = parseInt(badge.textContent);
     if (val >= 1 && val <= 10) _updateJournal(_wrcActiveForceKey, 'rating', val);
-  }
-}
-
-// Tag toggle handler
-function _wrcToggleTag(el, forceKey, category, value) {
-  const wasSelected = el.classList.contains('selected');
-  el.closest('.wrc-tag-row-chips').querySelectorAll('.wrc-tag-row-chip').forEach(c => c.classList.remove('selected'));
-  if (!wasSelected) {
-    el.classList.add('selected');
-    _updateJournal(forceKey, 'tags.' + category, value);
-  } else {
-    _updateJournal(forceKey, 'tags.' + category, null);
   }
 }
 

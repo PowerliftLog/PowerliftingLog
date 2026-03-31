@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v227';
+const CACHE_NAME = 'liftlog-v228';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
