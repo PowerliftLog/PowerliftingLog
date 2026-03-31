@@ -17,7 +17,7 @@ const LIFT_GROUPS = {
 const COMP_KEYWORDS = {
   squat:    ['squat','squats','back squat','back squats','low bar squat','low bar squats','barbell squat','barbell squats','comp squat','competition squat','barbell back squat','barbell low bar squat','barbell comp squat','barbell competition squat'],
   bench:    ['bench','bench press','flat bench','barbell flat bench','barbell bench','barbell bench press','comp bench','comp bench press','barbell comp bench','barbell comp bench press','competition bench','competition bench press','paused bench','paused bench press','pause bench','pause bench press','1 sec bench press','1 sec bench','1 sec pause bench','1 sec paused bench','1 sec paused bench press','1ct bench','1ct bench press','1 count bench','1 count bench press','barbell pause bench','barbell paused bench','barbell paused bench press'],
-  deadlift: ['deadlift','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift','sumo deadlift','sumo pull','sumo','barbell sumo deadlift','barbell sumo','deadlift (primary stance)'],
+  deadlift: ['deadlift','dead','barbell deadlift','conventional deadlift','comp deadlift','competition deadlift','conventional pull','comp pull','competition style deadlift','barbell conventional deadlift','barbell comp deadlift','sumo deadlift','sumo pull','sumo','barbell sumo deadlift','barbell sumo','deadlift (primary stance)'],
 };
 
 const VARIATION_MODIFIERS = [

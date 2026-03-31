@@ -546,7 +546,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .prescription.purple { color: var(--gold-data); }
 .pres-text-fallback { font-size: var(--fs-sm); color: var(--text-sub); font-style: italic; line-height: 1.4; }
 .sets-grid { padding: var(--sp-2) var(--sp-6) var(--sp-6); display: flex; flex-direction: column; gap: 0; }
-.set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px var(--sp-1); border-bottom: 1px solid var(--surface-3); }
+.set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px 10px 7px var(--sp-1); border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
 .set-row-header { display: flex; gap: var(--sp-4); padding: var(--sp-3) var(--sp-1) 2px; margin-top: var(--sp-2); }
 .set-row.set-done { background: rgba(var(--green-rgb), 0.05); }
@@ -601,7 +601,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-check::before { content: ''; position: absolute; inset: -9px; }
 .set-check.done { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
 .set-check svg { width: 12px; height: 12px; }
-.pr-badge { position: absolute; top: -9px; right: -9px; display: inline-flex; align-items: center; background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 4px; border-radius: 3px; pointer-events: none; animation: prFlash 0.6s ease-out; }
+.pr-badge { position: absolute; top: -13px; right: -9px; display: inline-flex; align-items: center; background: rgba(var(--gold-rgb),0.15); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 4px; border-radius: 3px; pointer-events: none; animation: prFlash 0.6s ease-out; }
 @keyframes prFlash { 0% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 /* ── Micro-animations ─────────────────────────────────────────────────── */
 @keyframes checkPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
@@ -709,7 +709,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .lifter-prev-note { padding: 0 var(--sp-6) var(--sp-3); font-size: var(--fs-base); color: var(--text-sub); font-style: italic; }
 .prev-performance-src { font-size: var(--fs-xs); color: #8a7a3a; text-transform: uppercase; letter-spacing: 0.08em; padding: var(--sp-3) var(--sp-6) var(--sp-1); }
 .set-prev-hint { font-size: var(--fs-sm); color: var(--hint-color); font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.03em; padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-2); margin-top: -2px; margin-bottom: var(--sp-2); opacity: 0.9; }
-.set-row:has(.set-check.done) + .set-prev-hint { opacity: 0.45; }
+.swipe-set-wrap:has(.set-check.done) + .set-prev-hint { opacity: 0.45; }
 .collapsed-prev-summary { font-size: var(--fs-sm); color: var(--hint-color); font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.02em; padding: 0 var(--sp-6) var(--sp-5); opacity: 0.8; }
 .rest-msg { text-align: center; color: var(--text-dimmer); padding-top: 60px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl); }
 
@@ -830,6 +830,30 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .completed-ex-meta { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-faint); margin-top: 1px; }
 .set-row:has(.set-check.done) { position: relative; background: rgba(var(--green-rgb), 0.04); border-radius: 4px; padding-left: var(--sp-4); }
 .set-row:has(.set-check.done)::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: rgba(74,222,128,0.45); border-radius: 4px 0 0 4px; }
+/* H16 — Set skip / failed */
+.set-row.set-skipped { opacity: 0.45; }
+.set-row.set-skipped .set-input { pointer-events: none; opacity: 0.4; }
+.set-row.set-failed { position: relative; padding-left: var(--sp-4); }
+.swipe-set-row.set-failed { box-shadow: inset 0 0 0 9999px rgba(255,159,67,0.05); }
+.set-row.set-failed::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: rgba(255,159,67,0.5); border-radius: 4px 0 0 4px; }
+.set-row.set-skipped .set-check { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); }
+.set-row.set-failed .set-check { background: rgba(255,159,67,0.1); border-color: rgba(255,159,67,0.4); }
+.set-row.set-skipped .set-check::after { content: '—'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 12px; font-weight: 700; color: #808080; line-height: 1; }
+.set-row.set-failed .set-check::after { content: '✕'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 11px; font-weight: 700; color: #FF9F43; line-height: 1; }
+.set-row.set-skipped .set-prescribed-btn { text-decoration: line-through; }
+.set-row.set-skipped .set-num { text-decoration: line-through; }
+/* Swipe container */
+.swipe-set-wrap { position: relative; overflow: hidden; }
+.swipe-set-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; align-items: stretch; background: var(--surface-2, #111); transition: opacity 0.18s ease; }
+.swipe-set-wrap:has(.set-skipped):not(:has(.shifted)) .swipe-set-actions,
+.swipe-set-wrap:has(.set-failed):not(:has(.shifted)) .swipe-set-actions { opacity: 0; pointer-events: none; }
+.swipe-set-action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 72px; border: none; font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; gap: 3px; -webkit-tap-highlight-color: transparent; user-select: none; }
+.swipe-set-action-btn.sab-skip { background: rgba(70,70,90,0.97); color: #aaa; }
+.swipe-set-action-btn.sab-fail { background: rgba(150,70,15,0.97); color: #FF9F43; }
+.swipe-set-action-btn.sab-clear { background: rgba(45,45,60,0.97); color: #999; width: 144px; font-size: 11px; }
+.swipe-set-action-icon { font-size: 15px; line-height: 1; }
+.swipe-set-row { background: var(--surface-2, #111); position: relative; z-index: 1; transition: transform 0.22s ease; touch-action: pan-y; }
+.swipe-set-row.shifted { transform: translateX(-144px); }
 .exercise-check svg { width: 14px; height: 14px; }
 
 /* ── Start/Resume Workout Banners ── */
@@ -2894,8 +2918,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.29.0';
-const APP_BUILD   = '3/28/26g';
+const APP_VERSION = 'v0.29.4';
+const APP_BUILD   = '3/30/26d';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -7275,7 +7299,14 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     return '';
   }
 
-  function _setRowOpen(sk) { const d=(state.logs[sk]||{}).done; return `<div class="set-row${d?' set-done':''}">`; }
+  function _setRowOpen(sk) {
+    const sl=state.logs[sk]||{}; const d=sl.done; const ss=sl.setStatus;
+    const rowCls=d?' set-done':ss==='skipped'?' set-skipped':ss==='failed'?' set-failed':'';
+    const actHtml=ss
+      ?`<button class="swipe-set-action-btn sab-clear" onclick="applySetStatus('${esc(sk)}',null)">↩ Clear</button>`
+      :`<button class="swipe-set-action-btn sab-skip" onclick="applySetStatus('${esc(sk)}','skipped')"><span class="swipe-set-action-icon">—</span>Skip</button><button class="swipe-set-action-btn sab-fail" onclick="applySetStatus('${esc(sk)}','failed')"><span class="swipe-set-action-icon">✕</span>Failed</button>`;
+    return `<div class="swipe-set-wrap"><div class="swipe-set-actions">${actHtml}</div><div class="set-row${rowCls} swipe-set-row">`;
+  }
 
   // Shared extra-set row builder — called at the end of hasSets, simple, and ranged branches.
   // Uses closures: key, ex, inputMode, _isBarbell, _ghostWeight, _setRowOpen from _buildSetRows scope.
@@ -7298,7 +7329,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
             ${_calcOrSpacer}<div class="set-presc-col">${_setNumHtml(_sk, _si)}${_prescHtml}</div>
             ${_exSetInputsHtml(_sk, _sl, _inputPl, _si, reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" data-set-key="${esc(_sk)}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
-          </div>`;
+          </div></div>`;
     }
     return out;
   }
@@ -7355,7 +7386,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
           ${_calcOrSpacer}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_weightAttrs}>${_displayLabel}</span></div>
           ${_exSetInputsHtml(sk, sl, _inputPl, si, s.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${_exPrevHintHtml(si, prevPerf)}`;
+        </div></div>${_exPrevHintHtml(si, prevPerf)}`;
     });
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
@@ -7388,7 +7419,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
           ${_simpleCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_simpleWeightAttrs}>${_simplePrescLabel}</span></div>
           ${_exSetInputsHtml(sk, sl, _simpleNumWeight > 0 ? _simpleWeight+unitLabel(true) : getDisplayUnit(), si, simple.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${_exPrevHintHtml(si, prevPerf)}`;
+        </div></div>${_exPrevHintHtml(si, prevPerf)}`;
     }
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
@@ -7421,7 +7452,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
           ${_rangedCalcOrSpacer}<div class="set-presc-col">${_setNumHtml(sk, si)}${isOpen?'':`<span class="set-prescribed-btn ${_hasActualReps?'has-actual':''}"${_rangedWeightAttrs}>${_rangedPrescLabel}</span>`}</div>
           ${_exSetInputsHtml(sk, sl, isOpen?'open':(_rangedNumWeight > 0 ? _rangedWeight+unitLabel(true) : getDisplayUnit()), si, ranged.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${_exPrevHintHtml(si, prevPerf)}`;
+        </div></div>${_exPrevHintHtml(si, prevPerf)}`;
     }
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
@@ -7445,7 +7476,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
           <div class="set-presc-col">${_setNumHtml(sk, si)}<span class="set-prescribed-btn">${bareWithRounds.reps} reps</span></div>
           ${_exSetInputsHtml(sk, sl, getDisplayUnit(), si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(si))}
           <button class="set-check ${sl.done?'done':''}" data-set-key="${esc(sk)}" onclick="toggleSet('${esc(sk)}')">${sl.done?_checkSvg:''}</button>
-        </div>${_exPrevHintHtml(si, prevPerf)}`;
+        </div></div>${_exPrevHintHtml(si, prevPerf)}`;
     }
     const _extra = state.extraSets[key]||0;
     if (_extra > 0) {
@@ -7455,7 +7486,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
             <div class="set-presc-col">${_setNumHtml(_sk, _si)}<span class="set-prescribed-btn">${bareWithRounds.reps} reps</span></div>
             ${_exSetInputsHtml(_sk, _sl, getDisplayUnit(), _si, bareWithRounds.reps, ex.name, inputMode, _ghostWeight(_si))}
             <button class="set-check ${_sl.done?'done':''}" data-set-key="${esc(_sk)}" onclick="toggleSet('${esc(_sk)}')">${_sl.done?_checkSvg:''}</button>
-          </div>`;
+          </div></div>`;
       }
     }
     h += `</div>`;
@@ -8571,6 +8602,23 @@ function _maybeAdvanceWeek() {
 function toggleSet(key){
   _completionDirty = true;
   const l=state.logs[key]||{};
+  // H16: checkmark on a skipped/failed set clears the status and marks done
+  if (l.setStatus) {
+    const {setStatus,...rest}=l;
+    const exName=_resolveExNameFromKey(key);
+    const unit=l.unit||(exName?getExUnit(exName):getDisplayUnit());
+    state.logs[key]={...rest,done:true,unit,ts:Date.now()};
+    saveLogs();
+    _updateSetRowStatus(key,null);
+    if(navigator.vibrate) navigator.vibrate(10);
+    _maybeAdvanceWeek();
+    updateSetCheckmark(key,true);
+    autoCompleteExercise(key);
+    updateProgressBar();
+    updateDayTabCheckmarks();
+    if(getRestTimerMode()==='auto'&&_shouldFireRestTimer(key)){if(exName)startRestTimer(exName);}
+    return;
+  }
   const nowDone = !l.done;
   const exName = _resolveExNameFromKey(key);
   const unit = l.unit || (exName ? getExUnit(exName) : getDisplayUnit());
@@ -8613,10 +8661,104 @@ function _resolveExNameFromKey(setKey) {
   return parts.length >= 4 ? parts[3] : null;
 }
 
+// ── H16 — SET SWIPE (skip / fail) ─────────────────────────────────────────────
+let _swipeSt = null, _swipeSuppress = false;
+(function _initSetSwipe() {
+  // Shared helpers so Touch and Pointer paths use identical logic
+  function _onStart(x, y, target) {
+    const row = target.closest('.swipe-set-row');
+    if (!row) {
+      // Only dismiss if the tap is completely outside the swipe wrap —
+      // tapping an action button (inside .swipe-set-wrap but not .swipe-set-row)
+      // must NOT dismiss before the button's click event fires.
+      if (!_swipeSuppress && !target.closest('.swipe-set-wrap')) _dismissAllSwipes();
+      return;
+    }
+    _swipeSt = { row, startX: x, startY: y, wasRevealed: row.classList.contains('shifted') };
+  }
+  function _onMove(x, y) {
+    if (!_swipeSt) return;
+    const dx = x - _swipeSt.startX;
+    const dy = Math.abs(y - _swipeSt.startY);
+    if (dy > Math.abs(dx) * 1.5 && dy > 10) { _swipeSt = null; return; } // vertical scroll — abort
+    if (!_swipeSt.wasRevealed && dx < -60 && Math.abs(dx) > dy * 2) {
+      _dismissAllSwipes();
+      _swipeSt.row.classList.add('shifted');
+      _swipeSuppress = true;
+      setTimeout(() => _swipeSuppress = false, 400);
+      _swipeSt = null;
+    } else if (_swipeSt.wasRevealed && dx > 30) {
+      _swipeSt.row.classList.remove('shifted');
+      _swipeSt = null;
+    }
+  }
+  // Touch Events — primary path for iOS WKWebView (more reliable than Pointer Events)
+  document.addEventListener('touchstart', e => _onStart(e.touches[0].clientX, e.touches[0].clientY, e.target), { passive: true });
+  document.addEventListener('touchmove',  e => _onMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+  document.addEventListener('touchend',    () => _swipeSt = null, { passive: true });
+  document.addEventListener('touchcancel', () => _swipeSt = null, { passive: true });
+  // Pointer Events — desktop mouse fallback only (skip if touch device handled above)
+  document.addEventListener('pointerdown', function(e) {
+    if (e.pointerType === 'touch') return; // already handled by touchstart
+    _onStart(e.clientX, e.clientY, e.target);
+  }, { passive: true });
+  document.addEventListener('pointermove', function(e) {
+    if (e.pointerType === 'touch') return;
+    _onMove(e.clientX, e.clientY);
+  }, { passive: true });
+  document.addEventListener('pointerup',     e => { if (e.pointerType !== 'touch') _swipeSt = null; }, { passive: true });
+  document.addEventListener('pointercancel', e => { if (e.pointerType !== 'touch') _swipeSt = null; }, { passive: true });
+})();
+
+function _dismissAllSwipes() {
+  document.querySelectorAll('.swipe-set-row.shifted').forEach(r => r.classList.remove('shifted'));
+}
+
+function applySetStatus(key, status) {
+  _completionDirty = true;
+  const l = state.logs[key] || {};
+  if (status === null) {
+    const {setStatus, ...rest} = l;
+    state.logs[key] = {...rest, done: false};
+  } else {
+    state.logs[key] = {...l, setStatus: status, done: false};
+  }
+  saveLogs();
+  _dismissAllSwipes();
+  _updateSetRowStatus(key, status);
+  autoCompleteExercise(key);
+  updateProgressBar();
+  updateDayTabCheckmarks();
+}
+
+function _updateSetRowStatus(key, status) {
+  const btn = document.querySelector(`.set-check[data-set-key="${cssEsc(key)}"]`);
+  if (!btn) return;
+  const row = btn.closest('.set-row');
+  if (!row) return;
+  row.classList.remove('set-done', 'set-skipped', 'set-failed');
+  if (status === 'skipped') row.classList.add('set-skipped');
+  if (status === 'failed')  row.classList.add('set-failed');
+  row.querySelectorAll('.set-input').forEach(inp => { inp.disabled = status === 'skipped'; });
+  btn.classList.remove('done'); btn.innerHTML = '';
+  // Refresh action buttons in swipe panel
+  const wrap = row.closest('.swipe-set-wrap');
+  if (!wrap) return;
+  const actions = wrap.querySelector('.swipe-set-actions');
+  if (!actions) return;
+  const esk = esc(key);
+  actions.innerHTML = status
+    ? `<button class="swipe-set-action-btn sab-clear" onclick="applySetStatus('${esk}',null)">↩ Clear</button>`
+    : `<button class="swipe-set-action-btn sab-skip" onclick="applySetStatus('${esk}','skipped')"><span class="swipe-set-action-icon">—</span>Skip</button><button class="swipe-set-action-btn sab-fail" onclick="applySetStatus('${esk}','failed')"><span class="swipe-set-action-icon">✕</span>Failed</button>`;
+}
+// ── END H16 ───────────────────────────────────────────────────────────────────
+
 // Circuit-aware rest timer gate: returns true if timer should fire for this set key.
 // For non-circuit exercises, always true. For circuit exercises, only true when
 // all exercises in the same circuit have the same set number marked done.
 function _shouldFireRestTimer(setKey) {
+  // H16: skipped/failed sets don't fire the rest timer
+  if ((state.logs[setKey]||{}).setStatus) return false;
   const pk = _parseLogKey(setKey);
   if (!pk) return true;
   const { blockId, weekLabel, dayName, exName, setIdx } = pk;
@@ -8637,7 +8779,7 @@ function _shouldFireRestTimer(setKey) {
   // Check if all siblings have this set number done
   for (const sib of siblings) {
     const sibKey = [blockId, weekLabel, dayName, sib.name, setIdx].join('||');
-    if (!state.logs[sibKey]?.done) return false;
+    if (!state.logs[sibKey]?.done && !state.logs[sibKey]?.setStatus) return false;
   }
   return true;
 }
@@ -8720,16 +8862,92 @@ function _checkInlinePR(setKey, exName, weight, reps, rpe) {
   return false;
 }
 
-function _showInlinePR(setKey) {
+function _showInlinePR(setKey, skipAnim) {
   // Find the set row and append a PR badge
   const checkBtn = document.querySelector(`.set-check[data-set-key="${cssEsc(setKey)}"]`);
   if (!checkBtn) return;
   const row = checkBtn.closest('.set-row');
   if (!row || row.querySelector('.pr-badge')) return; // already has badge
   const badge = document.createElement('span');
-  badge.className = 'pr-badge anim-pr-in';
+  badge.className = skipAnim ? 'pr-badge' : 'pr-badge anim-pr-in';
   badge.textContent = 'PR';
   checkBtn.appendChild(badge);
+}
+
+// Re-surface PR badges on existing logged sets (called after card expansion)
+// Builds a temporary cache EXCLUDING this exercise's sets, then replays them in order
+// so each set can "beat" the running best — same as live input would.
+function _restorePRBadges(ex, block, week, day) {
+  const exName = ex.name;
+  if (!isCompLift(exName)) return;
+  const group = classifyLift(exName);
+  if (!group || group === 'other') return;
+  // Compute set count the same way _buildSetRows does — parse the prescription string
+  const pres = ex.prescription || '';
+  const _prSets = pres ? parseSets(pres) : [];
+  if (!_prSets.length && pres) { const wu = parseWarmupSets(pres); if (wu.length) _prSets.push(...wu); }
+  const _prSimple = parseSimple(pres);
+  const _prRanged = (!_prSets.length && !_prSimple) ? parseRangeSet(pres) : null;
+  const _prSsRounds = ex.supersetGroup?.rounds || 0;
+  const _prBare = (!_prSets.length && !_prSimple && !_prRanged) ? parseBarePres(pres) : null;
+  const exKey = lk(block.id, week.label, day.name, exName);
+  let setCount = _prSets.length || (_prSimple?.sets || 0) || (_prRanged?.sets || 0) || (_prBare ? (_prSsRounds || _prBare.sets) : 0) || (_prSsRounds) || (pres ? 1 : 0) || 1;
+  setCount += (state.extraSets[exKey] || 0);
+  if (!setCount) return;
+  // Build set of keys for this exercise so we can exclude them from the baseline
+  const thisExPrefix = exKey + '||';
+  const thisKeys = new Set();
+  for (let i = 0; i < setCount; i++) thisKeys.add(thisExPrefix + 's' + i);
+  // Compute baseline best e1RM excluding this exercise's current sets
+  if (!_prCache) _buildPRCache();
+  const fullBest = _prCache[group] || 0;
+  let baselineBest = 0;
+  // Scan all logs for this lift group, skipping this exercise's sets
+  const du = getDisplayUnit();
+  const _prBlockIds = new Set(state.blocks.map(b => b.id));
+  for (const [key, val] of Object.entries(state.logs)) {
+    if (thisKeys.has(key)) continue;
+    if (!val.done || !val.actual) continue;
+    const pk = _parseLogKey(key);
+    if (!pk || !_prBlockIds.has(pk.blockId)) continue;
+    if (!isCompLift(pk.exName)) continue;
+    const g = classifyLift(pk.exName);
+    if (g !== group) continue;
+    const rawW = parseFloat(val.actual);
+    if (!rawW || rawW <= 0) continue;
+    const w = convertWeight(rawW, getEntryUnit(val), du);
+    const r = val.actualReps ? parseInt(val.actualReps) : _getPrescribedRepsForKey(pk.blockId, pk.weekLabel, pk.dayName, pk.exName, pk.setIdx);
+    if (!r || r <= 0) continue;
+    const result = calc1rm(w, r, val.rpe ? parseFloat(val.rpe) : null);
+    if (result && result.value > baselineBest) baselineBest = result.value;
+  }
+  // Also factor in tested 1RMs from athlete profile
+  const ath = loadAthlete() || {};
+  const rmUnit = ath.tested1rm_unit || du;
+  const testedKey = 'tested1rm_' + group;
+  if (ath[testedKey]) {
+    const tv = convertWeight(Number(ath[testedKey]), rmUnit, du);
+    if (tv > baselineBest) baselineBest = tv;
+  }
+  // Find the single best PR set — only badge the heaviest
+  let bestE1RM = baselineBest;
+  let bestSetKey = null;
+  for (let i = 0; i < setCount; i++) {
+    const sk = thisExPrefix + 's' + i;
+    const sl = state.logs[sk];
+    if (!sl || !sl.actual) continue;
+    const reps = sl.actualReps ? parseInt(sl.actualReps) : _getPrescribedRepsFromContext(exName, sk);
+    const rawW = parseFloat(sl.actual);
+    const weight = rawW ? convertWeight(rawW, getEntryUnit(sl), du) : 0;
+    if (!reps || !weight) continue;
+    const rpe = sl.rpe ? parseFloat(sl.rpe) : null;
+    const result = calc1rm(weight, reps, rpe);
+    if (result && result.value > bestE1RM) {
+      bestE1RM = result.value;
+      bestSetKey = sk;
+    }
+  }
+  if (bestSetKey) _showInlinePR(bestSetKey, true);
 }
 
 function _setNumHtml(sk, si) {
@@ -8808,6 +9026,7 @@ function setActual(key,v){
   updateSetCheckmark(key,shouldCheck);
 
   // PR detection: check if this set is a new e1RM PR (comp lifts only, vs training max + all blocks)
+  // Only show badge on the heaviest PR — clear any previous PR badge in this exercise
   if (shouldCheck && exName && v) {
     const sl = state.logs[key] || {};
     const reps = sl.actualReps ? parseInt(sl.actualReps) : _getPrescribedRepsFromContext(exName, key);
@@ -8815,7 +9034,13 @@ function setActual(key,v){
     const weight = rawW ? convertWeight(rawW, getEntryUnit(sl), getDisplayUnit()) : 0;
     const rpe = sl.rpe ? parseFloat(sl.rpe) : null;
     if (reps && weight && _checkInlinePR(key, exName, weight, reps, rpe)) {
-      setTimeout(() => _showInlinePR(key), 100);
+      setTimeout(() => {
+        // Remove any existing PR badges in this exercise card
+        const checkBtn = document.querySelector(`.set-check[data-set-key="${cssEsc(key)}"]`);
+        const card = checkBtn && checkBtn.closest('.exercise-card');
+        if (card) card.querySelectorAll('.pr-badge').forEach(b => b.remove());
+        _showInlinePR(key);
+      }, 100);
     }
   }
 
@@ -8848,7 +9073,12 @@ function setActualReps(key,v){
   if (exName && weight && v) {
     const reps = parseInt(v);
     if (reps && _checkInlinePR(key, exName, weight, reps, rpe)) {
-      setTimeout(() => _showInlinePR(key), 100);
+      setTimeout(() => {
+        const checkBtn = document.querySelector(`.set-check[data-set-key="${cssEsc(key)}"]`);
+        const card = checkBtn && checkBtn.closest('.exercise-card');
+        if (card) card.querySelectorAll('.pr-badge').forEach(b => b.remove());
+        _showInlinePR(key);
+      }, 100);
     }
   }
   // If weight is already entered, re-check the set on reps edit
@@ -10664,7 +10894,7 @@ function autoCompleteExercise(setKey){
   let allDone=true;
   for(let si=0;si<totalSets;si++){
     const sk=exKey+`||s${si}`;
-    if(!state.logs[sk]?.done){ allDone=false; break; }
+    if(!state.logs[sk]?.done && !state.logs[sk]?.setStatus){ allDone=false; break; }
   }
   
   // If all sets done, mark exercise done and update checkmark directly
@@ -10924,6 +11154,7 @@ function _applyTargetedExpand(ek, nowExpanded) {
     // Insert expanded content
     const prevPerf = getPrevWeekPerformance(block.id, week.label, day.name, ex.name);
     card.insertAdjacentHTML('beforeend', _buildSetRows(ex, block, week, day, prevPerf) + _buildExCardFooter(ex, block, week, day));
+    _restorePRBadges(ex, block, week, day);
     card.classList.remove('completed', 'skipped');
     const log = state.logs[lk(block.id, week.label, day.name, ex.name)]||{};
     if (log.done) card.classList.add('completed');
