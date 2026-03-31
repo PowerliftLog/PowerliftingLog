@@ -546,7 +546,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .prescription.purple { color: var(--gold-data); }
 .pres-text-fallback { font-size: var(--fs-sm); color: var(--text-sub); font-style: italic; line-height: 1.4; }
 .sets-grid { padding: var(--sp-2) var(--sp-6) var(--sp-6); display: flex; flex-direction: column; gap: 0; }
-.set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px 10px 7px var(--sp-1); border-bottom: 1px solid var(--surface-3); }
+.set-row { display: flex; align-items: center; gap: var(--sp-4); padding: 7px 10px 7px 8px; border-bottom: 1px solid var(--surface-3); }
 .set-row:last-child { border-bottom: none; }
 .set-row-header { display: flex; gap: var(--sp-4); padding: var(--sp-3) var(--sp-1) 2px; margin-top: var(--sp-2); }
 .set-row.set-done { background: rgba(var(--green-rgb), 0.05); }
@@ -608,13 +608,15 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .anim-check-pop, .set-check.anim-pop, .exercise-check.anim-pop { animation: checkPop 0.35s cubic-bezier(0.34, 1.2, 0.64, 1); }
 @keyframes splashFadeOut { to { opacity: 0; pointer-events: none; } }
 @keyframes completeBorder {
-  0% { border-color: var(--green); box-shadow: 0 0 12px rgba(74,222,128,0.2); }
-  100% { border-color: rgba(74,222,128,0.25); box-shadow: var(--card-shadow); }
+  0% { border-color: rgba(74,222,128,0.45); }
+  100% { border-color: rgba(74,222,128,0.25); }
 }
-.exercise-card.just-completed { animation: completeBorder 0.6s ease forwards; }
+.exercise-card.just-completed { animation: completeBorder 0.8s ease forwards; }
 @keyframes restSlideUp { from { transform: translateX(-50%) translateY(100%); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
 @keyframes rowFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .set-row.new-set-anim { animation: rowFadeIn 0.15s ease-out; }
+@keyframes rowSlideOut { from { opacity: 1; max-height: 60px; transform: translateY(0); } to { opacity: 0; max-height: 0; transform: translateY(-6px); } }
+.swipe-set-wrap.removing-set { animation: rowSlideOut 0.15s ease-in forwards; overflow: hidden; }
 @keyframes finishPulse {
   0% { box-shadow: 0 0 0 rgba(var(--gold-rgb),0); }
   50% { box-shadow: 0 0 20px rgba(var(--gold-rgb),0.3); border-color: rgba(var(--gold-rgb),0.8); }
@@ -784,22 +786,85 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
   70%  { opacity: 0.8; text-shadow: 0 0 10px rgba(74,222,128,0.4); }
   100% { opacity: 0.6; text-shadow: none; }
 }
-/* ── Workout Summary Card ── */
-.workout-summary-card { margin: var(--sp-6); padding: var(--sp-7); background: linear-gradient(135deg, rgba(74,222,128,0.08) 0%, rgba(74,222,128,0.03) 100%); border: 1px solid rgba(74,222,128,0.25); border-radius: 14px; position: relative; overflow: hidden; }
-.summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-6); }
-.summary-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: var(--fs-2xl); letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
-.summary-check { width: 24px; height: 24px; border-radius: 50%; background: rgba(74,222,128,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.summary-check svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.summary-stats { display: flex; }
-.summary-stat { flex: 1; text-align: center; padding: var(--sp-4) 0; }
-.summary-stat + .summary-stat { border-left: 1px solid rgba(74,222,128,0.1); }
-.summary-stat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: var(--fs-2xl); color: var(--text-bright); letter-spacing: 0.02em; }
-.summary-stat-label { font-size: var(--fs-xs); color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--sp-1); }
-.summary-pr-banner { display: flex; align-items: center; gap: var(--sp-4); margin-top: 14px; padding: 10px 12px; background: rgba(var(--gold-rgb),0.08); border: 1px solid rgba(var(--gold-rgb),0.15); border-radius: 8px; }
-.summary-pr-text { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--gold); letter-spacing: 0.03em; }
-.workout-reset-row { text-align: center; padding: 0 var(--sp-6) var(--sp-8); margin-top: -12px; }
-.workout-reset-btn { background: none; border: 1px solid var(--border-2); border-radius: 8px; padding: var(--sp-4) var(--sp-6); color: var(--text-faint); font-family: 'Barlow', sans-serif; font-size: var(--fs-base); font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: var(--sp-3); }
-.workout-reset-btn:hover { color: var(--text-sub); border-color: var(--text-dim); }
+/* ── Workout Record Card (H15) ── */
+.workout-record-card { margin: var(--sp-6); background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06); overflow: hidden; }
+.wrc-header { padding: var(--sp-5) var(--sp-6); text-align: center; background: rgba(74,222,128,0.12); }
+.wrc-header-text { font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green); }
+.wrc-identity { padding: var(--sp-8) var(--sp-6) var(--sp-5); text-align: center; }
+.wrc-day-name { font-size: 24px; font-weight: 700; line-height: 1.2; color: var(--text-primary); }
+.wrc-block-context { font-size: 14px; font-weight: 400; color: var(--text-mid); margin-top: var(--sp-2); }
+.wrc-stats { display: flex; justify-content: center; gap: 0; padding: 0 var(--sp-6) var(--sp-6); }
+.wrc-stat { text-align: center; flex: 1; position: relative; }
+.wrc-stat + .wrc-stat::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: var(--glass-border); }
+.wrc-stat-val { font-size: var(--fs-2xl); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+.wrc-stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--sp-1); }
+.wrc-pr-banner { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); padding: var(--sp-4) var(--sp-6); background: rgba(var(--gold-rgb),0.06); border-top: 1px solid rgba(var(--gold-rgb),0.15); border-bottom: 1px solid rgba(var(--gold-rgb),0.15); }
+.wrc-pr-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.wrc-pr-icon path { fill: var(--gold); }
+.wrc-pr-text { font-size: var(--fs-base); font-weight: 600; color: var(--gold); letter-spacing: 0.04em; text-transform: uppercase; }
+.wrc-detail-expander { padding: var(--sp-5) var(--sp-6); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 150ms ease; }
+.wrc-detail-expander:active { background: rgba(255,255,255,0.03); }
+.wrc-detail-label { font-size: var(--fs-md); font-weight: 500; color: var(--text-mid); letter-spacing: 0.02em; }
+.wrc-detail-chevron { width: 16px; height: 16px; transition: transform 200ms ease; flex-shrink: 0; }
+.wrc-detail-chevron path { stroke: var(--text-sub); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wrc-detail-expander.open .wrc-detail-chevron { transform: rotate(90deg); }
+.wrc-detail-body { max-height: 0; overflow: hidden; transition: max-height 300ms ease; }
+.wrc-detail-body.open { max-height: 2000px; }
+.wrc-detail-content { padding: 0 var(--sp-6) var(--sp-6); }
+.wrc-detail-exercise { margin-bottom: var(--sp-5); }
+.wrc-detail-exercise:last-child { margin-bottom: 0; }
+.wrc-detail-ex-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-bright); margin-bottom: 3px; }
+.wrc-detail-set { font-size: var(--fs-base); color: var(--text-sub); padding: 2px 0 2px var(--sp-6); display: flex; align-items: baseline; gap: var(--sp-4); }
+.wrc-detail-set-num { color: var(--text-sub); min-width: 18px; font-variant-numeric: tabular-nums; }
+.wrc-detail-set-data { color: var(--text-mid); font-variant-numeric: tabular-nums; }
+.wrc-detail-set-rpe { color: var(--gold); font-size: var(--fs-sm); font-weight: 500; }
+.wrc-detail-set.skipped { opacity: 0.45; }
+.wrc-detail-set.skipped .wrc-detail-set-data { text-decoration: line-through; }
+.wrc-detail-set.failed .wrc-detail-set-data { color: #FF9F43; }
+.wrc-divider { height: 1px; background: var(--glass-border); margin: 0; }
+.wrc-journal { padding: var(--sp-8) var(--sp-6) var(--sp-6); }
+.wrc-journal-heading { font-size: var(--fs-lg); font-weight: 600; color: var(--text-bright); margin-bottom: var(--sp-6); }
+.wrc-slider-row { margin-bottom: var(--sp-8); }
+.wrc-slider-track-wrap { position: relative; padding: var(--sp-6) 0 var(--sp-4); }
+.wrc-slider-track { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; position: relative; cursor: pointer; }
+.wrc-slider-fill { height: 100%; background: linear-gradient(90deg, #B8934A, var(--gold)); border-radius: 3px; transition: width 80ms ease; }
+.wrc-slider-thumb { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); border: 3px solid var(--bg); box-shadow: 0 2px 8px rgba(var(--gold-rgb),0.3), 0 0 0 1px rgba(var(--gold-rgb),0.2); position: absolute; top: 50%; transform: translate(-50%, -50%); cursor: grab; transition: left 80ms ease, transform 100ms ease; z-index: 1; }
+.wrc-slider-thumb:active, .wrc-slider-track-wrap.dragging .wrc-slider-thumb { transform: translate(-50%, -50%) scale(1.15); }
+.wrc-slider-value-badge { position: absolute; top: -6px; transform: translateX(-50%); background: var(--gold); color: var(--bg); font-size: var(--fs-md); font-weight: 700; padding: 3px 10px; border-radius: 6px; pointer-events: none; opacity: 0; transition: opacity 120ms; box-shadow: 0 4px 12px rgba(var(--gold-rgb),0.25); z-index: 2; }
+.wrc-slider-value-badge.visible { opacity: 1; }
+.wrc-slider-value-badge::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--gold); }
+.wrc-slider-track-wrap:active .wrc-slider-value-badge, .wrc-slider-track-wrap.dragging .wrc-slider-value-badge { opacity: 1; }
+.wrc-slider-anchors { display: flex; justify-content: space-between; margin-top: var(--sp-4); }
+.wrc-slider-anchor { font-size: var(--fs-sm); font-weight: 500; color: var(--text-sub); letter-spacing: 0.03em; }
+.wrc-tags-section { margin-bottom: var(--sp-8); }
+.wrc-tag-row { display: flex; align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-4); }
+.wrc-tag-row:last-child { margin-bottom: 0; }
+.wrc-tag-row-label { font-size: var(--fs-base); font-weight: 600; color: var(--text-sub); min-width: 76px; flex-shrink: 0; letter-spacing: 0.02em; }
+.wrc-tag-row-chips { display: flex; gap: 6px; flex: 1; }
+.wrc-tag-row-chip { flex: 1; padding: 10px 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: var(--text-mid); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 500; text-align: center; cursor: pointer; transition: all 150ms ease; -webkit-user-select: none; user-select: none; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.wrc-tag-row-chip:active { transform: scale(0.95); }
+.wrc-tag-row-chip.selected { border-color: rgba(var(--gold-rgb),0.3); background: rgba(var(--gold-rgb),0.06); color: var(--gold); box-shadow: 0 0 0 1px rgba(var(--gold-rgb),0.08); }
+.wrc-notes-area { width: 100%; min-height: 72px; max-height: 140px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: var(--sp-5) var(--sp-6); color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; resize: none; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; field-sizing: content; }
+.wrc-notes-area::placeholder { color: var(--text-sub); }
+.wrc-notes-area:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(var(--gold-rgb),0.08); }
+@supports not (field-sizing: content) { .wrc-notes-area { height: 72px; overflow-y: auto; } }
+.wrc-save-row { padding: var(--sp-5) var(--sp-6) var(--sp-6); text-align: center; }
+.wrc-save-btn { width: 100%; background: var(--gold); border: none; border-radius: 10px; padding: var(--sp-5) var(--sp-8); color: var(--bg); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: all 150ms ease; }
+.wrc-save-btn:active { background: #B8934A; transform: scale(0.97); }
+.wrc-modify-row { padding: var(--sp-6); border-top: 1px solid var(--glass-border); text-align: center; }
+.wrc-modify-btn { background: none; border: 1px solid rgba(var(--gold-rgb),0.25); border-radius: 8px; padding: var(--sp-5) var(--sp-8); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: all 150ms ease; display: inline-flex; align-items: center; gap: var(--sp-4); }
+.wrc-modify-btn:active { background: rgba(var(--gold-rgb),0.06); transform: scale(0.97); }
+.wrc-modify-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.wrc-modify-btn svg path { stroke: var(--gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wrc-journal-readonly { padding: var(--sp-6); }
+.wrc-journal-readonly-rating { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+.wrc-journal-readonly-rating-label { font-size: var(--fs-base); color: var(--text-sub); font-weight: 500; }
+.wrc-journal-readonly-rating-val { font-size: 14px; font-weight: 700; color: var(--gold); }
+.wrc-journal-readonly-tags { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+.wrc-journal-readonly-tag { font-size: var(--fs-sm); font-weight: 500; color: var(--text-mid); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px 8px; letter-spacing: 0.02em; }
+.wrc-journal-readonly-notes { font-size: var(--fs-md); color: var(--text-mid); line-height: 1.5; }
+.wrc-journal-readonly-notes.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wrc-journal-show-more { font-size: var(--fs-base); color: var(--gold); cursor: pointer; margin-top: var(--sp-2); font-weight: 500; }
 .clear-workout-btn { background: none; border: none; cursor: pointer; font-size: var(--fs-xl); opacity: 0.5; padding: var(--sp-1) var(--sp-2); transition: opacity 0.15s; line-height: 1; }
 .clear-workout-btn:hover { opacity: 1; }
 
@@ -828,12 +893,12 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .completed-ex-detail { text-align: right; flex-shrink: 0; margin-left: var(--sp-5); }
 .completed-ex-top { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 800; color: rgba(74,222,128,0.85); letter-spacing: 0.02em; line-height: 1.15; }
 .completed-ex-meta { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); color: var(--text-faint); margin-top: 1px; }
-.set-row:has(.set-check.done) { position: relative; background: rgba(var(--green-rgb), 0.04); border-radius: 4px; padding-left: var(--sp-4); }
+.set-row:has(.set-check.done) { position: relative; background: rgba(var(--green-rgb), 0.04); border-radius: 4px; }
 .set-row:has(.set-check.done)::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: rgba(74,222,128,0.45); border-radius: 4px 0 0 4px; }
 /* H16 — Set skip / failed */
 .set-row.set-skipped { opacity: 0.45; }
 .set-row.set-skipped .set-input { pointer-events: none; opacity: 0.4; }
-.set-row.set-failed { position: relative; padding-left: var(--sp-4); }
+.set-row.set-failed { position: relative; }
 .swipe-set-row.set-failed { box-shadow: inset 0 0 0 9999px rgba(255,159,67,0.05); }
 .set-row.set-failed::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: rgba(255,159,67,0.5); border-radius: 4px 0 0 4px; }
 .set-row.set-skipped .set-check { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); }
@@ -844,9 +909,9 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .set-row.set-skipped .set-num { text-decoration: line-through; }
 /* Swipe container */
 .swipe-set-wrap { position: relative; overflow: hidden; }
-.swipe-set-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; align-items: stretch; background: var(--surface-2, #111); transition: opacity 0.18s ease; }
-.swipe-set-wrap:has(.set-skipped):not(:has(.shifted)) .swipe-set-actions,
-.swipe-set-wrap:has(.set-failed):not(:has(.shifted)) .swipe-set-actions { opacity: 0; pointer-events: none; }
+.swipe-set-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; align-items: stretch; background: var(--surface-2, #111); opacity: 0; pointer-events: none; visibility: hidden; }
+.swipe-set-wrap.swiping .swipe-set-actions,
+.swipe-set-wrap:has(.shifted) .swipe-set-actions { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity 0.18s ease; }
 .swipe-set-action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 72px; border: none; font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; gap: 3px; -webkit-tap-highlight-color: transparent; user-select: none; }
 .swipe-set-action-btn.sab-skip { background: rgba(70,70,90,0.97); color: #aaa; }
 .swipe-set-action-btn.sab-fail { background: rgba(150,70,15,0.97); color: #FF9F43; }
@@ -1010,140 +1075,6 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .pct-prompt-skip { border:1px solid var(--border);background:transparent;color:var(--text-sub); }
 .pct-prompt-apply { border:none;background:var(--gold);color:#111; }
 
-/* Workout Celebration Overlay */
-#celebration-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: var(--bg);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.25s ease;
-  overflow: hidden;
-}
-#celebration-overlay.visible { opacity: 1; pointer-events: all; }
-.cel-scroll {
-  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  display: flex; justify-content: center;
-  padding: env(safe-area-inset-top, 48px) 20px env(safe-area-inset-bottom, 60px);
-  padding-top: max(env(safe-area-inset-top), 48px);
-  padding-bottom: max(env(safe-area-inset-bottom), 60px);
-}
-.cel-inner {
-  width: 100%; max-width: 420px;
-  display: flex; flex-direction: column; align-items: center;
-  transform: translateY(32px);
-  transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
-}
-#celebration-overlay.visible .cel-inner { transform: translateY(0); }
-.cel-check {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: rgba(74,222,128,0.1);
-  border: 1.5px solid rgba(74,222,128,0.35);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 18px;
-  animation: cel-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
-}
-@keyframes cel-pop {
-  from { transform: scale(0.4); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
-}
-.cel-check svg { color: var(--green); }
-.cel-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: var(--fs-display); font-weight: 700; letter-spacing: 0.02em;
-  color: var(--text-bright); line-height: 1;
-  margin-bottom: var(--sp-3); text-align: center;
-}
-.cel-day {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: var(--fs-lg); font-weight: 700; letter-spacing: 0.1em;
-  color: var(--gold); text-transform: uppercase; margin-bottom: var(--sp-2);
-}
-.cel-meta {
-  font-family: 'Barlow', sans-serif; font-size: var(--fs-base);
-  color: var(--text-sub); margin-bottom: var(--sp-8);
-}
-/* Glass cards */
-.cel-card {
-  width: 100%;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  padding: var(--sp-6) var(--sp-6); margin-bottom: var(--sp-5);
-}
-.cel-card-label {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs);
-  font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--text-faint); margin-bottom: var(--sp-5);
-}
-/* Lift rows */
-.cel-lift-row {
-  display: flex; align-items: center; padding: var(--sp-4) 0;
-  border-bottom: 1px solid var(--border);
-}
-.cel-lift-row:last-child { border-bottom: none; }
-.cel-lift-name {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm);
-  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--text-sub); width: 64px; flex-shrink: 0;
-}
-.cel-lift-set {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl);
-  font-weight: 700; color: var(--text-bright); flex: 1; letter-spacing: 0.01em; line-height: 1;
-}
-.cel-lift-sub {
-  font-family: 'Barlow', sans-serif; font-size: var(--fs-base);
-  color: var(--text-sub); margin-left: var(--sp-1);
-}
-.cel-lift-rpe {
-  font-family: 'Barlow', sans-serif; font-size: var(--fs-sm);
-  color: var(--gold-data); margin-left: var(--sp-3);
-}
-.cel-lift-pr {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700;
-  letter-spacing: 0.1em; color: var(--gold);
-  background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3);
-  border-radius: 5px; padding: var(--sp-1) var(--sp-3); flex-shrink: 0; margin-left: var(--sp-3);
-}
-.cel-lift-none { font-family: 'Barlow', sans-serif; font-size: var(--fs-md); color: var(--text-dim); flex: 1; }
-/* Stats row */
-.cel-stats {
-  width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--sp-4); margin-bottom: var(--sp-5);
-}
-.cel-stat {
-  background: var(--glass-bg); border: 1px solid var(--glass-border);
-  border-radius: 12px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  padding: var(--sp-5) var(--sp-4); text-align: center;
-}
-.cel-stat-val {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-2xl);
-  font-weight: 700; color: var(--text-bright); line-height: 1;
-}
-.cel-stat-unit { font-size: var(--fs-sm); color: var(--text-sub); }
-.cel-stat-label {
-  font-family: 'Barlow', sans-serif; font-size: var(--fs-xs); color: var(--text-dim);
-  text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--sp-2);
-}
-/* Exercise list */
-.cel-ex-row {
-  display: flex; align-items: baseline; padding: 7px 0;
-  border-bottom: 1px solid var(--border);
-}
-.cel-ex-row:last-child { border-bottom: none; }
-.cel-ex-name {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg);
-  font-weight: 700; color: var(--text-primary); flex: 1; letter-spacing: 0.02em;
-}
-.cel-ex-done { color: var(--text-sub); }
-.cel-ex-sets {
-  font-family: 'Barlow', sans-serif; font-size: var(--fs-base);
-  color: var(--text-sub); flex-shrink: 0; margin-left: var(--sp-4);
-}
-.cel-hint {
-  font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-sm);
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-faint); margin-top: 28px; margin-bottom: var(--sp-4);
-}
 .home-hero.done .home-hero-ex-dot { background: var(--green); }
 
 /* Import confirm button */
@@ -2316,37 +2247,6 @@ canvas.chart-overlay { pointer-events: auto; }
   </div>
   <main id="main-content"></main>
   <div id="sr-announce" aria-live="polite" aria-atomic="true" class="sr-only"></div>
-  <!-- Workout Celebration Overlay -->
-  <div id="celebration-overlay" role="dialog" aria-modal="true" aria-label="Workout Complete" onclick="dismissCelebration()">
-    <div class="cel-scroll">
-      <div class="cel-inner">
-        <!-- Header -->
-        <div class="cel-check">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <div class="cel-title">Session Complete.</div>
-        <div class="cel-day" id="cel-day"></div>
-        <div class="cel-meta" id="cel-meta"></div>
-
-        <!-- Lift summary card -->
-        <div class="cel-card" id="cel-lifts-card">
-          <div class="cel-card-label">Top Sets</div>
-          <div id="cel-lifts"></div>
-        </div>
-
-        <!-- Stats row -->
-        <div class="cel-stats" id="cel-stats"></div>
-
-        <!-- All exercises -->
-        <div class="cel-card" id="cel-exercises-card">
-          <div class="cel-card-label">All Exercises</div>
-          <div id="cel-exercises"></div>
-        </div>
-
-        <div class="cel-hint">tap anywhere to dismiss</div>
-      </div>
-    </div>
-  </div>
   <!-- Rest Timer Banner -->
   <div id="rest-timer-banner" class="rest-timer-banner hidden">
     <div class="rest-timer-inner">
@@ -2918,8 +2818,8 @@ async function _checkStorageQuota() {
 }
 
 // ── App Version (single source of truth — update here only) ─────────────────
-const APP_VERSION = 'v0.29.4';
-const APP_BUILD   = '3/30/26d';
+const APP_VERSION = 'v0.30.0';
+const APP_BUILD   = '3/31/26i';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2928,6 +2828,7 @@ let state;
 
 // Dirty flag for completion-stamp scan in renderHome() — starts true so first render runs the scan.
 let _completionDirty = true;
+let _journalEditable = null; // forceKey of freshly completed workout — enables journal editing in preview path
 
 async function _bootApp() {
   // 1. Try to open IndexedDB
@@ -3098,7 +2999,6 @@ document.addEventListener('keydown', (e) => {
     {id:'add-lift-modal', close:()=>{const el=document.getElementById('add-lift-modal');if(el)el.style.display='none';}},
     {id:'rest-timer-modal', close:()=>closeRestTimerModal&&closeRestTimerModal()},
     {id:'settings-overlay', close:()=>{const el=document.getElementById('settings-overlay');if(el)el.style.display='none';}},
-    {id:'celebration-overlay', close:()=>dismissCelebration&&dismissCelebration()},
   ];
   for(const c of checks){
     const el=document.getElementById(c.id);
@@ -3249,6 +3149,8 @@ function _isWorkoutInProgress() {
   return Object.keys(state.logs).some(k => k.startsWith(prefix) && state.logs[k].done);
 }
 function setScreen(s){
+  // Clear journal editable flag when leaving workout screen
+  if(s!=='workout') _journalEditable = null;
   // Auto-restore __complete__ if leaving workout tab with reopened workout and no changes
   if(state.screen==='workout' && s!=='workout' && state._reopenedWorkout) _checkReopenAutoRestore();
   // Save workout scroll position when leaving workout tab
@@ -6814,7 +6716,7 @@ function startWorkout(weekIdx, dayIdx) {
   }
   saveNav();
   if (state.screen !== 'workout') setScreen('workout');
-  else render();
+  else { render(); const _mc = document.getElementById('main-content'); if (_mc) _mc.scrollTop = 0; window.scrollTo(0, 0); }
 }
 
 const _checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -7515,14 +7417,13 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   return h;
 }
 
-// Returns skip/adjust row HTML (only shown when expanded)
+// Returns set-adjust row HTML (only shown when expanded)
 function _buildExCardFooter(ex, block, week, day) {
   const key = lk(block.id, week.label, day.name, ex.name);
-  const isSkipped = (state.logs[key]||{}).skipped || false;
+  const extras = state.extraSets[key] || 0;
   return `<div class="skip-row">
-      <button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',-1)">− Set</button>
+      ${extras > 0 ? `<button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',-1)">− Set</button>` : ''}
       <button class="set-adjust-btn" onclick="adjustSets('${esc(key)}',1)">+ Set</button>
-      <button class="skip-btn ${isSkipped?'active':''}" onclick="toggleSkip('${esc(key)}')">${isSkipped?'↩ Undo Skip':'Skip Exercise'}</button>
     </div>`;
 }
 
@@ -7585,7 +7486,7 @@ function renderExerciseList(block, week, day) {
 
   // Historical blocks: locked green, no controls
   if (isHistorical) {
-    h+=_buildWorkoutSummaryCard(block, week, day);
+    h+=_buildWorkoutRecordCard(block, week, day, false, false);
     return h;
   }
 
@@ -7594,15 +7495,16 @@ function renderExerciseList(block, week, day) {
   const isImportedComplete = forceComplete && (forceLog?.importedComplete === true);
   const isLiveComplete = forceComplete && !forceLog?.importedComplete && !forceLog?.historical;
 
-  // Imported completed workout — green card, no Finish Workout, no trash
+  // Imported completed workout — record card, no edit, no journal edit
   if (isImportedComplete) {
-    h+=_buildWorkoutSummaryCard(block, week, day);
+    h+=_buildWorkoutRecordCard(block, week, day, false, false);
     return h;
   }
 
-  // Live workout — user explicitly tapped Finish Workout
+  // Live workout — user explicitly tapped Finish Workout — editable journal
   if (isLiveComplete) {
-    h+=_buildWorkoutSummaryCard(block, week, day, true);
+    _wrcActiveForceKey = lk(block.id, week.label, day.name, '__complete__');
+    h+=_buildWorkoutRecordCard(block, week, day, true, true);
     return h;
   }
 
@@ -7624,7 +7526,8 @@ function isWorkoutActive(weekIdx, dayIdx) {
   return state.workoutActive && state.workoutActive.weekIdx === weekIdx && state.workoutActive.dayIdx === dayIdx;
 }
 
-function _buildWorkoutSummaryCard(block, week, day, showEditBtn) {
+// ── Workout Record Card (H15) ─────────────────────────────────────────────────
+function _buildWorkoutRecordCard(block, week, day, showEditBtn, editable) {
   const progress = getDayProgress(block, week, day);
   let totalSets = 0;
   day.exercises.forEach(ex => {
@@ -7640,10 +7543,10 @@ function _buildWorkoutSummaryCard(block, week, day, showEditBtn) {
       if (sl.done) totalSets++;
     }
   });
-  const forceLog = state.logs[lk(block.id, week.label, day.name, '__complete__')] || {};
+  const forceKey = lk(block.id, week.label, day.name, '__complete__');
+  const forceLog = state.logs[forceKey] || {};
   let startTs = forceLog.startedAt || 0;
   let endTs = forceLog.completedAt || forceLog.ts || 0;
-  // Fallback: if timestamps missing (old build), estimate from set timestamps
   if (!startTs || !endTs) {
     let earliest = Infinity, latest = 0;
     day.exercises.forEach(ex => {
@@ -7664,33 +7567,296 @@ function _buildWorkoutSummaryCard(block, week, day, showEditBtn) {
     const mins = Math.round((endTs - startTs) / 60000);
     durStr = mins > 0 ? `${mins}m` : '<1m';
   }
+  // Format completion date/time for header
+  let headerText = 'Completed';
+  if (endTs) {
+    const d = new Date(endTs);
+    const now = new Date();
+    const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (isToday) {
+      headerText = (editable ? 'Workout Completed' : 'Completed') + ' \u2014 Today, ' + timeStr;
+    } else {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      headerText = (editable ? 'Workout Completed' : 'Completed') + ' \u2014 ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + timeStr;
+    }
+  }
+  // PR list
   let prList = [];
   day.exercises.forEach(ex => {
     const key = lk(block.id, week.label, day.name, ex.name);
     const log = state.logs[key] || {};
     if (log.pr) prList.push({ name: ex.name });
   });
-  let h = `<div class="workout-summary-card">
-    <div class="summary-header">
-      <div class="summary-title">Workout Complete</div>
-      <div class="summary-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-    </div>
-    <div class="summary-stats">
-      <div class="summary-stat"><div class="summary-stat-val">${progress.done}</div><div class="summary-stat-label">Exercises</div></div>
-      <div class="summary-stat"><div class="summary-stat-val">${totalSets}</div><div class="summary-stat-label">Sets</div></div>
-      <div class="summary-stat"><div class="summary-stat-val">${durStr}</div><div class="summary-stat-label">Duration</div></div>
-    </div>`;
+  // Week/block context
+  const weekNum = block.weeks.findIndex(w => w.label === week.label);
+  const contextParts = [];
+  if (block.weeks.length > 1 && weekNum !== -1) contextParts.push('Week ' + (weekNum + 1));
+  if (block.name) contextParts.push(escH(displayBlockName(block.name)));
+
+  let h = `<div class="workout-record-card">`;
+  // Header
+  h += `<div class="wrc-header"><div class="wrc-header-text">${escH(headerText)}</div></div>`;
+  // Identity
+  h += `<div class="wrc-identity"><div class="wrc-day-name">${escH(day.name)}</div>`;
+  if (contextParts.length) h += `<div class="wrc-block-context">${contextParts.join(' \u00b7 ')}</div>`;
+  h += `</div>`;
+  // Stats
+  h += `<div class="wrc-stats">
+    <div class="wrc-stat"><div class="wrc-stat-val">${progress.done}</div><div class="wrc-stat-label">Exercises</div></div>
+    <div class="wrc-stat"><div class="wrc-stat-val">${totalSets}</div><div class="wrc-stat-label">Sets</div></div>
+    <div class="wrc-stat"><div class="wrc-stat-val">${durStr}</div><div class="wrc-stat-label">Duration</div></div>
+  </div>`;
+  // PR banner
   if (prList.length > 0) {
-    const prText = prList.map(p => `New ${escH(p.name)} PR`).join(' \u00b7 ');
-    h += `<div class="summary-pr-banner"><div class="summary-pr-text">${prText}</div></div>`;
+    const starSvg = '<svg class="wrc-pr-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>';
+    const prText = prList.map(p => `New ${escH(_displayExName(p.name))} PR`).join(' \u00b7 ');
+    h += `<div class="wrc-pr-banner">${starSvg}<span class="wrc-pr-text">${prText}</span></div>`;
   }
-  if (showEditBtn) {
-    h += `<div class="summary-edit-row" style="margin-top:var(--sp-4);padding-top:var(--sp-4);border-top:1px solid rgba(200,169,81,0.15);text-align:center">
-      <button onclick="openEditWorkoutSheet()" style="background:none;border:1px solid rgba(200,169,81,0.3);border-radius:8px;padding:var(--sp-3) var(--sp-6);color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-md);font-weight:600;letter-spacing:0.05em;cursor:pointer">\u270E MODIFY THIS SESSION</button>
-    </div>`;
+  // Divider + journal section
+  const hasJournal = forceLog.journal && (forceLog.journal.rating != null || forceLog.journal.notes || (forceLog.journal.tags && Object.values(forceLog.journal.tags).some(v => v != null)));
+  // Session detail expander — auto-expand in read-only presentation view (post-save)
+  const fkEsc = esc(forceKey);
+  const _detailOpen = !editable && hasJournal;
+  h += `<div class="wrc-detail-expander${_detailOpen ? ' open' : ''}" onclick="_wrcToggleDetail(this)">
+    <span class="wrc-detail-label">Session Detail</span>
+    <svg class="wrc-detail-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+  </div>`;
+  h += `<div class="wrc-detail-body${_detailOpen ? ' open' : ''}"><div class="wrc-detail-content">${_buildSessionDetail(block, week, day)}</div></div>`;
+  if (editable) {
+    h += `<div class="wrc-divider"></div>`;
+    h += _buildJournalSection(forceLog, forceKey, true);
+    h += `<div class="wrc-save-row"><button class="wrc-save-btn" onclick="_wrcSaveJournal()">Save Session</button></div>`;
+  } else if (hasJournal) {
+    h += `<div class="wrc-divider"></div>`;
+    h += _buildJournalSection(forceLog, forceKey, false);
+  }
+  // Modify button (only in read-only / post-save view)
+  if (showEditBtn && !editable) {
+    h += `<div class="wrc-modify-row"><button class="wrc-modify-btn" onclick="openEditWorkoutSheet()">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      MODIFY THIS SESSION</button></div>`;
   }
   h += `</div>`;
   return h;
+}
+
+function _wrcToggleDetail(el) {
+  el.classList.toggle('open');
+  const body = el.nextElementSibling;
+  if (body) body.classList.toggle('open');
+}
+
+function _buildSessionDetail(block, week, day) {
+  let h = '';
+  day.exercises.forEach(ex => {
+    const exKey = lk(block.id, week.label, day.name, ex.name);
+    const exLog = state.logs[exKey] || {};
+    if (exLog.skipped) {
+      h += `<div class="wrc-detail-exercise"><div class="wrc-detail-ex-name">${escH(_displayExName(ex.name))}</div>
+        <div class="wrc-detail-set skipped"><span class="wrc-detail-set-num"></span><span class="wrc-detail-set-data">Skipped</span></div></div>`;
+      return;
+    }
+    const pres = ex.prescription || '';
+    const parsedSets = parseSets(pres);
+    if (!parsedSets.length) { const wu = parseWarmupSets(pres); if (wu.length) parsedSets.push(...wu); }
+    const simpleP = parseSimple(pres);
+    const rangedP = (!parsedSets.length && !simpleP) ? parseRangeSet(pres) : null;
+    const prescribedCount = parsedSets.length || simpleP?.sets || rangedP?.sets || 1;
+    const extraCount = (state.extraSets && state.extraSets[exKey]) ? state.extraSets[exKey] : 0;
+    const maxSi = prescribedCount + extraCount + 3;
+    let setRows = '';
+    let setNum = 0;
+    for (let si = 0; si < maxSi; si++) {
+      const sk = exKey + '||s' + si;
+      const sv = state.logs[sk];
+      if (!sv) continue;
+      if (!sv.done && !sv.setStatus) continue;
+      setNum++;
+      const isSkipped = sv.setStatus === 'skipped';
+      const isFailed = sv.setStatus === 'failed';
+      const cls = isSkipped ? ' skipped' : isFailed ? ' failed' : '';
+      const weight = sv.actual ? parseFloat(sv.actual) : null;
+      const reps = sv.actualReps ? parseInt(sv.actualReps) : getSetReps(block.id, week.label, day.name, ex.name, si);
+      const rpe = sv.rpe ? parseFloat(sv.rpe) : null;
+      let dataStr = '';
+      if (isSkipped) {
+        dataStr = 'Skipped';
+      } else if (weight && !isNaN(weight) && reps) {
+        dataStr = weight + ' × ' + reps + (rpe && !isNaN(rpe) ? ' @' + rpe : '');
+      } else if (weight && !isNaN(weight)) {
+        dataStr = weight + (rpe && !isNaN(rpe) ? ' @' + rpe : '');
+      } else if (reps) {
+        dataStr = '1 × ' + reps + (rpe && !isNaN(rpe) ? ' @' + rpe : '');
+      } else {
+        dataStr = 'Done';
+      }
+      setRows += `<div class="wrc-detail-set${cls}"><span class="wrc-detail-set-num">${setNum}.</span><span class="wrc-detail-set-data">${dataStr}</span></div>`;
+    }
+    if (setRows || exLog.done) {
+      h += `<div class="wrc-detail-exercise"><div class="wrc-detail-ex-name">${escH(_displayExName(ex.name))}</div>${setRows}</div>`;
+    }
+  });
+  return h;
+}
+
+function _buildJournalSection(forceLog, forceKey, editable) {
+  const journal = forceLog.journal || {};
+  if (editable) {
+    const fkEsc = esc(forceKey);
+    const rating = journal.rating || 0;
+    const pct = rating > 0 ? ((rating - 1) / 9) * 100 : 0;
+    const tags = journal.tags || {};
+    let h = `<div class="wrc-journal"><div class="wrc-journal-heading">How'd it go?</div>`;
+    // Slider
+    h += `<div class="wrc-slider-row"><div class="wrc-slider-track-wrap" id="wrc-slider-wrap">
+      <div class="wrc-slider-value-badge${rating > 0 ? ' visible' : ''}" id="wrc-slider-badge">${rating || ''}</div>
+      <div class="wrc-slider-track" onclick="_wrcSliderClick(event)" ontouchstart="_wrcSliderTouchStart(event)" ontouchmove="_wrcSliderTouchMove(event)" ontouchend="_wrcSliderTouchEnd()">
+        <div class="wrc-slider-fill" id="wrc-slider-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="wrc-slider-thumb" id="wrc-slider-thumb" style="left:${pct}%" ontouchstart="_wrcSliderTouchStart(event)" ontouchmove="_wrcSliderTouchMove(event)" ontouchend="_wrcSliderTouchEnd()"></div>
+    </div>
+    <div class="wrc-slider-anchors"><span class="wrc-slider-anchor">1 \u2014 Easy</span><span class="wrc-slider-anchor">Brutal \u2014 10</span></div></div>`;
+    // Tags
+    h += `<div class="wrc-tags-section">`;
+    const tagDefs = [
+      { key: 'technique', label: 'Technique', opts: ['dialed','okay','off'], display: ['Dialed','Okay','Off'] },
+      { key: 'fatigue', label: 'Fatigue', opts: ['fresh','normal','gassed'], display: ['Fresh','Normal','Gassed'] },
+      { key: 'soreness', label: 'Soreness', opts: ['none','mild','heavy'], display: ['None','Mild','Heavy'] }
+    ];
+    tagDefs.forEach(td => {
+      h += `<div class="wrc-tag-row"><span class="wrc-tag-row-label">${td.label}</span><div class="wrc-tag-row-chips">`;
+      td.opts.forEach((opt, i) => {
+        const sel = tags[td.key] === opt ? ' selected' : '';
+        h += `<div class="wrc-tag-row-chip${sel}" onclick="_wrcToggleTag(this,'${fkEsc}','${td.key}','${opt}')">${td.display[i]}</div>`;
+      });
+      h += `</div></div>`;
+    });
+    h += `</div>`;
+    // Notes textarea
+    const notesVal = journal.notes ? escH(journal.notes) : '';
+    h += `<textarea class="wrc-notes-area" placeholder="How was the session?" maxlength="500" oninput="_wrcUpdateNotes(this.value)">${notesVal}</textarea>`;
+    h += `</div>`;
+    return h;
+  } else {
+    // Read-only journal
+    let h = `<div class="wrc-journal-readonly">`;
+    if (journal.rating != null) {
+      h += `<div class="wrc-journal-readonly-rating"><span class="wrc-journal-readonly-rating-label">Session Rating</span><span class="wrc-journal-readonly-rating-val">${journal.rating} / 10</span></div>`;
+    }
+    const tags = journal.tags || {};
+    const tagLabels = { technique: 'Technique', fatigue: 'Fatigue', soreness: 'Soreness' };
+    const tagChips = Object.entries(tagLabels).filter(([k]) => tags[k] != null).map(([k, label]) => {
+      const val = tags[k].charAt(0).toUpperCase() + tags[k].slice(1);
+      return `<span class="wrc-journal-readonly-tag">${label}: ${val}</span>`;
+    });
+    if (tagChips.length) h += `<div class="wrc-journal-readonly-tags">${tagChips.join('')}</div>`;
+    if (journal.notes) {
+      const needsCollapse = journal.notes.length > 150;
+      h += `<div class="wrc-journal-readonly-notes${needsCollapse ? ' collapsed' : ''}">${escH(journal.notes)}</div>`;
+      if (needsCollapse) h += `<div class="wrc-journal-show-more" onclick="_wrcToggleNotes(this)">Show more</div>`;
+    }
+    h += `</div>`;
+    return h;
+  }
+}
+
+// ── Journal data helpers ────────────────────────────────────────────────────
+let _wrcActiveForceKey = null;
+function _updateJournal(forceKey, field, value) {
+  const log = state.logs[forceKey];
+  if (!log) return;
+  if (!log.journal) log.journal = {};
+  if (field.startsWith('tags.')) {
+    const tagKey = field.slice(5);
+    if (!log.journal.tags) log.journal.tags = {};
+    log.journal.tags[tagKey] = value;
+  } else {
+    log.journal[field] = value;
+  }
+  log.journal.updatedAt = Date.now();
+  // If all journal fields are empty, remove journal object
+  const j = log.journal;
+  const hasData = j.rating != null || j.notes || (j.tags && Object.values(j.tags).some(v => v != null));
+  if (!hasData) { delete log.journal; }
+  saveLogs();
+}
+
+// Slider handlers
+function _wrcSliderSetVal(val) {
+  val = Math.max(1, Math.min(10, Math.round(val)));
+  const pct = ((val - 1) / 9) * 100;
+  const fill = document.getElementById('wrc-slider-fill');
+  const thumb = document.getElementById('wrc-slider-thumb');
+  const badge = document.getElementById('wrc-slider-badge');
+  if (fill) fill.style.width = pct + '%';
+  if (thumb) thumb.style.left = pct + '%';
+  if (badge) { badge.style.left = pct + '%'; badge.textContent = val; badge.classList.add('visible'); }
+  return val;
+}
+function _wrcSliderClick(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const val = _wrcSliderSetVal(1 + pct * 9);
+  if (_wrcActiveForceKey) _updateJournal(_wrcActiveForceKey, 'rating', val);
+}
+function _wrcSliderTouchStart(e) {
+  e.preventDefault();
+  const wrap = document.getElementById('wrc-slider-wrap');
+  if (wrap) wrap.classList.add('dragging');
+  _wrcSliderTouchMove(e);
+}
+function _wrcSliderTouchMove(e) {
+  const wrap = document.getElementById('wrc-slider-wrap');
+  const track = wrap ? wrap.querySelector('.wrc-slider-track') : null;
+  if (!track) return;
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width));
+  _wrcSliderSetVal(1 + pct * 9);
+}
+function _wrcSliderTouchEnd() {
+  const wrap = document.getElementById('wrc-slider-wrap');
+  if (wrap) wrap.classList.remove('dragging');
+  // Read current value from badge and save
+  const badge = document.getElementById('wrc-slider-badge');
+  if (badge && _wrcActiveForceKey) {
+    const val = parseInt(badge.textContent);
+    if (val >= 1 && val <= 10) _updateJournal(_wrcActiveForceKey, 'rating', val);
+  }
+}
+
+// Tag toggle handler
+function _wrcToggleTag(el, forceKey, category, value) {
+  const wasSelected = el.classList.contains('selected');
+  el.closest('.wrc-tag-row-chips').querySelectorAll('.wrc-tag-row-chip').forEach(c => c.classList.remove('selected'));
+  if (!wasSelected) {
+    el.classList.add('selected');
+    _updateJournal(forceKey, 'tags.' + category, value);
+  } else {
+    _updateJournal(forceKey, 'tags.' + category, null);
+  }
+}
+
+// Notes handler (debounced via saveLogs)
+function _wrcUpdateNotes(value) {
+  if (_wrcActiveForceKey) _updateJournal(_wrcActiveForceKey, 'notes', value || null);
+}
+
+// Save journal → transition to read-only presentation
+function _wrcSaveJournal() {
+  _journalEditable = null;
+  render();
+  const main = document.getElementById('main-content');
+  if (main) main.scrollTop = 0;
+}
+
+// Show more/less for read-only notes
+function _wrcToggleNotes(el) {
+  const notes = el.previousElementSibling;
+  if (!notes) return;
+  const collapsed = notes.classList.contains('collapsed');
+  notes.classList.toggle('collapsed');
+  el.textContent = collapsed ? 'Show less' : 'Show more';
 }
 
 function getDayProgress(block, week, day) {
@@ -7944,10 +8110,12 @@ function renderWorkout(){
     const isHistorical = !!block.historical;
 
     if (isComplete || isHistorical) {
-      // Completed day — show preview list + complete message
-      h += renderPreviewList(block, week, day);
+      // Completed day — workout record card only (the celebration moment)
       const _showEdit = !isHistorical && !forceLog?.importedComplete;
-      h += _buildWorkoutSummaryCard(block, week, day, _showEdit);
+      const _fk = lk(block.id, week.label, day.name, '__complete__');
+      const _isJournalEditable = _journalEditable === _fk;
+      if (_isJournalEditable || _showEdit) _wrcActiveForceKey = _fk;
+      h += _buildWorkoutRecordCard(block, week, day, _showEdit, _isJournalEditable);
     } else {
       // Not started or partial — show banner + info bar + preview list
       h += renderStartResumeBanner(block, week, day);
@@ -8100,8 +8268,10 @@ function toggleEx(key){
         if(!fillWeight){
           if(_sets.length && _sets[si]){ const s=_sets[si]; if(s.weight && !s.isRpe) fillWeight=s.weight; }
           else if(_ranged && _ranged.weight && !_ranged.isRpe) fillWeight=_ranged.weight;
-          // Fallback: extract @ weight from raw prescription for any branch
-          if(!fillWeight && pres){ const wm=pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i); if(wm) fillWeight=wm[1]; }
+          // Fallback: extract @ weight from raw prescription — but only if parsed sets don't have RPE
+          // (if sets have rpe field, the @ value is RPE not weight)
+          const _hasRpe = (_sets.length && _sets[0]?.rpe != null) || (_ranged?.rpe != null);
+          if(!fillWeight && pres && !_hasRpe){ const wm=pres.match(/@\s*(\d+(?:\.\d+)?)\s*(?:lbs?|kg)?(?:\s|$)/i); if(wm) fillWeight=wm[1]; }
         }
         // Auto-fill reps from prescription (low end of range)
         if(!fillReps){
@@ -8220,31 +8390,22 @@ function completeWorkout(){
   _silentAutoBackup();
   // Check storage quota after workout save
   _checkStorageQuota();
-  // Skip celebration + 1RM check on reopened workouts — just render the summary
+  // Mark journal as editable for this freshly completed workout
+  _journalEditable = forceKey;
+  _wrcActiveForceKey = forceKey;
+  // Skip 1RM check on reopened workouts — just render
   if(_isReopened){
     render();
     const main = document.getElementById('main-content');
     if (main) main.scrollTop = 0;
     return;
   }
-  // Capture celebration data — do NOT render() yet (would flash summary card under celebration)
-  const _dayName = day.name;
-  const _weekNum = block.weeks.findIndex(w => w.label === week.label);
-  const _blockName = block.name || '';
-  // Fire celebration immediately, render summary card only after it dismisses
-  const metaParts = [];
-  if (block.weeks.length > 1 && _weekNum !== -1) metaParts.push('W' + (_weekNum + 1));
-  if (_blockName) metaParts.push(_blockName);
-  setTimeout(() => {
-    showCelebration(_dayName, metaParts.join(' · '), () => {
-      // Check for new 1RM singles, then render the completed workout summary
-      checkNewSingles(block, week, day, () => {
-        render();
-        const main = document.getElementById('main-content');
-        if (main) main.scrollTop = 0;
-      });
-    });
-  }, 50);
+  // Check for new 1RM singles, then render the workout record card
+  checkNewSingles(block, week, day, () => {
+    render();
+    const main = document.getElementById('main-content');
+    if (main) main.scrollTop = 0;
+  });
 }
 function checkNewSingles(block, week, day, onDone) {
   if (!day || !day.exercises) { onDone(); return; }
@@ -8953,7 +9114,7 @@ function _restorePRBadges(ex, block, week, day) {
 function _setNumHtml(sk, si) {
   return `<div class="set-num">S${si + 1}</div>`;
 }
-function adjustSets(key, delta){
+function _adjustSetsCommit(key, delta){
   const cur = state.extraSets[key] || 0;
   const next = Math.max(0, cur + delta);
   if(delta < 0 && cur > 0){
@@ -8968,15 +9129,11 @@ function adjustSets(key, delta){
     }
   }
   state.extraSets[key]=next;
-  // Preserve scroll position across render — use rAF so it runs AFTER
-  // renderWorkout's own rAF that scrolls day-tabs/week-pills into view
-  const scrollYBefore=window.scrollY;
   const escaped=cssEsc(key);
   const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
   let anchorTop=null;
   if(card){ anchorTop=card.getBoundingClientRect().top; }
   render();
-  // Immediate correction
   if(card && anchorTop!==null){
     const newCard=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
     if(newCard){
@@ -8984,7 +9141,6 @@ function adjustSets(key, delta){
       window.scrollBy(0, newTop - anchorTop);
     }
   }
-  // Second correction after renderWorkout's rAF tab-scroll runs
   requestAnimationFrame(()=>{
     const nc=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
     if(nc && anchorTop!==null){
@@ -8998,6 +9154,24 @@ function adjustSets(key, delta){
       if(lastRow){ lastRow.classList.add('new-set-anim'); lastRow.addEventListener('animationend',()=>lastRow.classList.remove('new-set-anim'),{once:true}); }
     }
   });
+}
+function adjustSets(key, delta){
+  const cur = state.extraSets[key] || 0;
+  // −SET: animate out, then commit
+  if(delta < 0 && cur > 0){
+    const escaped=cssEsc(key);
+    const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
+    if(card){
+      const wraps=card.querySelectorAll('.swipe-set-wrap');
+      const lastWrap=wraps[wraps.length-1];
+      if(lastWrap){
+        lastWrap.classList.add('removing-set');
+        lastWrap.addEventListener('animationend',()=>_adjustSetsCommit(key, delta),{once:true});
+        return;
+      }
+    }
+  }
+  _adjustSetsCommit(key, delta);
 }
 function setActual(key,v){
   const existing = state.logs[key]||{};
@@ -9159,106 +9333,6 @@ function updateDayTabCheckmarks(){
     else if(!allDone&&pill.classList.contains('done')) pill.classList.remove('done');
   });
 }
-// ── WORKOUT CELEBRATION ───────────────────────────────────────────────────────
-let _celebrationCallback = null;
-
-function showCelebration(dayName, meta, onDismiss) {
-  const overlay = document.getElementById('celebration-overlay');
-  if (!overlay) return;
-
-  _celebrationCallback = onDismiss || null;
-
-  // Populate header
-  document.getElementById('cel-day').textContent  = dayName || 'Workout';
-  document.getElementById('cel-meta').textContent = meta    || '';
-
-  // Get session data
-  const block = state.activeBlock;
-  const week  = block?.weeks[state.activeWeek];
-  const day   = week?.days[state.activeDay];
-  const summary = (block && week && day) ? getSessionSummary(block, week, day) : null;
-
-  // ── Comp lift top sets ──────────────────────────────────────────────────────
-  const liftsEl = document.getElementById('cel-lifts');
-  const liftsCard = document.getElementById('cel-lifts-card');
-  const liftGroups = ['squat','bench','deadlift'];
-  const liftLabels = { squat:'Squat', bench:'Bench', deadlift:'Dead' };
-  const hasAnyLift = liftGroups.some(g => summary?.compBest?.[g]);
-
-  if (hasAnyLift) {
-    liftsCard.style.display = '';
-    liftsEl.innerHTML = liftGroups.filter(g => summary.compBest[g]).map(g => {
-      const best = summary.compBest[g];
-      const rpeStr = best.rpe ? `@${best.rpe}` : '';
-      const prBadge = best.isPR ? `<div class="cel-lift-pr">PR</div>` : '';
-      return `<div class="cel-lift-row">
-        <div class="cel-lift-name">${liftLabels[g]}</div>
-        <div class="cel-lift-set">${best.weight}<span class="cel-lift-sub"> ${getDisplayUnit()} × ${best.reps}</span>${rpeStr ? `<span class="cel-lift-rpe">${rpeStr}</span>` : ''}</div>
-        ${prBadge}
-      </div>`;
-    }).join('');
-  } else {
-    liftsCard.style.display = 'none';
-  }
-
-  // ── Stats row ───────────────────────────────────────────────────────────────
-  const statsEl = document.getElementById('cel-stats');
-  const vol = summary?.totalVolume ? fmtVolume(summary.totalVolume) : '—';
-  const sets   = summary?.totalSets  || '—';
-  const avgRpe = summary?.avgRpe     != null ? summary.avgRpe : '—';
-  const maxRpe = summary?.maxRpe     || '—';
-
-  statsEl.innerHTML = `
-    <div class="cel-stat">
-      <div class="cel-stat-val">${vol}<span class="cel-stat-unit">${summary?.totalVolume && summary.totalVolume < 1000 ? ' '+getDisplayUnit() : ''}</span></div>
-      <div class="cel-stat-label">Tonnage</div>
-    </div>
-    <div class="cel-stat">
-      <div class="cel-stat-val">${sets}</div>
-      <div class="cel-stat-label">Sets</div>
-    </div>
-    <div class="cel-stat">
-      <div class="cel-stat-val">${avgRpe}</div>
-      <div class="cel-stat-label">Avg RPE</div>
-    </div>`;
-
-  // ── All exercises ───────────────────────────────────────────────────────────
-  const exEl   = document.getElementById('cel-exercises');
-  const exCard = document.getElementById('cel-exercises-card');
-  const exs    = day?.exercises || [];
-  if (exs.length) {
-    exCard.style.display = '';
-    exEl.innerHTML = exs.map(ex => {
-      const exKey = lk(block.id, week.label, day.name, ex.name);
-      const exLog = state.logs[exKey] || {};
-      const isDone    = !!exLog.done;
-      const isSkipped = !!exLog.skipped;
-      // Count completed sets
-      let setsDone = 0;
-      for (let si = 0; si < 20; si++) {
-        const sv = state.logs[exKey + '||s' + si];
-        if (!sv) break;
-        if (sv.done && !sv.inferredComplete) setsDone++;
-      }
-      const statusStr = isSkipped ? 'skipped'
-        : setsDone > 0 ? `${setsDone} set${setsDone > 1 ? 's' : ''}`
-        : '';
-      const nameClass = isSkipped ? 'cel-ex-name cel-ex-done' : 'cel-ex-name';
-      return `<div class="cel-ex-row">
-        <div class="${nameClass}">${escH(_displayExName(ex.name))}</div>
-        <div class="cel-ex-sets">${statusStr}</div>
-      </div>`;
-    }).join('');
-  } else {
-    exCard.style.display = 'none';
-  }
-
-  // Reset scroll and show
-  const scroll = overlay.querySelector('.cel-scroll');
-  if (scroll) scroll.scrollTop = 0;
-  overlay.classList.add('visible');
-}
-
 // ── GOOGLE DRIVE PICKER ──────────────────────────────────────────────────────
 const DRIVE_CLIENT_ID = '868418344070-756bh89t1d5ms7d50e0ofvo3tuent9kl.apps.googleusercontent.com';
 const DRIVE_API_KEY = 'AIzaSyC_lOxtDPt4sElQgYKXyfSI4V1dS78cv0o';
@@ -10852,16 +10926,6 @@ function markAllBlocksComplete(blocks) {
         }
       }
     }
-  }
-}
-
-function dismissCelebration() {
-  const overlay = document.getElementById('celebration-overlay');
-  if (overlay) overlay.classList.remove('visible');
-  if (_celebrationCallback) {
-    const cb = _celebrationCallback;
-    _celebrationCallback = null;
-    setTimeout(cb, 200);
   }
 }
 
