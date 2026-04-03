@@ -5007,8 +5007,7 @@ function parseWorkbook(wb){
           if (!day.exercises) continue;
           for (const ex of day.exercises) {
             if (ex.prescription == null) ex.prescription = '';
-            // Strip bare dash/em-dash/en-dash placeholders (empty cells rendered as "-")
-            if (/^[-–—]\s*$/.test(ex.prescription)) ex.prescription = '';
+            // Preserve bare dash/em-dash/en-dash — audit and UI handle them as rest/no-work
             if (ex.note == null) ex.note = '';
             if (ex.loggedWeight == null) ex.loggedWeight = '';
             if (ex.lifterNote == null) ex.lifterNote = '';
@@ -6514,8 +6513,12 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
   }
 
   // Vertical layout (MagOrt / Smolov style): SxR text + weight
-  const exercises = [];
+  // Now with empty-row day boundary detection
+  const days = [];
+  let currentDayExercises = [];
   let exerciseName = sheetName || 'Exercise';
+  let sawContent = false;
+
   // Try to find an explicit exercise name in header area
   for (let i = 0; i < Math.min(startRow + 3, rows.length); i++) {
     const row = rows[i]; if (!row) continue;
@@ -6527,7 +6530,18 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
   }
 
   for (let r = startRow; r < endRow; r++) {
-    const row = rows[r]; if (!row) continue;
+    const row = rows[r];
+    // Check for empty row (null row or all cells empty)
+    const isEmpty = !row || row.every(c => c == null || String(c).trim() === '');
+    if (isEmpty) {
+      // If we've accumulated exercises, close the current day
+      if (currentDayExercises.length > 0) {
+        days.push({ name: 'Day ' + (days.length + 1), exercises: currentDayExercises });
+        currentDayExercises = [];
+      }
+      continue;
+    }
+    sawContent = true;
     for (let c = 0; c < Math.min(row.length, 12); c++) {
       const val = row[c]; if (val == null) continue;
       const str = String(val).trim();
@@ -6541,7 +6555,7 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
         }
         let pres = str;
         if (weight != null) pres += `(${Math.round(weight * 100) / 100})`;
-        exercises.push({ name: exerciseName, prescription: pres, note: '', lifterNote: '', loggedWeight: '' });
+        currentDayExercises.push({ name: exerciseName, prescription: pres, note: '', lifterNote: '', loggedWeight: '' });
         break;
       }
       // Check for exercise name
@@ -6550,8 +6564,12 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
       }
     }
   }
+  // Close final day if open
+  if (currentDayExercises.length > 0) {
+    days.push({ name: 'Day ' + (days.length + 1), exercises: currentDayExercises });
+  }
 
-  if (exercises.length > 0) return [{ name: 'Day 1', exercises }];
+  if (days.length > 0) return days;
   return [];
 }
 
@@ -8111,12 +8129,7 @@ function parseF_coach(wb) {
         for (const ex of dd.exercises) {
           if (w >= ex.weekData.length) continue;
           const wd = ex.weekData[w];
-          if (ex.textOnly) {
-            // textOnly exercises: only include in weeks where the name exists in that week's column
-            if (!wd.hasWeekName) continue;
-            exercises.push({name: wd.weekExName, prescription: wd.weekExName, note: '', lifterNote: '', loggedWeight: '', supersetGroup: null});
-            continue;
-          }
+          if (ex.textOnly) continue;
           if (!wd.pres) continue;
           exercises.push({name: wd.weekExName, prescription: wd.pres, note: wd.note || '', lifterNote: '', loggedWeight: '', supersetGroup: null});
         }
