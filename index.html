@@ -2806,7 +2806,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.31.0';
-const APP_BUILD   = '4/2/26a';
+const APP_BUILD   = '4/4/26a';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -9407,12 +9407,12 @@ async function onDrivePickerCallback(data) {
     if(buffer.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
     const wb = XLSX.read(buffer, { cellDates: true });
     wb._plFilename = fileName.replace(/\.\w+$/, '');
-    const blocks = parseWorkbook(wb);
-
-    if (blocks && blocks.error) {
-      showParseError('error', blocks.reason || 'Failed to parse file. The format may not be supported.');
+    const result = parseWorkbook(wb);
+    if (result.error) {
+      showParseError('error', result.reason || 'Failed to parse file. The format may not be supported.');
       return;
     }
+    const blocks = result.blocks;
 
     if (!blocks || blocks.length === 0) {
       openColumnMapper(wb);
@@ -11394,8 +11394,9 @@ document.getElementById('file-input').addEventListener('change',async(e)=>{
     if(data.byteLength > 10*1024*1024){ showParseError('File is too large (max 10 MB). Try reducing the number of sheets.'); return; }
     const wb=XLSX.read(data, { cellDates: true });
     wb._plFilename = file.name;
-    const blocks=parseWorkbook(wb);
-    if(blocks && blocks.error){ showParseError('error', blocks.reason || 'Failed to parse file. The format may not be supported.'); e.target.value=''; return; }
+    const result=parseWorkbook(wb);
+    if(result.error){ showParseError('error', result.reason || 'Failed to parse file. The format may not be supported.'); e.target.value=''; return; }
+    const blocks=result.blocks;
     if(!blocks||blocks.length===0){ openColumnMapper(wb); return; }
     const namePart=file.name.replace(/\.xlsx?$/i,'').replace(/_/g,' ').trim();
     blocks.forEach(b=>{ if(b.athleteName==='Athlete') b.athleteName=namePart; if(b.name==='Training Program') b.name=namePart; });

@@ -4766,6 +4766,55 @@ function parseRP(wb) {
 
 // ── POST-PARSE QUALITY HELPERS ────────────────────────────────────────────────
 
+// Split multi-exercise circuit prescriptions (KIMCOACH pattern)
+// e.g., name="Walking DB Lunge, Pullup, Pushup" pres="Lunge 2x12, Pullup and Pushup 2x5-10"
+function _trySplitCircuitPrescription(ex) {
+  const name = ex.name || '';
+  const pres = ex.prescription || '';
+
+  // Must have comma or "and" in the name suggesting multiple exercises
+  if (!/,/.test(name) && !/\band\b/i.test(name)) return null;
+
+  // Must have multiple set-scheme segments in prescription
+  const segments = pres.split(/,\s*/);
+  if (segments.length < 2 && !/\band\b/i.test(pres)) return null;
+
+  // Split on comma first, then handle "and" within segments
+  const rawParts = pres.split(/,\s*/);
+  const expandedParts = [];
+  for (const part of rawParts) {
+    // Split "Pullup and Pushup 2x5-10" into two entries sharing the prescription
+    const andMatch = part.match(/^(.+?)\s+and\s+(.+?)\s+(\d+x\S+.*)$/i);
+    if (andMatch) {
+      expandedParts.push(andMatch[1].trim() + ' ' + andMatch[3].trim());
+      expandedParts.push(andMatch[2].trim() + ' ' + andMatch[3].trim());
+    } else {
+      expandedParts.push(part.trim());
+    }
+  }
+
+  // Each part should be "Name NxN..." — extract name and prescription
+  const results = [];
+  const groupId = 'circuit-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+
+  for (const part of expandedParts) {
+    const m = part.match(/^(.+?)\s+(\d+x\S+.*)$/i);
+    if (m) {
+      results.push({
+        name: m[1].trim(),
+        prescription: m[2].trim(),
+        supersetGroup: groupId,
+        coachNotes: ex.coachNotes ? (Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : [ex.coachNotes]) : []
+      });
+    } else {
+      // Can't parse this part — bail out, don't split
+      return null;
+    }
+  }
+
+  return results.length >= 2 ? results : null;
+}
+
 // Returns true if >50% of exercises have meta-label names (Set 1, Set 2, PR Set, etc.)
 // rather than real exercise names. Used to reject personal trackers/calculators that
 // Format E sometimes misidentifies as programs.
@@ -4834,6 +4883,190 @@ function _fixGenericExerciseNames(blocks) {
       }
     }
   }
+}
+
+// ── POST-PARSE QUALITY SCORING ───────────────────────────────────────────────
+// Three functions that score how well prescriptions were parsed.
+// Read-only on parsed data — never modifies parser output.
+
+function _detectDegradation(raw, sets, simple, ranged, bare) {
+  // Collect all parsed set objects into a flat array for checking
+  const allSets = (sets && sets.length > 0) ? sets : [];
+  const parsedSetCount = allSets.length || (simple && simple.sets) || (ranged && ranged.sets) || (bare && bare.sets) || 0;
+
+  // 1. Missing percentage: raw has "85%" but no parsed set captured a percentage weight
+  if (/\d+\s*%/.test(raw)) {
+    const hasPercent = allSets.some(s => s && s.weight && String(s.weight).includes('%'));
+    const simpleHas = simple && simple.weight && String(simple.weight).includes('%');
+    const rangedHas = ranged && ranged.weight && String(ranged.weight).includes('%');
+    const hasDropPercent = allSets.some(s => s && s.dropPercent != null);
+    if (!hasPercent && !simpleHas && !rangedHas && !hasDropPercent) {
+      return 'Percentage in prescription not captured in parsed output';
+    }
+  }
+
+  // 2. Missing RPE: raw has "@7" or "@ 8" pattern but no parsed set has .rpe
+  // Match @ followed by a number that looks like RPE (1-10, possibly with .5)
+  // Exclude @weight patterns like @250lbs, @135, @-15%
+  const rpeMatch = raw.match(/@\s*(\d+(?:\.\d+)?)/);
+  if (rpeMatch && parseFloat(rpeMatch[1]) <= 10) {
+    const hasRpe = allSets.some(s => s && (s.rpe || s.isRpe));
+    const simpleHasRpe = simple && simple.rpe;
+    if (!hasRpe && !simpleHasRpe) {
+      return 'RPE in prescription not captured in parsed output';
+    }
+  }
+
+  // 3. Collapsed rep scheme: raw has 3+ numbers separated by - or / (like "10-8-6-4-3-2")
+  //    but parsed output is only 1 set.
+  //    CRITICAL: Exclude set-range patterns like "3-5x8" where the - is followed by
+  //    a number then 'x' (that's a range of sets, not collapsed reps).
+  const collapsedMatch = raw.match(/(\d+)[-/](\d+)[-/](\d+)/);
+  if (collapsedMatch && parsedSetCount <= 1) {
+    const afterMatch = raw.slice(raw.indexOf(collapsedMatch[0]) + collapsedMatch[0].length);
+    if (!/^\s*x/i.test(afterMatch)) {
+      return 'Descending/multi-rep scheme collapsed to single set';
+    }
+  }
+
+  // 4. Missing cluster/compound keywords: raw mentions advanced techniques but
+  //    parsed sets are simple (no multi-phase structure)
+  if (/cluster|rest[\s-]?pause|drop[\s-]?set|myo[\s-]?rep/i.test(raw) && parsedSetCount <= 1) {
+    return 'Advanced technique (cluster/drop/rest-pause/myo-rep) not reflected in parsed sets';
+  }
+
+  // 5. Weight present but lost: raw has "(225)" or "225lbs" but no parsed set has .weight
+  if (/\(\s*\d{2,}\s*\)|\d{2,}\s*(lbs?|kgs?)\b/i.test(raw)) {
+    const hasWeight = allSets.some(s => s && s.weight);
+    const simpleHasWeight = simple && simple.weight;
+    const rangedHasWeight = ranged && ranged.weight;
+    const bareHasWeight = bare && bare.weight;
+    if (!hasWeight && !simpleHasWeight && !rangedHasWeight && !bareHasWeight) {
+      return 'Weight value in prescription not captured in parsed output';
+    }
+  }
+
+  return null;
+}
+
+function _isCoachingText(raw) {
+  // Must have at least 3 words (structured prescriptions are usually shorter)
+  const words = raw.split(/\s+/);
+  if (words.length < 3) return false;
+
+  // Keyword indicators that this is descriptive coaching text
+  const COACHING_KEYWORDS = /stretch|foam|roll|mobility|warm.?up|cool.?down|pose|hold|swing|rotation|band\s+pull|activation|dynamic|static|quadruped|scorpion|pigeon|cat.?cow|arm\s+circle/i;
+  if (COACHING_KEYWORDS.test(raw)) return true;
+
+  // Multiple exercise names separated by commas with no set/rep notation
+  // e.g., "90/90 hips, pigeon pose, Quadruped arm holds catcow - 5 min total"
+  if (/,/.test(raw) && !/\d+\s*x\s*\d+/i.test(raw)) return true;
+
+  return false;
+}
+
+function _classifyPrescription(pres) {
+  if (pres === null || pres === undefined || !String(pres).trim()) {
+    return { bucket: 'empty', detail: 'No prescription' };
+  }
+
+  const raw = String(pres).trim();
+
+  if (raw.length > 500) {
+    return { bucket: 'text_fallback', detail: 'Prescription too long to classify: ' + raw.slice(0, 80) + '...' };
+  }
+
+  let sets, simple, ranged, bare;
+  try {
+    sets = parseSets(raw);
+    simple = parseSimple(raw);
+    ranged = parseRangeSet(raw);
+    bare = parseBarePres(raw);
+  } catch (e) {
+    console.warn('[liftlog] _classifyPrescription parser error for "' + raw.slice(0, 80) + '":', e.message);
+    return { bucket: 'text_fallback', detail: 'Parser error: ' + e.message };
+  }
+
+  const hasStructured = (sets && sets.length > 0)
+    || (simple && simple.sets > 0)
+    || (ranged && ranged.sets > 0)
+    || (bare && bare.sets > 0);
+
+  if (!hasStructured) {
+    // Check if this looks like intentional coaching text rather than a parse failure
+    if (_isCoachingText(raw)) {
+      return { bucket: 'coaching_text', detail: 'Coaching/warmup instruction (not a structured prescription)' };
+    }
+    return { bucket: 'text_fallback', detail: 'No parser could interpret: ' + raw };
+  }
+
+  const degradation = _detectDegradation(raw, sets, simple, ranged, bare);
+  if (degradation) {
+    return { bucket: 'partial', detail: degradation };
+  }
+
+  return { bucket: 'clean', detail: null };
+}
+
+function _scoreParseQuality(blocks, formatId) {
+  let clean = 0, partial = 0, textFallback = 0, empty = 0, coachingText = 0;
+  const issues = [];
+
+  for (const block of blocks) {
+    for (const week of block.weeks || []) {
+      for (const day of week.days || []) {
+        for (const ex of day.exercises || []) {
+          const result = _classifyPrescription(ex.prescription);
+          if (result.bucket === 'clean') clean++;
+          else if (result.bucket === 'coaching_text') coachingText++;
+          else if (result.bucket === 'partial') partial++;
+          else if (result.bucket === 'text_fallback') textFallback++;
+          else empty++;
+
+          if (result.bucket !== 'clean') {
+            issues.push({
+              exercise: ex.name,
+              day: day.name,
+              week: week.label,
+              block: block.name,
+              bucket: result.bucket,
+              raw: ex.prescription,
+              detail: result.detail
+            });
+          }
+        }
+      }
+    }
+  }
+
+  const total = clean + partial + textFallback + empty + coachingText;
+  const score = total > 0 ? Math.round(((clean + coachingText) / total) * 100) : 0;
+
+  let tier;
+  if (formatId === 'MATRIX') {
+    // MATRIX: prescriptions embed exercise names in text (e.g. "Dumbbell Press 3x8"),
+    // so standalone parsers can't isolate sets/reps. Text fallback is expected, not degraded.
+    // Always Tier 2 — never reject, never silent Tier 1.
+    tier = 2;
+  } else if (formatId === 'ADAPTIVE') {
+    // ADAPTIVE: last-resort fallback parser, high score shouldn't produce silent Tier 1
+    tier = score >= 60 ? 2 : 3;
+  } else {
+    tier = score >= 90 ? 1 : score >= 60 ? 2 : 3;
+  }
+
+  return {
+    score,
+    total,
+    clean,
+    coachingText,
+    partial,
+    textFallback,
+    empty,
+    issues,
+    tier,
+    format: formatId
+  };
 }
 
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
@@ -4998,6 +5231,26 @@ function parseWorkbook(wb){
       }
     }
 
+    // Fix 6: Split multi-exercise circuit prescriptions (KIMCOACH pattern)
+    if (fmt === 'KIMCOACH') {
+      for (const block of blocks) {
+        for (const week of block.weeks || []) {
+          for (const day of week.days || []) {
+            const newExercises = [];
+            for (const ex of day.exercises || []) {
+              const split = _trySplitCircuitPrescription(ex);
+              if (split) {
+                newExercises.push(...split);
+              } else {
+                newExercises.push(ex);
+              }
+            }
+            day.exercises = newExercises;
+          }
+        }
+      }
+    }
+
     // Normalize null fields to empty strings across all blocks
     for (const block of blocks) {
       if (!block.weeks) continue;
@@ -5022,14 +5275,32 @@ function parseWorkbook(wb){
     _fixGenericExerciseNames(blocks);
   }
 
+  // Quality scoring — runs on final post-processed data
+  const qualityReport = (blocks && Array.isArray(blocks))
+    ? _scoreParseQuality(blocks, fmt)
+    : null;
+
+  // Tier 3: reject low-quality parses before structural validation
+  // Skip quality gate when total is 0 — let validation gate handle empty files
+  if (qualityReport && qualityReport.tier === 3 && qualityReport.total > 0) {
+    const failCount = qualityReport.total - qualityReport.clean;
+    console.warn('[liftlog] Quality gate: score ' + qualityReport.score + '% (' + failCount + '/' + qualityReport.total + ' exercises degraded). Rejecting.');
+    return { error: true, reason: 'This spreadsheet couldn\'t be parsed reliably. ' + failCount + ' of ' + qualityReport.total + ' exercises failed. Try a different file or build your program manually.', format: fmt, qualityReport };
+  }
+
   // ── Post-parse validation gate ────────────────────────────────────────────
   const validation = _validateParseOutput(blocks, fmt);
   if (!validation.valid) {
     console.warn('[liftlog] Parse validation failed for format ' + fmt + ': ' + validation.reason);
-    return { error: true, reason: validation.reason, format: fmt };
+    return { error: true, reason: validation.reason, format: fmt, qualityReport };
   }
 
-  return blocks;
+  // Log quality report for Tier 2 (future UI will use this)
+  if (qualityReport && qualityReport.tier === 2) {
+    console.info('[liftlog] Quality report: Tier 2 — score ' + qualityReport.score + '%, ' + qualityReport.issues.length + ' issues. Format: ' + fmt);
+  }
+
+  return { blocks, qualityReport, format: fmt };
 }
 
 // ── FORMAT E PARSER (flat grid / nSuns-like / week-day text) ─────────────────
@@ -9014,6 +9285,18 @@ function parseSets(pres){
   // N@RPE bare  e.g. "5@6"
   r=pres.match(/^(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
   if(r){ const sets=[{reps:parseInt(r[1]),rpe:parseFloat(r[2])}]; _parseSetsCache.set(pres,sets); return sets; }
+  // Rep-range + RPE range: "2x8-12 @ 7-8" or "2x12-15 @ 7-8"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*[-–]\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ const n=parseInt(r[1]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps:r[2]+'-'+r[3],rpe:r[4]+'-'+r[5],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  // Rep-range + single RPE: "2x8-12 @ 7" or "2x8-12 @ 8"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*[-–]\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ const n=parseInt(r[1]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps:r[2]+'-'+r[3],rpe:r[4],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  // RPE range: "2x12 @ 7-8" or "3x5 @ 6-7"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*$/);
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps,rpe:r[3]+'-'+r[4],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  // Per-set RPE: "3x8 @ 7/8/9"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)+)\s*$/);
+  if(r){ const rpeVals=r[3].split('/'),n=parseInt(r[1]),reps=parseInt(r[2]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps,rpe:rpeVals[i]||rpeVals[rpeVals.length-1],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
   // NxM @bare number (no keyword, treat as RPE)  e.g. "2x5@8"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; }
@@ -9031,6 +9314,32 @@ function parseSets(pres){
   // NxS @RPE (sets only, open reps) — e.g. "5x@7", "3x@7.5"
   r=pres.match(/^(\d+)\s*x\s*@\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
   if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[2]); const sets=Array.from({length:n},()=>({reps:'open',rpe})); _parseSetsCache.set(pres,sets); return sets; }
+
+  // Max/AMRAP with weight: "1xMax(45)" or "1xMax Time(45)" or "2xMax(135)"
+  r=pres.match(/^(\d+)\s*x\s*Max(?:\s*Time)?\s*\((\d+(?:\.\d+)?)\)\s*$/i);
+  if(r){ const sets=[]; for(let i=0;i<parseInt(r[1]);i++) sets.push({reps:'open',weight:r[2],amrap:true}); _parseSetsCache.set(pres,sets); return sets; }
+  // Max without weight: "1xMax" or "3xMax" or "2xMax Time"
+  r=pres.match(/^(\d+)\s*x\s*Max(?:\s*Time)?\s*$/i);
+  if(r){ const sets=[]; for(let i=0;i<parseInt(r[1]);i++) sets.push({reps:'open',amrap:true}); _parseSetsCache.set(pres,sets); return sets; }
+  // Comma-separated sets: "135x8,225x6,315x3,405x1" or "BARx20,135x8,185x4"
+  r=pres.match(/^((?:(?:BAR|bar|Bar|\d+(?:\.\d+)?)\s*x\s*\d+\s*,?\s*){2,})$/i);
+  if(r){ const segments=pres.split(/\s*,\s*/); const sets=[]; for(const seg of segments){ const m=seg.match(/^(BAR|bar|Bar|\d+(?:\.\d+)?)\s*x\s*(\d+)$/i); if(m){ const weight=/^bar$/i.test(m[1])?'BAR':m[1]; sets.push({reps:parseInt(m[2]),weight:weight}); } } if(sets.length>=2){ _parseSetsCache.set(pres,sets); return sets; } }
+
+  // Distance-based: "2 mile run", "1 mile run", "400m run", "800m sprint"
+  r=pres.match(/^(\d+(?:\.\d+)?)\s*(mile|miles|mi|km|meter|meters|m)\b/i);
+  if(r){ const unit=r[2].toLowerCase(); const sets=[{reps:parseFloat(r[1]),weight:unit,note:pres}]; _parseSetsCache.set(pres,sets); return sets; }
+
+  // Timed set with weight: "1x15 secs(495)" or "1x30 secs(160 kgs)"
+  r=pres.match(/^(\d+)\s*x\s*(\d+)\s*(?:secs?|seconds?|mins?|minutes?)\s*\(([^)]+)\)\s*$/i);
+  if(r){ const sets=[]; const weightStr=r[3].replace(/\s*(lbs?|kgs?)\s*/i,'').trim(); for(let i=0;i<parseInt(r[1]);i++) sets.push({reps:parseInt(r[2]),weight:weightStr,timed:true}); _parseSetsCache.set(pres,sets); return sets; }
+
+  // Bare duration: "(5 Minutes)" or "15 min" or "5 min"
+  r=pres.match(/^\(?(\d+)\s*(?:secs?|seconds?|mins?|minutes?)\)?\s*$/i);
+  if(r){ const sets=[{reps:parseInt(r[1]),timed:true}]; _parseSetsCache.set(pres,sets); return sets; }
+
+  // Compound duration: "15 min, 5 min" — treat as multiple timed sets
+  r=pres.match(/^(\d+)\s*(?:min|mins|minutes?)\s*,\s*(\d+)\s*(?:min|mins|minutes?)\s*$/i);
+  if(r){ const sets=[{reps:parseInt(r[1]),timed:true},{reps:parseInt(r[2]),timed:true}]; _parseSetsCache.set(pres,sets); return sets; }
 
   _parseSetsCache.set(pres,[]);
   return [];
@@ -18904,6 +19213,8 @@ if (typeof module !== 'undefined' && module.exports) {
     scoreHorizWeekMatrix, parseHorizWeekMatrix,
     // E Sub-parser: Strongman Wave
     parseE_strongmanWave,
+    // Post-Parse Quality Scoring
+    _scoreParseQuality, _classifyPrescription, _detectDegradation,
   };
 }
 
