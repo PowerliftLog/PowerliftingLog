@@ -3738,56 +3738,7 @@ function scoreMatrixLayout(wb, negSignals) {
 // Returns max 0.3 so dedicated parsers always win when they score > 0.3.
 // Fires as fallback only when no dedicated parser recognises the file.
 function scoreAdaptive(wb) {
-  const id = 'ADAPTIVE';
-  try {
-    if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
-      return { id, score: 0.0, signals: { matched: [], missing: ['no sheets'], negative: [] } };
-    }
-
-    // Quick workout-region scan across all non-empty sheets.
-    // Threshold ≥ 0.5 means the region has at least an exercise-name column (+0.50),
-    // which filters out pure-text FAQ/instruction blocks.
-    const features = wb._features || null;
-
-    for (const sn of wb.SheetNames) {
-      const ws = wb.Sheets[sn];
-      if (!ws || !ws['!ref']) continue;
-
-      // Features-first: skip sheets that have no data regions at all
-      // (shared regions detect data_table/program_data — if neither exists,
-      // the adaptive BFS is unlikely to find workout data either)
-      if (features && features.sheets && features.sheets[sn]) {
-        const sf = features.sheets[sn];
-        if (sf.regions && sf.regions.length > 0) {
-          const hasDataRegion = sf.regions.some(r =>
-            r.classification === 'data_table' || r.classification === 'program_data'
-          );
-          if (!hasDataRegion) continue; // skip — no workout-like data on this sheet
-        }
-      }
-
-      // Full adaptive region detection (existing logic)
-      const matrix = _buildOccupancyMatrix(ws);
-      const regions = _detectRegions(matrix, ws);
-      const workoutRegions = regions.filter(r => r.workoutScore >= 0.5);
-      if (workoutRegions.length > 0) {
-        return {
-          id,
-          score: 0.3,
-          signals: {
-            matched: [workoutRegions.length + ' workout-like region(s) in sheet "' + sn + '"'],
-            missing: [],
-            negative: []
-          }
-        };
-      }
-    }
-
-    return { id, score: 0.0, signals: { matched: [], missing: ['no workout-like regions found'], negative: [] } };
-  } catch (e) {
-    console.error('[liftlog] scoreAdaptive error:', e);
-    return { id, score: 0.0, signals: { matched: [], missing: [], negative: ['error: ' + e.message] } };
-  }
+  return { id: 'ADAPTIVE', score: 0.0, signals: { matched: [], missing: ['disabled'], negative: [] } };
 }
 
 // ── TIE-BREAKING HELPERS ──────────────────────────────────────────────────────
@@ -4056,11 +4007,11 @@ function detectFormat(wb){
       return top.id;
     }
 
-    // Nothing matched — Column Mapper fallback
-    return 'B';
+    // Nothing matched
+    return null;
   } catch(e) {
     console.error('[liftlog] detectFormat error:', e);
-    return 'B';
+    return null;
   }
 }
 
@@ -4900,7 +4851,8 @@ function _detectDegradation(raw, sets, simple, ranged, bare) {
     const simpleHas = simple && simple.weight && String(simple.weight).includes('%');
     const rangedHas = ranged && ranged.weight && String(ranged.weight).includes('%');
     const hasDropPercent = allSets.some(s => s && s.dropPercent != null);
-    if (!hasPercent && !simpleHas && !rangedHas && !hasDropPercent) {
+    const hasPctProp = allSets.some(s => s && s.percentage != null);
+    if (!hasPercent && !simpleHas && !rangedHas && !hasDropPercent && !hasPctProp) {
       return 'Percentage in prescription not captured in parsed output';
     }
   }
@@ -4932,7 +4884,11 @@ function _detectDegradation(raw, sets, simple, ranged, bare) {
   // 4. Missing cluster/compound keywords: raw mentions advanced techniques but
   //    parsed sets are simple (no multi-phase structure)
   if (/cluster|rest[\s-]?pause|drop[\s-]?set|myo[\s-]?rep/i.test(raw) && parsedSetCount <= 1) {
-    return 'Advanced technique (cluster/drop/rest-pause/myo-rep) not reflected in parsed sets';
+    // If the parsed sets already capture the technique as a note, don't flag
+    const hasNote = allSets.some(s => s && s.note && /cluster|rest[\s-]?pause|drop[\s-]?set|myo[\s-]?rep/i.test(s.note));
+    if (!hasNote) {
+      return 'Advanced technique (cluster/drop/rest-pause/myo-rep) not reflected in parsed sets';
+    }
   }
 
   // 5. Weight present but lost: raw has "(225)" or "225lbs" but no parsed set has .weight
@@ -4950,12 +4906,16 @@ function _detectDegradation(raw, sets, simple, ranged, bare) {
 }
 
 function _isCoachingText(raw) {
+  // Short activity descriptors (2 words): "Pull-Up Circuit", "Track (Weather)"
+  if (/^[\w-]+\s+(circuit|conditioning|track)\b/i.test(raw)) return true;
+  if (/^(track|circuit|conditioning)\s*\(/i.test(raw)) return true;
+
   // Must have at least 3 words (structured prescriptions are usually shorter)
   const words = raw.split(/\s+/);
   if (words.length < 3) return false;
 
   // Keyword indicators that this is descriptive coaching text
-  const COACHING_KEYWORDS = /stretch|foam|roll|mobility|warm.?up|cool.?down|pose|hold|swing|rotation|band\s+pull|activation|dynamic|static|quadruped|scorpion|pigeon|cat.?cow|arm\s+circle/i;
+  const COACHING_KEYWORDS = /stretch|foam|roll|mobility|warm.?up|cool.?down|pose|hold|swing|rotation|band\s+pull|activation|dynamic|static|quadruped|scorpion|pigeon|cat.?cow|arm\s+circle|circuit|track|agility|sprint|conditioning|plyo/i;
   if (COACHING_KEYWORDS.test(raw)) return true;
 
   // Multiple exercise names separated by commas with no set/rep notation
@@ -5072,6 +5032,9 @@ function _scoreParseQuality(blocks, formatId) {
 // ── UNIFIED ENTRY POINT ───────────────────────────────────────────────────────
 function parseWorkbook(wb){
   const fmt = detectFormat(wb);
+  if (!fmt) {
+    return { error: true, reason: 'No supported format detected', blocks: [], qualityReport: null, format: null };
+  }
   let blocks;
   if (fmt === 'RP') blocks = parseRP(wb);
   else if (fmt === 'A') blocks = parseA(wb);
@@ -5105,7 +5068,10 @@ function parseWorkbook(wb){
   else if (fmt === 'ADAPTIVE') blocks = parseAdaptive(wb);
   else if (fmt === 'C') blocks = parseCAutoFormat(wb);
   else if (fmt === 'D') blocks = parseD(wb);
-  else blocks = parseB(wb);
+  else {
+    console.error('[liftlog] parseWorkbook: unhandled format "' + fmt + '"');
+    return { error: true, reason: 'Unhandled format: ' + fmt, blocks: [], qualityReport: null, format: fmt };
+  }
 
   // ── Post-parse quality gate: reject tracker/calculator files ─────────────
   // If >50% of exercise names are structural meta-labels (Set 1, Set 2, PR Set, etc.)
@@ -9209,6 +9175,18 @@ function parseSets(pres){
     const descM = pres.match(/^(\d+(?:\/\d+)+)\s*$/);
     if(descM){ const sets=descM[1].split('/').map(n=>({reps:parseInt(n)})); _parseSetsCache.set(pres,sets); return sets; }
   }
+  // Descending reps with hyphens: "10-8-6-4" — hyphen-separated rep counts, no weight
+  // Only match if ALL numbers are <= 30 and descending order (to avoid matching weight ranges)
+  {
+    const descHM = pres.match(/^(\d+(?:-\d+){2,})\s*$/);
+    if (descHM) {
+      const vals = descHM[1].split('-').map(Number);
+      if (vals.every(v => v <= 30) && vals[0] > vals[vals.length - 1]) {
+        const sets = vals.map(n => ({reps: n}));
+        _parseSetsCache.set(pres, sets); return sets;
+      }
+    }
+  }
   // Semicolon split: "1x5 @RPE5; 2x7 @-15%" → parse each segment and concat
   if(pres.includes(';')){
     const segs=pres.split(';').map(s=>s.trim()).filter(Boolean);
@@ -9216,6 +9194,43 @@ function parseSets(pres){
       const sets=[];
       for(const seg of segs) sets.push(...parseSets(seg));
       _parseSetsCache.set(pres,sets); return sets;
+    }
+  }
+
+  // Myo-rep / cluster / drop-set / rest-pause technique descriptor:
+  // "1x15-20(3 Clusters)", "2x10(drop set)", "3x8-12(rest-pause)"
+  // Parens content matches technique keywords → capture as note, not weight
+  // MUST come before descending-reps-with-weight to avoid "1x15-20(3 Clusters)" being mismatched
+  {
+    const m = pres.match(/^(\d+)\s*x\s*(\d+(?:-\d+)?)\s*\(([^)]*(?:cluster|myo|drop|rest[\s-]?pause)[^)]*)\)\s*$/i);
+    if (m) {
+      const n = parseInt(m[1]), reps = m[2], note = m[3].trim();
+      const sets = Array.from({length: n}, () => ({reps, note}));
+      _parseSetsCache.set(pres, sets); return sets;
+    }
+  }
+
+  // Descending reps with weight: "5 x 3-2-1(345)" → 3 sets with reps [3,2,1] and weight 345
+  // Also handles: "3 x 5-3-1(225)", "4 x 8-6-4-2(315)"
+  {
+    const m = pres.match(/^(\d+)\s*x\s*(\d+(?:-\d+)+)\s*\(([^)]+)\)\s*$/i);
+    if (m) {
+      const repVals = m[2].split('-').map(Number);
+      const weightStr = m[3].trim();
+      const isRpe = isNaN(Number(weightStr));
+      const sets = repVals.map(reps => ({reps, weight: weightStr, ...(isRpe ? {isRpe: true} : {})}));
+      _parseSetsCache.set(pres, sets); return sets;
+    }
+  }
+
+  // Descending reps with percentage range in parens: "10-8-6-4-3-2 (85-90%)"
+  // Also handles: "10-8-6-4 (70-85%)", "10-8-6-4 (65-80%)"
+  {
+    const m = pres.match(/^(\d+(?:-\d+){2,})\s*\(\s*(\d+)\s*-\s*(\d+)\s*%\s*\)\s*$/);
+    if (m) {
+      const repVals = m[1].split('-').map(Number);
+      const sets = repVals.map(reps => ({reps, weight: m[2] + '-' + m[3] + '%'}));
+      _parseSetsCache.set(pres, sets); return sets;
     }
   }
 
@@ -9279,6 +9294,28 @@ function parseSets(pres){
   // NxM @0.decimal  e.g. "3x5 @0.80"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(0\.\d+)\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),percentage=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
+  // NxM followed by space-separated percentage list: "3x10 65-70-75%"
+  // The percentages are hyphen-separated, one per set, trailing %
+  {
+    r = pres.match(/^(\d+)\s*x\s*(\d+)\s+(\d+(?:-\d+)+)%\s*$/);
+    if (r) {
+      const n = parseInt(r[1]), reps = parseInt(r[2]);
+      const pctVals = r[3].split('-').map(Number);
+      if (pctVals.length === n || pctVals.length >= 2) {
+        const sets = pctVals.map(p => ({reps, percentage: p / 100}));
+        _parseSetsCache.set(pres, sets); return sets;
+      }
+    }
+  }
+  // NxM followed by single percentage (no @): "3x8 60%"
+  {
+    r = pres.match(/^(\d+)\s*x\s*(\d+)\s+(\d+(?:\.\d+)?)%\s*$/);
+    if (r) {
+      const n = parseInt(r[1]), reps = parseInt(r[2]), pct = parseFloat(r[3]) / 100;
+      const sets = Array.from({length: n}, () => ({reps, percentage: pct}));
+      _parseSetsCache.set(pres, sets); return sets;
+    }
+  }
   // NxM+ (plus-notation)  e.g. "3x5+"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\+\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); const sets=Array.from({length:n-1},()=>({reps})); sets.push({reps,amrap:true}); _parseSetsCache.set(pres,sets); return sets; }
@@ -9310,7 +9347,18 @@ function parseSets(pres){
   r=pres.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*@\s*(\d+(?:\.\d+)?)\s*%\s*$/);
   if(r){ const n=parseInt(r[1]),reps=r[2].trim(),percentage=parseFloat(r[3])/100; const sets=Array.from({length:n},()=>({reps,percentage})); _parseSetsCache.set(pres,sets); return sets; }
   r=pres.match(/^(\d+)\s*x\s*\(([^)]+)\)\s*$/);
-  if(r){ const n=parseInt(r[1]),reps=r[2].trim(); const sets=Array.from({length:n},()=>({reps})); _parseSetsCache.set(pres,sets); return sets; }
+  if(r){
+    const n=parseInt(r[1]),content=r[2].trim();
+    // If content is a pure number >= 20, it's weight (e.g. "3x(85)", "1x(435)")
+    // If content has operators or is small, it's reps (e.g. "4x(3+2+1)")
+    if (/^\d+(?:\.\d+)?$/.test(content) && parseFloat(content) >= 20) {
+      const sets = Array.from({length:n}, () => ({reps:'?', weight:content}));
+      _parseSetsCache.set(pres,sets); return sets;
+    }
+    const reps=content;
+    const sets=Array.from({length:n},()=>({reps}));
+    _parseSetsCache.set(pres,sets); return sets;
+  }
   // NxS @RPE (sets only, open reps) — e.g. "5x@7", "3x@7.5"
   r=pres.match(/^(\d+)\s*x\s*@\s*(?:RPE\s*)?(\d+(?:\.\d+)?)\s*$/i);
   if(r){ const n=parseInt(r[1]),rpe=parseFloat(r[2]); const sets=Array.from({length:n},()=>({reps:'open',rpe})); _parseSetsCache.set(pres,sets); return sets; }
@@ -19214,7 +19262,7 @@ if (typeof module !== 'undefined' && module.exports) {
     // E Sub-parser: Strongman Wave
     parseE_strongmanWave,
     // Post-Parse Quality Scoring
-    _scoreParseQuality, _classifyPrescription, _detectDegradation,
+    _scoreParseQuality, _classifyPrescription, _detectDegradation, _isCoachingText,
   };
 }
 
