@@ -378,9 +378,9 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .rest-dur-value { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--text-primary); min-width: 44px; text-align: center; }
 .rest-trigger-btn { display: flex; align-items: center; gap: var(--sp-3); font-family: 'Barlow', sans-serif; font-size: var(--fs-base); font-weight: 600; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); border-radius: 6px; padding: var(--sp-2) var(--sp-5); cursor: pointer; }
 .rest-trigger-btn:active { background: rgba(201,168,76,0.2); }
-.ex-unit-toggle { display: inline-flex; gap: var(--sp-1); margin-left: auto; flex-shrink: 0; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 6px; padding: var(--sp-1); position: relative; }
+.ex-unit-toggle { display: inline-flex; gap: var(--sp-1); flex-shrink: 0; background: var(--surface-3, rgba(255,255,255,0.06)); border-radius: 6px; padding: var(--sp-1); position: relative; }
 .ex-unit-pill { position: absolute; top: var(--sp-1); bottom: var(--sp-1); width: 50%; border-radius: 4px; background: var(--gold); transition: left 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); pointer-events: none; z-index: 0; }
-.ex-unit-toggle-btn { position: relative; z-index: 1; width: 50%; text-align: center; padding: var(--sp-2) var(--sp-4); border-radius: 4px; border: none; background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: all 0.15s; line-height: 1; }
+.ex-unit-toggle-btn { position: relative; z-index: 1; width: 50%; text-align: center; padding: var(--sp-2) var(--sp-5); border-radius: 4px; border: none; background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-base); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); cursor: pointer; transition: all 0.15s; line-height: 1; }
 .ex-unit-toggle-btn.active { background: transparent; color: #1a1a1a; }
 .settings-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 18px 0 var(--sp-4); }
 .settings-section-label:first-of-type { margin-top: 0; }
@@ -541,7 +541,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .prescription { padding: 0 var(--sp-6) var(--sp-5); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); color: var(--gold-data); letter-spacing: 0.03em; }
 .pres-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-4); padding: 0 var(--sp-6) var(--sp-5); }
 .pres-row .prescription { padding: 0; flex: 1; min-width: 0; }
-.pres-row-controls { display: flex; align-items: center; gap: var(--sp-4); flex-shrink: 0; }
+.pres-row-controls { display: flex; align-items: center; gap: var(--sp-3); flex: 1; }
 .prescription.purple { color: var(--gold-data); }
 .pres-text-fallback { font-size: var(--fs-sm); color: var(--text-sub); font-style: italic; line-height: 1.4; }
 .sets-grid { padding: var(--sp-2) var(--sp-6) var(--sp-6); display: flex; flex-direction: column; gap: 0; }
@@ -717,14 +717,13 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 /* ── Rest Timer Banner ────────────────────────────────────────────── */
 .rest-timer-banner { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 420px; z-index: 190; border-radius: 14px; overflow: hidden; transition: transform 0.3s ease, opacity 0.3s ease; }
 .rest-timer-banner.hidden { transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; }
-/* Hide nav + rest timer banner when mobile keyboard is open */
+/* Hide nav when mobile keyboard is open */
 body.keyboard-open .bottom-nav,
-body.keyboard-open .bottom-nav-fade,
-body.keyboard-open .rest-timer-banner { display: none !important; }
+body.keyboard-open .bottom-nav-fade { display: none !important; }
 /* Timer counts from set completion in background; banner appears when keyboard dismisses */
 .rest-timer-inner { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-5) var(--sp-6); background: var(--surface-5); border: 1px solid var(--gold-dim, rgba(201,168,76,0.3)); border-radius: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
 .rest-timer-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
-.rest-timer-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+.rest-timer-ring svg { width: 44px; height: 44px; transform: rotate(90deg) scaleX(-1); }
 .rest-timer-ring circle { fill: none; stroke-width: 3; }
 .rest-timer-ring .ring-bg { stroke: rgba(255,255,255,0.06); }
 .rest-timer-ring .ring-fg { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset 0.3s linear; }
@@ -736,6 +735,23 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .rest-timer-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-mid); border-radius: 8px; padding: 8px 16px; min-height: 44px; cursor: pointer; transition: all 0.15s; }
 .rest-timer-btn:active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
 .rest-timer-skip { color: var(--gold); border-color: rgba(201,168,76,0.3); }
+/* ── Inline rest timer row (inside exercise card) ───────────────────── */
+.rest-timer-inline { overflow: hidden; max-height: 0; opacity: 0; transition: max-height 0.25s ease, opacity 0.2s ease; }
+.rest-timer-inline.expanded { max-height: 60px; opacity: 1; }
+.rest-timer-inline-inner { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(201,168,76,0.04); border-bottom: 1px solid rgba(201,168,76,0.1); position: relative; }
+.rest-timer-inline-inner::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: var(--gold); border-radius: 2px; }
+.rest-timer-ring-inline { position: relative; width: 34px; height: 34px; flex-shrink: 0; }
+.rest-timer-ring-inline svg { width: 34px; height: 34px; transform: rotate(90deg) scaleX(-1); }
+.rest-timer-ring-inline circle { fill: none; stroke-width: 2.5; }
+.rest-timer-ring-inline .ring-bg { stroke: rgba(255,255,255,0.06); }
+.rest-timer-ring-inline .ring-fg { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.rest-timer-time-inline { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; color: var(--text-bright); letter-spacing: 0.02em; }
+.rest-timer-info-inline { flex: 1; min-width: 0; }
+.rest-timer-label-inline { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-sm); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); line-height: 1; }
+.rest-timer-sublabel { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text-dimmer); margin-top: 1px; }
+.rest-timer-actions-inline { display: flex; gap: 6px; flex-shrink: 0; }
+.rest-timer-btn-inline { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-sm); letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-mid); border-radius: 6px; padding: 6px 10px; min-height: 32px; cursor: pointer; transition: all 0.15s; }
+.rest-timer-btn-inline:active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
 
 /* ── Custom Exercise ─────────────────────────────────────────────────── */
 .add-exercise-btn { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); width: calc(100% - 32px); margin: 0 var(--sp-6) var(--sp-5); padding: 13px var(--sp-6); background: none; border: 1px dashed var(--border); border-radius: 10px; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; }
@@ -935,6 +951,13 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .track-hint { padding: 0 var(--sp-6) var(--sp-5); font-size: var(--fs-sm); color: var(--text-dim); font-style: italic; display: flex; align-items: center; gap: var(--sp-3); }
 .track-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
 .track-hint-inline { font-size: var(--fs-xs); color: var(--text-dim); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-style: normal; }
+.track-indicator { display: flex; align-items: center; color: var(--gold); pointer-events: none; padding: 4px; margin-right: 4px; }
+.track-indicator svg { width: 16px; height: 16px; }
+.track-ctrl { background: none; border: none; cursor: pointer; padding: var(--sp-2) var(--sp-3); color: var(--text-dimmer); display: flex; align-items: center; gap: 4px; border-radius: 6px; transition: color 0.15s; margin-left: auto; }
+.track-ctrl svg { width: 16px; height: 16px; flex-shrink: 0; }
+.track-ctrl-label { font-family: 'Barlow', sans-serif; font-size: var(--fs-sm); font-weight: 500; letter-spacing: 0.02em; }
+.track-ctrl.tracked { color: var(--gold); background: rgba(201,168,76,0.08); }
+.track-ctrl:active { transform: scale(1.1); }
 
 /* ── HOME SCREEN ─────────────────────────────────────────────────────────── */
 .home-screen { padding: 20px var(--sp-6) 24px; overflow-x: hidden; }
@@ -2262,7 +2285,7 @@ canvas.chart-overlay { pointer-events: auto; }
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg></span>Workout
     </button>
     <button class="nav-btn" id="nav-metrics" onclick="setScreen('metrics')" aria-label="Metrics">
-      <span class="nav-icon nav-icon-stroke"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Metrics
+      <span class="nav-icon nav-icon-stroke"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><polyline points="7 16 11 11 15 14 21 7"/></svg></span>Metrics
     </button>
     <button class="nav-btn" id="nav-calc" onclick="setScreen('calc')" aria-label="Calculator">
       <span class="nav-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v4H6V4zm0 6h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM6 14h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v6h-2v-6zM6 18h2v2H6v-2zm4 0h2v2h-2v-2z"/></svg></span>Calc
@@ -2822,7 +2845,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.31.0';
-const APP_BUILD   = '4/4/26b';
+const APP_BUILD   = '4/5/26g';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -2974,10 +2997,10 @@ window.addEventListener('beforeunload',()=>{ if(_saveLogsTimer){ clearTimeout(_s
       requestAnimationFrame(() => {
         const rect = el.getBoundingClientRect();
         const vvH = window.visualViewport.height;
-        const scrollAmt = rect.bottom - vvH + 80;
+        const scrollAmt = rect.bottom - vvH + 40;
         if(scrollAmt > 0) {
           // Element is below visible area above keyboard — scroll down only, never negative
-          window.scrollBy({top: scrollAmt, behavior: 'instant'});
+          window.scrollBy({top: scrollAmt, behavior: 'smooth'});
         }
       });
     });
@@ -3068,6 +3091,13 @@ function saveTrackedLifts(){ _idbPut('liftlog_tracked', state.trackedLifts); try
 function loadNav(){ try{ if(_idbReady && _idbCache['liftlog_nav']!==undefined) return _idbCache['liftlog_nav']; return JSON.parse(localStorage.getItem('liftlog_nav')||'{}'); }catch(e){ console.error('[liftlog] loadNav error:',e); return {}; } }
 function saveNav(){ const navObj={blockId:state.activeBlock?.id||null,week:state.activeWeek,day:state.activeDay}; _idbPut('liftlog_nav', navObj); try{ localStorage.setItem('liftlog_nav', JSON.stringify(navObj)); }catch(e){ console.error('[liftlog] saveNav error:',e); showSaveError(); } }
 function lk(bid,wl,dn,en){ return [bid,wl,dn,en].join('||'); }
+function _getExByKey(key){
+  const p=key.split('||'); if(p.length<4) return null;
+  const block=state.blocks.find(b=>b.id===p[0]); if(!block) return null;
+  const week=(block.weeks||[]).find(w=>w.label===p[1]); if(!week) return null;
+  const day=(week.days||[]).find(d=>d.name===p[2]); if(!day) return null;
+  return day.exercises.find(e=>e.name===p[3])||null;
+}
 function _parseLogKey(key) {
   const p = key.split('||');
   if (p.length < 5 || !p[4].startsWith('s')) return null;
@@ -3215,17 +3245,14 @@ function toggleTracked(name, event){
   const current=isTracked(name);
   state.trackedLifts[n]=!current;
   saveTrackedLifts();
-  // Preserve scroll — find the closest exercise card to anchor against
-  const btn=event?.target?.closest('.exercise-card');
-  let anchorOffset=null;
-  if(btn){ anchorOffset=btn.getBoundingClientRect().top; }
-  render();
-  if(btn && anchorOffset!==null){
-    const expandKey=btn.dataset.expandKey;
-    if(expandKey){
-      const newCard=document.querySelector(`.exercise-card[data-expand-key="${CSS.escape(expandKey)}"]`);
-      if(newCard){ window.scrollBy(0, newCard.getBoundingClientRect().top - anchorOffset); }
-    }
+  // Targeted DOM update — no full render, no scroll jump
+  const btn=event?.target?.closest('.track-ctrl');
+  if(btn){
+    const nowTracked=!current;
+    btn.classList.toggle('tracked', nowTracked);
+    btn.title=nowTracked?'Remove from metrics':'Track in metrics';
+    const label=btn.querySelector('.track-ctrl-label');
+    if(label) label.textContent=nowTracked?'Tracked':'Track';
   }
 }
 
@@ -3625,7 +3652,7 @@ function renderMetrics(){
           <div style="text-align:right"><div class="metrics-best" style="color:var(--border)">—</div><div class="metrics-best-label">Est. 1RM</div></div>
         </div>
         <div class="metrics-empty-lift-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" width="24" height="24" style="opacity:0.35;flex-shrink:0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" width="24" height="24" style="opacity:0.35;flex-shrink:0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 16 11 11 15 14 21 7"/></svg>
           <div>
             <div class="metrics-empty-lift-label">No data yet</div>
             <div class="metrics-empty-lift-sub">Log a set to see your trend</div>
@@ -3759,7 +3786,7 @@ function renderMetrics(){
         <div class="metrics-empty-body">
           <div class="metrics-empty-body-icon">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              <path d="M3 3v18h18"/><polyline points="7 16 11 11 15 14 21 7"/>
             </svg>
           </div>
           <div class="metrics-empty-body-headline">No data yet</div>
@@ -5205,7 +5232,27 @@ function getRestDuration(exerciseName) {
   return defaults.accessory;
 }
 
-function startRestTimer(exerciseName) {
+// ── Banner ↔ inline visibility sync ──────────────────────────────────────────
+// Shows the fixed bottom banner whenever the inline timer row is not visible
+// (scrolled out of view, card collapsed, page navigated away).
+function _syncRestBannerVisibility() {
+  if (!_restTimer.intervalId) return; // no active timer
+  const banner = document.getElementById('rest-timer-banner');
+  if (!banner) return;
+  const inlineRow = document.getElementById('rest-timer-inline-row');
+  if (inlineRow) {
+    const rect = inlineRow.getBoundingClientRect();
+    const inView = rect.top < window.innerHeight && rect.bottom > 0;
+    if (inView) banner.classList.add('hidden');
+    else banner.classList.remove('hidden');
+  } else {
+    // Inline row gone (card collapsed, page nav, DOM rebuild)
+    banner.classList.remove('hidden');
+  }
+}
+document.addEventListener('scroll', _syncRestBannerVisibility, { passive: true });
+
+function startRestTimer(exerciseName, setKey) {
   if (getRestTimerMode() === 'off') return;
   const dur = getRestDuration(exerciseName);
   if (dur <= 0) return;
@@ -5215,6 +5262,7 @@ function startRestTimer(exerciseName) {
   _restTimer.endsAt = now + dur * 1000;
   _restTimer.total = dur;
   _restTimer.exName = exerciseName;
+  _restTimer.setKey = setKey;
   const banner = document.getElementById('rest-timer-banner');
   const display = document.getElementById('rest-timer-display');
   const ring = document.getElementById('rest-timer-ring-fg');
@@ -5222,12 +5270,59 @@ function startRestTimer(exerciseName) {
   if (!banner || !display || !ring || !exLabel) return;
   exLabel.textContent = exerciseName;
   updateTimerDisplay(display, ring, dur, dur);
-  banner.classList.remove('hidden');
-  banner.style.animation = 'restSlideUp 0.15s ease-out';
-  banner.addEventListener('animationend', () => { banner.style.animation = ''; }, { once: true });
+
+  // ── Inject inline timer row into the exercise card ──
+  document.getElementById('rest-timer-inline-row')?.remove();
+  let inlineDisplay = null, inlineRing = null;
+  if (setKey) {
+    const swipeWrap = document.querySelector(`.swipe-set-wrap:has(.set-row .set-check[data-set-key='${cssEsc(setKey)}'])`);
+    if (swipeWrap) {
+      const insertAfter = swipeWrap.nextElementSibling?.classList.contains('set-prev-hint')
+        ? swipeWrap.nextElementSibling : swipeWrap;
+      // Determine next set label for sublabel
+      const parts = setKey.split('||');
+      const setIdx = parts[4] ? parseInt(parts[4].replace('s','')) : 0;
+      const sublabelText = exerciseName + ' \u00b7 next S' + (setIdx + 2);
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'rest-timer-inline';
+      rowDiv.id = 'rest-timer-inline-row';
+      rowDiv.innerHTML = '<div class="rest-timer-inline-inner">' +
+        '<div class="rest-timer-ring-inline">' +
+          '<svg viewBox="0 0 44 44">' +
+            '<circle class="ring-bg" cx="22" cy="22" r="19" stroke-dasharray="119.38" stroke-dashoffset="0"/>' +
+            '<circle class="ring-fg" id="rest-timer-inline-ring-fg" cx="22" cy="22" r="19" stroke-dasharray="119.38" stroke-dashoffset="0"/>' +
+          '</svg>' +
+          '<div class="rest-timer-time-inline" id="rest-timer-inline-display">' + Math.floor(dur/60) + ':' + String(dur%60).padStart(2,'0') + '</div>' +
+        '</div>' +
+        '<div class="rest-timer-info-inline">' +
+          '<div class="rest-timer-label-inline">REST</div>' +
+          '<div class="rest-timer-sublabel" id="rest-timer-inline-sublabel">' + sublabelText + '</div>' +
+        '</div>' +
+        '<div class="rest-timer-actions-inline">' +
+          '<button class="rest-timer-btn-inline" onclick="addRestTime(30)">+30s</button>' +
+          '<button class="rest-timer-btn-inline" onclick="stopRestTimer()">SKIP</button>' +
+        '</div>' +
+      '</div>';
+      const _sy = window.scrollY;
+      insertAfter.after(rowDiv);
+      window.scrollTo(0, _sy);
+      requestAnimationFrame(() => { rowDiv.classList.add('expanded'); window.scrollTo(0, _sy); });
+      inlineDisplay = document.getElementById('rest-timer-inline-display');
+      inlineRing = document.getElementById('rest-timer-inline-ring-fg');
+    }
+  }
+
+  // Only show banner if inline row was NOT injected (fallback for missing DOM)
+  if (!inlineDisplay) {
+    banner.classList.remove('hidden');
+    banner.style.animation = 'restSlideUp 0.15s ease-out';
+    banner.addEventListener('animationend', () => { banner.style.animation = ''; }, { once: true });
+  }
   _restTimer.intervalId = setInterval(() => {
     const rem = _restTimerRemaining();
     updateTimerDisplay(display, ring, rem, _restTimer.total);
+    if (inlineDisplay && inlineRing) updateTimerDisplay(inlineDisplay, inlineRing, rem, _restTimer.total);
+    _syncRestBannerVisibility();
     if (rem <= 0) timerComplete();
   }, 1000);
 }
@@ -5244,6 +5339,12 @@ function updateTimerDisplay(display, ring, remaining, total) {
 function timerComplete() {
   stopRestTimer(true);
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
+  // Collapse inline row
+  const inlineRow = document.getElementById('rest-timer-inline-row');
+  if (inlineRow) {
+    inlineRow.classList.remove('expanded');
+    setTimeout(() => inlineRow.remove(), 250);
+  }
   const banner = document.getElementById('rest-timer-banner');
   if (banner) {
     const label = banner.querySelector('.rest-timer-label');
@@ -5267,6 +5368,12 @@ function stopRestTimer(silent) {
   if (!silent) {
     const banner = document.getElementById('rest-timer-banner');
     if (banner) banner.classList.add('hidden');
+    // Collapse inline row
+    const inlineRow = document.getElementById('rest-timer-inline-row');
+    if (inlineRow) {
+      inlineRow.classList.remove('expanded');
+      setTimeout(() => inlineRow.remove(), 250);
+    }
   }
 }
 
@@ -6873,13 +6980,13 @@ function renderBlockBar(block) {
     return `<div class="block-bar">
       <input class="block-name-edit" id="block-name-input" value="${escH(displayBlockName(block.name))}" aria-label="Program block name"
         onblur="saveBlockName()"
-        onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingBlockName=false;render();}">
+        onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingBlockName=false;saveBlockName();}">
       <div class="block-dates">${escH(block.dateRange || '')}</div>
     </div>`;
   }
   let h=`<div class="block-bar"><div class="block-bar-left">
     <div style="min-width:0;overflow:hidden"><div class="block-name">${escH(displayBlockName(block.name))}</div><div class="block-dates">${escH(block.dateRange || '')}</div></div>
-    <button class="edit-name-btn" style="opacity:0.3;font-size:var(--fs-sm);flex-shrink:0" onclick="state.editingBlockName=true;render();setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    <button class="edit-name-btn" style="opacity:0.3;font-size:var(--fs-sm);flex-shrink:0" onclick="state.editingBlockName=true;const bb=this.closest('.block-bar');if(bb){bb.outerHTML=renderBlockBar(state.activeBlock);setTimeout(()=>{const el=document.getElementById('block-name-input');if(el){el.focus();el.select();}},50);}else{render();}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
   </div>`;
   if(state.blocks.length>1){
     h+=`<select class="cycle-select" onchange="switchBlock(this.value)" aria-label="Switch program">`;
@@ -7089,9 +7196,6 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
   const isComp = isCompLift(ex.name);
   const tracked = isTracked(ex.name);
   const showTrackBtn = inputMode === 'weighted';
-  const trackBtn = showTrackBtn
-    ? `<button class="track-btn ${tracked?'tracked':''} ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="${tracked?'Remove from metrics':'Track in metrics'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button>`
-    : '';
   const totalSetsCount = sets.length||(simple?.sets||0)||(ranged?.sets||0)||(bareWithRounds?.sets||0)||(pres?1:0);
   const setsCompletedCount = [...Array(totalSetsCount)].filter((_,si)=>(state.logs[key+`||s${si}`]||{}).done).length;
 
@@ -7137,7 +7241,7 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
       ${presSum?`<div class="ex-summary-pres">${presSum}${totalSetsCount>0?' · '+(setsCompletedCount>0?`<span style="color:var(--gold)">${setsCompletedCount}/${totalSetsCount} sets</span>`:totalSetsCount+' sets'):''}</div>`:''}
     </div>
     <div class="ex-summary-right">
-      ${showTrackBtn && !tracked ? `<button class="track-btn ${isComp?'is-comp':''}" onclick="toggleTracked('${esc(ex.name)}',event)" title="Track in metrics"><span class="track-hint-inline">Track</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></button>` : trackBtn}
+      ${''}<!-- track indicator removed — expanded card Track button is single source of truth -->
       ${isSkipped ? `<span class="skipped-badge">SKIPPED</span>` : ''}
       <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" data-ex-key="${esc(key)}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone?_checkSvg:''}</button>
     </div>
@@ -7188,6 +7292,8 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   const bare = (!hasSets && !simple && !ranged) ? parseBarePres(pres) : null;
   const bareWithRounds = bare ? {...bare, sets: supersetRounds > 1 ? supersetRounds : bare.sets} : null;
   const inputMode = getExerciseInputMode(ex.name, pres);
+  const showTrackBtn = inputMode === 'weighted';
+  const tracked = isTracked(ex.name);
   const _isBarbell = _isBarbellExercise(ex.name);
 
   // Build prescription label for a parseSets set object.
@@ -7269,7 +7375,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     h += `<div class="exercise-header" style="padding:10px 16px 4px">
         <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${escH((ex.displayName||ex.name).trim())}" aria-label="Exercise name"
           onblur="saveExName('${esc(key)}','${esc(ex.name)}')"
-          onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;render();}">
+          onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;this.blur();}">
       </div>`;
   } else {
     const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
@@ -7286,7 +7392,9 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
   const _showRestBtn = state.workoutActive && getRestTimerMode() !== 'off';
   const _restBtnHtml = _showRestBtn ? `<button class="rest-trigger-btn" onclick="event.stopPropagation();startRestTimer('${esc(ex.name)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Rest</button>` : '';
   const _unitToggleHtml = exUnitToggleHtml(ex.name);
-  const _inlineControls = (_restBtnHtml || _unitToggleHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}</div>` : '';
+  const _trackCtrlLabel = tracked ? '<span class="track-ctrl-label">Tracked</span>' : '<span class="track-ctrl-label">Track</span>';
+  const _trackCtrlHtml = showTrackBtn ? `<button class="track-ctrl ${tracked?'tracked':''}" onclick="event.stopPropagation();toggleTracked('${esc(ex.name)}',event)" title="${tracked?'Remove from metrics':'Track in metrics'}">${_trackCtrlLabel}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 16 11 11 15 14 21 7"/></svg></button>` : '';
+  const _inlineControls = (_restBtnHtml || _unitToggleHtml || _trackCtrlHtml) ? `<div class="pres-row-controls">${_restBtnHtml}${_unitToggleHtml}${_trackCtrlHtml}</div>` : '';
 
   // Coach notes banner — render above sets (Option A: gold left-border banner)
   const _allCoachNotes = Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : ex.coachNotes ? [ex.coachNotes] : [];
@@ -7834,12 +7942,28 @@ function _wrcUpdateNotes(value) {
   if (_wrcActiveForceKey) _updateJournal(_wrcActiveForceKey, 'notes', value || null);
 }
 
-// Save journal → transition to read-only presentation
+// Save journal → transition to read-only presentation (targeted DOM swap, no full render)
 function _wrcSaveJournal() {
   _journalEditable = null;
-  render();
-  const main = document.getElementById('main-content');
-  if (main) main.scrollTop = 0;
+  // Swap editable journal + save button with read-only journal in-place
+  const journalEl = document.querySelector('.wrc-journal');
+  const saveRow = document.querySelector('.wrc-save-row');
+  if (journalEl && _wrcActiveForceKey) {
+    const forceLog = state.logs[_wrcActiveForceKey] || {};
+    const readonlyHtml = _buildJournalSection(forceLog, _wrcActiveForceKey, false);
+    journalEl.outerHTML = readonlyHtml;
+  }
+  if (saveRow) saveRow.remove();
+  // Show modify button if not already present
+  const wrc = document.querySelector('.workout-results-card');
+  if (wrc && !wrc.querySelector('.wrc-modify-row')) {
+    const modifyHtml = `<div class="wrc-modify-row"><button class="wrc-modify-btn" onclick="openEditWorkoutSheet()">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      MODIFY THIS SESSION</button></div>`;
+    // Insert before closing </div> of card
+    const lastChild = wrc.lastElementChild;
+    if (lastChild) lastChild.insertAdjacentHTML('afterend', modifyHtml);
+  }
 }
 
 // Show more/less for read-only notes
@@ -8179,10 +8303,34 @@ function saveBlockName(){
     state.activeBlock.name=newName;
     saveBlocks();
   }
-  render();
+  // Targeted DOM swap: replace input with static block name (no full render)
+  const blockBar=el?.closest('.block-bar');
+  if(blockBar){
+    const block=state.activeBlock;
+    blockBar.outerHTML=renderBlockBar(block);
+  } else {
+    render();
+  }
 }
 
-function startEditEx(key){ state.editingExKey=key; render(); setTimeout(()=>{ const el=document.getElementById('ex-edit-'+key); if(el){el.focus();el.select();} },50); }
+function startEditEx(key){
+  state.editingExKey=key;
+  // Targeted: swap exercise header with edit input in-place
+  const card=document.querySelector(`.exercise-card[data-ex-key='${cssEsc(key)}']`);
+  const header=card?.querySelector('.exercise-header');
+  if(header){
+    const ex=_getExByKey(key);
+    const name=ex?(ex.displayName||ex.name).trim():'';
+    header.outerHTML=`<div class="exercise-header" style="padding:10px 16px 4px">
+      <input class="exercise-name-edit" id="ex-edit-${esc(key)}" value="${escH(name)}" aria-label="Exercise name"
+        onblur="saveExName('${esc(key)}','${esc(name)}')"
+        onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){state.editingExKey=null;this.blur();}">
+    </div>`;
+    setTimeout(()=>{ const el=document.getElementById('ex-edit-'+key); if(el){el.focus();el.select();} },50);
+  } else {
+    render(); setTimeout(()=>{ const el=document.getElementById('ex-edit-'+key); if(el){el.focus();el.select();} },50);
+  }
+}
 
 function saveExName(key, oldName){
   const el=document.getElementById('ex-edit-'+key);
@@ -8758,7 +8906,7 @@ function toggleSet(key){
     autoCompleteExercise(key);
     updateProgressBar();
     updateDayTabCheckmarks();
-    if(getRestTimerMode()==='auto'&&_shouldFireRestTimer(key)){if(exName)startRestTimer(exName);}
+    if(getRestTimerMode()==='auto'&&_shouldFireRestTimer(key)){if(exName)startRestTimer(exName, key);}
     return;
   }
   const nowDone = !l.done;
@@ -8794,7 +8942,7 @@ function toggleSet(key){
   // Auto-start rest timer when checking a set
   if (nowDone && getRestTimerMode() === 'auto' && _shouldFireRestTimer(key)) {
     const exName = _resolveExNameFromKey(key);
-    if (exName) startRestTimer(exName);
+    if (exName) startRestTimer(exName, key);
   }
 }
 function _resolveExNameFromKey(setKey) {
@@ -9112,21 +9260,14 @@ function _adjustSetsCommit(key, delta){
   state.extraSets[key]=next;
   const escaped=cssEsc(key);
   const card=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
-  let anchorTop=null;
-  if(card){ anchorTop=card.getBoundingClientRect().top; }
+  const anchorTop=card ? card.getBoundingClientRect().top : null;
   render();
-  if(card && anchorTop!==null){
-    const newCard=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
-    if(newCard){
-      const newTop=newCard.getBoundingClientRect().top;
-      window.scrollBy(0, newTop - anchorTop);
-    }
-  }
+  // Single RAF-based scroll correction — runs after browser reflow for accurate positioning
   requestAnimationFrame(()=>{
     const nc=document.querySelector(`.exercise-card[data-ex-key='${escaped}']`);
     if(nc && anchorTop!==null){
       const diff=nc.getBoundingClientRect().top - anchorTop;
-      if(Math.abs(diff)>2) window.scrollBy(0, diff);
+      if(Math.abs(diff)>1) window.scrollBy(0, diff);
     }
     // +SET animation: fade in the newly added row
     if(delta > 0 && nc){
@@ -9173,7 +9314,7 @@ function setActual(key,v){
     const _rtEx = _resolveExNameFromKey(key);
     if (_rtEx && _shouldFireRestTimer(key)) {
       state.logs[key]._restFired = true; // prevent double-fire in _onWeightBlur
-      startRestTimer(_rtEx);
+      startRestTimer(_rtEx, key);
     }
   }
 
@@ -9242,6 +9383,14 @@ function setActualReps(key,v){
     updateSetCheckmark(key, true);
   }
   autoCompleteExercise(key);
+  // Fallback rest timer trigger — if weight already entered and timer hasn't fired
+  if (state.logs[key]?.done && !state.logs[key]?._restFired && getRestTimerMode() === 'auto') {
+    const _rtEx = _resolveExNameFromKey(key);
+    if (_rtEx && _shouldFireRestTimer(key)) {
+      state.logs[key]._restFired = true;
+      startRestTimer(_rtEx, key);
+    }
+  }
 }
 function setRpe(key,v){
   state.logs[key]={...(state.logs[key]||{}),rpe:v};
@@ -9254,6 +9403,14 @@ function setRpe(key,v){
   }
   // RPE doesn't trigger checkmark, but might trigger exercise complete
   autoCompleteExercise(key);
+  // Fallback rest timer trigger — if weight already entered and timer hasn't fired
+  if (state.logs[key]?.done && !state.logs[key]?._restFired && getRestTimerMode() === 'auto') {
+    const _rtEx = _resolveExNameFromKey(key);
+    if (_rtEx && _shouldFireRestTimer(key)) {
+      state.logs[key]._restFired = true;
+      startRestTimer(_rtEx, key);
+    }
+  }
 }
 function _onWeightBlur(key) {
   const sl = state.logs[key];
@@ -9264,7 +9421,7 @@ function _onWeightBlur(key) {
   const exName = _resolveExNameFromKey(key);
   if (exName) {
     sl._restFired = true; // prevent re-firing on subsequent blurs
-    startRestTimer(exName);
+    startRestTimer(exName, key);
   }
 }
 function updateSetCheckmark(key,isDone){
@@ -11270,6 +11427,7 @@ function toggleExpand(key, groupEncoded){
   requestAnimationFrame(()=>{
     const card=document.querySelector(`.exercise-card[data-expand-key="${CSS.escape(key)}"]`);
     if(card) card.scrollIntoView({block:'nearest',behavior:'instant'});
+    _syncRestBannerVisibility();
   });
 }
 function findNextWorkout(block){
@@ -11811,7 +11969,7 @@ function openExportModal(blockId) {
       </div>
       <div class="export-scope-toggle">
         <button class="export-scope-pill active" id="log-scope-week" onclick="setLogScope('week')">This Week</button>
-        <button class="export-scope-pill" id="log-scope-full" onclick="setLogScope('full')">Full Block</button>
+        <button class="export-scope-pill" id="log-scope-full" onclick="setLogScope('full')">Current Program</button>
         <button class="export-scope-pill" id="log-scope-all" onclick="setLogScope('all')">All Programs</button>
       </div>
       <div class="export-action-row">
@@ -12027,6 +12185,11 @@ function _buildTrainingLogWorkbook(blockId, scope) {
     fill: { fgColor: { rgb: '111111' }, patternType: 'solid' },
     alignment: { horizontal: 'left', vertical: 'center' }
   };
+  const JOURNAL_STYLE = {
+    font: { italic: true, sz: 10, color: { rgb: '4A6D8C' } },
+    fill: { fgColor: { rgb: 'E8F0F8' }, patternType: 'solid' },
+    alignment: { horizontal: 'left', vertical: 'center', wrapText: true }
+  };
 
   for (const week of weeks) {
     const rows = [];
@@ -12099,6 +12262,16 @@ function _buildTrainingLogWorkbook(blockId, scope) {
 
         // Single row per exercise
         rows.push([ex.name, ex.prescription || '', loggedStr, coachNotesStr, lifterNotes]);
+      }
+
+      // Journal summary row (if lifter logged session feedback)
+      const journalKey = [blockId, week.label, day.name, '__complete__'].join('||');
+      const journalLog = blockLogs[journalKey];
+      const journal = journalLog && journalLog.journal;
+      if (journal && (journal.notes || journal.rating != null)) {
+        const label = 'Session Summary' + (journal.rating != null ? ' (' + journal.rating + '/10)' : '');
+        rows.push([label, '', '', '', journal.notes || '']);
+        styleMap[r() - 1] = JOURNAL_STYLE;
       }
     }
 
@@ -13486,11 +13659,20 @@ async function exportHTMLReport(blockId) {
 
 // ── CSV EXPORT ────────────────────────────────────────────────────────────────
 function _buildCSVContent() {
-  const rows = [['Date','Exercise','Set','Weight','Reps','RPE','e1RM','Block','Week','Day']];
+  const rows = [['Date','Exercise','Set','Weight','Reps','RPE','e1RM','Block','Week','Day','SessionRating','SessionNotes']];
 
   for (const block of state.blocks) {
     for (const week of (block.weeks || [])) {
       for (const day of (week.days || [])) {
+        // Look up journal for this day (populate on first row only)
+        const completeKey = [block.id, week.label, day.name, '__complete__'].join('||');
+        const completeLog = state.logs[completeKey] || {};
+        const dateStr = completeLog.completedDate || '';
+        const journal = completeLog.journal;
+        const jRating = (journal && journal.rating != null) ? String(journal.rating) : '';
+        const jNotes = (journal && journal.notes) ? journal.notes : '';
+        let dayFirstRow = true;
+
         for (const ex of (day.exercises || [])) {
           const exKey = [block.id, week.label, day.name, ex.name].join('||');
           const exLog = state.logs[exKey] || {};
@@ -13510,11 +13692,6 @@ function _buildCSVContent() {
           }
           const extra = state.extraSets ? (state.extraSets[exKey] || 0) : 0;
           const totalSets = setCount + extra;
-
-          // Get completion date
-          const completeKey = [block.id, week.label, day.name, '__complete__'].join('||');
-          const completeLog = state.logs[completeKey] || {};
-          const dateStr = completeLog.completedDate || '';
 
           let hasAnyLogged = false;
           for (let si = 0; si < totalSets; si++) {
@@ -13541,14 +13718,21 @@ function _buildCSVContent() {
             // Clean block name
             const blockName = displayBlockName(block.name);
 
-            rows.push([dateStr, cleanName, String(si + 1), weight, String(reps), String(rpe), e1rm, blockName, week.label, day.name]);
+            // Journal columns on first row of each day only
+            const sRating = dayFirstRow ? jRating : '';
+            const sNotes = dayFirstRow ? jNotes : '';
+            rows.push([dateStr, cleanName, String(si + 1), weight, String(reps), String(rpe), e1rm, blockName, week.label, day.name, sRating, sNotes]);
+            dayFirstRow = false;
           }
 
           // If no sets were logged but exercise was marked done, add a single row
           if (!hasAnyLogged && exLog.done) {
             const cleanName = ex.name.replace(/\s*#\d+$/, '');
             const blockName = displayBlockName(block.name);
-            rows.push([dateStr, cleanName, '1', exLog.actual || '', '', exLog.rpe || '', '', blockName, week.label, day.name]);
+            const sRating = dayFirstRow ? jRating : '';
+            const sNotes = dayFirstRow ? jNotes : '';
+            rows.push([dateStr, cleanName, '1', exLog.actual || '', '', exLog.rpe || '', '', blockName, week.label, day.name, sRating, sNotes]);
+            dayFirstRow = false;
           }
         }
       }
@@ -14423,7 +14607,7 @@ function showOnboardingStep(step) {
           </div>
         </div>
         <div class="onboard-feature">
-          <div class="onboard-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="onboard-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 16 11 11 15 14 21 7"/></svg></div>
           <div class="onboard-feature-text">
             <div class="onboard-feature-label">Monitor progress</div>
             <div class="onboard-feature-desc">Estimated 1RM tracking across all your comp and accessory lifts</div>
@@ -16117,7 +16301,7 @@ function _moveExInDay(exIdx, dir) {
   const newIdx = exIdx + dir;
   if (newIdx < 0 || newIdx >= exs.length) return;
   [exs[exIdx], exs[newIdx]] = [exs[newIdx], exs[exIdx]];
-  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+  const _sy = window.scrollY; render(); requestAnimationFrame(()=>window.scrollTo(0, _sy));
 }
 
 // Delete exercise from current day (in edit mode)
@@ -16127,7 +16311,7 @@ function _deleteExFromDay(exIdx) {
   const ex = ctx.day.exercises[exIdx];
   if (!ex) return;
   ctx.day.exercises.splice(exIdx, 1);
-  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+  const _sy = window.scrollY; render(); requestAnimationFrame(()=>window.scrollTo(0, _sy));
 }
 
 // Inline exercise editor (expand row to edit name + prescription)
@@ -16137,7 +16321,7 @@ function _editDayExOpen(exIdx) {
   const ex = ctx.day.exercises[exIdx];
   if (!ex) return;
   state._editingExInDay = { exIdx, name: ex.displayName || ex.name, prescription: ex.prescription || '' };
-  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+  const _sy = window.scrollY; render(); requestAnimationFrame(()=>window.scrollTo(0, _sy));
   // Focus name field after render
   requestAnimationFrame(() => {
     const pf = document.getElementById(`edit-ex-pres-${exIdx}`);
@@ -16154,11 +16338,11 @@ function _editDayExSave(exIdx) {
   if (newName) { ex.name = newName; delete ex.displayName; }
   if (newPres !== undefined) ex.prescription = newPres;
   state._editingExInDay = null;
-  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+  const _sy = window.scrollY; render(); requestAnimationFrame(()=>window.scrollTo(0, _sy));
 }
 function _editDayExCancel() {
   state._editingExInDay = null;
-  const _sy = window.scrollY; render(); window.scrollTo(0, _sy);
+  const _sy = window.scrollY; render(); requestAnimationFrame(()=>window.scrollTo(0, _sy));
 }
 
 // Add exercise during edit mode — open picker, then custom-ex modal pre-filled

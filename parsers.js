@@ -4428,7 +4428,13 @@ function _normalizeExerciseName(name) {
   // User-typed names are preserved verbatim. Ghost weight matching uses
   // _smartExerciseMatch/SYNONYM_MAP; isCompLift uses COMP_KEYWORDS directly.
 
-  return s.replace(/\s+/g, ' ');
+  s = s.replace(/\s+/g, ' ');
+
+  // Spell-correct individual words against EXERCISE_DICT (edit distance ≤ threshold).
+  // Fixes coach typos like "Incliine" → "Incline" on import.
+  s = spellCorrectExerciseName(s);
+
+  return s;
 }
 
 // ── POST-PARSE VALIDATION ─────────────────────────────────────────────────────
@@ -5185,13 +5191,12 @@ function parseWorkbook(wb){
 
           day.exercises = filtered;
 
-          // Fix 6: Exercise name normalization (alias dictionary)
-          // Skip for KIMCOACH — coach wrote these names intentionally, preserve as-is
-          // Skip for MATRIX — raw cell values are used as exercise names/labels, preserve as-is
-          if (fmt !== 'KIMCOACH' && fmt !== 'MATRIX') {
-            for (const ex of day.exercises) {
-              if (ex.name) ex.name = _normalizeExerciseName(ex.name);
-            }
+          // Fix 6: Exercise name normalization — whitespace + typo correction
+          // Runs on ALL formats including KIMCOACH/MATRIX. Spell correction only fixes
+          // obvious typos (edit distance ≤ 2 against EXERCISE_DICT). It does NOT rename
+          // or alias exercises — coach naming choices are preserved.
+          for (const ex of day.exercises) {
+            if (ex.name) ex.name = _normalizeExerciseName(ex.name);
           }
         }
       }
