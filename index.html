@@ -347,12 +347,12 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .header-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); letter-spacing: 0.04em; color: var(--gold); }
 .header-sub { font-size: var(--fs-xs); color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: var(--sp-2); }
 .new-btn { font-size: var(--fs-sm); font-weight: 600; color: var(--text-sub); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 7px 13px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
-.settings-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--gold); transition: all 0.15s; padding: 0; }
+.settings-btn { width: 44px; height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--gold); transition: all 0.15s; padding: 0; }
 .settings-btn:active { background: rgba(201,168,76,0.1); }
 .settings-sheet { padding-top: var(--sp-5); padding-bottom: max(32px, env(safe-area-inset-bottom)); min-height: 0; max-height: 90dvh; overflow-y: scroll; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; }
 .settings-sheet::before { content: ''; display: block; width: 36px; height: 4px; background: var(--handle-bar-bg, rgba(255,255,255,0.2)); border-radius: 2px; margin: 0 auto var(--sp-6); flex-shrink: 0; }
 .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-7); }
-.settings-done-btn { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--gold); background: none; border: none; cursor: pointer; padding: var(--sp-2) var(--sp-4); letter-spacing: 0.02em; }
+.settings-done-btn { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); font-weight: 700; color: var(--gold); background: none; border: none; cursor: pointer; padding: var(--sp-2) var(--sp-4); letter-spacing: 0.02em; min-height: 44px; }
 .settings-done-btn:active { opacity: 0.6; }
 .rest-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 310; display: flex; align-items: flex-end; }
 .rest-modal-sheet { background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 18px 18px 0 0; padding: var(--sp-7) var(--sp-7) 40px; width: 100%; max-width: 480px; margin: 0 auto; border-top: 1px solid var(--sheet-border); }
@@ -395,7 +395,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-athlete-gender-btn.active { border-color: rgba(200,169,81,0.5); background: rgba(200,169,81,0.06); color: var(--gold); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
 .settings-athlete-bw-row { display: flex; gap: var(--sp-4); align-items: center; }
 .settings-athlete-bw-row .settings-athlete-input { flex: 1; }
-.settings-athlete-unit-btn { padding: 9px var(--sp-6); background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--text-sub); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.settings-athlete-unit-btn { padding: 9px var(--sp-6); background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--text-sub); cursor: pointer; white-space: nowrap; transition: all 0.15s; min-height: 44px; min-width: 44px; }
 .settings-athlete-unit-btn.active { border-color: rgba(200,169,81,0.5); background: rgba(200,169,81,0.06); color: var(--gold); box-shadow: 0 0 10px rgba(200,169,81,0.06); }
 .settings-athlete-save { width: 100%; padding: var(--sp-5); background: var(--gold); border: none; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0a; cursor: pointer; margin-top: var(--sp-1); }
 .settings-athlete-input--centered { max-width: 100px; text-align: center; }
@@ -409,12 +409,12 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .settings-row-btn--static { cursor: default; }
 .settings-rest-label { font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-md); font-weight: 700; color: var(--gold); letter-spacing: 0.04em; }
 .settings-unit-pill-group { display: flex; gap: var(--sp-2); }
-.settings-unit-pill--sm { padding: var(--sp-3) var(--sp-5); font-size: var(--fs-base); }
+.settings-unit-pill--sm { padding: var(--sp-3) var(--sp-5); font-size: var(--fs-base); min-height: 44px; min-width: 44px; }
 .settings-backup-time { font-size: var(--fs-sm); color: var(--text-dim); padding: var(--sp-2) 18px 0; display: none; }
 .settings-section-label--theme { margin-top: auto; padding-top: var(--sp-8); }
 .settings-reset-btn { margin-top: var(--sp-6); }
 .settings-footer { text-align: center; padding-top: var(--sp-7); padding-bottom: var(--sp-4); }
-.settings-footer-link { font-family: 'Barlow', sans-serif; font-size: var(--fs-base); color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px; }
+.settings-footer-link { font-family: 'Barlow', sans-serif; font-size: var(--fs-base); color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px; display: inline-block; padding: 15px 8px; min-height: 44px; }
 .settings-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 13px var(--sp-6); background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: var(--sp-3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .settings-row-btn:active { border-color: var(--gold); background: var(--surface-3); }
 .settings-row-left { display: flex; align-items: center; gap: var(--sp-5); font-family: 'Barlow', sans-serif; font-size: var(--fs-lg); color: var(--text-mid); }
@@ -733,7 +733,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .rest-timer-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
 .rest-timer-ex { font-family: 'Barlow', sans-serif; font-size: var(--fs-base); color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rest-timer-actions { display: flex; gap: var(--sp-3); flex-shrink: 0; }
-.rest-timer-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-mid); border-radius: 8px; padding: var(--sp-3) var(--sp-5); cursor: pointer; transition: all 0.15s; }
+.rest-timer-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-md); letter-spacing: 0.04em; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: var(--text-mid); border-radius: 8px; padding: 8px 16px; min-height: 44px; cursor: pointer; transition: all 0.15s; }
 .rest-timer-btn:active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
 .rest-timer-skip { color: var(--gold); border-color: rgba(201,168,76,0.3); }
 
@@ -1542,7 +1542,7 @@ body.keyboard-open .rest-timer-banner { display: none !important; }
 .nav-icon svg { width: 22px; height: 22px; fill: currentColor; }
 .nav-icon-stroke svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
 
-.metrics-export-btn { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: var(--sp-2) var(--sp-3); display: flex; align-items: center; margin-left: auto; transition: color 0.15s; }
+.metrics-export-btn { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 10px var(--sp-3); display: flex; align-items: center; margin-left: auto; transition: color 0.15s; min-width: 44px; min-height: 44px; justify-content: center; }
 .metrics-export-btn:active { color: var(--gold); }
 .metrics-export-btn svg { width: 16px; height: 16px; }
 .metrics-back-btn { background: none; border: 1px solid var(--border-3); border-radius: 100px; color: var(--text-sub); font-family: 'Barlow Condensed', sans-serif; font-size: var(--fs-lg); letter-spacing: 0.04em; padding: var(--sp-3) var(--sp-6); cursor: pointer; transition: all 0.15s; }
@@ -1772,7 +1772,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .calc-screen { padding: var(--sp-6) var(--sp-6) 100px; }
 .calc-mode-toggle { display: flex; position: relative; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: var(--sp-2); margin-bottom: var(--sp-6); box-shadow: var(--card-shadow); }
 .calc-mode-pill { position: absolute; top: var(--sp-2); bottom: var(--sp-2); border-radius: 8px; background: rgba(var(--gold-rgb, 201,168,76), 0.15); box-shadow: inset 0 0 0 1px rgba(var(--gold-rgb, 201,168,76), 0.3); transition: left 0.5s cubic-bezier(0.34, 1.2, 0.64, 1), width 0.5s cubic-bezier(0.34, 1.2, 0.64, 1); pointer-events: none; z-index: 0; }
-.calc-mode-btn { flex: 1; position: relative; z-index: 1; padding: var(--sp-5) var(--sp-4); border: none; border-radius: 8px; background: transparent; color: var(--text-sub, #888); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.calc-mode-btn { flex: 1; position: relative; z-index: 1; padding: var(--sp-5) var(--sp-4); border: none; border-radius: 8px; background: transparent; color: var(--text-sub, #888); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; min-height: 44px; }
 .calc-mode-btn.active { background: transparent; color: var(--gold, #C9A84C); box-shadow: none; }
 .calc-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: var(--sp-6); margin-bottom: var(--sp-6); box-shadow: var(--card-shadow); }
 .calc-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-base); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-6); }
@@ -1832,7 +1832,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .calc-collar-row { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-5) var(--sp-6); background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; margin-bottom: var(--sp-6); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .calc-collar-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-sub); }
 .calc-collar-sub { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 1px; }
-.calc-collar-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--border-2); border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.calc-collar-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--border-2); border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; padding: 10px 0; box-sizing: content-box; }
 .calc-collar-toggle.on { background: var(--gold, #C9A84C); }
 .calc-collar-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-dimmer); transition: transform 0.2s, background 0.2s; }
 .calc-collar-toggle.on::after { transform: translateX(20px); background: #fff; }
@@ -2038,7 +2038,7 @@ canvas.chart-overlay { pointer-events: auto; }
 .install-banner-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-lg); color: var(--text-primary); margin-bottom: var(--sp-2); }
 .install-banner-desc { font-size: var(--fs-md); color: var(--text-dim); line-height: 1.4; }
 .install-banner-actions { display: flex; gap: var(--sp-4); margin-top: var(--sp-5); justify-content: flex-end; }
-.install-banner-btn { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: var(--fs-md); border: none; border-radius: 8px; padding: var(--sp-4) var(--sp-6); cursor: pointer; transition: opacity 0.15s; }
+.install-banner-btn { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: var(--fs-md); border: none; border-radius: 8px; padding: var(--sp-4) var(--sp-6); cursor: pointer; transition: opacity 0.15s; min-height: 44px; }
 .install-banner-btn:active { opacity: 0.75; }
 .install-banner-btn.primary { background: var(--gold); color: #000; }
 .install-banner-btn.dismiss { background: transparent; color: var(--text-dim); }
@@ -2225,7 +2225,7 @@ canvas.chart-overlay { pointer-events: auto; }
 <div class="app">
   <div class="header">
     <div>
-      <div class="header-logo">UNRACK <span id="hdr-ver" style="font-size:var(--fs-xs);font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-build" style="font-size:var(--fs-micro);font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-update-btn" onclick="_checkForUpdate(this)" style="font-size:var(--fs-micro);font-weight:600;color:var(--text-dimmer,#666);letter-spacing:0.02em;vertical-align:middle;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:4px 0;margin-left:2px">Check for update</span></div>
+      <div class="header-logo">UNRACK <span id="hdr-ver" style="font-size:var(--fs-xs);font-weight:400;color:#888;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-build" style="font-size:var(--fs-micro);font-weight:400;color:#555;letter-spacing:0.02em;vertical-align:middle"></span> <span id="hdr-update-btn" onclick="_checkForUpdate(this)" style="font-size:var(--fs-micro);font-weight:600;color:var(--text-dimmer,#666);letter-spacing:0.02em;vertical-align:middle;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:12px 8px;margin-left:2px;min-height:44px;display:inline-flex;align-items:center">Check for update</span></div>
       <div class="header-sub" id="athlete-name"></div>
     </div>
     <button class="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -2822,7 +2822,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.31.0';
-const APP_BUILD   = '4/4/26a';
+const APP_BUILD   = '4/4/26b';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -13741,7 +13741,9 @@ function executeRestore() {
 }
 
 function _relativeTime(ts) {
+  if (!ts || isNaN(ts)) return 'Never';
   const diff = Date.now() - ts;
+  if (diff < 0 || isNaN(diff)) return 'Never';
   if (diff < 60000) return 'just now';
   if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
   if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
@@ -13752,10 +13754,11 @@ function updateBackupTimestamp() {
   const el = document.getElementById('last-backup-time');
   if (!el) return;
   const ts = (_idbReady && _idbCache[LAST_BACKUP_KEY]!==undefined) ? _idbCache[LAST_BACKUP_KEY] : localStorage.getItem(LAST_BACKUP_KEY);
-  if (ts) {
+  if (ts && !isNaN(Number(ts))) {
     el.textContent = 'Last backed up: ' + _relativeTime(Number(ts));
     el.style.display = 'block';
   } else {
+    el.textContent = '';
     el.style.display = 'none';
   }
 }
@@ -18053,8 +18056,8 @@ function renderCalc() {
           </div>
           ` : `
           <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:56px;">
-            <button onclick="calcSetUnit('lbs')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='lbs')};background:${T.unitBg2(inputUnit==='lbs')};color:${T.unitColor(inputUnit==='lbs')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">LBS</button>
-            <button onclick="calcSetUnit('kg')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='kg')};background:${T.unitBg2(inputUnit==='kg')};color:${T.unitColor(inputUnit==='kg')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;">KG</button>
+            <button onclick="calcSetUnit('lbs')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='lbs')};background:${T.unitBg2(inputUnit==='lbs')};color:${T.unitColor(inputUnit==='lbs')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;min-height:44px;">LBS</button>
+            <button onclick="calcSetUnit('kg')" style="flex:1;border-radius:7px;border:${T.unitBorder(inputUnit==='kg')};background:${T.unitBg2(inputUnit==='kg')};color:${T.unitColor(inputUnit==='kg')};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-md);letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;min-height:44px;">KG</button>
           </div>
           `}
         </div>
@@ -18978,11 +18981,11 @@ function _updateCompModeDetails() {
         <button class="meet-btn-secondary" style="flex:1;font-size:var(--fs-sm);padding:8px" onclick="_meetResumePlan('${saved.id}')">Resume Plan</button>
         <button class="meet-btn-secondary" style="flex:1;font-size:var(--fs-sm);padding:8px;color:var(--red,#e74c3c)" onclick="_confirmDeleteMeet('${saved.id}');_updateCompModeDetails()">Delete Plan</button>
       </div>
-      <div onclick="_meetStartWalkthrough()" style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;cursor:pointer;padding:4px 0">Meet Day Walkthrough</div>
+      <div onclick="_meetStartWalkthrough()" style="font-size:var(--fs-sm);color:var(--text-dim);text-align:center;cursor:pointer;padding:12px 0;min-height:44px;display:flex;align-items:center;justify-content:center">Meet Day Walkthrough</div>
     </div>`;
   } else {
     el.innerHTML = `<div style="padding:8px 16px 4px">
-      <div onclick="_meetStartWalkthrough()" style="font-size:var(--fs-sm);color:var(--text-dim);cursor:pointer;padding:4px 0">Meet Day Walkthrough</div>
+      <div onclick="_meetStartWalkthrough()" style="font-size:var(--fs-sm);color:var(--text-dim);cursor:pointer;padding:12px 0;min-height:44px;display:flex;align-items:center">Meet Day Walkthrough</div>
     </div>`;
   }
 }
