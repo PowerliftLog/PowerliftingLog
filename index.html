@@ -505,8 +505,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .superset-group .exercise-card.completed { border-left-color: rgba(74,222,128,0.3); }
 .superset-group .exercise-card.skipped { border-left-color: rgba(255,255,255,0.05); }
 .exercise-card.completed { border-color: rgba(74,222,128,0.25); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-.exercise-card.is-comp { border-left: 2.5px solid rgba(201,168,76,0.45); border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
-.exercise-card.is-comp.completed { border-left-color: rgba(74,222,128,0.45); }
+.exercise-card.is-comp { border-left: 3px solid rgba(201,168,76,0.3); }
+.exercise-card.is-comp.completed { border-left-color: rgba(74,222,128,0.4); }
 .exercise-card.skipped { border-color: rgba(255,255,255,0.04); box-shadow: none; }
 .exercise-card.skipped .ex-summary-name { text-decoration: line-through; color: var(--text-dimmer); }
 .exercise-card.skipped .ex-summary-pres { color: var(--border); }
@@ -2850,7 +2850,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.31.0';
-const APP_BUILD   = '4/6/26c';
+const APP_BUILD   = '4/6/26d';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
