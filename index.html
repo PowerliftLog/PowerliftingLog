@@ -201,6 +201,7 @@
   --fs-base: 12px;
   --fs-md: 13px;
   --fs-lg: 15px;
+  --fs-input: 16px;
   --fs-xl: 18px;
   --fs-2xl: 22px;
   --fs-3xl: 28px;
@@ -612,6 +613,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 }
 .exercise-card.just-completed { animation: completeBorder 0.8s ease forwards; }
 @keyframes restSlideUp { from { transform: translateX(-50%) translateY(100%); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+@keyframes restAppearGlow { 0% { box-shadow: 0 4px 24px rgba(0,0,0,0.5); border-color: rgba(201,168,76,0.3); } 40% { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 12px rgba(201,168,76,0.2); border-color: rgba(201,168,76,0.5); } 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.5); border-color: rgba(201,168,76,0.3); } }
+@keyframes restInlineGlow { 0% { background: rgba(201,168,76,0.04); } 40% { background: rgba(201,168,76,0.1); } 100% { background: rgba(201,168,76,0.04); } }
 @keyframes rowFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .set-row.new-set-anim { animation: rowFadeIn 0.15s ease-out; }
 @keyframes rowSlideOut { from { opacity: 1; max-height: 60px; transform: translateY(0); } to { opacity: 0; max-height: 0; transform: translateY(-6px); } }
@@ -829,6 +832,7 @@ body.keyboard-open .bottom-nav-fade { display: none !important; }
 .wrc-detail-exercise { margin-bottom: var(--sp-5); }
 .wrc-detail-exercise:last-child { margin-bottom: 0; }
 .wrc-detail-ex-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-bright); margin-bottom: 3px; }
+.wrc-detail-ex-note { font-size: var(--fs-sm); color: var(--text-dim); font-style: italic; margin-bottom: 4px; line-height: 1.3; }
 .wrc-detail-set { font-size: var(--fs-base); color: var(--text-sub); padding: 2px 0 2px var(--sp-6); display: flex; align-items: baseline; gap: var(--sp-4); }
 .wrc-detail-set-num { color: var(--text-sub); min-width: 18px; font-variant-numeric: tabular-nums; }
 .wrc-detail-set-data { color: var(--text-mid); font-variant-numeric: tabular-nums; }
@@ -2424,7 +2428,7 @@ canvas.chart-overlay { pointer-events: auto; }
 <div class="add-lift-modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display:none;z-index:400" onclick="if(event.target===this)closeDeleteModal()">
   <div class="add-lift-sheet">
     <h2 class="add-lift-title" id="delete-modal-title" style="color:var(--red)">Delete Program?</h2>
-    <div style="font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:20px">
+    <div style="font-size: var(--fs-lg);color:var(--text-sub);line-height:1.6;margin-bottom:20px">
       This will permanently delete <strong id="delete-modal-name" style="color:var(--text-primary)"></strong> and all logged workout data for this cycle. This cannot be undone.
     </div>
     <div class="add-lift-actions">
@@ -2845,7 +2849,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.31.0';
-const APP_BUILD   = '4/5/26g';
+const APP_BUILD   = '4/6/26b';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -5307,6 +5311,8 @@ function startRestTimer(exerciseName, setKey) {
       insertAfter.after(rowDiv);
       window.scrollTo(0, _sy);
       requestAnimationFrame(() => { rowDiv.classList.add('expanded'); window.scrollTo(0, _sy); });
+      const inlineInner = rowDiv.querySelector('.rest-timer-inline-inner');
+      if (inlineInner) { rowDiv.addEventListener('transitionend', () => { inlineInner.style.animation = 'restInlineGlow 0.6s ease-out'; inlineInner.addEventListener('animationend', () => { inlineInner.style.animation = ''; }, { once: true }); }, { once: true }); }
       inlineDisplay = document.getElementById('rest-timer-inline-display');
       inlineRing = document.getElementById('rest-timer-inline-ring-fg');
     }
@@ -5316,7 +5322,11 @@ function startRestTimer(exerciseName, setKey) {
   if (!inlineDisplay) {
     banner.classList.remove('hidden');
     banner.style.animation = 'restSlideUp 0.15s ease-out';
-    banner.addEventListener('animationend', () => { banner.style.animation = ''; }, { once: true });
+    banner.addEventListener('animationend', () => {
+      banner.style.animation = '';
+      const inner = banner.querySelector('.rest-timer-inner');
+      if (inner) { inner.style.animation = 'restAppearGlow 0.6s ease-out'; inner.addEventListener('animationend', () => { inner.style.animation = ''; }, { once: true }); }
+    }, { once: true });
   }
   _restTimer.intervalId = setInterval(() => {
     const rem = _restTimerRemaining();
@@ -6555,8 +6565,8 @@ function renderHome() {
         <div class="home-empty-desc">Upload a spreadsheet, try a sample program, or build your own.</div>
         ${renderUploadOptions('home-')}
         <div style="display:flex;gap:var(--sp-4);margin-top:10px">
-          <button onclick="loadDemoProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Try Sample Program</button>
-          <button onclick="startBuildProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Build Your Own</button>
+          <button onclick="loadDemoProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-lg);font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Try Sample Program</button>
+          <button onclick="startBuildProgram()" style="flex:1;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-lg);font-weight:700;color:var(--text-bright);letter-spacing:0.02em;transition:opacity 0.15s">Build Your Own</button>
         </div>
       </div>
     </div>`;
@@ -7829,7 +7839,8 @@ function _buildSessionDetail(block, week, day) {
       setRows += `<div class="wrc-detail-set${cls}"><span class="wrc-detail-set-num">${setNum}.</span><span class="wrc-detail-set-data">${dataStr}</span></div>`;
     }
     if (setRows || exLog.done) {
-      h += `<div class="wrc-detail-exercise"><div class="wrc-detail-ex-name">${escH(_displayExName(ex.name))}</div>${setRows}</div>`;
+      const exNote = exLog.notes ? `<div class="wrc-detail-ex-note">${escH(exLog.notes)}</div>` : '';
+      h += `<div class="wrc-detail-exercise"><div class="wrc-detail-ex-name">${escH(_displayExName(ex.name))}</div>${exNote}${setRows}</div>`;
     }
   });
   return h;
@@ -9060,6 +9071,10 @@ function _shouldFireRestTimer(setKey) {
   if (!week) return true;
   const day = week.days.find(d => d.name === dayName);
   if (!day) return true;
+
+  // Don't fire rest timer if all exercises in the day are now complete
+  if (isDayComplete(block, week, day)) return false;
+
   const ex = day.exercises.find(e => e.name === exName);
   if (!ex || !ex.supersetGroup) return true; // Not in a circuit — fire normally
 
@@ -13070,8 +13085,8 @@ function _buildWeeklyTable(data) {
       const ts = getWeeklyTopSet(gk, wl);
       if (ts) {
         const rpeStr = ts.topRpe ? `<span class="rpe-dim"> @${ts.topRpe}</span>` : '';
-        const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size:9px;font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
-        const varLabel = ts.isVariation ? `<div style="font-size:9px;color:#999;margin-top:1px">${escH(ts.exName)}</div>` : '';
+        const amrapBadge = ts.isAmrap ? `<span style="color:${_tc('--gold','#C9A84C')};font-size: var(--fs-micro);font-weight:700;margin-left:3px;vertical-align:super">AMRAP</span>` : '';
+        const varLabel = ts.isVariation ? `<div style="font-size: var(--fs-micro);color:#999;margin-top:1px">${escH(ts.exName)}</div>` : '';
         let deltaTag = '';
         const prev = prevWeekE1rm[gk];
         if (prev && ts.e1rm) {
@@ -13162,13 +13177,13 @@ function _buildReportShell(data, weeklyTable, insights) {
       const liftLabel = { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift' }[gk];
       const liftColor = badgeColors[liftStatus.level] || badgeColors.green;
       const deltaDisplay = liftStatus.deltaStr ? `<span style="color:${liftColor};margin-left:6px">${liftStatus.deltaStr}</span>` : '';
-      return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:4px"><span style="width:6px;height:6px;background:${liftColor};border-radius:50%;flex-shrink:0"></span><span>${liftLabel}</span><span style="color:${tv('--text-mid')||'#bbb'}">${liftStatus.summary}</span>${deltaDisplay}</div>`;
+      return `<div style="display:flex;align-items:center;gap:6px;font-size: var(--fs-base);margin-top:4px"><span style="width:6px;height:6px;background:${liftColor};border-radius:50%;flex-shrink:0"></span><span>${liftLabel}</span><span style="color:${tv('--text-mid')||'#bbb'}">${liftStatus.summary}</span>${deltaDisplay}</div>`;
     }).join('');
     statusBadgeHtml = `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:12px;padding:14px;margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="width:12px;height:12px;background:${badgeDotColor};border-radius:50%;flex-shrink:0;margin-top:3px"></div>
         <div style="flex:1">
-          <div style="font-size:13px;color:${tv('--text-bright')||'#ddd'};line-height:1.4">${statusBadge.text}</div>
+          <div style="font-size: var(--fs-md);color:${tv('--text-bright')||'#ddd'};line-height:1.4">${statusBadge.text}</div>
           ${liftStatusLines}
         </div>
       </div>
@@ -13191,7 +13206,7 @@ function _buildReportShell(data, weeklyTable, insights) {
     const trend = _rpt_classifyTrend(cl);
     compCardsHtml += `<div class="comp-card">
       <div class="comp-card-accent" style="background:${color}"></div>
-      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size:10px;color:#999;font-weight:400;margin-left:4px">(${escH(cl.name)})</span>` : ''}</div>
+      <div class="comp-card-label">${label}${cl.isVariation ? `<span style="font-size: var(--fs-xs);color:#999;font-weight:400;margin-left:4px">(${escH(cl.name)})</span>` : ''}</div>
       <div class="comp-card-e1rm-label">Peak e1RM</div>
       <div class="comp-card-val">${cl.bestE1rm}<span class="comp-card-unit"> ${unitLabel(true)}</span></div>
       <div class="comp-card-delta" style="color:${deltaColor}">${deltaArrow} ${deltaSign}${cl.delta} ${unitLabel(true)}</div>
@@ -13216,25 +13231,25 @@ function _buildReportShell(data, weeklyTable, insights) {
       // Guard: need >= 3 completed sessions in previous block for this lift family
       if ((bd.prevCompletedSessions || 0) < 3) {
         blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;text-align:center">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
-          <div style="font-size:12px;color:${tv('--text-dim')||'#666'}">Insufficient prior data</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-xs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
+          <div style="font-size: var(--fs-base);color:${tv('--text-dim')||'#666'}">Insufficient prior data</div>
         </div>`;
         continue;
       }
       if (!bd.delta) {
         blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px;text-align:center">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
-          <div style="font-size:12px;color:${tv('--text-dim')||'#666'}">No change</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-xs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
+          <div style="font-size: var(--fs-base);color:${tv('--text-dim')||'#666'}">No change</div>
         </div>`;
         continue;
       }
       const deltaSign = bd.delta > 0 ? '+' : '';
       const deltaColor = bd.delta > 0 ? _tc('--green','#4ade80') : _tc('--red','#E22C2C');
       blockDeltasHtml += `<div style="background:${tv('--surface-2')||'#141414'};border:1px solid ${tv('--border')||'#222'};border-radius:10px;padding:10px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:${tv('--text-bright')||'#ddd'};margin-bottom:2px">${bd.current}</div>
-        <div style="font-size:11px;color:${deltaColor};font-weight:600">${deltaSign}${bd.delta} ${unitLabel(true)}</div>
-        <div style="font-size:9px;color:${tv('--text-sub')||'#888'};margin-top:4px">vs ${bd.prevBlockName}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-xs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${tv('--text-sub')||'#999'};margin-bottom:4px">${label}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size: var(--fs-xl);color:${tv('--text-bright')||'#ddd'};margin-bottom:2px">${bd.current}</div>
+        <div style="font-size: var(--fs-sm);color:${deltaColor};font-weight:600">${deltaSign}${bd.delta} ${unitLabel(true)}</div>
+        <div style="font-size: var(--fs-micro);color:${tv('--text-sub')||'#888'};margin-top:4px">vs ${bd.prevBlockName}</div>
       </div>`;
     }
     blockDeltasHtml += '</div>';
@@ -14010,25 +14025,25 @@ function _renderTemplatePicker() {
     { id: '5day', name: '5-Day Push / Pull / Legs', desc: 'High-frequency bodybuilding' },
   ];
 
-  let h = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:700;color:var(--text-main);text-align:center;margin-bottom:20px;letter-spacing:0.02em">Choose a Template</div>';
+  let h = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size: var(--fs-2xl);font-weight:700;color:var(--text-main);text-align:center;margin-bottom:20px;letter-spacing:0.02em">Choose a Template</div>';
 
   splits.forEach(s => {
     const isSelected = _tplSelectedSplit === s.id;
     const borderColor = isSelected ? 'var(--gold)' : 'rgba(255,255,255,0.08)';
     h += '<div style="background:rgba(255,255,255,0.04);border:1.5px solid ' + borderColor + ';border-radius:14px;padding:16px;margin-bottom:12px">';
-    h += '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;color:var(--text-main);letter-spacing:0.02em">' + s.name + '</div>';
-    h += '<div style="font-family:\'Barlow\',sans-serif;font-size:14px;color:var(--text-dim);margin:4px 0 12px">' + s.desc + '</div>';
+    h += '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size: var(--fs-xl);font-weight:700;color:var(--text-main);letter-spacing:0.02em">' + s.name + '</div>';
+    h += '<div style="font-family:\'Barlow\',sans-serif;font-size: var(--fs-lg);color:var(--text-dim);margin:4px 0 12px">' + s.desc + '</div>';
     h += '<div style="display:flex;gap:8px">';
     // RPE button
     const rpeActive = isSelected && _tplSelectedVariant === 'rpe';
     const rpeBg = rpeActive ? 'var(--gold)' : 'rgba(255,255,255,0.06)';
     const rpeColor = rpeActive ? '#1A1A2E' : 'var(--text-dim)';
-    h += '<button onclick="_tplSelectSplit(\'' + s.id + '\',\'rpe\')" style="flex:1;height:44px;border-radius:10px;border:1px solid ' + (rpeActive ? 'var(--gold)' : 'rgba(255,255,255,0.1)') + ';background:' + rpeBg + ';color:' + rpeColor + ';font-family:\'Barlow\',sans-serif;font-size:16px;font-weight:' + (rpeActive ? '700' : '500') + ';cursor:pointer">RPE</button>';
+    h += '<button onclick="_tplSelectSplit(\'' + s.id + '\',\'rpe\')" style="flex:1;height:44px;border-radius:10px;border:1px solid ' + (rpeActive ? 'var(--gold)' : 'rgba(255,255,255,0.1)') + ';background:' + rpeBg + ';color:' + rpeColor + ';font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);font-weight:' + (rpeActive ? '700' : '500') + ';cursor:pointer">RPE</button>';
     // Percentage button
     const pctActive = isSelected && _tplSelectedVariant === 'pct';
     const pctBg = pctActive ? 'var(--gold)' : 'rgba(255,255,255,0.06)';
     const pctColor = pctActive ? '#1A1A2E' : 'var(--text-dim)';
-    h += '<button onclick="_tplSelectSplit(\'' + s.id + '\',\'pct\')" style="flex:1;height:44px;border-radius:10px;border:1px solid ' + (pctActive ? 'var(--gold)' : 'rgba(255,255,255,0.1)') + ';background:' + pctBg + ';color:' + pctColor + ';font-family:\'Barlow\',sans-serif;font-size:16px;font-weight:' + (pctActive ? '700' : '500') + ';cursor:pointer">Percentage</button>';
+    h += '<button onclick="_tplSelectSplit(\'' + s.id + '\',\'pct\')" style="flex:1;height:44px;border-radius:10px;border:1px solid ' + (pctActive ? 'var(--gold)' : 'rgba(255,255,255,0.1)') + ';background:' + pctBg + ';color:' + pctColor + ';font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);font-weight:' + (pctActive ? '700' : '500') + ';cursor:pointer">Percentage</button>';
     h += '</div>';
     h += '</div>';
   });
@@ -14038,12 +14053,12 @@ function _renderTemplatePicker() {
     const key = _tplSelectedSplit + '_' + _tplSelectedVariant;
     const meta = TEMPLATE_META[key];
     h += '<div style="margin-top:8px">';
-    h += '<button onclick="useTemplate(\'' + key + '\')" style="width:100%;height:50px;border-radius:12px;border:none;background:var(--gold);color:#1A1A2E;font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:0.02em;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>Use This Template</button>';
-    h += '<button onclick="_showTemplateDownloadOptions(\'' + key + '\')" style="width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size:16px;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download to Edit</button>';
+    h += '<button onclick="useTemplate(\'' + key + '\')" style="width:100%;height:50px;border-radius:12px;border:none;background:var(--gold);color:#1A1A2E;font-family:\'Barlow Condensed\',sans-serif;font-size: var(--fs-xl);font-weight:700;cursor:pointer;letter-spacing:0.02em;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>Use This Template</button>';
+    h += '<button onclick="_showTemplateDownloadOptions(\'' + key + '\')" style="width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download to Edit</button>';
     h += '</div>';
   }
 
-  h += '<button onclick="closeTemplatePicker()" style="width:100%;height:44px;border-radius:10px;border:none;background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size:16px;cursor:pointer;margin-top:4px">Close</button>';
+  h += '<button onclick="closeTemplatePicker()" style="width:100%;height:44px;border-radius:10px;border:none;background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);cursor:pointer;margin-top:4px">Close</button>';
 
   body.innerHTML = h;
 }
@@ -14051,14 +14066,14 @@ function _renderTemplatePicker() {
 function _showTemplateDownloadOptions(templateKey) {
   const body = document.getElementById('template-picker-body');
   const meta = TEMPLATE_META[templateKey];
-  let h = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:700;color:var(--text-main);text-align:center;margin-bottom:8px;letter-spacing:0.02em">Download to Edit</div>';
-  h += '<div style="font-family:\'Barlow\',sans-serif;font-size:15px;color:var(--text-dim);text-align:center;margin-bottom:20px">' + meta.name + '</div>';
+  let h = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size: var(--fs-2xl);font-weight:700;color:var(--text-main);text-align:center;margin-bottom:8px;letter-spacing:0.02em">Download to Edit</div>';
+  h += '<div style="font-family:\'Barlow\',sans-serif;font-size: var(--fs-lg);color:var(--text-dim);text-align:center;margin-bottom:20px">' + meta.name + '</div>';
 
-  h += '<button onclick="downloadTemplateFile(\'' + templateKey + '\')" style="width:100%;height:50px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:var(--text-main);font-family:\'Barlow\',sans-serif;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download to Device</button>';
+  h += '<button onclick="downloadTemplateFile(\'' + templateKey + '\')" style="width:100%;height:50px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:var(--text-main);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download to Device</button>';
 
-  h += '<button onclick="saveTemplateToDrive(\'' + templateKey + '\')" style="width:100%;height:50px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:var(--text-main);font-family:\'Barlow\',sans-serif;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px"><svg viewBox="0 0 87 78" fill="none" width="20" height="18"><path d="M43.65 25L29.9 1.2C28.55.4 27 0 25.4 0H16l13.9 24.1L43.65 25z" fill="#0066DA"/><path d="M13.75 53L0 29.2c-.8 1.4-1.2 2.95-1.2 4.55v20.5c0 1.6.45 3.15 1.2 4.5L13.75 53z" fill="#00AC47" transform="translate(0.2)"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/><path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/><path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/></svg>Save to Google Drive</button>';
+  h += '<button onclick="saveTemplateToDrive(\'' + templateKey + '\')" style="width:100%;height:50px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:var(--text-main);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px"><svg viewBox="0 0 87 78" fill="none" width="20" height="18"><path d="M43.65 25L29.9 1.2C28.55.4 27 0 25.4 0H16l13.9 24.1L43.65 25z" fill="#0066DA"/><path d="M13.75 53L0 29.2c-.8 1.4-1.2 2.95-1.2 4.55v20.5c0 1.6.45 3.15 1.2 4.5L13.75 53z" fill="#00AC47" transform="translate(0.2)"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/><path d="M59.85 53H27.5l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.4c1.6 0 3.15-.45 4.5-1.2L59.85 53z" fill="#2684FC"/><path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/></svg>Save to Google Drive</button>';
 
-  h += '<button onclick="_renderTemplatePicker()" style="width:100%;height:44px;border-radius:10px;border:none;background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size:16px;cursor:pointer;margin-top:4px">Back</button>';
+  h += '<button onclick="_renderTemplatePicker()" style="width:100%;height:44px;border-radius:10px;border:none;background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);cursor:pointer;margin-top:4px">Back</button>';
 
   body.innerHTML = h;
 }
@@ -14081,19 +14096,19 @@ function useTemplate(templateKey) {
 function show1RMPrompt(wb, templateKey) {
   const body = document.getElementById('template-picker-body');
   const meta = TEMPLATE_META[templateKey];
-  let h = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:700;color:var(--text-main);text-align:center;margin-bottom:4px;letter-spacing:0.02em">Enter Your 1RMs</div>';
-  h += '<div style="font-family:\'Barlow\',sans-serif;font-size:14px;color:var(--text-dim);text-align:center;margin-bottom:20px">Optional — we\'ll calculate your working weights</div>';
+  let h = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size: var(--fs-2xl);font-weight:700;color:var(--text-main);text-align:center;margin-bottom:4px;letter-spacing:0.02em">Enter Your 1RMs</div>';
+  h += '<div style="font-family:\'Barlow\',sans-serif;font-size: var(--fs-lg);color:var(--text-dim);text-align:center;margin-bottom:20px">Optional — we\'ll calculate your working weights</div>';
 
   var lifts = ['Squat', 'Bench', 'Deadlift', 'OHP'];
   lifts.forEach(function(lift) {
     h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
-    h += '<label style="font-family:\'Barlow\',sans-serif;font-size:16px;color:var(--text-main);width:80px">' + lift + '</label>';
-    h += '<input type="number" id="rm-' + lift.toLowerCase() + '" placeholder="lbs" style="flex:1;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text-main);font-family:\'Barlow\',sans-serif;font-size:16px;padding:0 14px;outline:none" inputmode="numeric">';
+    h += '<label style="font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);color:var(--text-main);width:80px">' + lift + '</label>';
+    h += '<input type="number" id="rm-' + lift.toLowerCase() + '" placeholder="lbs" style="flex:1;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text-main);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);padding:0 14px;outline:none" inputmode="numeric">';
     h += '</div>';
   });
 
-  h += '<button onclick="_apply1RMAndImport(\'' + templateKey + '\')" style="width:100%;height:50px;border-radius:12px;border:none;background:var(--gold);color:#1A1A2E;font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:0.02em;margin-top:12px">Apply & Import</button>';
-  h += '<button onclick="_skip1RMAndImport(\'' + templateKey + '\')" style="width:100%;height:44px;border-radius:10px;border:none;background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size:16px;cursor:pointer;margin-top:6px">Skip — keep percentages</button>';
+  h += '<button onclick="_apply1RMAndImport(\'' + templateKey + '\')" style="width:100%;height:50px;border-radius:12px;border:none;background:var(--gold);color:#1A1A2E;font-family:\'Barlow Condensed\',sans-serif;font-size: var(--fs-xl);font-weight:700;cursor:pointer;letter-spacing:0.02em;margin-top:12px">Apply & Import</button>';
+  h += '<button onclick="_skip1RMAndImport(\'' + templateKey + '\')" style="width:100%;height:44px;border-radius:10px;border:none;background:transparent;color:var(--text-dim);font-family:\'Barlow\',sans-serif;font-size: var(--fs-input);cursor:pointer;margin-top:6px">Skip — keep percentages</button>';
 
   body.innerHTML = h;
 }
@@ -14260,7 +14275,7 @@ function renderSupportedPrograms() {
       <div style="${progStyle}">Any spreadsheet with Exercise + Sets + Reps columns &middot; Coach programs with week-per-sheet layout &middot; Lift Vault templates</div>
     </div>
 
-    <div style="font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-dim);text-align:center;margin-top:16px;line-height:1.5">
+    <div style="font-family:'Barlow',sans-serif;font-size: var(--fs-lg);color:var(--text-dim);text-align:center;margin-top:16px;line-height:1.5">
       Don't see your program?<br>Download a template and paste your exercises in.
     </div>
 
@@ -14632,7 +14647,7 @@ function showOnboardingStep(step) {
   // Step 2: Upload Your Program (moved up — highest-value action)
   else if (step === 2) {
     body.innerHTML = `
-      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Upload Your Program</h1>
+      <h1 class="onboard-title" style="font-size: var(--fs-3xl);margin-bottom:4px;text-align:center">Upload Your Program</h1>
       <div class="onboard-sub" style="margin-bottom:var(--sp-8);text-align:center">Import your training spreadsheet or CSV.</div>
       ${renderUploadOptions('ob-')}
       <button class="onboard-skip-btn" onclick="showOnboardingStep('2b')" style="margin-top:var(--sp-5)">I don't have a file</button>
@@ -14646,7 +14661,7 @@ function showOnboardingStep(step) {
   // Step 2b: No-file path — sample program or build your own
   else if (step === '2b') {
     body.innerHTML = `
-      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">No Problem</h1>
+      <h1 class="onboard-title" style="font-size: var(--fs-3xl);margin-bottom:4px;text-align:center">No Problem</h1>
       <div class="onboard-sub" style="margin-bottom:var(--sp-8);text-align:center">Try a sample program or build your own. You can upload a spreadsheet anytime from the Programs menu.</div>
       <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin:0 auto var(--sp-8)">
         <button class="onboard-nofile-card" onclick="loadDemoProgram()" style="display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;transition:opacity 0.15s">
@@ -14672,18 +14687,18 @@ function showOnboardingStep(step) {
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-sm);font-weight:700;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:var(--sp-5);text-align:center">What you'll see</div>
         <div style="display:flex;gap:var(--sp-4);overflow-x:auto;padding:0 4px;scroll-snap-type:x mandatory">
           <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-            <div style="font-size:28px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h-2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2"/><path d="M17.5 6.5h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-2"/><path d="M6.5 4v16"/><path d="M17.5 4v16"/><line x1="6.5" y1="12" x2="17.5" y2="12"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/></svg></div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Workout Tracking</div>
+            <div style="font-size: var(--fs-3xl);margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h-2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2"/><path d="M17.5 6.5h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-2"/><path d="M6.5 4v16"/><path d="M17.5 4v16"/><line x1="6.5" y1="12" x2="17.5" y2="12"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/></svg></div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-lg);font-weight:700;color:var(--text-bright)">Workout Tracking</div>
             <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;line-height:1.5">Log sets, weight, and RPE. See your prescribed weights with one-tap plate calculator on barbell exercises.</div>
           </div>
           <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-            <div style="font-size:28px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Progress & PRs</div>
+            <div style="font-size: var(--fs-3xl);margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-lg);font-weight:700;color:var(--text-bright)">Progress & PRs</div>
             <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;line-height:1.5">Estimated 1RM charts, PR detection, and DOTS/Wilks/GL scoring — all automatic.</div>
           </div>
           <div style="flex-shrink:0;width:85%;scroll-snap-align:start;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-            <div style="font-size:28px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">Training Reports</div>
+            <div style="font-size: var(--fs-3xl);margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size: var(--fs-lg);font-weight:700;color:var(--text-bright)">Training Reports</div>
             <div style="font-family:'Barlow',sans-serif;font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;line-height:1.5">Volume, intensity, and completion reports. Export as HTML or CSV anytime.</div>
           </div>
         </div>
@@ -14718,7 +14733,7 @@ function showOnboardingStep(step) {
     _onboardUnit = athlete.bwUnit || 'lbs';
     _onboardWeightUnit = athlete.weightUnit || athlete.bwUnit || 'lbs';
     body.innerHTML = `
-      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">About You</h1>
+      <h1 class="onboard-title" style="font-size: var(--fs-3xl);margin-bottom:4px;text-align:center">About You</h1>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Used for DOTS & Wilks scores. All fields optional.</div>
       <div class="onboard-form">
         <div class="intake-field-label">Name</div>
@@ -14760,7 +14775,7 @@ function showOnboardingStep(step) {
   else if (step === 4) {
     const curMode = getRestTimerMode();
     body.innerHTML = `
-      <h1 class="onboard-title" style="font-size:26px;margin-bottom:4px;text-align:center">Rest Timer</h1>
+      <h1 class="onboard-title" style="font-size: var(--fs-3xl);margin-bottom:4px;text-align:center">Rest Timer</h1>
       <div class="onboard-sub" style="margin-bottom:20px;text-align:center">Automatic rest timer between sets. You can change this anytime in Settings.</div>
       <div style="display:flex;flex-direction:column;gap:var(--sp-4);width:100%;max-width:300px;margin:0 auto">
         <button class="intake-gender-btn${curMode==='auto'?' selected':''}" onclick="onboardSetRestTimer('auto',this)" style="padding:14px;font-size:var(--fs-lg)">
@@ -18563,7 +18578,7 @@ function _renderPlatePopoverContent(overlay, displayWeight, displayUnit, setKey,
   overlay.innerHTML = `
     <div class="plate-popover">
       <div class="plate-popover-title">Plate Breakdown</div>
-      <div class="plate-popover-weight">${fmtPrimary} ${primaryUnit} <span style="font-size:16px;color:var(--text-faint);font-weight:500">(${fmtSecondary} ${secondaryUnit})</span></div>
+      <div class="plate-popover-weight">${fmtPrimary} ${primaryUnit} <span style="font-size: var(--fs-input);color:var(--text-faint);font-weight:500">(${fmtSecondary} ${secondaryUnit})</span></div>
       <div class="plate-popover-bar">${barSVG}</div>
       <div class="plate-popover-chips">${chipsHtml}</div>
       <div class="plate-popover-note">${barLabel} · per side</div>
@@ -18756,7 +18771,7 @@ function _renderWeightClassPicker(plan, athlete) {
           : 'background:var(--surface-3);border-color:var(--border);color:var(--text-sub)';
       return `<button style="padding:5px 8px;border-radius:8px;border:1px solid;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);cursor:pointer;transition:all 0.15s;${style}" onclick="_meetSetWeightClass('${clsStr}')">${clsStr}${isAuto?' ◆':''}</button>`;
     }).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${pillsHtml}</div>${autoClass && !selected ? `<div style="font-size:10px;color:var(--text-dimmer);margin-top:3px">◆ matches your bodyweight</div>` : ''}`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${pillsHtml}</div>${autoClass && !selected ? `<div style="font-size: var(--fs-xs);color:var(--text-dimmer);margin-top:3px">◆ matches your bodyweight</div>` : ''}`;
   } else {
     const optionsHtml = classes.map(cls => {
       const clsStr = String(cls);
@@ -19081,7 +19096,7 @@ function _meetCallout(key, text) {
   return `<div class="meet-callout" data-key="${key}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
       <span>${text}</span>
-      <button onclick="_dismissMeetCallout('${key}')" style="background:none;border:none;color:var(--text-dimmer);font-size:16px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">\u00D7</button>
+      <button onclick="_dismissMeetCallout('${key}')" style="background:none;border:none;color:var(--text-dimmer);font-size: var(--fs-input);cursor:pointer;padding:0;line-height:1;flex-shrink:0">\u00D7</button>
     </div>
   </div>`;
 }
@@ -19439,8 +19454,8 @@ function renderMeetSetup(content) {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div class="meet-form-label">Weight Class</div>
         <div class="meet-toggle-group" style="gap:0">
-          <button class="meet-toggle-btn ${(plan.federation||'IPF/USAPL')==='IPF/USAPL'?'active':''}" style="font-size:11px;padding:5px 8px" onclick="_meetSetFederation('IPF/USAPL')">IPF/USAPL</button>
-          <button class="meet-toggle-btn ${(plan.federation||'IPF/USAPL')==='USPA'?'active':''}" style="font-size:11px;padding:5px 8px" onclick="_meetSetFederation('USPA')">USPA</button>
+          <button class="meet-toggle-btn ${(plan.federation||'IPF/USAPL')==='IPF/USAPL'?'active':''}" style="font-size: var(--fs-sm);padding:5px 8px" onclick="_meetSetFederation('IPF/USAPL')">IPF/USAPL</button>
+          <button class="meet-toggle-btn ${(plan.federation||'IPF/USAPL')==='USPA'?'active':''}" style="font-size: var(--fs-sm);padding:5px 8px" onclick="_meetSetFederation('USPA')">USPA</button>
         </div>
       </div>
       <div id="meet-wc-picker">${_renderWeightClassPicker(plan, athlete)}</div>
@@ -19617,10 +19632,10 @@ function renderMeetE1RMInput(content) {
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-sub);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Recent lift (optional)</div>
       <div class="meet-form-row" style="margin-bottom:10px">
         <div class="meet-form-group" style="flex:2">
-          <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Weight" value="${rpWeight}" oninput="_meetUpdateRP('${lift}','weight',this.value)" style="font-size:16px">
+          <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Weight" value="${rpWeight}" oninput="_meetUpdateRP('${lift}','weight',this.value)" style="font-size: var(--fs-input)">
         </div>
         <div class="meet-form-group" style="flex:1">
-          <input class="meet-form-input" type="number" inputmode="numeric" placeholder="Reps" value="${rpReps}" oninput="_meetUpdateRP('${lift}','reps',this.value)" style="font-size:16px">
+          <input class="meet-form-input" type="number" inputmode="numeric" placeholder="Reps" value="${rpReps}" oninput="_meetUpdateRP('${lift}','reps',this.value)" style="font-size: var(--fs-input)">
         </div>
         <div class="meet-toggle-group" style="align-self:flex-end">
           <button class="meet-toggle-btn ${rpUnit==='kg'?'active':''}" onclick="_meetSetRPUnit('${lift}','kg')" style="padding:9px 8px;font-size:var(--fs-xs)">KG</button>
@@ -19848,7 +19863,7 @@ function renderMeetPlanAuto(content) {
     <div style="margin-bottom:2px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Attempt Strategy</div>
       <div class="meet-toggle-group" style="gap:0;width:100%">
-        ${['conservative','standard','aggressive'].map(k => `<button class="meet-toggle-btn ${proto===k?'active':''}" style="flex:1;font-size:11px;padding:6px 4px" onclick="_meetSetProtocol('${k}')">${ATTEMPT_PROTOCOLS[k].label}</button>`).join('')}
+        ${['conservative','standard','aggressive'].map(k => `<button class="meet-toggle-btn ${proto===k?'active':''}" style="flex:1;font-size: var(--fs-sm);padding:6px 4px" onclick="_meetSetProtocol('${k}')">${ATTEMPT_PROTOCOLS[k].label}</button>`).join('')}
       </div>
       <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:4px;text-align:center">${ATTEMPT_PROTOCOLS[proto].desc}</div>
     </div>
@@ -20077,7 +20092,7 @@ function renderMeetPlanManual(content) {
     <div style="margin-bottom:2px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-xs);color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Attempt Strategy</div>
       <div class="meet-toggle-group" style="gap:0;width:100%">
-        ${['conservative','standard','aggressive'].map(k => `<button class="meet-toggle-btn ${proto===k?'active':''}" style="flex:1;font-size:11px;padding:6px 4px" onclick="_meetSetProtocol('${k}')">${ATTEMPT_PROTOCOLS[k].label}</button>`).join('')}
+        ${['conservative','standard','aggressive'].map(k => `<button class="meet-toggle-btn ${proto===k?'active':''}" style="flex:1;font-size: var(--fs-sm);padding:6px 4px" onclick="_meetSetProtocol('${k}')">${ATTEMPT_PROTOCOLS[k].label}</button>`).join('')}
       </div>
       <div style="font-size:var(--fs-xs);color:var(--text-dimmer);margin-top:4px;text-align:center">${ATTEMPT_PROTOCOLS[proto].desc}</div>
     </div>
@@ -20114,7 +20129,7 @@ function renderMeetPlanManual(content) {
       </div>
       <div class="meet-form-group" style="margin-top:6px">
         <div class="meet-form-label">Or enter custom</div>
-        <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Custom kg" value="${lp.planned2nd && sec && lp.planned2nd !== sec.a && lp.planned2nd !== sec.b && lp.planned2nd !== sec.c ? lp.planned2nd : ''}" oninput="_meetManualSet2nd('${lift}',this.value)" style="font-size:16px">
+        <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Custom kg" value="${lp.planned2nd && sec && lp.planned2nd !== sec.a && lp.planned2nd !== sec.b && lp.planned2nd !== sec.c ? lp.planned2nd : ''}" oninput="_meetManualSet2nd('${lift}',this.value)" style="font-size: var(--fs-input)">
       </div>
     </div>
 
@@ -20131,7 +20146,7 @@ function renderMeetPlanManual(content) {
       </div>
       <div class="meet-form-group" style="margin-top:6px">
         <div class="meet-form-label">Or enter custom</div>
-        <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Custom kg" value="${lp.planned3rd && thi && lp.planned3rd !== thi.a && lp.planned3rd !== thi.b && lp.planned3rd !== thi.c ? lp.planned3rd : ''}" oninput="_meetManualSet3rd('${lift}',this.value)" style="font-size:16px">
+        <input class="meet-form-input" type="number" inputmode="decimal" placeholder="Custom kg" value="${lp.planned3rd && thi && lp.planned3rd !== thi.a && lp.planned3rd !== thi.b && lp.planned3rd !== thi.c ? lp.planned3rd : ''}" oninput="_meetManualSet3rd('${lift}',this.value)" style="font-size: var(--fs-input)">
       </div>
     </div>
 

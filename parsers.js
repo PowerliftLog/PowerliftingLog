@@ -554,16 +554,21 @@ function _extractPrimaryKeyword(name, group) {
 
 function spellCorrectWord(word){
   if(word.length<=3) return word;
-  const lower=word.toLowerCase();
+  // Preserve trailing punctuation (commas, colons, semicolons) — don't let
+  // edit-distance matching eat them (e.g. "Pullup," → "Pullup" was a bug)
+  const trailingPunct = word.match(/([,;:]+)$/);
+  const cleanWord = trailingPunct ? word.slice(0, -trailingPunct[1].length) : word;
+  if(cleanWord.length<=3) return word;
+  const lower=cleanWord.toLowerCase();
   const match=EXERCISE_DICT.find(d=>d.toLowerCase()===lower);
-  if(match) return match;
+  if(match) return match + (trailingPunct ? trailingPunct[1] : '');
   let best=null; let bestDist=Infinity;
   for(const d of EXERCISE_DICT){
     const dist=editDistance(lower,d.toLowerCase());
-    const threshold=word.length<=5?1:2;
+    const threshold=cleanWord.length<=5?1:2;
     if(dist<bestDist&&dist<=threshold){ bestDist=dist; best=d; }
   }
-  return best||word;
+  return (best||cleanWord) + (trailingPunct ? trailingPunct[1] : '');
 }
 
 function spellCorrectExerciseName(name){
@@ -4378,6 +4383,70 @@ function _isCircuitPrefix(name) {
   return null;
 }
 
+// ── UNIVERSAL GROUPING DETECTION (post-parse) ────────────────────────────────
+// Runs on every day from every format. Detects alpha-numeric prefix (A1.),
+// alpha-numeric suffix ((A1)), and numeric-alpha prefix (1a.) patterns.
+// Assigns supersetGroup to exercises that match — skips any already grouped.
+function _detectExerciseGroups(day) {
+  if (!day || !day.exercises || day.exercises.length < 2) return;
+
+  const exs = day.exercises;
+
+  // Pattern 1: Alpha-numeric prefix — "A1. Bench Press", "A2) Row"
+  const PAT_ALPHA_NUM = /^([A-Za-z])([1-9])[\.\)\s:]\s*(.+)/;
+  // Pattern 2: Alpha-numeric suffix — "Bench Press (A1)"
+  const PAT_ALPHA_SUF = /^(.+?)\s*\(([A-Za-z])([1-9])\)\s*$/;
+  // Pattern 5: Numeric-alpha prefix — "1a. Bench Press", "1b) Row"
+  const PAT_NUM_ALPHA = /^([1-9])([a-zA-Z])[\.\)\s:]\s*(.+)/;
+
+  // Collect candidate matches for each exercise (highest confidence wins)
+  const candidates = new Array(exs.length).fill(null);
+
+  for (let i = 0; i < exs.length; i++) {
+    if (exs[i].supersetGroup != null) continue; // already grouped
+    const name = (exs[i].name || '').trim();
+    if (!name) continue;
+
+    let m;
+    // Pattern 1 (confidence 0.95)
+    m = name.match(PAT_ALPHA_NUM);
+    if (m) { candidates[i] = { conf: 0.95, groupKey: m[1].toUpperCase(), pos: parseInt(m[2]), cleanName: m[3].trim(), pat: 1 }; continue; }
+    // Pattern 2 (confidence 0.90)
+    m = name.match(PAT_ALPHA_SUF);
+    if (m) { candidates[i] = { conf: 0.90, groupKey: m[2].toUpperCase(), pos: parseInt(m[3]), cleanName: m[1].trim(), pat: 2 }; continue; }
+    // Pattern 5 (confidence 0.85)
+    m = name.match(PAT_NUM_ALPHA);
+    if (m) { candidates[i] = { conf: 0.85, groupKey: m[1], pos: m[2].toLowerCase().charCodeAt(0) - 96, cleanName: m[3].trim(), pat: 5 }; continue; }
+  }
+
+  // Group consecutive exercises with the same groupKey and pattern
+  let i = 0;
+  while (i < exs.length) {
+    if (!candidates[i]) { i++; continue; }
+
+    const groupStart = i;
+    const { groupKey, pat } = candidates[i];
+    // Collect consecutive exercises with same groupKey and same pattern
+    let j = i + 1;
+    while (j < exs.length && candidates[j] && candidates[j].groupKey === groupKey && candidates[j].pat === pat) {
+      j++;
+    }
+
+    const groupSize = j - groupStart;
+    if (groupSize >= 2) {
+      // Assign supersetGroup to all members
+      const label = groupKey + '_' + groupStart;
+      const group = { label, rounds: 1 };
+      for (let k = groupStart; k < j; k++) {
+        exs[k].name = candidates[k].cleanName;
+        exs[k].supersetGroup = group;
+      }
+    }
+
+    i = j;
+  }
+}
+
 function _isCoachInstruction(name) {
   if (!name) return false;
   const s = name.trim();
@@ -4732,11 +4801,127 @@ function _trySplitCircuitPrescription(ex) {
   // Must have comma or "and" in the name suggesting multiple exercises
   if (!/,/.test(name) && !/\band\b/i.test(name)) return null;
 
-  // Must have multiple set-scheme segments in prescription
+  // Check for circuit/superset indicator prefix
+  const hasGroupPrefix = /^(circuit|superset|super\s*set|tri[\s-]*set|giant\s*set|ss)\b/i.test(name.trim());
+
+  // Strip "Circuit-" or "Circuit " prefix from name before splitting
+  const strippedName = name.replace(/^(circuit|superset|super\s*set|tri[\s-]*set|giant\s*set|ss)[\s\-:]+/i, '').trim();
+  const nameParts = strippedName.split(/,\s*/);
+
+  // --- Paths A/A2/A3 require circuit/superset prefix to avoid false positives ---
+  // (e.g., "Rack pull, mid-shin" with "7@6, 7@7, 7@8" should NOT split)
+  // --- Path A2: Multiple names but SINGLE shared prescription ---
+  // Name: "Circuit DB Bench Press, Single Arm DB Row, DB RDL"  Prescription: "2x10 @ 7"
+  // All exercises share the same prescription
+  if (hasGroupPrefix && nameParts.length >= 2 && pres) {
+    const presParts = pres.split(/,\s*/);
+    const singlePres = pres.trim();
+    // Pure prescription must START with a digit (e.g., "2x10", "3x8 @ 7", "45 sec")
+    // Reject things like "Lunge 2x12" where exercise name prefixes the prescription
+    const allPurePres = presParts.every(p => /^\d/.test(p.trim()));
+
+    if (presParts.length === 1 && (/^\d/.test(singlePres) || /\dx\d/i.test(singlePres))) {
+      // Single prescription shared across all exercises
+      const groupLabel = nameParts.length > 2 ? 'circuit' : 'superset';
+      const groupId = groupLabel + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      const sharedGroup = { label: groupId, rounds: 1 };
+      const results = [];
+      for (let i = 0; i < nameParts.length; i++) {
+        const exName = nameParts[i].trim();
+        if (!exName) continue;
+        results.push({
+          name: exName,
+          prescription: singlePres,
+          supersetGroup: sharedGroup,
+          coachNotes: ex.coachNotes ? (Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : [ex.coachNotes]) : []
+        });
+      }
+      if (results.length >= 2) return results;
+    }
+
+    // Multiple prescriptions matching multiple names (1:1 zip)
+    if (allPurePres && presParts.length >= 2) {
+      const groupLabel = nameParts.length > 2 ? 'circuit' : 'superset';
+      const groupId = groupLabel + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      const sharedGroup = { label: groupId, rounds: 1 };
+      const results = [];
+      for (let i = 0; i < nameParts.length; i++) {
+        const exName = nameParts[i].trim();
+        if (!exName) continue;
+        results.push({
+          name: exName,
+          prescription: (presParts[i] || presParts[presParts.length - 1] || '').trim(),
+          supersetGroup: sharedGroup,
+          coachNotes: ex.coachNotes ? (Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : [ex.coachNotes]) : []
+        });
+      }
+      if (results.length >= 2) return results;
+    }
+
+    // --- Path A3: Mixed prescriptions — some pure, some name-prefixed ---
+    // Name: "DB Push Press, KB Swing, Plank"  Prescription: "2x8, plank 2x 45 sec"
+    // Match each pres part to a name part, extract prescription portion
+    // Skip if pres contains "and" constructs — Path B handles those better
+    const hasAndConstruct = presParts.some(p => /\band\b/i.test(p.trim()));
+    if (!hasAndConstruct && presParts.length >= 2 && nameParts.length >= 2) {
+      const matched = [];
+      const usedPres = new Set();
+      for (let i = 0; i < nameParts.length; i++) {
+        const n = nameParts[i].trim().toLowerCase();
+        let foundPres = null;
+        // Try to find a pres part that starts with this name (or tail of name)
+        for (let j = 0; j < presParts.length; j++) {
+          if (usedPres.has(j)) continue;
+          const pp = presParts[j].trim();
+          const ppLower = pp.toLowerCase();
+          // Check if pres part starts with the last word of the name
+          const lastWord = n.split(/\s+/).pop();
+          if (lastWord && lastWord.length >= 3 && ppLower.startsWith(lastWord)) {
+            // Extract prescription after the name portion
+            const afterName = pp.slice(lastWord.length).trim();
+            if (/^\d/.test(afterName) || /\dx/i.test(afterName)) {
+              foundPres = afterName;
+              usedPres.add(j);
+              break;
+            }
+          }
+          // Check if pres part is a pure prescription (for positional match)
+          if (/^\d/.test(pp) && !usedPres.has(j) && foundPres === null) {
+            foundPres = pp;
+            usedPres.add(j);
+            break;
+          }
+        }
+        matched.push({ name: nameParts[i].trim(), prescription: foundPres });
+      }
+      // Only use this path if we matched prescriptions for most exercises
+      const matchedCount = matched.filter(m => m.prescription).length;
+      if (matchedCount >= Math.ceil(nameParts.length * 0.5) && matchedCount >= 2) {
+        const groupLabel = nameParts.length > 2 ? 'circuit' : 'superset';
+        const groupId = groupLabel + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        const sharedGroup = { label: groupId, rounds: 1 };
+        const results = [];
+        // For unmatched exercises, use the first pure prescription or empty
+        const fallbackPres = presParts.find(p => /^\d/.test(p.trim())) || '';
+        for (const m of matched) {
+          results.push({
+            name: m.name,
+            prescription: m.prescription || fallbackPres.trim(),
+            supersetGroup: sharedGroup,
+            coachNotes: ex.coachNotes ? (Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : [ex.coachNotes]) : []
+          });
+        }
+        if (results.length >= 2) return results;
+      }
+    }
+  }
+
+  // Must have multiple set-scheme segments in prescription for Path B
   const segments = pres.split(/,\s*/);
   if (segments.length < 2 && !/\band\b/i.test(pres)) return null;
 
-  // Split on comma first, then handle "and" within segments
+  // --- Path B: Names and prescriptions COMBINED in prescription field ---
+  // Prescription: "Pullup 2x4-8, DB Clean 2x5, DB Walking Lunge 2x8"
   const rawParts = pres.split(/,\s*/);
   const expandedParts = [];
   for (const part of rawParts) {
@@ -4752,7 +4937,9 @@ function _trySplitCircuitPrescription(ex) {
 
   // Each part should be "Name NxN..." — extract name and prescription
   const results = [];
-  const groupId = 'circuit-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  const groupLabel = expandedParts.length > 2 ? 'circuit' : 'superset';
+  const groupId = groupLabel + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  const sharedGroup = { label: groupId, rounds: 1 };
 
   for (const part of expandedParts) {
     const m = part.match(/^(.+?)\s+(\d+x\S+.*)$/i);
@@ -4760,7 +4947,7 @@ function _trySplitCircuitPrescription(ex) {
       results.push({
         name: m[1].trim(),
         prescription: m[2].trim(),
-        supersetGroup: groupId,
+        supersetGroup: sharedGroup,
         coachNotes: ex.coachNotes ? (Array.isArray(ex.coachNotes) ? [...ex.coachNotes] : [ex.coachNotes]) : []
       });
     } else {
@@ -5202,22 +5389,35 @@ function parseWorkbook(wb){
       }
     }
 
-    // Fix 6: Split multi-exercise circuit prescriptions (KIMCOACH pattern)
-    if (fmt === 'KIMCOACH') {
-      for (const block of blocks) {
-        for (const week of block.weeks || []) {
-          for (const day of week.days || []) {
-            const newExercises = [];
-            for (const ex of day.exercises || []) {
-              const split = _trySplitCircuitPrescription(ex);
-              if (split) {
-                newExercises.push(...split);
-              } else {
-                newExercises.push(ex);
-              }
+    // Fix 6: Split multi-exercise circuit prescriptions
+    // Runs on ALL formats — splits "Circuit- Ex1, Ex2, Ex3" with "2x8, 2x5, 2x10"
+    // into 3 separate exercises with matched prescriptions and shared supersetGroup.
+    // Only fires on exercises with commas in the name, so no false-positive risk.
+    for (const block of blocks) {
+      for (const week of block.weeks || []) {
+        for (const day of week.days || []) {
+          const newExercises = [];
+          for (const ex of day.exercises || []) {
+            const split = _trySplitCircuitPrescription(ex);
+            if (split) {
+              newExercises.push(...split);
+            } else {
+              newExercises.push(ex);
             }
-            day.exercises = newExercises;
           }
+          day.exercises = newExercises;
+        }
+      }
+    }
+
+    // Universal grouping detection — runs on every day, catches prefix/suffix patterns
+    // that format-specific parsers don't handle (A1/A2, 1a/1b, (A1)/(A2))
+    for (const block of blocks) {
+      if (!block.weeks) continue;
+      for (const week of block.weeks) {
+        if (!week.days) continue;
+        for (const day of week.days) {
+          _detectExerciseGroups(day);
         }
       }
     }
@@ -5236,6 +5436,10 @@ function parseWorkbook(wb){
             if (ex.loggedWeight == null) ex.loggedWeight = '';
             if (ex.lifterNote == null) ex.lifterNote = '';
             if (!('supersetGroup' in ex)) ex.supersetGroup = null;
+            // Clean internal properties from supersetGroup — UI reads only label + rounds
+            if (ex.supersetGroup && typeof ex.supersetGroup === 'object') {
+              ex.supersetGroup = { label: ex.supersetGroup.label, rounds: ex.supersetGroup.rounds || 1 };
+            }
           }
         }
       }
@@ -7399,14 +7603,47 @@ function parseCAutoSheet(sn, rows, ws) {
     if (!curDay) continue;
 
     // Detect superset/circuit grouping labels in column A or exercise column
-    if (_isSupersetLabel(colA) || _isSupersetLabel(exVal)) {
-      const matchText = _isSupersetLabel(colA) ? colA : exVal;
+    const _tagInColA = _isSupersetLabel(colA);
+    const _tagInExCol = !_tagInColA && _isSupersetLabel(exVal);
+    const _hasExData = _tagInColA && exVal && !_isSupersetLabel(exVal) &&
+      !SUB_SECTIONS.some(s => exVal.toLowerCase() === s);
+
+    if (_tagInColA && _hasExData) {
+      // PER-ROW TAG: colA has grouping label AND exercise column has real exercise data.
+      // This exercise IS a group member — do NOT skip it.
+      const tagKey = colA.toLowerCase().replace(/[\s:]+/g, '');
+      if (curSupersetGroup && curSupersetGroup._perRowTag === tagKey) {
+        // Same tag as previous row — extend existing group
+      } else {
+        // Start new per-row tag group
+        const roundsMatch = colA.match(/^(\d+)\s*rounds?$/i);
+        const rounds = roundsMatch ? parseInt(roundsMatch[1]) : 1;
+        const isCircuit = /circuit|giant/i.test(colA);
+        const label = rounds > 1 ? rounds + ' rounds' : isCircuit ? 'circuit' : 'superset';
+        curSupersetGroup = { label: label + '_' + curDay.exercises.length, rounds,
+          _maxExercises: 99, _count: 0, _perRowTag: tagKey };
+      }
+      // Fall through to exercise processing below (no continue)
+    } else if (_tagInColA || _tagInExCol) {
+      // STANDALONE HEADER: tag with no exercise data alongside
+      const matchText = _tagInColA ? colA : exVal;
       const roundsMatch = matchText.match(/^(\d+)\s*rounds?$/i);
       const rounds = roundsMatch ? parseInt(roundsMatch[1]) : 1;
       const isCircuit = /circuit|giant/i.test(matchText);
       const label = rounds > 1 ? rounds + ' rounds' : isCircuit ? 'circuit' : 'superset';
       curSupersetGroup = { label: label + '_' + curDay.exercises.length, rounds, startIdx: curDay.exercises.length, _maxExercises: isCircuit ? 6 : 2, _count: 0 };
       continue;
+    } else if (curSupersetGroup && curSupersetGroup._perRowTag) {
+      // Non-tagged row after a per-row tag group — end the group.
+      // If only 1 member, remove the group assignment (don't create group of 1).
+      if (curSupersetGroup._count < 2) {
+        for (let k = curDay.exercises.length - 1; k >= 0 && k >= curDay.exercises.length - curSupersetGroup._count; k--) {
+          if (curDay.exercises[k] && curDay.exercises[k].supersetGroup === curSupersetGroup) {
+            curDay.exercises[k].supersetGroup = null;
+          }
+        }
+      }
+      curSupersetGroup = null;
     }
 
     // Non-superset sub-section headers clear superset grouping
@@ -7418,7 +7655,7 @@ function parseCAutoSheet(sn, rows, ws) {
     if (!exVal) { curSupersetGroup = null; continue; }
 
     // Auto-clear superset after consuming expected number of exercises (default 2 for "Superset" labels)
-    if (curSupersetGroup && curSupersetGroup._count >= curSupersetGroup._maxExercises) {
+    if (curSupersetGroup && !curSupersetGroup._perRowTag && curSupersetGroup._count >= curSupersetGroup._maxExercises) {
       curSupersetGroup = null;
     }
 
