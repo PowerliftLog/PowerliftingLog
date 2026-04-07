@@ -18464,13 +18464,29 @@ function scoreKimCoachFormat(wb, negSignals) {
       return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
     }
 
-    // Hard reject: has week/phase tabs → FamilyB handles that
+    // Week/phase tabs: only defer to FamilyB if the tabs DON'T have KIMCOACH signatures.
+    // If the week tabs have "Sets X Reps @RPE" block headers, KIMCOACH should claim them.
     var weekTabs = wb.SheetNames.filter(function(s) {
       return /^(week|wk|phase)\s*\d/i.test(String(s).trim());
     });
     if (weekTabs.length >= 2) {
-      negative.push('2+ week/phase tabs — FamilyB handles this');
-      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+      // Check if any week tab has the KIMCOACH signature (≥2 block headers)
+      var weekTabsWithSignature = 0;
+      for (var wi = 0; wi < weekTabs.length; wi++) {
+        var wws = wb.Sheets[weekTabs[wi]];
+        if (!wws || !wws['!ref']) continue;
+        var wrows = XLSX.utils.sheet_to_json(wws, { header: 1, defval: null });
+        var wcount = 0;
+        for (var wri = 0; wri < wrows.length; wri++) {
+          if (wrows[wri] && wrows[wri][1] && String(wrows[wri][1]).trim() === 'Sets X Reps @RPE') wcount++;
+        }
+        if (wcount >= 2) weekTabsWithSignature++;
+      }
+      if (weekTabsWithSignature === 0) {
+        negative.push('2+ week/phase tabs without KIMCOACH signatures — FamilyB handles this');
+        return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+      }
+      // Week tabs DO have KIMCOACH signatures — continue scoring
     }
 
     // Count sheets that have ≥2 "Sets X Reps @RPE" header rows
