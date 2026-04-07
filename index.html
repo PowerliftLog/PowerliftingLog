@@ -10097,16 +10097,9 @@ async function downloadReportPdf(blockId) {
     const { jsPDF } = window.jspdf;
     // Reconstruct PDF from the raw data to get a blob for download
     const blob = new Blob([pdfData], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
     const safeName = displayBlockName(block.name).replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'training';
     const dateStr = new Date().toISOString().slice(0, 10);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safeName}-training-report-${dateStr}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    _downloadOrShare(blob, `${safeName}-training-report-${dateStr}.pdf`);
     closeExportModal();
     _showWarningToast('PDF saved ✓', 'success');
   } catch (err) {
@@ -10935,12 +10928,14 @@ function applyIntakeToProfile(intake) {
 function computeMergeWeeks(incomingBlocks, target) {
   const newWeeks = [];
   const skipped = [];
+  const updatedWeeks = []; // Existing weeks whose exercise structure should refresh
   const existingLabels = new Set(target.weeks.map(w => w.label));
 
   for (const inc of incomingBlocks) {
     for (const incomingWeek of (inc.weeks || [])) {
       if (existingLabels.has(incomingWeek.label)) {
-        // Label already exists — skip. Existing weeks are sacred.
+        // Label already exists — refresh exercise structure (logs untouched)
+        updatedWeeks.push(incomingWeek);
         skipped.push(incomingWeek.label);
       } else {
         // Net-new week — append
@@ -10948,7 +10943,7 @@ function computeMergeWeeks(incomingBlocks, target) {
       }
     }
   }
-  return { newWeeks, skipped };
+  return { newWeeks, skipped, updatedWeeks };
 }
 
 function mergeWeeksIntoBlock(incomingBlocks) {
@@ -10959,10 +10954,33 @@ function mergeWeeksIntoBlock(incomingBlocks) {
   // Fix: dedup incoming names BEFORE comparing against existing (already-deduped) block
   deduplicateExerciseNames(incomingBlocks);
 
-  const { newWeeks } = computeMergeWeeks(incomingBlocks, target);
+  const { newWeeks, updatedWeeks } = computeMergeWeeks(incomingBlocks, target);
+
+  // Refresh exercise structure for existing weeks (preserves logs — they're keyed separately)
+  for (const incWeek of updatedWeeks) {
+    const existingWeek = target.weeks.find(w => w.label === incWeek.label);
+    if (!existingWeek) continue;
+    for (const incDay of incWeek.days) {
+      const existingDay = existingWeek.days.find(d => d.name === incDay.name);
+      if (!existingDay) continue;
+      // Preserve user-added custom exercises before replacing
+      const customExercises = existingDay.exercises.filter(e => e.isCustom);
+      // Replace exercise structure with fresh parser output
+      existingDay.exercises = incDay.exercises;
+      // Re-add custom exercises that aren't already in the incoming list
+      for (const cex of customExercises) {
+        if (!existingDay.exercises.some(e => e.name === cex.name)) {
+          existingDay.exercises.push(cex);
+        }
+      }
+    }
+  }
 
   if (newWeeks.length === 0) {
-    // Nothing to add — shouldn't reach here (step 2 catches it), but be safe
+    // No new weeks but existing weeks may have been refreshed
+    deduplicateExerciseNames([target]);
+    autoRegisterCompLifts([target]);
+    saveBlocks(); saveNav(); saveLogs();
     setScreen('workout');
     return;
   }
@@ -12055,6 +12073,33 @@ function driveReportScoped() {
   if (bid) exportReportToDrive(bid);
 }
 
+// ── FILE DOWNLOAD HELPER ─────────────────────────────────────────────────────
+// iOS Capacitor webview: a.click() on blob URLs navigates the main frame instead
+// of downloading. Use Web Share API when available (Capacitor), fall back to
+// traditional a.click() on desktop/PWA.
+function _downloadOrShare(blob, fileName) {
+  // Web Share API with file support (iOS 15+, Capacitor webview)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], fileName, { type: blob.type });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: fileName }).catch(err => {
+        // User cancelled share — not an error
+        if (err.name !== 'AbortError') console.error('[Share]', err);
+      });
+      return;
+    }
+  }
+  // Fallback: traditional download link (works in desktop browsers)
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+}
+
 // ── BACKUP & SYNC MODAL ──────────────────────────────────────────────────────
 function openBackupModal() {
   const existing = document.getElementById('backup-modal-overlay');
@@ -12089,8 +12134,8 @@ function openBackupModal() {
         </div>
       </div>
       <div class="export-action-row">
-        <button class="export-action-btn" onclick="closeBackupModal();downloadBackup()" style="flex:1">Download</button>
-        <button class="export-action-btn export-drive-btn" onclick="closeBackupModal();triggerRestore()" style="flex:1">Restore</button>
+        <button class="export-action-btn" onclick="downloadBackup();closeBackupModal()" style="flex:1">Download</button>
+        <button class="export-action-btn export-drive-btn" onclick="triggerRestore();closeBackupModal()" style="flex:1">Restore</button>
       </div>
       <div id="backup-modal-last-time" class="export-card-desc" style="text-align:center;margin-top:var(--sp-4);font-size:var(--fs-sm);opacity:0.5"></div>
     </div>
@@ -13770,14 +13815,7 @@ function exportCSV() {
   if (!csv) { _showWarningToast('No logged workout data to export.'); return; }
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `unrack-training-history-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  _downloadOrShare(blob, `unrack-training-history-${new Date().toISOString().slice(0, 10)}.csv`);
 
   _showWarningToast('CSV exported \u2713','success');
 }
@@ -13807,14 +13845,7 @@ function downloadBackup() {
 
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `unrack-backup-${new Date().toISOString().slice(0, 16).replace(/:/g, '-')}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  _downloadOrShare(blob, `unrack-backup-${new Date().toISOString().slice(0, 16).replace(/:/g, '-')}.json`);
 
   // Update last backup display
   const _bkTs = new Date().toISOString();
@@ -13956,8 +13987,9 @@ function updateBackupTimestamp() {
   const el = document.getElementById('last-backup-time');
   if (!el) return;
   const ts = (_idbReady && _idbCache[LAST_BACKUP_KEY]!==undefined) ? _idbCache[LAST_BACKUP_KEY] : localStorage.getItem(LAST_BACKUP_KEY);
-  if (ts && !isNaN(Number(ts))) {
-    el.textContent = 'Last backed up: ' + _relativeTime(Number(ts));
+  const parsed = ts ? new Date(ts).getTime() : NaN;
+  if (!isNaN(parsed)) {
+    el.textContent = 'Last backed up: ' + _relativeTime(parsed);
     el.style.display = 'block';
   } else {
     el.textContent = '';
@@ -13973,12 +14005,7 @@ function downloadTemplate() {
   const byteArr = new Uint8Array(byteChars.length);
   for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
   const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'PowerliftPro_Template.xlsx';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+  _downloadOrShare(blob, 'PowerliftPro_Template.xlsx');
 }
 
 // ── STARTER TEMPLATES ────────────────────────────────────────────────────────
@@ -14204,13 +14231,7 @@ function downloadTemplateFile(templateKey) {
   var bytes = new Uint8Array(binary.length);
   for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   var blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = meta.name + '.xlsx';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  _downloadOrShare(blob, meta.name + '.xlsx');
 }
 
 async function saveTemplateToDrive(templateKey) {

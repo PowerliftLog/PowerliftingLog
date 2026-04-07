@@ -4956,6 +4956,33 @@ function _trySplitCircuitPrescription(ex) {
     }
   }
 
+  // Match Path B extracted names back to full names from the name field.
+  // e.g., prescription has "Lunge 2x12" but name field has "Walking DB Lunge" — use the full name.
+  if (results.length >= 2 && nameParts.length >= 2) {
+    const usedNameParts = new Set();
+    for (const r of results) {
+      const rLower = r.name.toLowerCase();
+      let bestIdx = -1;
+      let bestLen = 0;
+      for (let i = 0; i < nameParts.length; i++) {
+        if (usedNameParts.has(i)) continue;
+        const np = nameParts[i].trim();
+        const npLower = np.toLowerCase();
+        // Full name part contains the extracted name as a substring (or exact match)
+        if (npLower === rLower || npLower.endsWith(rLower) || npLower.includes(' ' + rLower)) {
+          if (np.length > bestLen) {
+            bestIdx = i;
+            bestLen = np.length;
+          }
+        }
+      }
+      if (bestIdx >= 0) {
+        r.name = nameParts[bestIdx].trim();
+        usedNameParts.add(bestIdx);
+      }
+    }
+  }
+
   return results.length >= 2 ? results : null;
 }
 
