@@ -1708,10 +1708,12 @@ function scoreE(wb, negSignals = null) {
 
     // E-weekText: Week N + SxR without Sets header
     if (score < 0.6) {
-      let hasWeekLabel = false, hasSxR = false, hasSetsColHeader = false, sxrCount = 0, hasBFormatMarker = false, hasAbsoluteWeightAt = false;
+      let hasWeekLabel = false, hasWeekInColA = false, hasSxR = false, hasSetsColHeader = false, sxrCount = 0, hasBFormatMarker = false, hasAbsoluteWeightAt = false;
       let hasDayLabels = false; // "Day N" labels indicate structured day grouping
       for (let i = 0; i < Math.min(30, rows.length); i++) {
         const row = rows[i]; if (!row) continue;
+        // Track Week N specifically in col A (vertical layout marker)
+        if (row[0] != null && /^Week\s*\d/i.test(String(row[0]).trim())) hasWeekInColA = true;
         for (let c = 0; c < Math.min(row.length, 25); c++) {
           const val = row[c]; if (val == null) continue;
           const str = String(val).trim();
@@ -1724,7 +1726,11 @@ function scoreE(wb, negSignals = null) {
           if (/^\d+\s*x\s*\d+\s*@\s*\d{3,}/.test(str)) hasAbsoluteWeightAt = true;
         }
       }
-      if ((hasWeekLabel && hasSxR && !hasSetsColHeader && !hasBFormatMarker && !hasAbsoluteWeightAt) || (sxrCount >= 3 && !hasSetsColHeader && !hasBFormatMarker && !hasAbsoluteWeightAt)) {
+      // Standard check: Week N + SxR without B-format markers
+      // Also allow when Week N is in col A (vertical layout — hasAbsoluteWeightAt shouldn't block this)
+      if ((hasWeekLabel && hasSxR && !hasSetsColHeader && !hasBFormatMarker && !hasAbsoluteWeightAt) ||
+          (sxrCount >= 3 && !hasSetsColHeader && !hasBFormatMarker && !hasAbsoluteWeightAt) ||
+          (hasWeekInColA && hasSxR && !hasSetsColHeader && !hasBFormatMarker)) {
         if (_eHorizWeeks && !hasDayLabels) {
           negative.push('horizontal Week N labels in same row (→F)');
         } else {
@@ -2025,27 +2031,27 @@ function scoreH(wb, negSignals = null) {
   }
   if (score === 0) {
     for (const sn of wb.SheetNames) {
-      if (/hatfield/i.test(sn)) {
-        const ws = wb.Sheets[sn];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
-        for (let i = 0; i < Math.min(6, rows.length); i++) {
-          if ((rows[i]||[]).some(c => c && /one\s*rep\s*max/i.test(String(c)))) {
-            score = 0.9; matched.push('Hatfield sheet + One Rep Max');
-            try {
-              let numericCount = 0;
-              for (let ri = 1; ri < Math.min(5, rows.length); ri++) {
-                for (const c of (rows[ri]||[])) {
-                  const n = Number(c);
-                  if (!isNaN(n) && n > 50) numericCount++;
-                }
+      // Original: requires "hatfield" in sheet name; fallback: check any sheet for One Rep Max content
+      if (!/hatfield/i.test(sn) && wb.SheetNames.some(s => /hatfield/i.test(s))) continue;
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      for (let i = 0; i < Math.min(6, rows.length); i++) {
+        if ((rows[i]||[]).some(c => c && /one\s*rep\s*max/i.test(String(c)))) {
+          score = 0.9; matched.push('Hatfield: One Rep Max' + (/hatfield/i.test(sn) ? '' : ' (hatfield tab renamed)'));
+          try {
+            let numericCount = 0;
+            for (let ri = 1; ri < Math.min(5, rows.length); ri++) {
+              for (const c of (rows[ri]||[])) {
+                const n = Number(c);
+                if (!isNaN(n) && n > 50) numericCount++;
               }
-              if (numericCount < 3) score = 0.6;
-            } catch(e) { /* probe failure: keep original score */ }
-            break;
-          }
+            }
+            if (numericCount < 3) score = 0.6;
+          } catch(e) { /* probe failure: keep original score */ }
+          break;
         }
-        if (score > 0) break;
       }
+      if (score > 0) break;
     }
   }
   if (score === 0) {
@@ -2257,7 +2263,8 @@ function scoreL(wb, negSignals = null) {
     try {
       const snLower = wb.SheetNames.map(s => s.toLowerCase());
       const hasInputs = snLower.some(s => s === 'inputs');
-      const hasWeekSheets = snLower.filter(s => /^week\s*\d/i.test(s)).length >= 2;
+      // Accept any common week/phase/block numbering pattern (Wk, W1, Block, etc.) — same bug class as KIMCOACH fix
+      const hasWeekSheets = snLower.filter(s => /^(week|wk|block)\s*\d/i.test(s) || /^w\d/i.test(s)).length >= 2;
       const hasPhaseSheets = snLower.filter(s => /^phase\s*\d/i.test(s)).length >= 2;
       const hasBenchProgram = snLower.some(s => s === 'bench program');
       const hasStrengthSheet = snLower.some(s => /^strength\s*(hypertrophy|control|power)/i.test(s));
@@ -2275,6 +2282,23 @@ function scoreL(wb, negSignals = null) {
         const a = String((rows[i]||[])[0]||'').toLowerCase();
         if (/^(monday|tuesday|thursday|friday)$/.test(a)) { score = 0.8; matched.push('Strength Hypertrophy/Control/Power sheets + day names'); break; }
       }
+    }
+  }
+
+  // Content fallback for Candito Linear when Strength* sheets are renamed:
+  // Any sheet containing day-of-week names in col A + Candito-style Heavy/Hypertrophy/Strength section headers
+  if (score === 0) {
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      if (!rows || rows.length < 10) continue;
+      let hasDayName = false, hasSectionHeader = false;
+      for (const row of rows) {
+        const a = String((row||[])[0]||'').trim();
+        if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(a)) hasDayName = true;
+        if (/^(heavy|hypertrophy|strength)\s/i.test(a) && (row||[]).some(c => /^set\s*\d/i.test(String(c||'')))) hasSectionHeader = true;
+      }
+      if (hasDayName && hasSectionHeader) { score = 0.8; matched.push('Candito Linear content: day names + Heavy/Hypertrophy/Strength sections (tabs renamed)'); break; }
     }
   }
 
@@ -2348,6 +2372,18 @@ function scoreN(wb, negSignals = null) {
     return { id, score: 0.5, signals: { matched: ['Lift+Setup sheets'], missing: ['Week 1 in col E'], negative } };
   }
 
+  // Greyskull LP content fallback — Lift/Setup sheets may be renamed
+  // Signature: any sheet with "Week N" header in row[0][4] and "Day" in row[1][4]
+  for (let si = 0; si < wb.SheetNames.length; si++) {
+    const ws = wb.Sheets[wb.SheetNames[si]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    if (!rows || rows.length < 5) continue;
+    if (rows[0] && String(rows[0][4]||'').match(/week\s*1/i) &&
+        rows[1] && String(rows[1][4]||'').toLowerCase().includes('day')) {
+      return { id, score: 0.9, signals: { matched: ['Greyskull content: Week 1 col E + Day row (tabs renamed)'], missing, negative } };
+    }
+  }
+
   // Ivysaur
   if (names.some(s => s === 'template')) {
     const ws = wb.Sheets[wb.SheetNames[names.indexOf('template')]];
@@ -2356,6 +2392,18 @@ function scoreN(wb, negSignals = null) {
       const txt = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
       if (txt.includes('4-4-8') || txt.includes('ivysaur') || txt.includes('4.4.8')) {
         return { id, score: 0.95, signals: { matched: ['Ivysaur: Template sheet + 4-4-8/ivysaur text'], missing, negative } };
+      }
+    }
+  }
+
+  // Ivysaur content fallback — Template sheet may be renamed
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const txt = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+      if (txt.includes('4-4-8') || txt.includes('ivysaur') || txt.includes('4.4.8')) {
+        return { id, score: 0.95, signals: { matched: ['Ivysaur content (template tab renamed)'], missing, negative } };
       }
     }
   }
@@ -2379,13 +2427,33 @@ function scoreO(wb, negSignals = null) {
   const matched = [], missing = [], negative = [];
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
 
-  if (!names.includes('training')) {
-    missing.push('Training sheet');
-    return { id, score: 0, signals: { matched, missing, negative } };
+  let trainingWs = null;
+  if (names.includes('training')) {
+    trainingWs = wb.Sheets[wb.SheetNames[names.indexOf('training')]];
+    matched.push('Training sheet');
+  } else {
+    // Content fallback: look for sets/reps/intensity/load headers at row 8 + SQ/BN prefixes
+    for (let si = 0; si < wb.SheetNames.length; si++) {
+      const ws = wb.Sheets[wb.SheetNames[si]];
+      if (!ws) continue;
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      if (!rows || rows.length < 20) continue;
+      const r8 = rows[8] || [];
+      const h4 = String(r8[4]||'').trim().toLowerCase();
+      const h5 = String(r8[5]||'').trim().toLowerCase();
+      const h6 = String(r8[6]||'').trim().toLowerCase();
+      const h7 = String(r8[7]||'').trim().toLowerCase();
+      if (h4 === 'sets' && h5 === 'reps' && h6 === 'intensity' && h7 === 'load') {
+        trainingWs = ws; matched.push('TSA content signatures (Training sheet renamed)'); break;
+      }
+    }
+    if (!trainingWs) {
+      missing.push('Training sheet');
+      return { id, score: 0, signals: { matched, missing, negative } };
+    }
   }
-  matched.push('Training sheet');
 
-  const ws = wb.Sheets[wb.SheetNames[names.indexOf('training')]];
+  const ws = trainingWs;
   const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
   if (!rows || rows.length < 20) {
     missing.push('Training sheet has < 20 rows');
@@ -2431,12 +2499,27 @@ function scoreP(wb, negSignals = null) {
   const id = 'P';
   const matched = [], missing = [], negative = [];
 
-  const mainSheet = _pGetSheet(wb, 'Main');
+  let mainSheet = _pGetSheet(wb, 'Main');
   const inputsSheet = _pGetSheet(wb, 'Inputs');
 
+  if (!mainSheet) {
+    // Content fallback: find a sheet with "Date" and "Exercise" headers in first 5 rows
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      if (!ws) continue;
+      const data = _pSheetToArray(ws, 5);
+      for (let r = 0; r < Math.min(5, data.length); r++) {
+        const row = data[r]; if (!row) continue;
+        if (row[0] === 'Date' && row[1] === 'Exercise') { mainSheet = ws; break; }
+      }
+      if (mainSheet) break;
+    }
+  }
+
   if (!mainSheet) { missing.push('Main sheet'); return { id, score: 0, signals: { matched, missing, negative } }; }
-  if (!inputsSheet) { missing.push('Inputs sheet'); return { id, score: 0.1, signals: { matched, missing, negative } }; }
-  matched.push('Main + Inputs sheets');
+  // Inputs sheet is optional — don't hard-reject when tabs are renamed
+  if (inputsSheet) matched.push('Main + Inputs sheets');
+  else { matched.push('Main sheet (Inputs renamed/missing)'); missing.push('Inputs sheet (optional)'); }
 
   const mainData = _pSheetToArray(mainSheet, 20);
   let headerRow = -1;
@@ -2479,14 +2562,14 @@ function scoreQ(wb, negSignals = null) {
   const id = 'Q';
   const matched = [], missing = [], negative = [];
 
-  // V1
+  // V1 — check for Exercise/Prescription headers in any sheet (bridge name not required)
   for (const sheetName of wb.SheetNames) {
-    if (!sheetName.toLowerCase().includes('bridge')) continue;
     const ws = wb.Sheets[sheetName];
     if (!ws) continue;
     const cell1 = _qGetCell(ws, 1, 1), cell2 = _qGetCell(ws, 1, 2);
     if (cell1 === 'Exercise' && cell2 === 'Prescription') {
-      return { id, score: 0.95, signals: { matched: ['Q-v1: Bridge sheet + Exercise/Prescription headers'], missing, negative } };
+      const label = sheetName.toLowerCase().includes('bridge') ? 'Q-v1: Bridge sheet + Exercise/Prescription headers' : 'Q-v1: Exercise/Prescription headers (bridge tab renamed)';
+      return { id, score: 0.95, signals: { matched: [label], missing, negative } };
     }
   }
 
@@ -2500,11 +2583,26 @@ function scoreQ(wb, negSignals = null) {
     if (foundWeek || foundPattern) return { id, score: 0.5, signals: { matched: ['Q-v2: The Bridge 1.0 partial'], missing, negative } };
   }
 
-  // V3
+  // V3 — named sheets
   const weekPattern = /^Week\s+\d+\s*-\s*\w+\s*Stress/i;
   const weekCount = wb.SheetNames.filter(sn => weekPattern.test(sn)).length;
   if (weekCount >= 3) return { id, score: 0.95, signals: { matched: ['Q-v3: 3+ Week N - *Stress sheets'], missing, negative } };
   if (weekCount > 0) return { id, score: 0.3, signals: { matched: [`Q-v3: ${weekCount} stress sheet(s)`], missing: ['need 3+'], negative } };
+
+  // V3 — content fallback: Strength Training in A1 + Assigned RPE in row 3
+  {
+    let v3Count = 0;
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      if (!ws) continue;
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      if (!rows || rows.length < 3) continue;
+      const r0 = String((rows[0]||[])[0]||'').trim();
+      const r2joined = (rows[2]||[]).map(c => String(c||'')).join('|').toLowerCase();
+      if (r0 === 'Strength Training' && r2joined.includes('assigned rpe')) v3Count++;
+    }
+    if (v3Count >= 3) return { id, score: 0.9, signals: { matched: [`Q-v3: ${v3Count} sheets with Strength Training + Assigned RPE (tabs renamed)`], missing, negative } };
+  }
 
   missing.push('none of Q sub-format patterns (v1 Bridge/v2 Bridge 1.0/v3 Stress sheets)');
   return { id, score: 0, signals: { matched, missing, negative } };
@@ -2516,7 +2614,27 @@ function scoreR(wb, negSignals = null) {
   const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const daySheets = wb.SheetNames.filter(name => dayNames.includes(name));
 
-  if (daySheets.length < 3) { missing.push('3+ day-of-week sheet names'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  if (daySheets.length < 3) {
+    // Content fallback: look for PHUL structure (Week in A0, Target/Set(s)/Rep(s) labels) in any sheet
+    let phulSheets = [];
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      if (!ws) continue;
+      const A0 = _rGetCell(ws, 0, 0);
+      if (A0 !== 'Week') continue;
+      let hasTarget = false, hasSetLabel = false, hasRepLabel = false;
+      for (let r = 0; r < 10; r++) {
+        const cellA = _rGetCell(ws, r, 0);
+        if (cellA === 'Target') hasTarget = true;
+        if (cellA === 'Set(s)') hasSetLabel = true;
+        if (cellA === 'Rep(s)') hasRepLabel = true;
+      }
+      if (hasTarget && hasSetLabel && hasRepLabel) phulSheets.push(sn);
+    }
+    if (phulSheets.length < 3) { missing.push('3+ day-of-week sheet names'); return { id, score: 0, signals: { matched, missing, negative } }; }
+    matched.push(`${phulSheets.length} PHUL-content sheets (day tabs renamed)`);
+    return { id, score: 0.85, signals: { matched, missing, negative } };
+  }
   matched.push(`${daySheets.length} day-of-week sheets`);
 
   const sheet = wb.Sheets[daySheets[0]];
@@ -2558,10 +2676,35 @@ function scoreS(wb, negSignals = null) {
   const id = 'S';
   const matched = [], missing = [], negative = [];
 
-  if (!wb.SheetNames.includes('Inputs')) { missing.push('Inputs sheet'); return { id, score: 0, signals: { matched, missing, negative } }; }
-  matched.push('Inputs sheet');
+  const weekLikePat = /^(week|wk|phase|block)\s*\d/i;
+  if (!wb.SheetNames.includes('Inputs')) {
+    // Content fallback: look for PHAT signatures (Set Scheme + section headers) in any sheet
+    let foundPhatContent = false;
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      if (!ws) continue;
+      let hasSetScheme = false;
+      for (let row = 1; row <= 3; row++) {
+        const cell = ws[`C${row}`];
+        if (cell && cell.v && typeof cell.v === 'string' && cell.v.includes('Set Scheme')) { hasSetScheme = true; break; }
+      }
+      if (!hasSetScheme) continue;
+      const sectionPattern = /^\d+:\s+.*(Power|HT|Hypertrophy)/;
+      for (const cellRef in ws) {
+        if (cellRef.startsWith('A') && ws[cellRef] && ws[cellRef].v && sectionPattern.test(ws[cellRef].v)) {
+          foundPhatContent = true; break;
+        }
+      }
+      if (foundPhatContent) break;
+    }
+    if (!foundPhatContent) { missing.push('Inputs sheet'); return { id, score: 0, signals: { matched, missing, negative } }; }
+    // PHAT content confirmed by cell content — return early with high score
+    return { id, score: 0.9, signals: { matched: ['PHAT content signatures (Inputs+Week tabs renamed)'], missing, negative } };
+  } else {
+    matched.push('Inputs sheet');
+  }
 
-  const weekSheets = wb.SheetNames.filter(name => /^Week\s+\d+/.test(name));
+  const weekSheets = wb.SheetNames.filter(name => /^Week\s+\d+/.test(name) || weekLikePat.test(name));
   if (weekSheets.length === 0) { missing.push('Week N sheets'); return { id, score: 0.1, signals: { matched, missing, negative } }; }
   matched.push(`${weekSheets.length} Week N sheet(s)`);
 
@@ -2600,15 +2743,42 @@ function scoreT(wb, negSignals = null) {
   const matched = [], missing = [], negative = [];
   const sheets = wb.SheetNames;
 
+  // Accept any common numbering pattern (Wk, W1, Phase, Block) in addition to exact "Week N"
+  const weekLikePattern = /^(week|wk|phase|block)\s*\d+$|^w\d+$/i;
   const weekSheetCount = sheets.filter(s => /^Week \d+$/.test(s)).length;
+  const weekLikeCount = sheets.filter(s => weekLikePattern.test(s)).length;
   const hasMetaSheet = sheets.includes('General Overview') || sheets.includes('Exercise Table');
 
-  if (weekSheetCount < 3) { missing.push('3+ Week N sheets (exact "Week N" format)'); return { id, score: 0, signals: { matched, missing, negative } }; }
-  matched.push(`${weekSheetCount} Week N sheets`);
-  if (!hasMetaSheet) { missing.push('General Overview or Exercise Table sheet'); return { id, score: 0.2, signals: { matched, missing, negative } }; }
-  matched.push('General Overview / Exercise Table sheet');
+  const effectiveWeekCount = Math.max(weekSheetCount, weekLikeCount);
+  if (effectiveWeekCount < 3) { missing.push('3+ week-like sheets'); return { id, score: 0, signals: { matched, missing, negative } }; }
+  matched.push(`${effectiveWeekCount} week-like sheets`);
 
-  const firstWeekSheet = sheets.find(s => /^Week \d+$/.test(s));
+  // When meta sheet missing, check for T content signatures in any week-like sheet
+  if (!hasMetaSheet) {
+    let foundTContent = false;
+    for (const s of sheets) {
+      if (!weekLikePattern.test(s)) continue;
+      const ws = wb.Sheets[s];
+      if (!ws) continue;
+      const r4A = ws['A4'], r1A = ws['A1'];
+      const headerRow = (r4A && r4A.v === 'Day') ? 4 : (r1A && r1A.v === 'Day') ? 1 : null;
+      if (!headerRow) continue;
+      const cols = {};
+      for (const col of ['A','B','C','D','E']) {
+        const cell = ws[`${col}${headerRow}`];
+        if (cell) cols[col] = (cell.v instanceof Date) ? (cell.w || String(cell.v)) : cell.v;
+      }
+      if (cols['A'] === 'Day' && cols['B'] === 'Muscle Group' && cols['C'] === 'Exercise') {
+        foundTContent = true; break;
+      }
+    }
+    if (!foundTContent) { missing.push('General Overview or Exercise Table sheet'); return { id, score: 0.2, signals: { matched, missing, negative } }; }
+    matched.push('Day/Muscle Group/Exercise headers (T content — meta sheet renamed)');
+  } else {
+    matched.push('General Overview / Exercise Table sheet');
+  }
+
+  const firstWeekSheet = sheets.find(s => /^Week \d+$/.test(s)) || sheets.find(s => weekLikePattern.test(s));
   const ws = wb.Sheets[firstWeekSheet];
   if (!ws) return { id, score: 0.3, signals: { matched, missing, negative } };
 
@@ -6802,7 +6972,7 @@ function parseE_weekText(wb) {
     }
 
     for (const ws of deduped) {
-      const days = _eParseWeekTextDays(rows, ws.startRow, ws.endRow, sn);
+      const days = _eParseWeekTextDays(rows, ws.startRow, ws.endRow, sn, wb._plFilename || '');
       if (days.length > 0) {
         allWeeks.push({ label: `Week ${ws.weekNum}`, days });
         if (!programName) programName = sn;
@@ -6832,7 +7002,7 @@ function parseE_weekText(wb) {
   }];
 }
 
-function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
+function _eParseWeekTextDays(rows, startRow, endRow, sheetName, filename) {
   // Check for horizontal Day N labels
   const dayColumns = [];
   for (let i = startRow; i < Math.min(startRow + 4, endRow); i++) {
@@ -6989,7 +7159,8 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
   // Now with empty-row day boundary detection
   const days = [];
   let currentDayExercises = [];
-  let exerciseName = sheetName || 'Exercise';
+  // Use sheetName only if it has 2+ consecutive letters (otherwise short names like "W1" fail validation)
+  let exerciseName = (/[a-zA-Z]{2,}/.test(sheetName || '') ? sheetName : null) || 'Exercise';
   let sawContent = false;
 
   // Try to find an explicit exercise name in header area
@@ -7000,6 +7171,14 @@ function _eParseWeekTextDays(rows, startRow, endRow, sheetName) {
       const str = String(val).trim();
       if (/^(Back Squat|Front Squat|Squat|Bench|Deadlift|Press)/i.test(str)) { exerciseName = str; break; }
     }
+  }
+  // If no specific name found and still using generic default, try filename
+  if (exerciseName === 'Exercise' && filename) {
+    const fn = filename.toLowerCase();
+    if (/deadlift/.test(fn)) exerciseName = 'Deadlift';
+    else if (/squat/.test(fn)) exerciseName = 'Squat';
+    else if (/bench/.test(fn)) exerciseName = 'Bench Press';
+    else if (/press|ohp/.test(fn)) exerciseName = 'Overhead Press';
   }
 
   for (let r = startRow; r < endRow; r++) {
@@ -9593,16 +9772,16 @@ function parseSets(pres){
   if(r){ const sets=[{reps:parseInt(r[1]),rpe:parseFloat(r[2])}]; _parseSetsCache.set(pres,sets); return sets; }
   // Rep-range + RPE range: "2x8-12 @ 7-8" or "2x12-15 @ 7-8"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*[-–]\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*$/);
-  if(r){ const n=parseInt(r[1]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps:r[2]+'-'+r[3],rpe:r[4]+'-'+r[5],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  if(r){ const n=parseInt(r[1]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps:r[2]+'-'+r[3],rpe:r[4]+'-'+r[5]}); _parseSetsCache.set(pres,sets); return sets; }
   // Rep-range + single RPE: "2x8-12 @ 7" or "2x8-12 @ 8"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*[-–]\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
-  if(r){ const n=parseInt(r[1]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps:r[2]+'-'+r[3],rpe:r[4],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  if(r){ const n=parseInt(r[1]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps:r[2]+'-'+r[3],rpe:r[4]}); _parseSetsCache.set(pres,sets); return sets; }
   // RPE range: "2x12 @ 7-8" or "3x5 @ 6-7"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*$/);
-  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps,rpe:r[3]+'-'+r[4],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps,rpe:r[3]+'-'+r[4]}); _parseSetsCache.set(pres,sets); return sets; }
   // Per-set RPE: "3x8 @ 7/8/9"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)+)\s*$/);
-  if(r){ const rpeVals=r[3].split('/'),n=parseInt(r[1]),reps=parseInt(r[2]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps,rpe:rpeVals[i]||rpeVals[rpeVals.length-1],isRpe:true}); _parseSetsCache.set(pres,sets); return sets; }
+  if(r){ const rpeVals=r[3].split('/'),n=parseInt(r[1]),reps=parseInt(r[2]); const sets=[]; for(let i=0;i<n;i++) sets.push({reps,rpe:rpeVals[i]||rpeVals[rpeVals.length-1]}); _parseSetsCache.set(pres,sets); return sets; }
   // NxM @bare number (no keyword, treat as RPE)  e.g. "2x5@8"
   r=pres.match(/^(\d+)\s*x\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*$/);
   if(r){ const n=parseInt(r[1]),reps=parseInt(r[2]),rpe=parseFloat(r[3]); const sets=Array.from({length:n},()=>({reps,rpe})); _parseSetsCache.set(pres,sets); return sets; }
@@ -10932,6 +11111,11 @@ function parseCoagPrescription(text) {
   const m3 = str.match(/(\d+)\s+sets?\s+of\s+(\d+)/);
   if (m3) return { sets: parseInt(m3[1]), reps: parseInt(m3[2]) };
 
+  // Standard SxR notation fallback — "3x5", "3x5 @ 315", "4x8 @ RPE 7-8", etc.
+  // The Coan parser uses the weight from col C regardless, so any SxR notation is valid here.
+  const m4 = str.match(/(\d+)\s*[x×]\s*(\d+)/);
+  if (m4) return { sets: parseInt(m4[1]), reps: parseInt(m4[2]) };
+
   return { sets: null, reps: null };
 }
 
@@ -11209,9 +11393,13 @@ function parseH_hatfield(wb) {
 }
 
 function parseH_hatfieldSheet(sn, ws) {
-  if (!/hatfield/i.test(sn)) return null;
-
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  // Accept sheet if named "hatfield" OR if it has One Rep Max content (tab renamed)
+  const hasHatfieldName = /hatfield/i.test(sn);
+  if (!hasHatfieldName) {
+    const hasOnerm = rows.slice(0, 6).some(r => (r||[]).some(c => c && /one\s*rep\s*max/i.test(String(c))));
+    if (!hasOnerm) return null;
+  }
   if (rows.length < 50) return null;
 
   // Extract maxes from C4, C5, C6 (row 3, 4, 5 in 0-indexed)
@@ -11540,6 +11728,9 @@ function parseL(wb) {
 
 function _classifyCandito(wb) {
   const snLower = wb.SheetNames.map(s => s.toLowerCase());
+  const weekLikePat = /^(week|wk|phase|block)\s*\d/i;
+
+  // ── Named sheet paths (original logic) ──────────────────────────────────────
   if (snLower.some(s => s === 'bench program')) {
     const ws = wb.Sheets[wb.SheetNames.find(s => s.toLowerCase() === 'bench program')];
     const cell = ws['A12'];
@@ -11548,7 +11739,22 @@ function _classifyCandito(wb) {
       if (b16 && b16.f && /SWITCH/i.test(b16.f)) return 'advanced_bench';
     }
   }
-  if (snLower.some(s => /^phase\s*\d/.test(s))) return 'advanced_deadlift';
+  if (snLower.some(s => /^phase\s*\d/.test(s))) {
+    // Only classify as advanced_deadlift when Phase N tabs also have deadlift-specific content
+    let hasDeadliftContent = false;
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      if (!rows) continue;
+      for (let i = 0; i < Math.min(25, rows.length); i++) {
+        const b = String((rows[i]||[])[1]||'').toLowerCase();
+        if (b.includes('close variation') || b.includes('deadlift goal')) { hasDeadliftContent = true; break; }
+      }
+      if (hasDeadliftContent) break;
+    }
+    if (hasDeadliftContent) return 'advanced_deadlift';
+    // Fall through to other checks if no deadlift content found
+  }
   if (snLower.includes('inputs') && snLower.some(s => /^week\s*\d/.test(s))) {
     const weekSn = wb.SheetNames.find(s => /^week\s*1$/i.test(s));
     if (weekSn) {
@@ -11577,6 +11783,80 @@ function _classifyCandito(wb) {
       break;
     }
   }
+
+  // ── Content-based fallbacks (for renamed tabs) ───────────────────────────────
+  // advanced_bench: any sheet with A12=numeric AND B16 has SWITCH formula
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    if (!ws) continue;
+    const cell = ws['A12'];
+    if (cell && typeof cell.v === 'number') {
+      const b16 = ws['B16'];
+      if (b16 && b16.f && /SWITCH/i.test(b16.f)) return 'advanced_bench';
+    }
+  }
+
+  // linear: any sheet with day-of-week names in col A + Heavy/Hypertrophy section headers
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows || rows.length < 10) continue;
+    let hasDayName = false, hasSectionHeader = false;
+    for (const row of rows) {
+      const a = String((row||[])[0]||'').trim();
+      if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(a)) hasDayName = true;
+      if (/^(heavy|hypertrophy|strength)\s/i.test(a) && (row||[]).some(c => /^set\s*\d/i.test(String(c||'')))) hasSectionHeader = true;
+    }
+    if (hasDayName && hasSectionHeader) return 'linear';
+    // simple day-names only check
+    if (hasDayName && rows.length > 15) return 'linear';
+  }
+
+  // bench_hybrid: any week-like sheet with RPE in first 5 rows
+  const weekLikeSheets = wb.SheetNames.filter(s => weekLikePat.test(s) || /^w\d/i.test(s));
+  for (const sn of weekLikeSheets) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      if (row.some(c => String(c || '').toLowerCase() === 'rpe')) return 'bench_hybrid';
+    }
+    // no break — check all week-like sheets
+  }
+
+  // advanced_squat: any sheet with "current squat max" or "Day N (" pattern
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows) continue;
+    for (let i = 0; i < Math.min(20, rows.length); i++) {
+      const a = String((rows[i]||[])[0]||'').toLowerCase().trim();
+      if (a === 'current squat max') return 'advanced_squat';
+    }
+  }
+  for (const sn of weekLikeSheets) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows) continue;
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      const a = String((rows[i]||[])[0]||'').trim();
+      if (/^day\s*\d+\s*\(/i.test(a)) return 'advanced_squat';
+    }
+    break;
+  }
+
+  // advanced_deadlift: any sheet with "close variation" or "deadlift goal" text
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows) continue;
+    for (let i = 0; i < Math.min(25, rows.length); i++) {
+      const b = String((rows[i]||[])[1]||'').toLowerCase();
+      if (b.includes('close variation') || b.includes('deadlift goal')) return 'advanced_deadlift';
+    }
+  }
+
   return 'standard';
 }
 
@@ -11603,36 +11883,42 @@ function _lParseReps(text) {
 // SUB-PARSER: Standard (candito_6week)
 function _parseL_standard(wb) {
   const inputsSn = wb.SheetNames.find(s => /^inputs$/i.test(s));
-  if (!inputsSn) return [];
-  const inputsWs = wb.Sheets[inputsSn];
+  // Inputs sheet is optional — skip maxes extraction if not found (renamed tabs scenario)
+  const inputsWs = inputsSn ? wb.Sheets[inputsSn] : null;
   const maxes = {};
   let programName = '';
-  const inputRows = XLSX.utils.sheet_to_json(inputsWs, { header: 1, defval: null });
-  for (let i = 0; i < Math.min(25, inputRows.length); i++) {
-    const row = inputRows[i];
-    if (!row) continue;
-    const a = String(row[0] || '').toLowerCase().trim();
-    const b = row[1];
-    if (/candito.*6\s*week\s*strength/i.test(String(row[0] || '') + ' ' + String(row[1] || '') + ' ' + String(row[2] || '')))
-      programName = 'Candito 6 Week Strength';
-    if (/candito.*9\s*week\s*squat/i.test(String(row[0] || '') + ' ' + String(row[1] || '') + ' ' + String(row[2] || '')))
-      programName = 'Candito 9 Week Squat';
-    if (a === 'bench press' && typeof b === 'number') maxes.bench = b;
-    if (a === 'squat' && typeof b === 'number') maxes.squat = b;
-    if (a === 'deadlift' && typeof b === 'number') maxes.deadlift = b;
-    if (a === 'current squat max' && typeof b === 'number') maxes.squat = b;
-    if (a === 'goal max' && typeof b === 'number') maxes['squat_goal'] = b;
+  if (inputsWs) {
+    const inputRows = XLSX.utils.sheet_to_json(inputsWs, { header: 1, defval: null });
+    for (let i = 0; i < Math.min(25, inputRows.length); i++) {
+      const row = inputRows[i];
+      if (!row) continue;
+      const a = String(row[0] || '').toLowerCase().trim();
+      const b = row[1];
+      if (/candito.*6\s*week\s*strength/i.test(String(row[0] || '') + ' ' + String(row[1] || '') + ' ' + String(row[2] || '')))
+        programName = 'Candito 6 Week Strength';
+      if (/candito.*9\s*week\s*squat/i.test(String(row[0] || '') + ' ' + String(row[1] || '') + ' ' + String(row[2] || '')))
+        programName = 'Candito 9 Week Squat';
+      if (a === 'bench press' && typeof b === 'number') maxes.bench = b;
+      if (a === 'squat' && typeof b === 'number') maxes.squat = b;
+      if (a === 'deadlift' && typeof b === 'number') maxes.deadlift = b;
+      if (a === 'current squat max' && typeof b === 'number') maxes.squat = b;
+      if (a === 'goal max' && typeof b === 'number') maxes['squat_goal'] = b;
+    }
   }
   if (!programName) programName = 'Candito Program';
 
-  const weekSheets = wb.SheetNames.filter(s => /^week\s*\d+/i.test(s));
-  weekSheets.sort((a, b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+  // Accept any common numbered tab pattern; exclude the inputs sheet if still named "inputs"
+  let weekSheets = wb.SheetNames.filter(s => /^week\s*\d+/i.test(s));
+  if (weekSheets.length === 0) {
+    weekSheets = wb.SheetNames.filter(s => /^(wk|phase|block)\s*\d+/i.test(s) || /^w\d+$/i.test(s));
+  }
+  weekSheets.sort((a, b) => parseInt((a.match(/\d+/)||['0'])[0]) - parseInt((b.match(/\d+/)||['0'])[0]));
 
   const weeks = [];
   for (const sn of weekSheets) {
     const ws = wb.Sheets[sn];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-    const weekNum = parseInt(sn.match(/\d+/)[0]);
+    const weekNum = parseInt((sn.match(/\d+/)||['0'])[0]);
     const week = { label: `Week ${weekNum}`, days: [] };
     let currentDay = null;
     let dayCounter = 0;
@@ -11697,21 +11983,26 @@ function _parseL_standard(wb) {
 // SUB-PARSER: Bench Hybrid
 function _parseL_benchHybrid(wb) {
   const inputsSn = wb.SheetNames.find(s => /^inputs$/i.test(s));
-  if (!inputsSn) return [];
-  const inputsWs = wb.Sheets[inputsSn];
-  const inputRows = XLSX.utils.sheet_to_json(inputsWs, { header: 1, defval: null });
+  // Inputs sheet is optional (renamed tabs scenario)
+  const inputsWs = inputsSn ? wb.Sheets[inputsSn] : null;
   const maxes = {};
-  for (let i = 0; i < Math.min(30, inputRows.length); i++) {
-    const row = inputRows[i];
-    if (!row) continue;
-    const a = String(row[0] || '').toLowerCase().trim();
-    const b = row[1];
-    if (a === 'squat' && typeof b === 'number') maxes.squat = b;
-    if (a === 'deadlift' && typeof b === 'number') maxes.deadlift = b;
-    if (a === 'bench' && typeof b === 'number') maxes.bench = b;
-    if (a === 'desired bench max' && typeof b === 'number') maxes['bench_goal'] = b;
+  if (inputsWs) {
+    const inputRows = XLSX.utils.sheet_to_json(inputsWs, { header: 1, defval: null });
+    for (let i = 0; i < Math.min(30, inputRows.length); i++) {
+      const row = inputRows[i];
+      if (!row) continue;
+      const a = String(row[0] || '').toLowerCase().trim();
+      const b = row[1];
+      if (a === 'squat' && typeof b === 'number') maxes.squat = b;
+      if (a === 'deadlift' && typeof b === 'number') maxes.deadlift = b;
+      if (a === 'bench' && typeof b === 'number') maxes.bench = b;
+      if (a === 'desired bench max' && typeof b === 'number') maxes['bench_goal'] = b;
+    }
   }
-  const weekSheets = wb.SheetNames.filter(s => /^week\s*\d+/i.test(s));
+  let weekSheets = wb.SheetNames.filter(s => /^week\s*\d+/i.test(s));
+  if (weekSheets.length === 0) {
+    weekSheets = wb.SheetNames.filter(s => /^(wk|phase|block)\s*\d+/i.test(s) || /^w\d+$/i.test(s));
+  }
   const specialSheets = wb.SheetNames.filter(s => /^(projected|deload|taper)/i.test(s));
   const allSheets = [...weekSheets, ...specialSheets];
   allSheets.sort((a, b) => {
@@ -11774,7 +12065,19 @@ function _parseL_benchHybrid(wb) {
 
 // SUB-PARSER: Advanced Bench (SWITCH formula evaluator)
 function _parseL_advancedBench(wb) {
-  const sn = wb.SheetNames.find(s => s.toLowerCase() === 'bench program');
+  let sn = wb.SheetNames.find(s => s.toLowerCase() === 'bench program');
+  if (!sn) {
+    // Content fallback: find sheet with A12=numeric + B16 SWITCH formula
+    for (const s of wb.SheetNames) {
+      const ws = wb.Sheets[s];
+      if (!ws) continue;
+      const cell = ws['A12'];
+      if (cell && typeof cell.v === 'number') {
+        const b16 = ws['B16'];
+        if (b16 && b16.f && /SWITCH/i.test(b16.f)) { sn = s; break; }
+      }
+    }
+  }
   if (!sn) return [];
   const ws = wb.Sheets[sn];
   const unit = String(_lGetCellVal(ws, 'B5') || 'LB').toUpperCase();
@@ -11948,8 +12251,12 @@ function _parseL_advancedDeadlift(wb) {
       if (b.includes('deadlift goal') && typeof c === 'number') maxes.deadlift = c;
     }
   }
-  const phaseSheets = wb.SheetNames.filter(s => /^phase\s*\d/i.test(s));
-  phaseSheets.sort((a, b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+  let phaseSheets = wb.SheetNames.filter(s => /^phase\s*\d/i.test(s));
+  if (phaseSheets.length === 0) {
+    // Content fallback: use any numbered-pattern sheets (tabs renamed)
+    phaseSheets = wb.SheetNames.filter(s => /^(week|wk|block)\s*\d/i.test(s) || /^w\d/i.test(s));
+  }
+  phaseSheets.sort((a, b) => parseInt((a.match(/\d+/)||['0'])[0]) - parseInt((b.match(/\d+/)||['0'])[0]));
   const weeks = [];
   for (const sn of phaseSheets) {
     const ws = wb.Sheets[sn];
@@ -12031,20 +12338,39 @@ function _parseL_advancedDeadlift(wb) {
 // SUB-PARSER: Advanced Squat
 function _parseL_advancedSquat(wb) {
   const inputsSn = wb.SheetNames.find(s => /^inputs$/i.test(s));
-  if (!inputsSn) return [];
-  const inputsWs = wb.Sheets[inputsSn];
-  const inputRows = XLSX.utils.sheet_to_json(inputsWs, { header: 1, defval: null });
+  // Inputs optional — maxes extraction skipped if not found
+  const inputsWs = inputsSn ? wb.Sheets[inputsSn] : null;
   const maxes = {};
-  for (let i = 0; i < Math.min(20, inputRows.length); i++) {
-    const row = inputRows[i];
-    if (!row) continue;
-    const a = String(row[0] || '').toLowerCase().trim();
-    const b = row[1];
-    if (a === 'current squat max' && typeof b === 'number') maxes.squat = b;
-    if (a === 'goal max' && typeof b === 'number') maxes['squat_goal'] = b;
+  if (inputsWs) {
+    const inputRows = XLSX.utils.sheet_to_json(inputsWs, { header: 1, defval: null });
+    for (let i = 0; i < Math.min(20, inputRows.length); i++) {
+      const row = inputRows[i];
+      if (!row) continue;
+      const a = String(row[0] || '').toLowerCase().trim();
+      const b = row[1];
+      if (a === 'current squat max' && typeof b === 'number') maxes.squat = b;
+      if (a === 'goal max' && typeof b === 'number') maxes['squat_goal'] = b;
+    }
+  } else {
+    // Try to find maxes in any sheet with "current squat max"
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      if (!rows) continue;
+      for (let i = 0; i < Math.min(20, rows.length); i++) {
+        const a = String((rows[i]||[])[0]||'').toLowerCase().trim();
+        const b = (rows[i]||[])[1];
+        if (a === 'current squat max' && typeof b === 'number') { maxes.squat = b; break; }
+        if (a === 'goal max' && typeof b === 'number') maxes['squat_goal'] = b;
+      }
+      if (maxes.squat) break;
+    }
   }
-  const weekSheets = wb.SheetNames.filter(s => /^week\s*\d+$/i.test(s));
-  weekSheets.sort((a, b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+  let weekSheets = wb.SheetNames.filter(s => /^week\s*\d+$/i.test(s));
+  if (weekSheets.length === 0) {
+    weekSheets = wb.SheetNames.filter(s => /^(week|wk|phase|block)\s*\d/i.test(s) || /^w\d/i.test(s));
+  }
+  weekSheets.sort((a, b) => parseInt((a.match(/\d+/)||['0'])[0]) - parseInt((b.match(/\d+/)||['0'])[0]));
   const weeks = [];
   for (const sn of weekSheets) {
     const ws = wb.Sheets[sn];
@@ -12382,6 +12708,27 @@ function _nClassify(wb) {
   if (names.some(s => s.includes('novice program') || s.includes('onus wunsler') || s.includes('wichita falls'))) return 'SS';
   if (names.some(s => s.includes('stronglifts')) &&
       names.some(s => s.includes('beginner') || s.includes('experienced'))) return 'SL';
+
+  // Content fallbacks — Greyskull/Ivysaur sheet names may be renamed
+  // Ivysaur: any sheet with 4-4-8/ivysaur text
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const txt = (rows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+      if (txt.includes('4-4-8') || txt.includes('ivysaur') || txt.includes('4.4.8')) return 'IV';
+    }
+  }
+  // Greyskull: any sheet with "Week 1" header in row[0][4] and Day in row[1][4]
+  for (let si = 0; si < wb.SheetNames.length; si++) {
+    const ws = wb.Sheets[wb.SheetNames[si]];
+    if (!ws) continue;
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    if (!rows || rows.length < 3) continue;
+    if (rows[0] && String(rows[0][4]||'').match(/week\s*1/i) &&
+        rows[1] && String(rows[1][4]||'').toLowerCase().includes('day')) return 'GS';
+  }
+
   return null;
 }
 
@@ -12430,7 +12777,17 @@ function _nFmtReps(setsReps, weight) {
    ================================================================ */
 function _parseN_greyskull(wb) {
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
-  const liftSheet = wb.Sheets[wb.SheetNames[names.indexOf('lift')]];
+  let liftIdx = names.indexOf('lift');
+  if (liftIdx === -1) {
+    // Content fallback: find sheet with Week 1 in col E row 0
+    for (let si = 0; si < wb.SheetNames.length; si++) {
+      const ws = wb.Sheets[wb.SheetNames[si]];
+      const r = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      if (r[0] && String(r[0][4]||'').match(/week\s*1/i)) { liftIdx = si; break; }
+    }
+  }
+  if (liftIdx === -1) return [];
+  const liftSheet = wb.Sheets[wb.SheetNames[liftIdx]];
   const rows = XLSX.utils.sheet_to_json(liftSheet, {header:1, defval:null});
 
   // Determine weeks from R0
@@ -12593,7 +12950,21 @@ function _parseN_greyskull(wb) {
    ================================================================ */
 function _parseN_ivysaur(wb) {
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
-  const ws = wb.Sheets[wb.SheetNames[names.indexOf('template')]];
+  let templateIdx = names.indexOf('template');
+  if (templateIdx === -1) {
+    // Content fallback: find sheet with 4-4-8/ivysaur text
+    for (let si = 0; si < wb.SheetNames.length; si++) {
+      const tws = wb.Sheets[wb.SheetNames[si]];
+      const trows = XLSX.utils.sheet_to_json(tws, {header:1, defval:null});
+      for (let i = 0; i < Math.min(5, trows.length); i++) {
+        const txt = (trows[i]||[]).map(c => String(c||'')).join(' ').toLowerCase();
+        if (txt.includes('4-4-8') || txt.includes('ivysaur') || txt.includes('4.4.8')) { templateIdx = si; break; }
+      }
+      if (templateIdx !== -1) break;
+    }
+  }
+  if (templateIdx === -1) return [];
+  const ws = wb.Sheets[wb.SheetNames[templateIdx]];
   const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
 
   // Find Week A and Week B section starts
@@ -12660,6 +13031,8 @@ function _parseN_ivysaur(wb) {
       for (const exRow of block) {
         const rawName = String(rows[exRow]?.[1] || '').trim();
         if (!rawName) continue;
+        // Skip rows where col B has no exercise name (replaced by pure prescription like "3x5")
+        if (!/[a-zA-Z]{2,}/.test(rawName)) continue;
 
         // Parse exercise name + set/rep from name like "Bench 4x4" or "Chinups 4x8"
         const match = rawName.match(/^(.+?)\s+(\d+x\d+\+?\d*)/);
@@ -12976,7 +13349,25 @@ function _parseN_stronglifts(wb) {
 /* ---------- parser --------------------------------------------- */
 function parseO(wb) {
   const names = wb.SheetNames.map(s => s.trim().toLowerCase());
-  const ws = wb.Sheets[wb.SheetNames[names.indexOf('training')]];
+  let trainingSheetName = names.includes('training') ? wb.SheetNames[names.indexOf('training')] : null;
+  if (!trainingSheetName) {
+    // Content fallback: find sheet with row 8 = sets/reps/intensity/load headers
+    for (let si = 0; si < wb.SheetNames.length; si++) {
+      const tws = wb.Sheets[wb.SheetNames[si]];
+      if (!tws) continue;
+      const trows = XLSX.utils.sheet_to_json(tws, {header:1, defval:null});
+      if (!trows || trows.length < 20) continue;
+      const r8 = trows[8] || [];
+      if (String(r8[4]||'').trim().toLowerCase() === 'sets' &&
+          String(r8[5]||'').trim().toLowerCase() === 'reps' &&
+          String(r8[6]||'').trim().toLowerCase() === 'intensity' &&
+          String(r8[7]||'').trim().toLowerCase() === 'load') {
+        trainingSheetName = wb.SheetNames[si]; break;
+      }
+    }
+  }
+  if (!trainingSheetName) return [];
+  const ws = wb.Sheets[trainingSheetName];
   const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
 
   // Determine number of weeks by scanning R2 for week numbers
@@ -13317,8 +13708,21 @@ function _pExtractMaxes(inputsSheet) {
 function parseP(workbook) {
   if (!workbook || !workbook.SheetNames) return [];
 
-  const mainSheet = _pGetSheet(workbook, 'Main');
+  let mainSheet = _pGetSheet(workbook, 'Main');
   const inputsSheet = _pGetSheet(workbook, 'Inputs');
+  if (!mainSheet) {
+    // Content fallback: find sheet with "Date" and "Exercise" headers in first 5 rows
+    for (const sn of workbook.SheetNames) {
+      const ws = workbook.Sheets[sn];
+      if (!ws) continue;
+      const data = _pSheetToArray(ws, 5);
+      for (let r = 0; r < Math.min(5, data.length); r++) {
+        const row = data[r]; if (!row) continue;
+        if (row[0] === 'Date' && row[1] === 'Exercise') { mainSheet = ws; break; }
+      }
+      if (mainSheet) break;
+    }
+  }
   if (!mainSheet) return [];
 
   // Extract maxes
@@ -13475,15 +13879,11 @@ function parseP(workbook) {
 
 
 function _qDetectV1(wb) {
-  // v1: Single sheet containing "bridge" with specific headers
-  // v1 has headers at R2 (row index 1), col B/C (cols 1/2)
+  // v1: Sheet with Exercise/Prescription headers at R2 cols B/C (bridge name not required)
   for (const sheetName of wb.SheetNames) {
-    if (!sheetName.toLowerCase().includes('bridge')) continue;
-
     const ws = wb.Sheets[sheetName];
     if (!ws) continue;
 
-    // Check headers in R2 (row index 1): Exercise in col B (1), Prescription in col C (2)
     const cell1 = _qGetCell(ws, 1, 1);
     const cell2 = _qGetCell(ws, 1, 2);
 
@@ -13527,18 +13927,23 @@ function _qDetectV2(wb) {
 }
 
 function _qDetectV3(wb) {
-  // v3: Multiple sheets matching "Week N - *Stress" pattern
+  // v3: Multiple sheets matching "Week N - *Stress" pattern, OR BBM v3 content signature
   const weekPattern = /^Week\s+\d+\s*-\s*\w+\s*Stress/i;
-  let weekCount = 0;
+  let weekCount = wb.SheetNames.filter(sn => weekPattern.test(sn)).length;
+  if (weekCount >= 3) return true;
 
-  for (const sheetName of wb.SheetNames) {
-    if (weekPattern.test(sheetName)) {
-      weekCount++;
-    }
+  // Content fallback: look for BBM v3 signature (Strength Training + Assigned RPE + Day N structure)
+  let v3ContentCount = 0;
+  for (const sn of wb.SheetNames) {
+    const ws = wb.Sheets[sn];
+    if (!ws) continue;
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    if (!rows || rows.length < 3) continue;
+    const r0 = String((rows[0]||[])[0]||'').trim();
+    const r2joined = (rows[2]||[]).map(c => String(c||'')).join('|').toLowerCase();
+    if (r0 === 'Strength Training' && r2joined.includes('assigned rpe')) v3ContentCount++;
   }
-
-  // Need at least 3 week sheets to be confident
-  return weekCount >= 3;
+  return v3ContentCount >= 3;
 }
 
 // ============================================================================
@@ -13573,10 +13978,17 @@ function parseQ(wb) {
 
 function _parseQ_v1(wb) {
   let sheetName = null;
+  // Prefer "bridge" named sheet; fall back to any sheet with Exercise/Prescription headers
   for (const name of wb.SheetNames) {
-    if (name.toLowerCase().includes('bridge')) {
-      sheetName = name;
-      break;
+    if (name.toLowerCase().includes('bridge')) { sheetName = name; break; }
+  }
+  if (!sheetName) {
+    for (const name of wb.SheetNames) {
+      const ws = wb.Sheets[name];
+      if (!ws) continue;
+      if (_qGetCell(ws, 1, 1) === 'Exercise' && _qGetCell(ws, 1, 2) === 'Prescription') {
+        sheetName = name; break;
+      }
     }
   }
 
@@ -13847,16 +14259,29 @@ function _qFlushExerciseV2(day, exerciseName, reps, rpe) {
 
 function _parseQ_v3(wb) {
   const weekPattern = /^Week\s+(\d+)\s*-\s*(.+Stress)$/i;
-  const weekSheets = [];
+  let weekSheets = [];
 
   for (const sheetName of wb.SheetNames) {
     const match = sheetName.match(weekPattern);
     if (match) {
-      weekSheets.push({
-        sheetName: sheetName,
-        weekNum: parseInt(match[1], 10),
-        label: sheetName
-      });
+      weekSheets.push({ sheetName, weekNum: parseInt(match[1], 10), label: sheetName });
+    }
+  }
+
+  // Content fallback: find sheets with BBM v3 signature (tabs renamed)
+  if (weekSheets.length === 0) {
+    let idx = 0;
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn];
+      if (!ws) continue;
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+      if (!rows || rows.length < 3) continue;
+      const r0 = String((rows[0]||[])[0]||'').trim();
+      const r2joined = (rows[2]||[]).map(c => String(c||'')).join('|').toLowerCase();
+      if (r0 === 'Strength Training' && r2joined.includes('assigned rpe')) {
+        idx++;
+        weekSheets.push({ sheetName: sn, weekNum: idx, label: `Week ${idx}` });
+      }
     }
   }
 
@@ -14142,7 +14567,27 @@ function _qIsNumeric(val) {
 function parseR(workbook) {
   const blocks = [];
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const daySheets = workbook.SheetNames.filter(name => dayNames.includes(name));
+  let daySheets = workbook.SheetNames.filter(name => dayNames.includes(name));
+
+  if (daySheets.length === 0) {
+    // Content fallback: find PHUL-structured sheets by content (Week in A0, Target/Set(s)/Rep(s))
+    const phulSheets = [];
+    for (const name of workbook.SheetNames) {
+      const ws = workbook.Sheets[name];
+      if (!ws) continue;
+      const A0 = _rGetCell(ws, 0, 0);
+      if (A0 !== 'Week') continue;
+      let hasTarget = false, hasSetLabel = false, hasRepLabel = false;
+      for (let r = 0; r < 10; r++) {
+        const cellA = _rGetCell(ws, r, 0);
+        if (cellA === 'Target') hasTarget = true;
+        if (cellA === 'Set(s)') hasSetLabel = true;
+        if (cellA === 'Rep(s)') hasRepLabel = true;
+      }
+      if (hasTarget && hasSetLabel && hasRepLabel) phulSheets.push(name);
+    }
+    daySheets = phulSheets;
+  }
 
   if (daySheets.length === 0) return blocks;
 
@@ -14479,7 +14924,15 @@ function _rGenerateId() {
  */
 function parseS(workbook) {
   const sheetNames = workbook.SheetNames;
-  const weekSheets = sheetNames.filter(name => /^Week\s+\d+/.test(name)).sort();
+  // Accept any numbered tab pattern (Wk, Phase, Block, W1, etc.) in addition to "Week N"
+  const _sWeekPat = /^(week|wk|phase|block)\s*\d|^w\d/i;
+  let weekSheets = sheetNames.filter(name => /^Week\s+\d+/.test(name));
+  if (weekSheets.length === 0) weekSheets = sheetNames.filter(name => _sWeekPat.test(name));
+  weekSheets = weekSheets.sort((a, b) => {
+    const na = parseInt((a.match(/\d+/)||['0'])[0]);
+    const nb = parseInt((b.match(/\d+/)||['0'])[0]);
+    return na - nb;
+  });
 
   if (weekSheets.length === 0) {
     return [];
@@ -14813,15 +15266,29 @@ function _sFormatNote(purpose, percentage) {
 function parseT(workbook) {
   const sheets = workbook.SheetNames;
   const volumeLandmarks = _tExtractVolumeLandmarks(workbook);
-  const weekSheets = sheets.filter(s => /^Week \d+$/.test(s)).sort((a, b) => {
-    const numA = parseInt(a.match(/\d+/)[0]);
-    const numB = parseInt(b.match(/\d+/)[0]);
+  // Accept any numbered tab pattern (Week N, Wk N, Phase N, Block N, W1, etc.)
+  const _tWeekPat = /^(week|wk|phase|block)\s*\d+$|^w\d+$/i;
+  const weekSheets = (sheets.filter(s => /^Week \d+$/.test(s)).length >= 3
+    ? sheets.filter(s => /^Week \d+$/.test(s))
+    : sheets.filter(s => _tWeekPat.test(s))
+  ).sort((a, b) => {
+    const numA = parseInt((a.match(/\d+/)||['0'])[0]);
+    const numB = parseInt((b.match(/\d+/)||['0'])[0]);
     return numA - numB;
   });
 
   const weeks = [];
 
-  for (const weekSheet of weekSheets) {
+  // Filter to only sheets that have T-format training content (Day header at A1 or A4)
+  // This excludes meta/overview sheets that were renamed to "Week N" patterns
+  const trainingWeekSheets = weekSheets.filter(sn => {
+    const ws = workbook.Sheets[sn];
+    if (!ws) return false;
+    const a1 = ws['A1'], a4 = ws['A4'];
+    return (a1 && a1.v === 'Day') || (a4 && a4.v === 'Day');
+  });
+
+  for (const weekSheet of (trainingWeekSheets.length > 0 ? trainingWeekSheets : weekSheets)) {
     const ws = workbook.Sheets[weekSheet];
     const weekNum = parseInt(weekSheet.match(/\d+/)[0]);
 
