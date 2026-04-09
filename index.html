@@ -513,6 +513,8 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .exercise-card.skipped .track-btn { color: var(--surface-5); }
 .exercise-card.skipped .track-btn.tracked { color: var(--gold); }
 .exercise-card.skipped .exercise-name { text-decoration: line-through; color: var(--text-faint); }
+.exercise-card.failed { border-color: rgba(255,159,67,0.25); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.exercise-card.is-comp.failed { border-left-color: rgba(255,159,67,0.4); }
 .ex-summary { display: flex; align-items: center; justify-content: space-between; padding: 13px var(--sp-6) var(--sp-3); cursor: pointer; gap: var(--sp-4); user-select: none; }
 .ex-summary-left { display: flex; flex-direction: column; gap: var(--sp-2); flex: 1; min-width: 0; }
 .ex-summary-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.02em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -528,6 +530,7 @@ body { background: var(--bg); color: var(--text-primary, #f0f0f0); font-family: 
 .set-adjust-btn { font-size: var(--fs-md); color: var(--text-muted); background: none; border: 1px solid var(--border-3); border-radius: 8px; padding: var(--sp-4) var(--sp-6); min-height: 36px; cursor: pointer; font-family: 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s; flex-shrink: 0; }
 .set-adjust-btn:active { color: var(--gold); border-color: var(--gold); }
 .skipped-badge { font-size: var(--fs-xs); color: var(--text-faint); font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); border-radius: 4px; padding: var(--sp-1) var(--sp-3); }
+.failed-badge { font-size: var(--fs-xs); color: #FF9F43; font-family: 'Barlow', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid rgba(255,159,67,0.3); border-radius: 4px; padding: var(--sp-1) var(--sp-3); }
 .edit-name-btn { background: none; border: none; cursor: pointer; font-size: var(--fs-base); color: var(--gold); opacity: 0.0; padding: var(--sp-1) var(--sp-2); transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
 .exercise-card:hover .edit-name-btn { opacity: 0.5; }
 .exercise-name-edit { flex: 1; background: var(--surface-5); border: 1px solid var(--gold); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: var(--fs-2xl); padding: var(--sp-2) var(--sp-4); outline: none; min-width: 0; width: 100%; }
@@ -2850,7 +2853,7 @@ async function _checkStorageQuota() {
 
 // ── App Version (single source of truth — update here only) ─────────────────
 const APP_VERSION = 'v0.31.0';
-const APP_BUILD   = '4/7/26a';
+const APP_BUILD   = '4/9/26a';
 
 // ── Boot: open IDB → migrate → hydrate cache → init state ───────────────────
 // State object — declared here so it's in scope for the whole script.
@@ -4649,7 +4652,11 @@ function mergeBlocks(incoming){
   }
   const existing=state.blocks;
   for(const inc of incoming){
-    const idx=existing.findIndex(b=>b.id===inc.id);
+    let idx=existing.findIndex(b=>b.id===inc.id);
+    // Fallback: match by name+format when ID differs (Date.now() IDs are never stable)
+    if(idx===-1 && inc.name && inc.format){
+      idx=existing.findIndex(b=>b.name===inc.name && b.format===inc.format);
+    }
     if(idx!==-1){
       // Preserve custom exercises the user added via "+ Add Exercise"
       const oldBlock=existing[idx];
@@ -7245,7 +7252,8 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
   }
   const presSum = _presShortSummary();
 
-  let h = `<div class="exercise-card ${isDone?'completed':isSkipped?'skipped':''} ${isComp?'is-comp':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
+  const isFailed = log.failed || false;
+  let h = `<div class="exercise-card ${isDone&&!isFailed?'completed':isSkipped?'skipped':isFailed?'failed':''} ${isComp?'is-comp':''}" data-expand-key="${escH(expandKey)}" data-ex-key="${escH(key)}">`;
   h += `<div class="ex-summary" onclick="toggleExpand('${esc(expandKey)}','${groupKeys?esc(groupKeys.join(':::')):''}')">
     <div class="ex-summary-left">
       <div class="ex-summary-name ${isDone?'done':isSkipped?'skipped':''}">${escH(_displayExName(ex.displayName||ex.name))}${isCustomEx?'<span class="custom-ex-badge">Custom</span>':''}</div>
@@ -7254,7 +7262,8 @@ function _buildExCardHeader(ex, groupKeys, block, week, day, exIdx, prevPerf, is
     <div class="ex-summary-right">
       ${''}<!-- track indicator removed — expanded card Track button is single source of truth -->
       ${isSkipped ? `<span class="skipped-badge">SKIPPED</span>` : ''}
-      <button class="exercise-check ${isDone?(log.inferredComplete?'done inferred':'done'):''}" data-ex-key="${esc(key)}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone?_checkSvg:''}</button>
+      ${isFailed ? `<span class="failed-badge">FAILED</span>` : ''}
+      <button class="exercise-check ${isDone&&!isFailed?(log.inferredComplete?'done inferred':'done'):''}" data-ex-key="${esc(key)}" onclick="event.stopPropagation();toggleEx('${esc(key)}')" aria-label="${isDone?'Mark exercise incomplete':'Mark exercise complete'}">${isDone&&!isFailed?_checkSvg:''}</button>
     </div>
   </div>`; /* expand pill intentionally removed — card header is the tap target */
 
@@ -7349,7 +7358,7 @@ function _buildSetRows(ex, block, week, day, prevPerf) {
     const sl=state.logs[sk]||{}; const d=sl.done; const ss=sl.setStatus;
     const rowCls=d?' set-done':ss==='skipped'?' set-skipped':ss==='failed'?' set-failed':'';
     const actHtml=ss
-      ?`<button class="swipe-set-action-btn sab-clear" onclick="applySetStatus('${esc(sk)}',null)">↩ Clear</button>`
+      ?`<button class="swipe-set-action-btn sab-clear" onclick="applySetStatus('${esc(sk)}',null)"><span class="swipe-set-action-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>Clear</button>`
       :`<button class="swipe-set-action-btn sab-skip" onclick="applySetStatus('${esc(sk)}','skipped')"><span class="swipe-set-action-icon">—</span>Skip</button><button class="swipe-set-action-btn sab-fail" onclick="applySetStatus('${esc(sk)}','failed')"><span class="swipe-set-action-icon">✕</span>Failed</button>`;
     return `<div class="swipe-set-wrap"><div class="swipe-set-actions">${actHtml}</div><div class="set-row${rowCls} swipe-set-row">`;
   }
@@ -9050,7 +9059,7 @@ function _updateSetRowStatus(key, status) {
   if (!actions) return;
   const esk = esc(key);
   actions.innerHTML = status
-    ? `<button class="swipe-set-action-btn sab-clear" onclick="applySetStatus('${esk}',null)">↩ Clear</button>`
+    ? `<button class="swipe-set-action-btn sab-clear" onclick="applySetStatus('${esk}',null)"><span class="swipe-set-action-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>Clear</button>`
     : `<button class="swipe-set-action-btn sab-skip" onclick="applySetStatus('${esk}','skipped')"><span class="swipe-set-action-icon">—</span>Skip</button><button class="swipe-set-action-btn sab-fail" onclick="applySetStatus('${esk}','failed')"><span class="swipe-set-action-icon">✕</span>Failed</button>`;
 }
 // ── END H16 ───────────────────────────────────────────────────────────────────
@@ -11126,36 +11135,55 @@ function autoCompleteExercise(setKey){
   const _br3=(!sets.length&&!simple&&!ranged)?parseBarePres(pres):null;
   const totalSets=sets.length||(simple?.sets||0)||(ranged?.sets||0)||(_br3?(_ssr3||_br3.sets):0)||_ssr3||(pres?1:0)||1;
 
-  // Check if all sets done
-  let allDone=true;
+  // Check if all sets resolved (done, skipped, or failed)
+  let allResolved=true, allSkipped=true, allFailed=true;
   for(let si=0;si<totalSets;si++){
     const sk=exKey+`||s${si}`;
-    if(!state.logs[sk]?.done && !state.logs[sk]?.setStatus){ allDone=false; break; }
+    const sl=state.logs[sk];
+    if(!sl?.done && !sl?.setStatus){ allResolved=false; allSkipped=false; allFailed=false; break; }
+    if(sl?.setStatus!=='skipped') allSkipped=false;
+    if(sl?.setStatus!=='failed') allFailed=false;
   }
-  
-  // If all sets done, mark exercise done and update checkmark directly
-  if(allDone&&!state.logs[exKey]?.done){
-    state.logs[exKey]={...(state.logs[exKey]||{}),done:true};
+
+  const _cardSel=`.exercise-card[data-ex-key="${cssEsc(exKey)}"]`;
+  const _clearCardStates=(el)=>{ el.classList.remove('completed','just-completed','skipped','failed'); };
+
+  // All sets skipped → mark exercise skipped (not done)
+  if(allResolved&&allSkipped&&!state.logs[exKey]?.skipped){
+    state.logs[exKey]={...(state.logs[exKey]||{}),done:false,skipped:true};
+    saveLogs();
+    updateExerciseCheckmark(exKey,false);
+    const _cardEl=document.querySelector(_cardSel);
+    if(_cardEl){ _clearCardStates(_cardEl); _cardEl.classList.add('skipped'); }
+    checkAndActivateFinishButton(block, week, day);
+  }
+  // All sets failed → mark exercise done but apply failed visual
+  else if(allResolved&&allFailed&&!state.logs[exKey]?.failed){
+    state.logs[exKey]={...(state.logs[exKey]||{}),done:true,skipped:false,failed:true};
+    saveLogs();
+    updateExerciseCheckmark(exKey,false);
+    const _cardEl=document.querySelector(_cardSel);
+    if(_cardEl){ _clearCardStates(_cardEl); _cardEl.classList.add('failed'); }
+    checkAndActivateFinishButton(block, week, day);
+  }
+  // All sets resolved (mix of done/failed/skipped) → mark exercise done
+  else if(allResolved&&!allSkipped&&!allFailed&&!state.logs[exKey]?.done){
+    state.logs[exKey]={...(state.logs[exKey]||{}),done:true,skipped:false,failed:false};
     saveLogs();
     if (navigator.vibrate) navigator.vibrate(25);
-    // Update main exercise checkmark without full render
     updateExerciseCheckmark(exKey,true);
-    // Flash the card border green on completion and persist completed class
-    const _cardEl = document.querySelector(`.exercise-card[data-ex-key="${cssEsc(exKey)}"]`);
-    if(_cardEl){ _cardEl.classList.add('completed','just-completed'); _cardEl.addEventListener('animationend',()=>_cardEl.classList.remove('just-completed'),{once:true}); }
-    // No auto-collapse — user stays in the card to finish entering data.
-    // They collapse manually or hit Finish Workout when ready.
-    // Check if whole day is now resolved — activate finish button and scroll it into view
+    const _cardEl=document.querySelector(_cardSel);
+    if(_cardEl){ _clearCardStates(_cardEl); _cardEl.classList.add('completed','just-completed'); _cardEl.addEventListener('animationend',()=>_cardEl.classList.remove('just-completed'),{once:true}); }
     checkAndActivateFinishButton(block, week, day);
-  } else if(!allDone&&state.logs[exKey]?.done){
-    // If sets were unchecked, uncheck exercise and clear force-complete flag
-    state.logs[exKey]={...(state.logs[exKey]||{}),done:false};
+  } else if(!allResolved&&(state.logs[exKey]?.done||state.logs[exKey]?.skipped||state.logs[exKey]?.failed)){
+    // If sets were unchecked, clear all exercise-level states
+    state.logs[exKey]={...(state.logs[exKey]||{}),done:false,skipped:false,failed:false};
     const _b=state.activeBlock,_w=_b?.weeks[state.activeWeek],_d=_w?.days[state.activeDay];
     if(_d){ const fk=lk(_b.id,_w.label,_d.name,'__complete__'); delete state.logs[fk]; }
     saveLogs();
     updateExerciseCheckmark(exKey,false);
-    const _unCardEl = document.querySelector(`.exercise-card[data-ex-key="${cssEsc(exKey)}"]`);
-    if(_unCardEl) _unCardEl.classList.remove('completed');
+    const _unCardEl=document.querySelector(_cardSel);
+    if(_unCardEl) _clearCardStates(_unCardEl);
   }
 }
 function checkAndActivateFinishButton(block, week, day) {
@@ -11163,7 +11191,7 @@ function checkAndActivateFinishButton(block, week, day) {
   const totalEx = day.exercises.length;
   const resolvedEx = day.exercises.filter(ex => {
     const log = state.logs[lk(block.id, week.label, day.name, ex.name)] || {};
-    return log.done || log.skipped;
+    return log.done || log.skipped || log.failed;
   }).length;
   if (resolvedEx === totalEx && totalEx > 0) {
     // Kill any running rest timer — no rest needed after the last exercise
@@ -13824,7 +13852,9 @@ function exportCSV() {
 const BACKUP_KEYS = [
   'liftlog_v4', 'liftlog_blocks', 'liftlog_custom', 'liftlog_tracked',
   'liftlog_nav', 'liftlog_athlete', 'liftlog_schedule', 'liftlog_app_settings',
-  'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides'
+  'liftlog_onboarded', 'liftlog_theme', 'liftlog_colmaps', 'liftlog_unit_overrides',
+  'liftlog_meet_plans', 'liftlog_active_meet', 'liftlog_competition_mode',
+  'liftlog_calcDisplayUnit'
 ];
 
 function downloadBackup() {

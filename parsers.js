@@ -3385,13 +3385,25 @@ function scoreFamilyC(wb, negSignals = null) {
   var matched = [], missing = [], negative = [];
   var score = 0;
   try {
-    // Hard reject: 2+ week/phase tabs → FamilyB
+    // Week/phase tabs: only defer to FamilyB if the tabs DON'T have FamilyC signatures.
+    // If the week tabs have Day + Exercise + Week N headers, FamilyC should claim them.
     var weekTabs = wb.SheetNames.filter(function(s) {
       return /^(week|wk|phase)\s*\d/i.test(String(s).trim());
     });
     if (weekTabs.length >= 2) {
-      missing.push('no multiple week tabs (→FamilyB)');
-      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+      var weekTabsWithSignature = 0;
+      for (var wi = 0; wi < weekTabs.length; wi++) {
+        var wws = wb.Sheets[weekTabs[wi]];
+        if (!wws || !wws['!ref']) continue;
+        var wrows = XLSX.utils.sheet_to_json(wws, { header: 1, defval: null });
+        // Check first 20 rows for FamilyC header pattern: Day (col 0) + Exercise + Week N
+        if (_fc_findHeaderRow(wrows) !== -1) weekTabsWithSignature++;
+      }
+      if (weekTabsWithSignature === 0) {
+        negative.push('2+ week/phase tabs without FamilyC signatures — FamilyB handles this');
+        return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+      }
+      // Week tabs DO have FamilyC signatures — continue scoring
     }
 
     var rows = _sheetRows(wb, 0);
