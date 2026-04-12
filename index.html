@@ -18301,7 +18301,7 @@ function renderCalc() {
 
       <!-- ── TARGET: INPUT ── -->
       <div class="calc-section" style="padding:var(--sp-5);">
-        <div style="display:flex;gap:var(--sp-4);align-items:stretch;height:68px;">
+        <div style="display:flex;gap:var(--sp-4);align-items:stretch;min-height:68px;">
           <input class="calc-weight-input" id="calc-input" type="number" inputmode="decimal" placeholder="0" value="${inputVal}" onblur="calcInput(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" aria-label="Target weight" style="flex:1;min-width:0;background:${T.inputBg};border:${T.inputBorder};color:${T.inputColor};" />
           ${displayLbs ? `
           <div style="display:flex;align-items:center;flex-shrink:0;">

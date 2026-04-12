@@ -473,7 +473,7 @@ const EXERCISE_DICT = [
   'Barbell','Dumbbell','Cable','Machine','Smith','Hack','Leg','Hip',
   'Hamstring','Quadricep','Glute','Back','Chest','Shoulder','Tricep','Bicep',
   'Preacher','Spider','Concentration','Hammer','Pronated','Supinated','Neutral',
-  'Prone','Supine','Standing','Seated','Lying','Bent','Straight','Single','Arm',
+  'Prone','Supine','Standing','Seated','Lying','Bent','Straight','Single','Arm','State','Static',
   'Unilateral','Bilateral','Compound','Isolation','Bulgarian','Split','Lunge',
   'Step','Box','Pause','Tempo','Deficit','Rack','Block','Pin','Board','Floor',
   'Sling','Shot','Larson','Larsen','Comp','Competition','Sumo','Conventional',
@@ -496,6 +496,8 @@ const EXERCISE_DICT = [
   // Effort/modifier words
   'Beltless','Eccentric','Isometric','Slingshot','Accommodating',
   'Dynamic','Banded','Lockout','Walkout','Floating',
+  // Warm-up / movement descriptors
+  'Warm','Warmup','Cool','Cooldown','Slow','Fast','Explosive',
   // Abbreviations (>3 chars to qualify for spell check)
   'CGBP','SGDL','SLDL','WGBP','RGBP','AMRAP',
   // Additional proper names
