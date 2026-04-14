@@ -2,7 +2,7 @@
 // Extracted from index.html for standalone testing and modularity.
 // This file is the single source of truth for all parser logic.
 // In production, include via <script src="parsers.js"></script> before the main script.
-// Updated: 2026-03-24 — Session 58 audit bug fixes (3 bugs: exact alias expansion removed, flat bench isCompLift, text-note prescription fallback)
+// Updated: 2026-04-14 — S126: removed aggressive spell correction from _normalizeExerciseName (verbatim preservation policy)
 
 // ── LIFT GROUPS & CLASSIFICATION ──────────────────────────────────────────────
 const LIFT_GROUPS = {
@@ -4677,15 +4677,14 @@ function _normalizeExerciseName(name) {
   let s = name.trim();
   if (!s) return s;
 
-  // Alias expansion REMOVED (Session 53: word-level abbrevs; Session 58: exact-match aliases)
-  // User-typed names are preserved verbatim. Ghost weight matching uses
-  // _smartExerciseMatch/SYNONYM_MAP; isCompLift uses COMP_KEYWORDS directly.
+  // Verbatim preservation (Session 53+). Names are stored exactly as written by
+  // the coach/program. Functional matching (ghost weights, PR detection) uses
+  // _smartExerciseMatch with edit-distance tolerance, so typos in display names
+  // don't break lookups. Spell correction REMOVED — too aggressive, was silently
+  // mutating legitimate names ("Belt Squat" → "Bent Squat", "Overhand" → "Overhead",
+  // plurals stripped). Only whitespace normalization runs here.
 
   s = s.replace(/\s+/g, ' ');
-
-  // Spell-correct individual words against EXERCISE_DICT (edit distance ≤ threshold).
-  // Fixes coach typos like "Incliine" → "Incline" on import.
-  s = spellCorrectExerciseName(s);
 
   return s;
 }
@@ -5589,10 +5588,10 @@ function parseWorkbook(wb){
 
           day.exercises = filtered;
 
-          // Fix 6: Exercise name normalization — whitespace + typo correction
-          // Runs on ALL formats including KIMCOACH/MATRIX. Spell correction only fixes
-          // obvious typos (edit distance ≤ 2 against EXERCISE_DICT). It does NOT rename
-          // or alias exercises — coach naming choices are preserved.
+          // Fix 6: Exercise name normalization — whitespace only (verbatim preservation)
+          // Runs on ALL formats. Only collapses multiple spaces. Coach naming choices
+          // are preserved exactly as written. Spell correction removed (S126) — was
+          // silently mutating legitimate exercise names.
           for (const ex of day.exercises) {
             if (ex.name) ex.name = _normalizeExerciseName(ex.name);
           }
