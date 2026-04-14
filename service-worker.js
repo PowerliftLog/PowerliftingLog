@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftlog-v264';
+const CACHE_NAME = 'liftlog-v265';
 const ASSETS = [
   '/PowerliftingLog/',
   '/PowerliftingLog/index.html',
@@ -31,8 +31,9 @@ self.addEventListener('message', event => {
   }
 });
 
-// Install — pre-cache all core assets
+// Install — pre-cache all core assets, activate immediately
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Force activation — don't wait for old tabs to close
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
