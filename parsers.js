@@ -2,7 +2,8 @@
 // Extracted from index.html for standalone testing and modularity.
 // This file is the single source of truth for all parser logic.
 // In production, include via <script src="parsers.js"></script> before the main script.
-// Updated: 2026-04-14 — S126: removed aggressive spell correction from _normalizeExerciseName (verbatim preservation policy)
+// Updated: 2026-05-06 — Phase Parser Fixes: KIMGRID port + Joe Cycle 4 (4 bugs + range-preserving labels + N-MxR-S grammar)
+// Updated: 2026-05-07 — Phase Parser Rounds Schema: bare N-M repRange grammar branch (e.g. "15-20" → repRange:{15,20})
 
 // ── LIFT GROUPS & CLASSIFICATION ──────────────────────────────────────────────
 const LIFT_GROUPS = {
@@ -652,6 +653,7 @@ function _initPrx() {
     T.OF    = createToken({ name: 'OF',    pattern: /of/i });
     T.TEMPO = createToken({ name: 'TEMPO', pattern: /Tempo/i });
     T.CLUST = createToken({ name: 'CLUST', pattern: /Clusters?/i });
+    T.SETS  = createToken({ name: 'SETS',  pattern: /Sets?/i });
     T.UNIT  = createToken({ name: 'UNIT',  pattern: /lbs?|kg/i });
     T.DEC   = createToken({ name: 'DEC',   pattern: /\d+\.\d+/ }); // before INT
     T.INT   = createToken({ name: 'INT',   pattern: /\d+/ });
@@ -667,11 +669,18 @@ function _initPrx() {
     T.COLON = createToken({ name: 'COLON', pattern: /:/ });
     T.MDOT  = createToken({ name: 'MDOT',  pattern: /·/ });    // middle dot separator
     T.DOT   = createToken({ name: 'DOT',   pattern: /\./ });   // period (tempo like 1.2.1)
+    // IDENT — bare-letter identifier, used for intensity tags inside chains
+    // like "12(L) 12(M) 12(MH)" where L/M/MH/H mark per-set intensity.
+    // Placed LAST in ALL so all keyword tokens (RPE, TEMPO, SETS, UNIT, etc.)
+    // and single-char tokens (X, etc.) get priority. Matches one or more
+    // letters case-insensitively.
+    T.IDENT = createToken({ name: 'IDENT', pattern: /[A-Za-z]+/ });
 
     const ALL = [
       T.WS, T.AMRAP, T.RPE, T.RIR, T.ONERM, T.TM, T.NEW, T.OF,
-      T.TEMPO, T.CLUST, T.UNIT, T.DEC, T.INT, T.X, T.AT, T.PCT,
+      T.TEMPO, T.CLUST, T.SETS, T.UNIT, T.DEC, T.INT, T.X, T.AT, T.PCT,
       T.PLUS, T.DASH, T.SLASH, T.COMMA, T.LP, T.RP, T.COLON, T.MDOT, T.DOT,
+      T.IDENT,
     ];
 
     _prxState = { lexer: new Lexer(ALL, { skipValidations: false }), T };
@@ -723,14 +732,23 @@ function parsePrescription(text) {
     function eatInt()     { const t = eat(T.INT); return t ? parseInt(t.image, 10) : null; }
     function eatNum()     { const t = eat(T.DEC) || eat(T.INT); return t ? parseFloat(t.image) : null; }
 
-    // Parse an RPE value (integer or decimal, optional range N-M)
+    // Parse an RPE value (integer or decimal, optional range N-M).
+    // Detects @N% / @N-M% as PERCENTAGE rather than RPE — corrects the prior
+    // behavior where "@70%" silently aliased to rpe:70 (RPE is a 1-10 scale,
+    // 70 is nonsensical). Also unblocks percentage-chain continuation:
+    // without consuming the trailing %, the chain loop sees PCT not INT
+    // at the chain boundary and stops early.
     function parseRpeMod(pres) {
       const v = eatNum();
       if (v === null) return;
       if (eat(T.DASH)) {
         const v2 = eatNum();
-        if (v2 !== null) { pres.rpeRange = { min: v, max: v2 }; return; }
+        if (v2 !== null) {
+          if (eat(T.PCT)) { pres.percentage = v2 / 100; return; } // "@70-80%" → use upper bound
+          pres.rpeRange = { min: v, max: v2 }; return;
+        }
       }
+      if (eat(T.PCT)) { pres.percentage = v / 100; return; }
       pres.rpe = v;
     }
 
@@ -780,6 +798,20 @@ function parsePrescription(text) {
           }
           pos = _lpSave; // backtrack
         }
+        // "(IDENT)" — single-word intensity tag appearing AFTER base prescription.
+        // Examples: "4x12 (M)" → note="M"; "3x5 (L)" → note="L"; "8x4 (MH)" → note="MH".
+        // Single IDENT only — multi-word "(each side)" stays unconsumed and lands
+        // in row-level coach notes via parseASheet's coachNote handling.
+        if (is(T.LP)) {
+          const _lpSave = pos;
+          pos++;
+          const tag = eat(T.IDENT);
+          if (tag && eat(T.RP)) {
+            pres.note = (pres.note ? pres.note + ' ' : '') + tag.image;
+            found = true; continue;
+          }
+          pos = _lpSave; // backtrack
+        }
       }
     }
 
@@ -809,6 +841,13 @@ function parsePrescription(text) {
       }
       const n = eatInt();
 
+      // ── N sets ────────────────────────────────────────────────────────────
+      if (eat(T.SETS)) {
+        pres.sets = n;
+        parseModifiers(pres);
+        return pres;
+      }
+
       // ── N% / N%xR / N%xRxS / N% 1RM / N% TM ─────────────────────────────
       if (eat(T.PCT)) {
         pres.percentage = n / 100;
@@ -837,6 +876,57 @@ function parsePrescription(text) {
         if (eat(T.LP)) { pres.weight = eatInt(); eat(T.RP); }
         parseModifiers(pres);
         return pres;
+      }
+
+      // ── N-M x R[-S] → sets-range × reps[-repRange] ──────────────────────
+      // "3-4x8-12" → sets=3 (lower bound), repRange={min:8, max:12}
+      // "3-4x8"     → sets=3 (lower bound), reps=8
+      // Lower-bound semantic (L501): minimum drives generation, upper bound is
+      // informational and reconstructible from the prescription string at display.
+      if (is(T.DASH) && is(T.INT, 1) && is(T.X, 2)) {
+        eat(T.DASH); eatInt(); eat(T.X);
+        const m = eatInt();
+        if (m !== null) {
+          pres.sets = n;
+          if (eat(T.DASH)) {
+            const r = eatInt();
+            if (r !== null) pres.repRange = { min: m, max: r };
+            else            pres.reps = m;
+          } else {
+            pres.reps = m;
+          }
+          if (eat(T.LP)) { pres.weight = eatInt(); eat(T.RP); }
+          parseModifiers(pres);
+          return pres;
+        }
+      }
+
+      // ── N-M (bare repRange) → repRange ────────────────────────────────────
+      // "15-20"      → repRange={min:15, max:20}
+      // "8-10 (M)"   → repRange={min:8, max:10}, note="M" (via parseModifiers)
+      // Distinguished from N-M x R[-S] above by absence of X token at offset 2.
+      // The N-M-x-R branch's peek (`is(T.X, 2)`) is non-consuming, so when X
+      // doesn't follow we fall through here cleanly.
+      //
+      // LP-INT peek-check (L507): `(M)` after a repRange is an intensity-tag
+      // modifier, NOT a parenthesized weight. Consuming LP unconditionally
+      // would strand the IDENT and corrupt parseModifiers state.
+      //
+      // Without this branch parsers.js would consume the leading INT only and
+      // silently drop the `-N` suffix, yielding `{reps: 15}` for "15-20" —
+      // which renders as "1×15" instead of "1×15-20" on circuit/superset
+      // members with rep-only prescriptions (Rear Delt Fly, Cable Curl).
+      if (is(T.DASH) && is(T.INT, 1)) {
+        eat(T.DASH);
+        const r = eatInt();
+        if (r !== null) {
+          pres.repRange = { min: n, max: r };
+          if (is(T.LP) && is(T.INT, 1)) {
+            eat(T.LP); pres.weight = eatInt(); eat(T.RP);
+          }
+          parseModifiers(pres);
+          return pres;
+        }
       }
 
       // ── Nx... ─────────────────────────────────────────────────────────────
@@ -875,7 +965,13 @@ function parsePrescription(text) {
         }
 
         // NxM(W) → sets × reps × weight in parens
-        if (eat(T.LP)) {
+        // Peek-check: only fire if LP is followed by INT. Without the peek,
+        // strings like "4x12 (M)" would consume LP unconditionally, fail to
+        // find INT inside, and corrupt the parse state — leaving the
+        // intensity tag (M) stranded mid-expression so parseModifiers's
+        // (IDENT) handler never gets a chance to claim it.
+        if (is(T.LP) && is(T.INT, 1)) {
+          eat(T.LP);
           const w = eatInt(); eat(T.RP); eat(T.UNIT);
           pres.sets = n; pres.reps = m; pres.weight = w;
           parseModifiers(pres);
@@ -898,15 +994,53 @@ function parsePrescription(text) {
         return pres;
       }
 
+      // ── N(IDENT) → 1 set × N reps with intensity tag ─────────────────
+      // e.g., "12(L)" / "8(MH)" — chain item: 1 set of N reps tagged L/M/MH/H.
+      // Used in intensity-marker chains: "12(L) 12(M) 12(MH)".
+      // Tag stored in `note` field; weight resolution happens render-side
+      // against the exercise's intensity table (e.g., "90/120/140" yellow banner).
+      if (is(T.LP) && is(T.IDENT, 1)) {
+        eat(T.LP);
+        const tag = eat(T.IDENT);
+        eat(T.RP);
+        pres.sets = 1;
+        pres.reps = n;
+        if (tag) pres.note = tag.image;
+        parseModifiers(pres);
+        return pres;
+      }
+
+      // ── N(W) → 1 set × N reps × W weight ─────────────────────────────
+      // e.g., "3(465)" — chain item: 1 heavy set of 3 at 465.
+      // Used in space-separated chains: "3(465) 3x2(355)" → heavy 3 + 3x2 backdown.
+      // Also handles legitimate single-set heavy prescriptions and warmup-style entries.
+      if (eat(T.LP)) {
+        const w = eatInt();
+        if (w !== null) {
+          eat(T.RP); eat(T.UNIT);
+          pres.sets = 1;
+          pres.reps = n;
+          pres.weight = w;
+          parseModifiers(pres);
+          return pres;
+        }
+      }
+
       // ── Bare integer (no operator) ────────────────────────────────────────
       pres.reps = n;
       parseModifiers(pres);
       return pres;
     }
 
-    // Parse chain: single prescription or comma-separated list
+    // Parse chain: single prescription, comma-separated list, or space-separated
+    // chain. Space separator is implicit since T.WS is SKIPPED by the lexer;
+    // continuation detected by INT followed by chain-start markers:
+    //   - LP   → "3(465) 3x2(355)" weight chain, "12(L) 12(M)" intensity chain
+    //   - X    → "3x5 4x4" multi-set chain
+    //   - DASH → "3-4x8 3-4x6" sets-range chain
+    //   - AT   → "5@8 3@7" RPE-only chain, "5@70% 3@80%" percentage warmup ramp
     const items = [parseSingle()];
-    while (!atEnd() && eat(T.COMMA)) {
+    while (!atEnd() && (eat(T.COMMA) || (is(T.INT) && (is(T.LP, 1) || is(T.X, 1) || is(T.DASH, 1) || is(T.AT, 1))))) {
       items.push(parseSingle());
     }
 
@@ -3961,6 +4095,7 @@ function _tryParse(wb, formatId) {
       case 'X': return parseX(wb);
       case 'FAMILYE': return parseFamilyE(wb);
       case 'FAMILYF': return parseFamilyF(wb);
+      case 'KIMGRID': return parseKimSingleSheetGrid(wb);
       case 'KIMCOACH': return parseKimCoachFormat(wb);
       case 'HORIZWEEK': return parseHorizWeekMatrix(wb);
       case 'MATRIX': return parseMatrixLayout(wb);
@@ -4157,6 +4292,7 @@ function detectFormat(wb){
       scoreQ(wb, negSignals), scoreR(wb, negSignals), scoreS(wb, negSignals), scoreT(wb, negSignals), scoreU(wb, negSignals),
       scoreV(wb, negSignals), scoreW(wb, negSignals), scoreX(wb, negSignals), scoreFamilyE(wb, negSignals),
       scoreFamilyF(wb, negSignals),
+      scoreKimSingleSheetGrid(wb, negSignals),
       scoreKimCoachFormat(wb, negSignals),
       scoreFamilyC(wb, negSignals),
       scoreFamilyB(wb, negSignals),
@@ -4264,9 +4400,11 @@ function parseASheet(sn,rows){
       else{
         const lp=(/\(/.test(cs)&&(/\d/.test(cs)||/[LMH]/.test(cs)));
         const lp2=/^\d+x\d+/i.test(cs);
+        const lp3=/^\d+(?:-\d+)?x\d+(?:-\d+)?\b/i.test(cs);
+        const lp4=/^\d+\s+sets?\b/i.test(cs);
         const ln=cs.startsWith('(')||cs.toLowerCase().includes('increase');
         const supersetMatch=
-          cs.match(/^(\d+)\s*rounds?[\s:]*/i) ||
+          cs.match(/^(\d+(?:-\d+)?)\s*rounds?[\s:]*/i) ||
           (cs.match(/^superset[\s:]*/i) && ['1']) ||
           (cs.match(/^SS[\s:]*/i) && ['1']) ||
           (cs.match(/^giant\s*set[\s:]*/i) && ['1']) ||
@@ -4287,14 +4425,14 @@ function parseASheet(sn,rows){
         if(supersetMatch){
           const rounds=parseInt(supersetMatch[1])||1;
           const _isCirc=/circuit|giant/i.test(cs);
-          const label=rounds>1?rounds+' rounds':_isCirc?'circuit':'superset';
+          const label=rounds>1?supersetMatch[1]+' rounds':_isCirc?'circuit':'superset';
           curSupersetGroup={label,rounds,startIdx:exs.length,_maxExercises:_isCirc?6:2,_count:0};
         }
 
         // Auto-clear superset after consuming expected number of exercises
         if(curSupersetGroup && curSupersetGroup._count>=curSupersetGroup._maxExercises) curSupersetGroup=null;
 
-        if(!lp&&!lp2&&!ln&&!isSectionHeader&&!isCoachNoteLine){
+        if(!lp&&!lp2&&!lp3&&!lp4&&!ln&&!isSectionHeader&&!isCoachNoteLine){
           let normalizedCs=cs.replace(/\s+/g,' ').trim();
           let embeddedPres=null;
           const leadingRepsMatch=normalizedCs.match(/^(\d+(?:[:\.]\d+)?)\s+([A-Za-z].+)$/);
@@ -4309,7 +4447,7 @@ function parseASheet(sn,rows){
         } else if(cur&&(isCoachNoteLine||ln)){
           const noteText=cs.replace(/^-|-$/g,'').trim();
           if(noteText&&!cur.coachNotes.includes(noteText)) cur.coachNotes.push(noteText);
-        } else if(cur&&(lp||lp2)&&!cur.staticPrescription){
+        } else if(cur&&(lp||lp2||lp3||lp4)&&!cur.staticPrescription){
           cur.staticPrescription=cs;
           if(note){
             const noteStr=String(note).trim();
@@ -4437,7 +4575,7 @@ function parseBSheet(sn,rows,ws){
       if(supersetMatch){
         const rounds=parseInt(supersetMatch[1])||1;
         const _isCirc2=/circuit|giant/i.test(normName);
-        const label=rounds>1?rounds+' rounds':_isCirc2?'circuit':'superset';
+        const label=rounds>1?supersetMatch[1]+' rounds':_isCirc2?'circuit':'superset';
         curSupersetGroup={label,rounds,startIdx:curDay.exercises.length,_maxExercises:_isCirc2?6:2,_count:0};
       }
 
@@ -5411,6 +5549,11 @@ function _scoreParseQuality(blocks, formatId) {
     // so standalone parsers can't isolate sets/reps. Text fallback is expected, not degraded.
     // Always Tier 2 — never reject, never silent Tier 1.
     tier = 2;
+  } else if (formatId === 'KIMGRID') {
+    // KIMGRID: coach-authored lane sheets mix formal prescriptions with mobility text,
+    // "fail" accessories, and descriptive warmups. Structural parse quality matters more
+    // than generic prescription scoring, so never hard-reject on this score alone.
+    tier = 2;
   } else if (formatId === 'ADAPTIVE') {
     // ADAPTIVE: last-resort fallback parser, high score shouldn't produce silent Tier 1
     tier = score >= 60 ? 2 : 3;
@@ -5463,6 +5606,7 @@ function parseWorkbook(wb){
   else if (fmt === 'X') blocks = parseX(wb);
   else if (fmt === 'FAMILYE') blocks = parseFamilyE(wb);
   else if (fmt === 'FAMILYF') blocks = parseFamilyF(wb);
+  else if (fmt === 'KIMGRID') blocks = parseKimSingleSheetGrid(wb);
   else if (fmt === 'KIMCOACH') blocks = parseKimCoachFormat(wb);
   else if (fmt === 'HORIZWEEK') blocks = parseHorizWeekMatrix(wb);
   else if (fmt === 'MATRIX') blocks = parseMatrixLayout(wb);
@@ -19118,6 +19262,293 @@ function parseKimCoachFormat(wb) {
   }];
 }
 
+// ── FORMAT KIMGRID PARSER (single-sheet multi-lane coach grid) ──────────────
+//
+// Detection:
+// - single primary sheet
+// - one or more section headers where a row of day labels is followed by lane columns
+// - each lane starts at a labeled column and has:
+//   col+1 = "weight"
+//   col+2 = "estimated sets/reps"
+//   col+3 = optional "actual weight/sets/reps"
+//
+// Parsing:
+// - each repeated header section becomes a week
+// - each lane becomes a day
+// - named exercise rows start a new exercise
+// - blank-name continuation rows append weight/prescription to the current exercise
+// - note/link rows attach to the current exercise note when possible
+
+function scoreKimSingleSheetGrid(wb, negSignals) {
+  var id = 'KIMGRID';
+  var matched = [], missing = [], negative = [];
+  var score = 0;
+
+  try {
+    if (!wb.SheetNames || wb.SheetNames.length === 0) {
+      missing.push('no sheets');
+      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    var candidateSections = 0;
+    var totalLanes = 0;
+
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var ws = wb.Sheets[wb.SheetNames[si]];
+      if (!ws || !ws['!ref']) continue;
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      var sections = _ksg_findSections(rows);
+      if (sections.length > 0) {
+        candidateSections += sections.length;
+        for (var i = 0; i < sections.length; i++) totalLanes += sections[i].lanes.length;
+      }
+    }
+
+    if (candidateSections === 0) {
+      missing.push('no multi-lane coach-grid sections');
+      return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: negative } };
+    }
+
+    score += 0.65;
+    matched.push(candidateSections + ' section(s) with horizontal lane headers');
+
+    if (totalLanes >= 3) {
+      score += 0.2;
+      matched.push(totalLanes + ' day lanes detected');
+    }
+
+    if (wb.SheetNames.length === 1) {
+      score += 0.1;
+      matched.push('single-sheet coach grid');
+    }
+
+    if (candidateSections >= 2) {
+      score += 0.05;
+      matched.push('repeated section headers suggest multiple weeks');
+    }
+
+    if (negSignals) {
+      if (negSignals.hasTierLabels) { score -= 0.25; negative.push('T1/T2/T3 tier labels (→D/X)'); }
+      if (negSignals.hasFatiguePercents) { score -= 0.3; negative.push('Fatigue Percents header (→P)'); }
+      if (negSignals.hasMRVMEV) { score -= 0.25; negative.push('MRV/MEV/MAV cells (→T/RP)'); }
+      if (negSignals.hasCandidoPhases) { score -= 0.2; negative.push('Candito phase tabs (→L)'); }
+    }
+
+    return { id: id, score: Math.min(1.0, Math.max(0.0, score)), signals: { matched: matched, missing: missing, negative: negative } };
+  } catch (e) {
+    return { id: id, score: 0, signals: { matched: matched, missing: missing, negative: ['error: ' + e.message] } };
+  }
+}
+
+function parseKimSingleSheetGrid(wb) {
+  var blocks = [];
+
+  for (var si = 0; si < wb.SheetNames.length; si++) {
+    var sheetName = wb.SheetNames[si];
+    var ws = wb.Sheets[sheetName];
+    if (!ws || !ws['!ref']) continue;
+
+    var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
+      .map(function(r) {
+        return r ? r.map(function(c) {
+          return (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c;
+        }) : r;
+      });
+
+    var sections = _ksg_findSections(rows);
+    if (sections.length === 0) continue;
+
+    var weeks = [];
+    for (var wi = 0; wi < sections.length; wi++) {
+      var section = sections[wi];
+      var days = [];
+      for (var li = 0; li < section.lanes.length; li++) {
+        var lane = section.lanes[li];
+        var exercises = _ksg_parseLane(rows, section.dataStart, section.endRow, lane);
+        if (exercises.length > 0) {
+          days.push({
+            name: lane.dayLabel || ('Day ' + (li + 1)),
+            exercises: exercises
+          });
+        }
+      }
+      if (days.length > 0) {
+        weeks.push({
+          label: 'Week ' + (weeks.length + 1),
+          days: days
+        });
+      }
+    }
+
+    if (weeks.length > 0) {
+      blocks.push({
+        id: 'kimgrid_' + Date.now() + '_' + si,
+        name: (wb._plFilename || sheetName || 'Training Program').replace(/\.xlsx?$/i, ''),
+        format: 'KIMGRID',
+        athleteName: '',
+        dateRange: '',
+        maxes: {},
+        weeks: weeks
+      });
+    }
+  }
+
+  return blocks;
+}
+
+function _ksg_findSections(rows) {
+  var sections = [];
+
+  for (var r = 0; r < rows.length - 1; r++) {
+    var lanes = _ksg_detectLaneGroups(rows, r);
+    if (lanes.length === 0) continue;
+    if (sections.length > 0 && sections[sections.length - 1].headerRow === r) continue;
+    sections.push({
+      headerRow: r,
+      schemaRow: r + 1,
+      dataStart: r + 2,
+      lanes: lanes,
+      endRow: rows.length
+    });
+  }
+
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].endRow = i + 1 < sections.length ? sections[i + 1].headerRow : rows.length;
+  }
+
+  return sections;
+}
+
+function _ksg_detectLaneGroups(rows, headerRowIdx) {
+  var headerRow = rows[headerRowIdx] || [];
+  var schemaRow = rows[headerRowIdx + 1] || [];
+  var lanes = [];
+
+  for (var col = 0; col < headerRow.length; col++) {
+    var dayCell = _ksg_clean(headerRow[col]);
+    if (!dayCell) continue;
+
+    var weightHeader = _ksg_clean(schemaRow[col + 1]).toLowerCase();
+    var estimatedHeader = _ksg_clean(schemaRow[col + 2]).toLowerCase();
+    if (weightHeader !== 'weight' || estimatedHeader !== 'estimated sets/reps') continue;
+
+    var hasDataBelow = false;
+    for (var r = headerRowIdx + 2; r < Math.min(rows.length, headerRowIdx + 8); r++) {
+      var row = rows[r] || [];
+      if (_ksg_clean(row[col]) || _ksg_clean(row[col + 1]) || _ksg_clean(row[col + 2])) {
+        hasDataBelow = true;
+        break;
+      }
+    }
+    if (!hasDataBelow) continue;
+
+    lanes.push({
+      startCol: col,
+      exerciseCol: col,
+      weightCol: col + 1,
+      estimatedCol: col + 2,
+      actualCol: _ksg_clean(schemaRow[col + 3]).toLowerCase() === 'actual weight/sets/reps' ? col + 3 : null,
+      dayLabel: _ksg_buildLaneLabel(headerRow, col)
+    });
+  }
+
+  return lanes;
+}
+
+function _ksg_buildLaneLabel(headerRow, startCol) {
+  var parts = [];
+  for (var c = startCol; c <= startCol + 2; c++) {
+    var value = _ksg_clean(headerRow[c]);
+    if (!value) continue;
+    if (parts.indexOf(value) === -1) parts.push(value);
+  }
+  return parts.join(' / ');
+}
+
+function _ksg_parseLane(rows, startRow, endRow, lane) {
+  var exercises = [];
+  var currentExercise = null;
+
+  for (var r = startRow; r < endRow; r++) {
+    var row = rows[r] || [];
+    var exCell = _ksg_clean(row[lane.exerciseCol]);
+    var weightCell = _ksg_clean(row[lane.weightCol]);
+    var estimatedCell = _ksg_clean(row[lane.estimatedCol]);
+    var actualCell = lane.actualCol == null ? '' : _ksg_clean(row[lane.actualCol]);
+
+    if (!exCell && !weightCell && !estimatedCell && !actualCell) continue;
+
+    var hasPrescriptionPayload = !!(weightCell || estimatedCell);
+    var exIsUrl = /^https?:\/\//i.test(exCell);
+    var hasEstimated = !!estimatedCell;
+
+    if (exCell && hasPrescriptionPayload && !exIsUrl) {
+      currentExercise = {
+        name: _ksg_normalizeExerciseName(exCell),
+        prescription: _ksg_buildPrescription(weightCell, estimatedCell),
+        note: '',
+        lifterNote: '',
+        loggedWeight: actualCell || '',
+        supersetGroup: null
+      };
+      exercises.push(currentExercise);
+      continue;
+    }
+
+    if (exIsUrl && currentExercise) {
+      currentExercise.note = _ksg_appendNote(currentExercise.note, exCell);
+      if (estimatedCell) currentExercise.note = _ksg_appendNote(currentExercise.note, estimatedCell);
+      if (actualCell) currentExercise.loggedWeight = _ksg_appendNote(currentExercise.loggedWeight, actualCell);
+      continue;
+    }
+
+    if (!exCell && hasEstimated && currentExercise) {
+      var continuation = _ksg_buildPrescription(weightCell, estimatedCell);
+      if (continuation) {
+        currentExercise.prescription = currentExercise.prescription
+          ? currentExercise.prescription + ', ' + continuation
+          : continuation;
+      }
+      if (actualCell) currentExercise.loggedWeight = _ksg_appendNote(currentExercise.loggedWeight, actualCell);
+      continue;
+    }
+
+    if (currentExercise) {
+      var noteText = exCell || weightCell || estimatedCell || actualCell;
+      if (noteText) currentExercise.note = _ksg_appendNote(currentExercise.note, noteText);
+    }
+  }
+
+  return exercises.filter(function(ex) {
+    return ex.name && ex.prescription;
+  });
+}
+
+function _ksg_buildPrescription(weightCell, estimatedCell) {
+  var estimated = _ksg_clean(estimatedCell);
+  var weight = _ksg_clean(weightCell);
+  if (!estimated && !weight) return '';
+  if (!estimated) return weight;
+  if (!weight || weight === '-' || /^bodyweight$/i.test(weight)) return estimated;
+  return estimated + ' (' + weight + ')';
+}
+
+function _ksg_normalizeExerciseName(name) {
+  return _ksg_clean(name).replace(/\s+/g, ' ');
+}
+
+function _ksg_appendNote(existing, next) {
+  var a = _ksg_clean(existing);
+  var b = _ksg_clean(next);
+  if (!b) return a;
+  if (!a) return b;
+  return a + ' | ' + b;
+}
+
+function _ksg_clean(value) {
+  return value == null ? '' : String(value).trim();
+}
+
 // ── scoreFamilyF ──────────────────────────────────────────────────────────────
 function scoreFamilyF(wb, negSignals = null) {
   var id = 'FAMILYF';
@@ -20014,6 +20445,8 @@ if (typeof module !== 'undefined' && module.exports) {
     scoreFamilyF, parseFamilyF,
     _ff_isNonWorkoutTab, _ff_findHeaderRow, _ff_mapColumns, _ff_buildPrescription,
     _ff_isBlankRow, _ff_isDayHeader, _ff_parseWeekTab, _ff_parsePortraitGrid,
+    // KimGrid Parser (Single-sheet multi-lane coach grid)
+    scoreKimSingleSheetGrid, parseKimSingleSheetGrid, _ksg_findSections, _ksg_detectLaneGroups, _ksg_parseLane,
     // KimCoach Parser (Sheet-per-week, multi-block vertical layout with "Sets X Reps @RPE" headers)
     scoreKimCoachFormat, parseKimCoachFormat, _kc_parseSheet,
     // RP Hypertrophy Parser (Horizontal Mesocycle Format)
@@ -20030,4 +20463,3 @@ if (typeof module !== 'undefined' && module.exports) {
     _scoreParseQuality, _classifyPrescription, _detectDegradation, _isCoachingText,
   };
 }
-
