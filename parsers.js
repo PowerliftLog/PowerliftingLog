@@ -4,6 +4,7 @@
 // In production, include via <script src="parsers.js"></script> before the main script.
 // Updated: 2026-05-06 — Phase Parser Fixes: KIMGRID port + Joe Cycle 4 (4 bugs + range-preserving labels + N-MxR-S grammar)
 // Updated: 2026-05-07 — Phase Parser Rounds Schema: bare N-M repRange grammar branch (e.g. "15-20" → repRange:{15,20})
+// Updated: 2026-06-11 — Joe Cycle 5: "Weds" abbreviated day header + meet-calendar exclusion + W1-4/W5-7 range expansion (upsert-by-week)
 
 // ── LIFT GROUPS & CLASSIFICATION ──────────────────────────────────────────────
 const LIFT_GROUPS = {
@@ -4357,12 +4358,20 @@ function parseA(wb){
   return blocks;
 }
 
+function _aDayMatch(c){
+  if(c==null) return false;
+  const _s=String(c).toLowerCase().trim();
+  if(!_s) return false;
+  if(DAYS.some(d=>_s.startsWith(d))) return true;
+  const tok=_s.split(/[\s.,/\-]+/)[0];
+  return ['mon','tue','tues','wed','weds','thu','thur','thurs','fri','sat','sun'].includes(tok);
+}
 function parseASheet(sn,rows){
   if(rows.length<4) return null;
   let hdr=-1;
   for(let i=0;i<Math.min(10,rows.length);i++){
     const r=rows[i]; if(!r) continue;
-    if(r.filter(c=>c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d))).length>=2){hdr=i;break;}
+    if(r.filter(c=>c&&_aDayMatch(c)).length>=2){hdr=i;break;}
   }
   if(hdr===-1) return null;
 
@@ -4385,18 +4394,31 @@ function parseASheet(sn,rows){
   const dayCols=[];
   for(let col=0;col<hrRow.length;col++){
     const c=hrRow[col];
-    if(c&&DAYS.some(d=>String(c).toLowerCase().trim().startsWith(d)))
+    if(c&&_aDayMatch(c))
       dayCols.push({col,name:String(c).trim(),noteCol:col+1});
+  }
+  let bodyEnd=rows.length;
+  { const calRe=/^(mon|tues?|weds?|thur?s?|fri|sat|sun)[a-z]*\.?\s+\d{1,2}[\/\-]\d/i;
+    const yearRe=/\b(19|20)\d{2}\b/;
+    const _isCalCell=(c)=> (c instanceof Date) || (c!=null && (calRe.test(String(c).trim())||yearRe.test(String(c).trim())));
+    const _allBlankRow=(row)=> dayCols.every(({col})=> !row||row[col]==null||String(row[col]).trim()==='');
+    const _isCalRow=(row)=>{ if(!row) return false; const cells=dayCols.map(({col})=>row[col]).filter(c=>c!=null&&String(c).trim()!==''); return cells.length>0 && cells.every(_isCalCell); };
+    let calRow=-1;
+    for(let r=hdr+2;r<rows.length;r++){ const row=rows[r]; if(!row) continue; let hits=0; for(const c of row){ if(c==null) continue; if(c instanceof Date) hits++; else if(calRe.test(String(c).trim())) hits++; } if(hits>=2){ calRow=r; break; } }
+    if(calRow!==-1){ bodyEnd=calRow; let lastBlank=-1;
+      for(let r=calRow-1;r>hdr;r--){ const row=rows[r]; if(_allBlankRow(row)){ lastBlank=r; continue; } if(_isCalRow(row)){ continue; } break; }
+      if(lastBlank!==-1) bodyEnd=lastBlank;
+    }
   }
   const rawDays=dayCols.map(({col,name,noteCol})=>{
     const exs=[]; let cur=null; let curSupersetGroup=null;
-    for(let r=hdr+1;r<rows.length;r++){
+    for(let r=hdr+1;r<bodyEnd;r++){
       const row=rows[r]; if(!row) continue;
       const cell=row[col]; const note=row[noteCol];
       if(cell===null||cell===undefined||!String(cell).trim()){ curSupersetGroup=null; continue; }
       const cs=String(cell).trim();
-      const wm=cs.match(/^W(\d+):\s*(.+)/i);
-      if(wm){ if(cur){ const wTrack=(note!==null&&note!==undefined)?String(note).trim():null; cur.weeks.push({week:parseInt(wm[1]),prescription:wm[2].trim(),note:null,trackingRaw:wTrack}); } }
+      const wm=cs.match(/^W(\d+)(?:\s*[-–]\s*(\d+))?:\s*(.+)/i);
+      if(wm){ if(cur){ const wTrack=(note!==null&&note!==undefined)?String(note).trim():null; let wStart=parseInt(wm[1]); let wEnd=wm[2]?parseInt(wm[2]):wStart; const pres=wm[3].trim(); if(wEnd<wStart) wEnd=wStart; if(wEnd>wStart+51) wEnd=wStart+51; for(let wk=wStart;wk<=wEnd;wk++){ const _ex=cur.weeks.find(x=>x.week===wk); if(_ex){ _ex.prescription=pres; _ex.trackingRaw=wTrack; } else { cur.weeks.push({week:wk,prescription:pres,note:null,trackingRaw:wTrack}); } } } }
       else{
         const lp=(/\(/.test(cs)&&(/\d/.test(cs)||/[LMH]/.test(cs)));
         const lp2=/^\d+x\d+/i.test(cs);
@@ -4462,7 +4484,7 @@ function parseASheet(sn,rows){
   });
 
   let nw=0;
-  for(const d of rawDays) for(const e of d.exercises) if(e.weeks.length>nw) nw=e.weeks.length;
+  for(const d of rawDays) for(const e of d.exercises) for(const _wk of e.weeks) if(_wk.week>nw) nw=_wk.week;
   if(nw===0) nw=4;
 
   const weeks=[];
@@ -7856,6 +7878,9 @@ function parseE_texasMethod(wb) {
 // ── FORMAT C PARSER (split Sets/Reps/Load columns with Day N headers) ────────
 function parseCAutoFormat(wb) {
   const blocks = [];
+  const aggregatedMaxes = {};
+  let firstSheetMeta = null;
+
   for (const sn of wb.SheetNames) {
     try {
       const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:null});
@@ -7863,20 +7888,31 @@ function parseCAutoFormat(wb) {
       const rows = rawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
       const week = parseCAutoSheet(sn, rows, wb.Sheets[sn]);
       if (week) blocks.push(week);
+
+      // Latest-non-blank-per-lift across sheets — earlier sheets are historical.
+      const sheetMeta = extractCAutoMeta(rows);
+      if (sheetMeta && sheetMeta.maxes) {
+        Object.keys(sheetMeta.maxes).forEach(k => {
+          const v = sheetMeta.maxes[k];
+          if (v != null && !isNaN(v)) aggregatedMaxes[k] = v;
+        });
+      }
+      if (firstSheetMeta === null) firstSheetMeta = sheetMeta;
     } catch(e) { console.error(`[parseCAutoFormat] Error parsing sheet "${sn}":`, e); }
   }
   if (blocks.length === 0) return [];
 
-  const firstRawRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null});
-  fixDateSerials(wb.Sheets[wb.SheetNames[0]], firstRawRows);
-  const firstRows = firstRawRows.map(r => r ? r.map(c => (typeof c === 'string' && c.startsWith("'")) ? c.slice(1) : c) : r);
-  const meta = extractCAutoMeta(firstRows);
-
-  const blockName = meta.blockName || wb._plFilename || 'Program';
+  const meta = firstSheetMeta || { athlete: '', blockName: '', dateRange: '', startDate: null };
+  // Fix 9.5: strip .xlsx? extension when falling back to _plFilename — extension-strip
+  // parity with the 10 other _plFilename callsites in parsers.js (some also .trim();
+  // the parity claim is about extension-strip, .trim() preserved defensively). Latent
+  // bug the bridge thread-through exposes; without strip, my-program__orig baseline
+  // would emit "my-program__orig.xlsx" with extension surviving (per L584).
+  const blockName = meta.blockName || (wb._plFilename ? wb._plFilename.replace(/\.xlsx?$/i, '').trim() : '') || 'Program';
   const id = 'c_' + blockName.replace(/\s+/g,'_').substring(0,30) + '_' + Date.now();
   return [{
     id, name: blockName, format: 'C', weeks: blocks, athlete: meta.athlete || '',
-    maxes: meta.maxes || {}, dateRange: meta.dateRange || '',
+    maxes: aggregatedMaxes, dateRange: meta.dateRange || '',
     startDate: meta.startDate || null
   }];
 }
@@ -7892,6 +7928,8 @@ function extractCAutoMeta(rows) {
       const val = parseInt(maxMatch[2]);
       if (lift.includes('squat')) meta.maxes.squat = val;
       else if (lift.includes('bench')) meta.maxes.bench = val;
+      // sumo branch MUST come before bare deadlift — "Sumo Deadlift" contains both.
+      else if (lift.includes('sumo')) meta.maxes.sumoDeadlift = val;
       else if (lift.includes('deadlift')) meta.maxes.deadlift = val;
     }
     if (i === 0 && a) {
@@ -7961,7 +7999,12 @@ function parseCAutoSheet(sn, rows, ws) {
       continue;
     }
 
-    if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(colA)) continue;
+    if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(colA)) {
+      // Fix 15 C1: only skip bare weekday-name rows; fall through when col B holds exercise data.
+      // Mirrors the _hasExData pattern at line 7987-7988 (same SUB_SECTIONS + _isSupersetLabel guards).
+      const _hasExData_c1 = exVal && !_isSupersetLabel(exVal) && !SUB_SECTIONS.some(s => exVal.toLowerCase() === s);
+      if (!_hasExData_c1) continue;
+    }
     if (strs.includes('sets') && strs.includes('reps')) continue;
     if (!curDay) continue;
 
@@ -12177,6 +12220,9 @@ function _parseL_benchHybrid(wb) {
   for (const sn of allSheets) {
     const ws = wb.Sheets[sn];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    // Fix 12 (Class L11) — capture sheet range for col-5-scoped cell.w recovery.
+    // See PHASE_AI_0_FIX_12_L11_KICKOFF.md + STAGE1_FIX_12_L11_RESEARCH.md.
+    const sheetRange = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
     const wm = sn.match(/week\s*(\d+)/i);
     const weekLabel = wm ? `Week ${wm[1]}` : sn;
     const week = { label: weekLabel, days: [] };
@@ -12200,6 +12246,16 @@ function _parseL_benchHybrid(wb) {
       const rpe = String(row[3] || '').trim();
       const sets = typeof row[4] === 'number' ? Math.round(row[4]) : null;
       let reps = row[5];
+      // Fix 12 (Class L11) — bench-hybrid encodes rep ranges as d-m date-serial
+      // cells (e.g. F10=2020-12-08 renders "8-12"). Scope: col 5 ONLY. We cannot
+      // use fixDateSerials(ws, rows) here because it would mutate col A day
+      // sentinels at row[0] and break _lIsDateSerial(row[0]) detection at the
+      // day-loop above. See PHASE_AI_0_FIX_12_L11_KICKOFF.md + STAGE1_FIX_12_L11_RESEARCH.md.
+      if (reps instanceof Date && sheetRange) {
+        const cellAddr = XLSX.utils.encode_cell({ r: i + sheetRange.s.r, c: 5 + sheetRange.s.c });
+        const cell = ws[cellAddr];
+        if (cell && typeof cell.w === 'string' && /^\d+-\d+$/.test(cell.w)) reps = cell.w;
+      }
       if (reps instanceof Date) reps = null;
       if (typeof reps === 'number' && reps > 1000) reps = null;
       if (typeof reps === 'number') reps = Math.round(reps);
@@ -12562,6 +12618,11 @@ function _parseL_advancedSquat(wb) {
       const dVal = String(row[3] || '');
       if (/^or$/i.test(dVal) && typeof row[4] === 'number') {
         weightNote = `${weight} or ${Math.round(row[4])}`;
+      } else if (/^to$/i.test(dVal) && typeof row[4] === 'number') {
+        // Fix 13 (Class L15) — working-range connective: weight progresses lower → upper.
+        // Distinct from "Or" (alternative-pick semantics) — verbatim "X to Y" preserved
+        // for downstream renderer to branch on. See PHASE_AI_0_FIX_13_L15_KICKOFF.md.
+        weightNote = `${weight} to ${Math.round(row[4])}`;
       }
       const sets = typeof row[setsCol] === 'number' ? Math.round(row[setsCol]) : null;
       let reps = row[repsCol];
@@ -13552,20 +13613,50 @@ function parseO(wb) {
   // Also track secondary rows (col 0 empty, col 3 = "-" with sets/reps)
   // Structure: between each pair of day markers
 
-  // Extract maxes from Personal Info sheet if available
+  // Extract maxes from Personal Info sheet (TSA layout: O9/S9/W9 label cells +
+  // O10/S10/W10 current-1RM cells, cached from FILTER-MAX of rep-history below).
+  // Cols A-F hold an exercise-name normalization table (not numeric maxes).
   const maxes = {};
   if (names.includes('personal info')) {
     const piWs = wb.Sheets[wb.SheetNames[names.indexOf('personal info')]];
-    const piRows = XLSX.utils.sheet_to_json(piWs, {header:1, defval:null});
-    for (let r = 0; r < Math.min(20, piRows.length); r++) {
-      const label = String(piRows[r]?.[0] || '').trim().toLowerCase();
-      const val = piRows[r]?.[1];
-      if (typeof val === 'number') {
-        if (label.includes('squat')) maxes.squat = val;
-        else if (label.includes('bench')) maxes.bench = val;
-        else if (label.includes('dead')) maxes.deadlift = val;
+    const MAXES_BANDS = [
+      { labelRow: 8, labelCol: 14, valueRow: 9, valueCol: 14 },     // O9 label, O10 value (squat)
+      { labelRow: 8, labelCol: 18, valueRow: 9, valueCol: 18 },     // S9 label, S10 value (bench)
+      { labelRow: 8, labelCol: 22, valueRow: 9, valueCol: 22 },     // W9 label, W10 value (deadlift)
+    ];
+    const LABEL_MAP = {
+      'squat': 'squat',
+      'bench': 'bench',
+      'bench press': 'bench',
+      'deadlift': 'deadlift'
+    };
+    for (const band of MAXES_BANDS) {
+      const label = _rGetCell(piWs, band.labelRow, band.labelCol);
+      if (typeof label !== 'string') continue;
+      const key = LABEL_MAP[label.trim().toLowerCase()];
+      if (!key) continue;
+      if (key in maxes) continue;
+      const value = _rGetCell(piWs, band.valueRow, band.valueCol);
+      if (typeof value === 'number' && isFinite(value)) {
+        maxes[key] = value;
       }
     }
+  }
+
+  // Athlete name from Personal Info!L26 (first) + L27 (last), with template-
+  // placeholder filter per Fix 17 / L587 product-shape lock 2026-05-20 PM.
+  // Per-cell filter: drop "First" / "Last" placeholders independently
+  // (case-insensitive); concat survivors with single space; emit null when
+  // the combined trimmed string is empty.
+  let athleteName = null;
+  if (names.includes('personal info')) {
+    const _piWs = wb.Sheets[wb.SheetNames[names.indexOf('personal info')]];
+    const first = String(_rGetCell(_piWs, 25, 11) || '').trim();
+    const last  = String(_rGetCell(_piWs, 26, 11) || '').trim();
+    const firstClean = (first && first.toLowerCase() !== 'first') ? first : '';
+    const lastClean  = (last && last.toLowerCase() !== 'last')  ? last  : '';
+    const combined = (firstClean + ' ' + lastClean).replace(/\s+/g, ' ').trim();
+    if (combined) athleteName = combined;
   }
 
   // Build weeks
@@ -13600,8 +13691,14 @@ function parseO(wb) {
         // Skip note rows
         if (movement.toLowerCase().startsWith('note:')) continue;
 
-        // New exercise (has name in col +0)
-        if (exNameRaw && exNameRaw.length > 1) {
+        // New exercise: either col +0 (category) has a label, OR col +0 is empty
+        // but col +3 (movement) holds a real exercise name with prescription data.
+        // The empty-category case is the meet/mock-meet authoring pattern — Class O2
+        // per PHASE_AI_0_FIX_7_TSA_MEET_DAY_BENCH_PRESS_KICKOFF.md. Without this
+        // disjunct, the MEET-day Bench Press row silently drops because it has no
+        // category label even though movement+sets+reps are present.
+        if ((exNameRaw && exNameRaw.length > 1) ||
+            (!exNameRaw && movement && movement !== '-' && movement !== 'SELECT' && hasSets && hasReps)) {
           // Save previous (only if it has prescription data)
           if (currentEx && currentEx.lines.length > 0) {
             exercises.push(_oFinalize(currentEx));
@@ -13635,7 +13732,7 @@ function parseO(wb) {
     id: 'tsa_9week_intermediate',
     name: 'TSA 9-Week Intermediate',
     format: 'O',
-    athleteName: null,
+    athleteName,
     dateRange: null,
     maxes,
     weeks
@@ -14716,6 +14813,43 @@ function _qIsNumeric(val) {
  * @returns {boolean}
  */
 
+// Scan PHUL OverviewData sheet for the 4-lift maxes table.
+// Layout (fixed per PHUL template):
+//   A3-A6 = lift labels (col 0, rows 2-5 0-indexed)
+//   B3-B6 = Phase 1 (Current) values (col 1, rows 2-5)
+// Returns {} when OverviewData sheet is absent. Sparse — only emits keys for
+// rows with a canonical label AND a finite numeric value. "Shoulder Press"
+// routes to ohp (PHUL's lone press slot; functionally identical to OHP).
+// Bare "Press" deliberately excluded per Fix 1 precedent (Floor/Pin collision).
+function _rExtractMaxes(workbook) {
+  const sheet = workbook.Sheets['OverviewData'];
+  if (!sheet) return {};
+
+  const LABEL_MAP = {
+    'squat': 'squat',
+    'bench': 'bench',
+    'bench press': 'bench',
+    'deadlift': 'deadlift',
+    'ohp': 'ohp',
+    'overhead press': 'ohp',
+    'shoulder press': 'ohp'
+  };
+
+  const maxes = {};
+  for (let row = 2; row <= 5; row++) {
+    const label = _rGetCell(sheet, row, 0);
+    if (typeof label !== 'string') continue;
+    const key = LABEL_MAP[label.trim().toLowerCase()];
+    if (!key) continue;
+    if (key in maxes) continue;
+    const value = _rGetCell(sheet, row, 1);
+    if (typeof value === 'number' && isFinite(value)) {
+      maxes[key] = value;
+    }
+  }
+  return maxes;
+}
+
 /**
  * Parse Format R workbook into PowerliftingLog format
  * @param {object} workbook - XLSX workbook object
@@ -14759,7 +14893,7 @@ function parseR(workbook) {
     format: 'R',
     athleteName: null,
     dateRange: null,
-    maxes: {},
+    maxes: _rExtractMaxes(workbook),
     weeks: []
   };
 
@@ -15074,6 +15208,42 @@ function _rGenerateId() {
  */
 
 
+// Scan PHAT Inputs sheet for the 3-lift maxes table.
+// Layout (fixed per PHAT template):
+//   B3-B5 = lift labels (col 1, rows 2-4 0-indexed)
+//   C3-C5 = 1RM values (col 2, rows 2-4 0-indexed)
+// Returns {} when Inputs sheet is absent (e.g. content-fallback detection path
+// where the Inputs tab was renamed — scoreS still detects PHAT via Set Scheme
+// + section-header content, but maxes extraction here is sheet-name literal
+// per v1 scope). Sparse — only emits keys for rows with a canonical label AND
+// a finite numeric value. PHAT has no OHP slot anywhere in the program;
+// LABEL_MAP intentionally omits ohp/overhead press/shoulder press.
+function _sExtractMaxes(workbook) {
+  const sheet = workbook.Sheets['Inputs'];
+  if (!sheet) return {};
+
+  const LABEL_MAP = {
+    'squat': 'squat',
+    'bench': 'bench',
+    'bench press': 'bench',
+    'deadlift': 'deadlift'
+  };
+
+  const maxes = {};
+  for (let row = 2; row <= 4; row++) {
+    const label = _rGetCell(sheet, row, 1);
+    if (typeof label !== 'string') continue;
+    const key = LABEL_MAP[label.trim().toLowerCase()];
+    if (!key) continue;
+    if (key in maxes) continue;
+    const value = _rGetCell(sheet, row, 2);
+    if (typeof value === 'number' && isFinite(value)) {
+      maxes[key] = value;
+    }
+  }
+  return maxes;
+}
+
 /**
  * Parses a PHAT Format S workbook
  * @param {Object} workbook - XLSX workbook object
@@ -15116,7 +15286,7 @@ function parseS(workbook) {
         format: 'S',
         athleteName: null,
         dateRange: null,
-        maxes: {},
+        maxes: _sExtractMaxes(workbook),
         weeks: [weekData]
       });
     } else {
@@ -15168,7 +15338,7 @@ function _sParseWeekSheet(ws, weekNumber) {
     const exercises = section.exercises.map(ex => ({
       name: ex.name,
       prescription: _sFormatPrescription(ex.setScheme, ex.weight),
-      note: _sFormatNote(ex.purpose, ex.percentage),
+      note: _sFormatNote(ex.purpose, ex.percentage, section.percentContext),
       lifterNote: null,
       loggedWeight: null,
       supersetGroup: null
@@ -15213,6 +15383,7 @@ function _sExtractSections(ws) {
       currentSection = {
         title: sectionTitle,
         dayNumber: dayNum,
+        percentContext: _sExtractPercentContext(row[4]),
         exercises: []
       };
       continue;
@@ -15394,7 +15565,7 @@ function _sFormatPrescription(setScheme, weight) {
  * @param {number|null} percentage
  * @returns {string|null}
  */
-function _sFormatNote(purpose, percentage) {
+function _sFormatNote(purpose, percentage, percentContext) {
   const parts = [];
 
   if (purpose && purpose !== '') {
@@ -15403,10 +15574,27 @@ function _sFormatNote(purpose, percentage) {
 
   if (percentage !== null && percentage !== undefined) {
     const percentStr = (percentage * 100).toFixed(0);
-    parts.push(`${percentStr}% 1RM`);
+    const context = (percentContext && typeof percentContext === 'string' && percentContext.trim()) ? percentContext.trim() : '1RM';
+    parts.push(`${percentStr}% ${context}`);
   }
 
   return parts.length > 0 ? parts.join(', ') : null;
+}
+
+/**
+ * Extract the percentage column-context from a Format S section-header
+ * cell at column E. Returns the substring after "Percentage of " (e.g.
+ * "Power Day" or "Hypertrophy Day"), or null when the header is the
+ * conventional "Percentage" / "Percentage " / empty / non-string —
+ * which lets _sFormatNote fall back to the legacy "1RM" default.
+ */
+function _sExtractPercentContext(headerCell) {
+  if (typeof headerCell !== 'string') return null;
+  const trimmed = headerCell.trim();
+  if (!trimmed) return null;
+  const m = trimmed.match(/^Percentage\s+of\s+(.+)$/i);
+  if (m) return m[1].trim();
+  return null;
 }
 
 
@@ -16601,6 +16789,36 @@ function parseW(wb) {
               if (rt && !/^rating$/i.test(rt)) {
                 noteParts.push('Rating: ' + rt);
               }
+            }
+          }
+        }
+
+        // Fix 16 W1: surface coach-authored projection values held in any
+        // un-labelled column inside the week's stride (past the last mapped
+        // header offset). Common pattern: Format W workbooks anchor next-cycle
+        // top-set range projections (e.g. "496-507, 523-535") in column AC of
+        // the Week 4 group on the 3 main competition-lift rows, one column
+        // past the last labelled "RATING" column (AB). L591 discriminator:
+        // only surface dash-numeric range patterns; reject free-text training-
+        // log strings (RPE notations, weights, "PR!", "done", etc.) so the
+        // L548 synthesizer-filled corpus variants don't surface junk as notes.
+        {
+          const maxMappedOff = Math.max(
+            exOff, setsOff, repsOff, loadOff,
+            topSetOff >= 0 ? topSetOff : -1,
+            ratingOff >= 0 ? ratingOff : -1
+          );
+          const projectionRe = /^\s*\d+(?:\.\d+)?-\d+(?:\.\d+)?(?:\s*,\s*\d+(?:\.\d+)?-\d+(?:\.\d+)?)*\s*$/;
+          for (const ri of eg.rows) {
+            const r2 = rows[ri]; if (!r2) continue;
+            for (let off = maxMappedOff + 1; off < stride; off++) {
+              const c = wBase + off;
+              const raw = r2[c];
+              if (raw == null) continue;
+              const s = String(raw).trim();
+              if (!s) continue;
+              if (!projectionRe.test(s)) continue;
+              noteParts.push('Projection: ' + s);
             }
           }
         }
@@ -19171,7 +19389,8 @@ function scoreKimCoachFormat(wb, negSignals) {
 
 // Parse one sheet as one training week, splitting into days at each block header row.
 // Block header row: col 1 === "Sets X Reps @RPE"
-// Exercise row: col 0 = name, col 1 = prescription, col 3 = coach note (col 2 = athlete log, ignored)
+// Exercise row: col 0 = name, col 1 = prescription, col 2 = athlete log (loggedWeight),
+//   col 3 = coach note, col 4 = lifter note (Class K1a — Fix 8 PHASE_AI_0_FIX_8_KIMCOACH_K1A_KICKOFF.md)
 // Blank row or next block header terminates the current day.
 function _kc_parseSheet(sheetName, rows) {
   var days = [];
@@ -19183,13 +19402,25 @@ function _kc_parseSheet(sheetName, rows) {
 
     var col0 = row[0] != null ? String(row[0]).trim() : '';
     var col1 = row[1] != null ? String(row[1]).trim() : '';
+    var col2 = row[2] != null ? String(row[2]).trim() : '';   // Class K1a — "Record weight and RPE" → loggedWeight (Fix 8)
     var col3 = row[3] != null ? String(row[3]).trim() : '';
+    var col4 = row[4] != null ? String(row[4]).trim() : '';   // Class K1a — "Lifter Notes" → lifterNote (Fix 8)
 
     // Block header: col 1 === "Sets X Reps @RPE"
     if (col1 === 'Sets X Reps @RPE') {
       // col 0 is the day/block name (e.g. "Upper 1 (Bench ACC)")
-      var dayName = col0 || ('Day ' + (days.length + 1));
-      currentDay = { name: dayName, exercises: [] };
+      // Class K2 — split LAST trailing parenthetical (...) into focusNote (Fix 9)
+      // e.g. "Upper 1 (Bench ACC)" → name="Upper 1", focusNote="Bench ACC"
+      var rawDayName = col0 || ('Day ' + (days.length + 1));
+      var dayName = rawDayName;
+      var focusNote = null;
+      var parenMatch = rawDayName.match(/^(.+?)\s*\(([^()]+)\)\s*$/);
+      if (parenMatch) {
+        dayName = parenMatch[1].trim();
+        focusNote = parenMatch[2].trim();
+        if (focusNote === '') focusNote = null;   // empty/whitespace-only paren → null
+      }
+      currentDay = { name: dayName, focusNote: focusNote, exercises: [] };
       days.push(currentDay);
       continue;
     }
@@ -19215,6 +19446,8 @@ function _kc_parseSheet(sheetName, rows) {
         name: name,
         prescription: prescription,
         note: note,
+        loggedWeight: col2,   // Class K1a — empty string when cell blank (Fix 8)
+        lifterNote: col4,     // Class K1a — empty string when cell blank (Fix 8)
         supersetGroup: null
       });
     }
@@ -19223,8 +19456,119 @@ function _kc_parseSheet(sheetName, rows) {
   return days.filter(function(d) { return d.exercises.length > 0; });
 }
 
+// Scan top-of-sheet header band for a maxes table.
+// Gated: requires (a) an "Enter Your 1RMs / Maxes" marker in rows 0-4, cols 0-2,
+// AND (b) at least one canonical lift label in the 5-row × 8-col window. Both
+// gates must pass before any non-empty maxes object is emitted; the gate keeps
+// exact "Bench Press" / "Overhead Press" exercise names from spuriously
+// populating the maxes slot on RPE / client KIMCOACH workbooks (Codex #1 / #2).
+// Pattern: label cell -> value cell at row[c+1]. First-found wins per key.
+function _kc_extractMaxes(rows) {
+  var LABEL_MAP = {
+    'squat': 'squat',
+    'back squat': 'squat',
+    'bench': 'bench',
+    'bench press': 'bench',
+    'deadlift': 'deadlift',
+    'conventional deadlift': 'deadlift',
+    'ohp': 'ohp',
+    'overhead press': 'ohp'
+  };
+  var MARKER_RE = /^\s*enter\s+(your\s+)?(1\s*rms?|maxes)/i;
+  var SCAN_ROWS = 5;
+  var SCAN_COLS = 8;
+  var MARKER_COLS = 3;
+
+  var markerFound = false;
+  for (var mr = 0; mr < Math.min(rows.length, SCAN_ROWS); mr++) {
+    var mrow = rows[mr];
+    if (!mrow) continue;
+    for (var mc = 0; mc < Math.min(mrow.length, MARKER_COLS); mc++) {
+      var mcell = mrow[mc];
+      if (typeof mcell === 'string' && MARKER_RE.test(mcell)) {
+        markerFound = true;
+        break;
+      }
+    }
+    if (markerFound) break;
+  }
+  if (!markerFound) return {};
+
+  var maxes = {};
+  for (var r = 0; r < Math.min(rows.length, SCAN_ROWS); r++) {
+    var row = rows[r];
+    if (!row) continue;
+    for (var c = 0; c < Math.min(row.length, SCAN_COLS); c++) {
+      var cellRaw = row[c];
+      if (typeof cellRaw !== 'string') continue;
+      var key = LABEL_MAP[cellRaw.trim().toLowerCase()];
+      if (!key) continue;
+      if (key in maxes) continue;
+      var value = row[c + 1];
+      maxes[key] = (typeof value === 'number' && isFinite(value)) ? value : null;
+    }
+  }
+  if (Object.keys(maxes).length === 0) return {};
+  return maxes;
+}
+
+// Fix 10 (Class K3 — KIMCOACH block-name filename derivation).
+// L576 4-step chain applied to KIMCOACH format. See
+// PHASE_AI_0_FIX_10_KIMCOACH_K3_KICKOFF.md for Stage 1 product-shape decisions
+// (Joe-locked 2026-05-18): no suffix marker stripping, conservative title-case
+// only (no acronym dict / no compound splits / no month-range), hard-skip
+// Step 4 sheet name, §4 dictionary deferred.
+
+function _kc_humanizeFilename(filename) {
+  // Conservative title-case humanization per Joe Q3 lock:
+  // - Strip .xlsx? extension (case-insensitive) — extension-strip parity with
+  //   the 10 other _plFilename callsites
+  // - Replace '-' and '_' with single space, collapse multi-spaces, trim
+  // - Title-case each word: capitalize first alphabetic char; non-alpha prefix
+  //   (digits / leading underscores) left untouched
+  // - Lowercase Chicago-style small-word fillers (a, an, the, of, in, on, at,
+  //   for, and, or) except in first position
+  // - NO suffix marker stripping per Joe Q2 lock — __orig/__2week/__filled
+  //   left literal in the derived name
+  // - NO acronym dict, no compound splits, no month-range detection
+  if (typeof filename !== 'string') return '';
+  var s = filename.replace(/\.xlsx?$/i, '');
+  s = s.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  var FILLERS = { a: 1, an: 1, the: 1, of: 1, in: 1, on: 1, at: 1, for: 1, and: 1, or: 1 };
+  var words = s.split(' ').filter(function(w) { return w.length > 0; });
+  return words.map(function(w, i) {
+    var lower = w.toLowerCase();
+    if (i > 0 && FILLERS[lower]) return lower;
+    return lower.replace(/^([^a-z]*)([a-z])/, function(_match, prefix, letter) {
+      return prefix + letter.toUpperCase();
+    });
+  }).join(' ');
+}
+
+function _kc_resolveBlockName(wb) {
+  // KIMCOACH L576 4-step chain:
+  // Step 1 (source title cell): HARD-SKIP — KIMCOACH workbooks have no
+  //   title-cell convention; A1 is always a day-block header or maxes label.
+  //   Empirically verified across 12 KIMCOACH __orig fixtures.
+  // Step 2 (§4 community-canonical dict): HARD-SKIP — KIMCOACH programs are
+  //   private/authored per L572; §4 implementation deferred to a later fix.
+  // Step 3 (filename derivation): primary path. Requires wb._plFilename set
+  //   by ParserBridge.swift (Fix 9.5) or the corpus harness.
+  // Step 4 (sheet name): HARD-SKIP per Joe Q5 lock — KIMCOACH sheet names
+  //   are inconsistent (sometimes program-like, often week labels).
+  // Final fallback: 'Training Program' (preserves pre-Fix-10 baseline shape
+  // for degenerate inputs — empty filename, humanize-to-empty filename).
+  if (wb && typeof wb._plFilename === 'string' && wb._plFilename.length > 0) {
+    var derived = _kc_humanizeFilename(wb._plFilename);
+    if (derived && derived.length > 0) return derived;
+  }
+  return 'Training Program';
+}
+
 function parseKimCoachFormat(wb) {
   var weeks = [];
+  var firstParsedSheetRows = null;
 
   for (var si = 0; si < wb.SheetNames.length; si++) {
     var sheetName = wb.SheetNames[si];
@@ -19241,6 +19585,8 @@ function parseKimCoachFormat(wb) {
     var days = _kc_parseSheet(sheetName, rows);
     if (days.length === 0) continue;
 
+    if (firstParsedSheetRows === null) firstParsedSheetRows = rows;
+
     weeks.push({
       label: sheetName,
       days: days
@@ -19249,15 +19595,15 @@ function parseKimCoachFormat(wb) {
 
   if (weeks.length === 0) return [];
 
-  // Derive program name from filename if available, otherwise generic label
-  var programName = 'Training Program';
+  var programName = _kc_resolveBlockName(wb);
+  var maxes = firstParsedSheetRows ? _kc_extractMaxes(firstParsedSheetRows) : {};
 
   return [{
     id: 'kimcoach_' + Date.now(),
     name: programName,
     format: 'KIMCOACH',
     dateRange: null,
-    maxes: { squat: null, bench: null, deadlift: null },
+    maxes: maxes,
     weeks: weeks
   }];
 }
@@ -19340,6 +19686,50 @@ function scoreKimSingleSheetGrid(wb, negSignals) {
   }
 }
 
+// Fix 11 (Class K3-KIMGRID — KIMGRID block-name filename derivation).
+// L576 4-step chain applied to KIMGRID format. See
+// PHASE_AI_0_FIX_11_KIMGRID_K3_KICKOFF.md for Stage 1 product-shape decisions
+// (Joe-locked 2026-05-18 PM): reuse _kc_humanizeFilename cross-format (Q2 lock);
+// filtered sheet-name fallback via /^Sheet\d+$/i regex (Q1 lock); hard-skip
+// Step 1 / Step 2; final fallback 'Training Program'.
+
+function _ksg_resolveBlockName(wb, sheetName) {
+  // KIMGRID L576 4-step chain:
+  // Step 1 (source title cell): HARD-SKIP — KIMGRID workbooks are coach-
+  //   authored multi-lane grids; A1 is universally a day label (MON / WED /
+  //   THUR / SAT / etc.). Empirically verified on the live __orig fixture.
+  // Step 2 (§4 community-canonical dict): HARD-SKIP — KIMGRID workbooks are
+  //   private/authored per L572; same posture as Fix 10 KIMCOACH.
+  // Step 3 (filename derivation): primary path. Cross-format reuse of
+  //   _kc_humanizeFilename per Joe Q2 lock — the helper is format-agnostic
+  //   pure-string transformation (no KIMCOACH-specific knowledge).
+  // Step 4 (sheet name with default-tab filter): per Joe Q1 lock — fall back
+  //   to sheet name only if it's NOT the English Excel default Sheet\d+
+  //   pattern. Filter regex /^Sheet\d+$/i is case-insensitive and catches
+  //   Sheet1 / sheet1 / SHEET10 / Sheet2 / Sheet99. Scope is intentionally
+  //   NARROW to English SheetN (Stage 4 Codex correction lock 2026-05-18 PM):
+  //   localized Excel defaults (Hoja1, Feuil1, Tabelle1, Foglio1, Folha1,
+  //   Planilha1, 工作表1, etc.) are NOT filtered and survive to Step 4 —
+  //   they get humanized via the shared helper. The bare token 'Sheet' (no
+  //   digit suffix) is also NOT filtered (could be a meaningful coach
+  //   choice). Meaningful sheet names ("12 Week Mass") survive and get
+  //   humanized via the same _kc_humanizeFilename helper.
+  // Final fallback: 'Training Program' (preserves pre-Fix-11 baseline shape
+  // for degenerate inputs — empty filename + filtered sheet name, or both
+  // empty).
+  if (wb && typeof wb._plFilename === 'string' && wb._plFilename.length > 0) {
+    var derived = _kc_humanizeFilename(wb._plFilename);
+    if (derived && derived.length > 0) return derived;
+  }
+  if (typeof sheetName === 'string' && sheetName.length > 0) {
+    if (!/^Sheet\d+$/i.test(sheetName)) {
+      var sheetDerived = _kc_humanizeFilename(sheetName);
+      if (sheetDerived && sheetDerived.length > 0) return sheetDerived;
+    }
+  }
+  return 'Training Program';
+}
+
 function parseKimSingleSheetGrid(wb) {
   var blocks = [];
 
@@ -19383,7 +19773,7 @@ function parseKimSingleSheetGrid(wb) {
     if (weeks.length > 0) {
       blocks.push({
         id: 'kimgrid_' + Date.now() + '_' + si,
-        name: (wb._plFilename || sheetName || 'Training Program').replace(/\.xlsx?$/i, ''),
+        name: _ksg_resolveBlockName(wb, sheetName),
         format: 'KIMGRID',
         athleteName: '',
         dateRange: '',
@@ -20169,6 +20559,49 @@ function _mx_parseExerciseMatrixSheet(sheetName, rows, headerRowIdx, dayColumns)
     .map(dc => ({ name: _mx_normalizeDayLabel(dc.label), exercises: dayExercises[dc.colIdx] }));
 }
 
+// Scan Tactical Barbell-style Entry Tab for the 4-lift maxes table.
+// Fixed cell layout: B5:B8 = labels, E5:E8 = computed 1RM (Epley with True/Training
+// Max toggle at D3). Pull-up at B9/E9 is intentionally skipped — canonical pull-up
+// max is added-plate-only, but Tactical Barbell stores BW + plate in C9 for its
+// own % math; emitting it would create a semantic mismatch (deferred to v1.1+).
+// Uses _rGetCell for direct absolute-Excel-indexed access; Entry Tab's !ref is
+// "B2:I1000" so sheet_to_json / _sheetRows would offset reads.
+function _hw_extractMaxes(wb) {
+  let entryTabName = null;
+  for (const sn of wb.SheetNames) {
+    if (/^entry\s*tab$/i.test(sn.trim())) { entryTabName = sn; break; }
+  }
+  if (!entryTabName) return {};
+
+  const sheet = wb.Sheets[entryTabName];
+  if (!sheet) return {};
+
+  const LABEL_MAP = {
+    'squat': 'squat',
+    'bench': 'bench',
+    'bench press': 'bench',
+    'deadlift': 'deadlift',
+    'ohp': 'ohp',
+    'overhead press': 'ohp',
+    'military press': 'ohp',
+    'strict press': 'ohp'
+  };
+
+  const maxes = {};
+  for (let row = 4; row <= 7; row++) {
+    const label = _rGetCell(sheet, row, 1);
+    if (typeof label !== 'string') continue;
+    const key = LABEL_MAP[label.trim().toLowerCase()];
+    if (!key) continue;
+    if (key in maxes) continue;
+    const value = _rGetCell(sheet, row, 4);
+    if (typeof value === 'number' && isFinite(value)) {
+      maxes[key] = value;
+    }
+  }
+  return maxes;
+}
+
 // ── HORIZONTAL WEEK MATRIX PARSER ────────────────────────────────────────────
 // Handles Tactical Barbell-style layouts: "Week | 1 | 2 | 3..." column headers,
 // "Sets X Reps" row, session sections (Session One/Two, A/B, Cluster) with exercise rows.
@@ -20177,6 +20610,7 @@ function parseHorizWeekMatrix(wb) {
   const SKIP_SHEET = /^sheet\d*$/i;
   const CALC_CONTENT = /1\s*rep\s*max|true\s*max|training\s*max/i;
   const blocks = [];
+  const sharedMaxes = _hw_extractMaxes(wb);
 
   for (let si = 0; si < wb.SheetNames.length; si++) {
     const sn = wb.SheetNames[si];
@@ -20299,7 +20733,7 @@ function parseHorizWeekMatrix(wb) {
     blocks.push({
       id: 'hw_' + sn.replace(/\s+/g, '_') + '_' + Date.now(),
       name: blockName, format: 'HORIZWEEK',
-      athleteName: '', dateRange: '', maxes: {}, weeks
+      athleteName: '', dateRange: '', maxes: sharedMaxes, weeks
     });
   }
 
